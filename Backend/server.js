@@ -2806,10 +2806,10 @@ async function syncHistoricalInvitations() {
 }
 
 Promise.resolve()
+  .then(() => ensureExtendedTables())
   .then(() => migrateApplicantProfilesRemoveExperience())
   .then(() => ensureApplicantProfileColumns())
   .then(() => ensureEmployerProfileColumns())
-  .then(() => ensureExtendedTables())
   .then(() => ensureJobPostColumns())
   .then(() => syncHistoricalInvitations())
   .then(() => app.listen(PORT, () => {
