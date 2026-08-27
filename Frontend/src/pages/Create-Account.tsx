@@ -1,0 +1,403 @@
+import React, { useState } from "react";
+import "./Create-Account.css";
+
+export default function CreateAccount() {
+  const [role, setRole] = useState("applicant");
+  const [showPassword, setShowPassword] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submitSuccess, setSubmitSuccess] = useState("");
+
+  const [formData, setFormData] = useState({
+    firstName: "",
+    middleName: "",
+    lastName: "",
+    businessName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+
+  const hasMinLength = formData.password.length >= 8;
+  const hasUppercase = /[A-Z]/.test(formData.password);
+  const hasLowercase = /[a-z]/.test(formData.password);
+  const hasNumber = /\d/.test(formData.password);
+
+  const getPasswordStrength = () => {
+    const checks = [hasMinLength, hasUppercase, hasLowercase, hasNumber];
+    const passedChecks = checks.filter(Boolean).length;
+    if (passedChecks <= 1) return "Weak";
+    if (passedChecks <= 2) return "Fair";
+    if (passedChecks === 3) return "Good";
+    return "Strong";
+  };
+
+  const getStrengthColor = () => {
+    const strength = getPasswordStrength();
+    if (strength === "Weak") return "#d93025";
+    if (strength === "Fair") return "#f9ab00";
+    if (strength === "Good") return "#1b8f3d";
+    return "#0d652d";
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const isApplicant = role === "applicant";
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setSubmitError("");
+    setSubmitSuccess("");
+
+    if (!formData.email.trim()) {
+      setSubmitError("Email is required.");
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setSubmitError("Passwords do not match.");
+      return;
+    }
+
+    if (getPasswordStrength() === "Weak") {
+      setSubmitError("Password does not meet required strength.");
+      return;
+    }
+
+    if (!agreeTerms) {
+      setSubmitError("You must agree to the Terms of Service and Privacy Policy.");
+      return;
+    }
+
+    if (isApplicant) {
+      if (!formData.firstName.trim() || !formData.lastName.trim()) {
+        setSubmitError("First name and last name are required.");
+        return;
+      }
+    } else if (!formData.businessName.trim()) {
+      setSubmitError("Business name is required.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          role,
+          email: formData.email,
+          password: formData.password,
+          firstName: formData.firstName,
+          middleName: formData.middleName,
+          lastName: formData.lastName,
+          businessName: formData.businessName,
+          agreeTerms,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setSubmitError(data?.message ?? "Registration failed.");
+        return;
+      }
+
+      setSubmitSuccess("Account created successfully. You can now sign in.");
+      setFormData({
+        firstName: "",
+        middleName: "",
+        lastName: "",
+        businessName: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+      });
+      setAgreeTerms(false);
+
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 900);
+    } catch {
+      setSubmitError("Unable to connect to server. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="create-page">
+      <section className="create-left">
+        <div className="create-overlay" />
+
+        <a href="/" className="brand-card">
+          <span className="ec-tile">EC</span>
+
+          <div className="brand-text">
+            <strong>EliteCruit</strong>
+            <span>Digital Recruitment Platform</span>
+          </div>
+        </a>
+
+        <div className="left-content">
+          <span className="badge">
+            Cavite Recruitment Platform
+          </span>
+
+          <h1>Create your EliteCruit account.</h1>
+
+          <p>
+            Join the Cavite Digital Recruitment Platform.
+            Whether you're searching for a job or hiring
+            employees, create your account to begin.
+          </p>
+
+          <div className="feature-grid">
+
+            <div className="feature-card">
+              <div className="feature-icon">
+                <img
+                  src="/logos/applicant-documents.svg"
+                  alt="Applicants"
+                />
+              </div>
+              <h4>Applicants</h4>
+              <small>Build your professional profile.</small>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon">
+                <img
+                  src="/logos/top-rated-companies.svg"
+                  alt="Employers"
+                />
+              </div>
+              <h4>Employers</h4>
+              <small>Post jobs and manage applicants.</small>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon">
+                <img
+                  src="/logos/ats-resume-validation.svg"
+                  alt="Secure"
+                />
+              </div>
+              <h4>Secure</h4>
+              <small>Protected accounts & verification.</small>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <section className="create-right">
+
+        <form className="create-card" onSubmit={handleSubmit}>
+
+          <h2>Create Account</h2>
+
+          <div className="role-switch">
+
+            <button
+              type="button"
+              className={isApplicant ? "active" : ""}
+              onClick={() => setRole("applicant")}
+            >
+              Applicant
+            </button>
+
+            <button
+              type="button"
+              className={!isApplicant ? "active" : ""}
+              onClick={() => setRole("employer")}
+            >
+              Employer
+            </button>
+
+          </div>
+
+          {isApplicant ? (
+            <>
+            <div className="name-row">
+
+  <div>
+    <label>First Name</label>
+    <input
+      required
+      name="firstName"
+      placeholder="First Name"
+      value={formData.firstName}
+      onChange={handleChange}
+    />
+  </div>
+
+  <div>
+    <label>Middle Name</label>
+    <input
+      name="middleName"
+      placeholder="Middle Name"
+      value={formData.middleName}
+      onChange={handleChange}
+    />
+  </div>
+
+  <div>
+    <label>Last Name</label>
+    <input
+      required
+      name="lastName"
+      placeholder="Last Name"
+      value={formData.lastName}
+      onChange={handleChange}
+    />
+  </div>
+
+</div>
+            </>
+          ) : (
+            <>
+              <label>Business Name</label>
+
+              <input
+                required
+                name="businessName"
+                placeholder="Business Name"
+                value={formData.businessName}
+                onChange={handleChange}
+              />
+            </>
+          )}
+
+          <label>Email Address</label>
+
+          <input
+            type="email"
+            name="email"
+            placeholder="your@email.com"
+            required
+            value={formData.email}
+            onChange={handleChange}
+          />
+
+          <label>Password</label>
+
+          <div className="password-box">
+
+  <input
+    type={showPassword ? "text" : "password"}
+    name="password"
+    placeholder="Enter Password"
+    required
+    value={formData.password}
+    onChange={handleChange}
+  />
+
+  <button
+    type="button"
+    className="eye-btn"
+    onClick={() => setShowPassword(!showPassword)}
+  >
+    {showPassword ? "👁️" : "👁"}
+  </button>
+
+</div>
+
+          <div className="password-strength">
+            <div className="strength-header">
+              <span className="strength-label">PASSWORD STRENGTH</span>
+              <span className="strength-value" style={{ color: getStrengthColor() }}>
+                {getPasswordStrength()}
+              </span>
+            </div>
+            <div className="strength-grid">
+              <div className={`strength-item ${hasMinLength ? "valid" : "invalid"}`}>
+                <span className="check-icon">{hasMinLength ? "●" : "◯"}</span>
+                <span>Minimum Length</span>
+              </div>
+              <div className={`strength-item ${hasUppercase ? "valid" : "invalid"}`}>
+                <span className="check-icon">{hasUppercase ? "●" : "◯"}</span>
+                <span>Uppercase Letter</span>
+              </div>
+              <div className={`strength-item ${hasLowercase ? "valid" : "invalid"}`}>
+                <span className="check-icon">{hasLowercase ? "●" : "◯"}</span>
+                <span>Lowercase Letter</span>
+              </div>
+              <div className={`strength-item ${hasNumber ? "valid" : "invalid"}`}>
+                <span className="check-icon">{hasNumber ? "●" : "◯"}</span>
+                <span>Number</span>
+              </div>
+            </div>
+          </div>
+
+          <label>Confirm Password</label>
+
+          <div className="password-box">
+
+  <input
+    type={showPassword ? "text" : "password"}
+    name="confirmPassword"
+    placeholder="Confirm Password"
+    required
+    value={formData.confirmPassword}
+    onChange={handleChange}
+  />
+
+  <button
+    type="button"
+    className="eye-btn"
+    onClick={() => setShowPassword(!showPassword)}
+  >
+    {showPassword ? "👁️" : "👁"}
+  </button>
+
+</div>
+
+          {formData.confirmPassword &&
+            formData.password !== formData.confirmPassword && (
+              <p className="invalid">
+                Passwords do not match.
+              </p>
+            )}
+
+          <label className="terms-box">
+            <input
+              type="checkbox"
+              name="agreeTerms"
+              checked={agreeTerms}
+              onChange={(e) => setAgreeTerms(e.target.checked)}
+            />
+            <span>
+              I agree to the Terms of Service and Privacy Policy for this frontend prototype.
+            </span>
+          </label>
+
+          {submitError && <p className="invalid submit-message">{submitError}</p>}
+          {submitSuccess && <p className="valid submit-message">{submitSuccess}</p>}
+
+          <button className="create-btn" type="submit" disabled={isSubmitting}>
+            {isApplicant
+              ? (isSubmitting ? "Creating Applicant Account..." : "Create Applicant Account")
+              : (isSubmitting ? "Creating Employer Account..." : "Create Employer Account")}
+          </button>
+
+          <p className="signin-text">
+            Already have an account?{" "}
+            <a href="/login">Sign In</a>
+          </p>
+
+        </form>
+
+      </section>
+    </div>
+  );
+}

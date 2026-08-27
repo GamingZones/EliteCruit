@@ -1,0 +1,20 @@
+:root {
+  --ink-950: #0b1220;
+  --ink-900: #1b263c;
+  --ink-500: #4c5f79;
+  --card-border: #d7dfeb;
+  --cream: #fbf7ef;
+  --gold: #f6be45;
+  --white: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Manrope", sans-serif;
+  color: var(--ink-900);
+  background: var(--cream);
+}
