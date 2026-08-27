@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import "./Applicant-Dashboard.css";
 import "./ApplicantDashboardOverrides.css";
-import "./JobSearch.css";
 
 type SideNavItem = {
   label: string;
@@ -43,6 +42,7 @@ type JobCard = {
   createdRank: number;
   employerUserId?: number;
   rating?: string;
+  createdAt?: string;
 };
 
 type FaqItem = {

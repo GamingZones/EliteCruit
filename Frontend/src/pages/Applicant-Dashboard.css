@@ -904,3 +904,96 @@
   color: #0284c7;
 }
 
+/* --------------------------------------------------------------------------
+   Tag Chips & Tooltip Overflows (Self-Contained in Applicant-Dashboard.css)
+   -------------------------------------------------------------------------- */
+.js-chips-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: visible;
+}
+
+.js-tag-chip {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.js-tag-skill {
+  background: #e8f4fc;
+  color: #0d3c61;
+  border: 1px solid #c2e0f6;
+}
+
+.js-tag-qualification {
+  background: #f0ecf9;
+  color: #4a2e80;
+  border: 1px solid #d9ccf2;
+}
+
+.js-tag-certification {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.js-overflow-dots {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  background: #eaf1f8;
+  color: #173f62;
+  border: 1px solid #c8d8e8;
+  cursor: pointer;
+  line-height: 1;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.js-overflow-dots:hover {
+  background: #d4e5f7;
+  border-color: #a4c6e8;
+}
+
+.js-overflow-tip {
+  position: absolute;
+  bottom: 130%;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #091f34;
+  color: #ffffff;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 100;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.js-overflow-dots:hover .js-overflow-tip,
+.js-overflow-dots:focus .js-overflow-tip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
