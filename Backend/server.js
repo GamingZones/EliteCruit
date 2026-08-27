@@ -401,32 +401,32 @@ app.post("/api/auth/register", async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    await run("BEGIN TRANSACTION");
-
     const userInsert = await run(
-      "INSERT INTO users (email, password_hash, role, is_active) VALUES (?, ?, ?, 1)",
+      "INSERT INTO users (email, password_hash, role, is_active) VALUES (?, ?, ?, true)",
       [email.trim().toLowerCase(), passwordHash, role]
     );
 
     const userId = userInsert.lastID;
 
+    if (!userId) {
+      throw new Error("Failed to generate user ID for new account.");
+    }
+
     if (role === "applicant") {
       await run(
         `INSERT INTO applicant_profiles
           (user_id, first_name, middle_name, last_name, terms_accepted, terms_accepted_at)
-         VALUES (?, ?, ?, ?, 1, datetime('now'))`,
+         VALUES (?, ?, ?, ?, true, CURRENT_TIMESTAMP)`,
         [userId, firstName.trim(), (middleName ?? "").trim() || null, lastName.trim()]
       );
     } else {
       await run(
         `INSERT INTO employer_profiles
           (user_id, business_name, terms_accepted, terms_accepted_at)
-         VALUES (?, ?, 1, datetime('now'))`,
+         VALUES (?, ?, true, CURRENT_TIMESTAMP)`,
         [userId, businessName.trim()]
       );
     }
-
-    await run("COMMIT");
 
     res.status(201).json({
       message: "Account created successfully.",
