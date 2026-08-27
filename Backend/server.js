@@ -24,7 +24,11 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 const pgPool = new pg.Pool({ connectionString: DATABASE_URL });
 
 function normalizeSql(sql) {
-  return String(sql)
+  const str = String(sql).trim();
+  if (/^\s*(BEGIN|COMMIT|ROLLBACK)\b/i.test(str)) {
+    return "SELECT 1";
+  }
+  return str
     .replace(/datetime\('now'\)/gi, "CURRENT_TIMESTAMP")
     .replace(/datetime\(([^)]+)\)/gi, "$1");
 }
@@ -433,13 +437,14 @@ app.post("/api/auth/register", async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("Registration error:", error);
     try {
       await run("ROLLBACK");
     } catch {
       // Ignore rollback errors.
     }
 
-    res.status(500).json({ message: "Registration failed. Please try again." });
+    res.status(500).json({ message: error?.message || "Registration failed. Please try again." });
   }
 });
 
