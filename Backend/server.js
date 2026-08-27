@@ -2810,7 +2810,32 @@ async function syncHistoricalInvitations() {
   }
 }
 
+async function initPgDatabase() {
+  try {
+    const client = await pgPool.connect();
+    client.release();
+    return true;
+  } catch (err) {
+    if (err && err.code === "3D000") {
+      console.log("Database 'elitecruit' does not exist yet. Auto-creating database...");
+      try {
+        const adminUrl = DATABASE_URL.replace(/\/elitecruit(\?.*)?$/, "/postgres");
+        const adminPool = new pg.Pool({ connectionString: adminUrl });
+        await adminPool.query("CREATE DATABASE elitecruit;");
+        await adminPool.end();
+        console.log("Database 'elitecruit' auto-created successfully!");
+        return true;
+      } catch (createErr) {
+        console.error("Auto-creation of 'elitecruit' database failed:", createErr.message);
+        throw err;
+      }
+    }
+    throw err;
+  }
+}
+
 Promise.resolve()
+  .then(() => initPgDatabase())
   .then(() => ensureExtendedTables())
   .then(() => migrateApplicantProfilesRemoveExperience())
   .then(() => ensureApplicantProfileColumns())
@@ -2821,6 +2846,6 @@ Promise.resolve()
     console.log(`EliteCruit backend running at http://localhost:${PORT}`);
   }))
   .catch((error) => {
-  console.error("Failed to prepare the database:", error);
-  process.exit(1);
+    console.error("Failed to prepare the database:", error);
+    process.exit(1);
   });
