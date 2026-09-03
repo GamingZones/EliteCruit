@@ -1,0 +1,10 @@
+1. all pages should be independent (code/design)
+	- if a page is importing a desgin in another's page design, vopy it and paste it to the respective design file of that page doe its independence.
+
+2. sidebars header (including chatbot) and filters page are the only import file outside of the functions to be connected on pages
+	- make sure to create these as an individual file and will be sent into specific pages
+ 
+3. sperate ny folders the 3 modules for this project (admin,applicant and empolyer)
+	- if a page (new or not) is specified for that module it will be put in the folder with the other pages for that module
+
+4. do not create anymore implementation plans, execute/implement immediately without asking for approval on plans.

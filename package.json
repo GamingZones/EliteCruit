@@ -1,0 +1,12 @@
+{
+  "name": "elitecruit-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "concurrently -n \"BACKEND,FRONTEND\" -c \"blue,green\" \"cd Backend && node server.js\" \"cd Frontend && npm.cmd run dev\"",
+    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"blue,green\" \"cd Backend && node server.js\" \"cd Frontend && npm.cmd run dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

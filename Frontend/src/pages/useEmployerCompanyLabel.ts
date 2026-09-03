@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 type SavedUser = {
   id?: number;
+  role?: string;
   email?: string;
   businessName?: string;
   business_name?: string;
@@ -38,7 +39,7 @@ export function useEmployerCompanyLabel(defaultLabel = "Employer") {
       setCompanyLabel(parsedUser.email);
     }
 
-    if (!parsedUser?.id) {
+    if (!parsedUser?.id || (parsedUser?.role && parsedUser.role !== "employer")) {
       return;
     }
 

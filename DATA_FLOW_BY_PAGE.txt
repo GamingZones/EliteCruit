@@ -1,0 +1,772 @@
+================================================================================
+                         ELITECRUIT SYSTEM ARCHITECTURE
+                  DATA IN & DATA OUT SPECIFICATION BY PAGE
+================================================================================
+Document Version: 1.0
+Target Environment: Node.js / Express Backend + PostgreSQL + React (TypeScript) Frontend
+Date Generated: August 31, 2026
+Scope: Complete data lifecycle rundown (Inputs, Incoming API Data, Outgoing Actions,
+       Persisted Storage, and Rendered Outputs) across all application pages.
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+1. AUTHENTICATION & LANDING PAGES
+   1.1. Landing / Portal Home (Start.tsx - "/")
+   1.2. User Login (Login.tsx - "/login")
+   1.3. User Registration (Create-Account.tsx - "/create-account")
+
+2. APPLICANT WORKSPACE PAGES
+   2.1. Applicant Dashboard (Applicant-Dashboard.tsx - "/applicant-dashboard")
+   2.2. Job Search & Application (JobSearch.tsx - "/job-search")
+   2.3. Applicant Profile & Documents (ApplicantProfile.tsx - "/my-profile")
+
+3. EMPLOYER WORKSPACE PAGES
+   3.1. Employer Dashboard (Employer-Dashboard.tsx - "/employer-dashboard")
+   3.2. Job Post Creator & Editor (Employer-JobPosts.tsx - "/employer-job-posts")
+   3.3. Job Posts Management (Employer-JobPostsList.tsx - "/employer-job-posts-list")
+   3.4. Applicant Management (Employer-ApplicantManagement.tsx - "/employer-applicant-management")
+   3.5. Candidate Screening (Employer-ApplicantScreening.tsx - "/employer-applicant-screening")
+   3.6. Talent Finder & Map (Employer-ApplicantFinder.tsx - "/employer-applicant-finder")
+   3.7. Nearby Applicant Finder (Employer-NearbyApplicants.tsx - "/employer-nearby-applicants")
+   3.8. Company Profile (Employer-CompanyProfile.tsx - "/employer-company-profile")
+   3.9. Company FAQ Management (Employer-FaqManagement.tsx - "/employer-faq-management")
+
+4. COMMON & SHARED PAGES
+   4.1. Real-Time Messages (Messages.tsx - "/messages")
+   4.2. Notifications Center (Notifications.tsx - "/notifications")
+   4.3. Feedback & Ratings (Applicant-Feedback.tsx - "/feedback")
+
+================================================================================
+1. AUTHENTICATION & LANDING PAGES
+================================================================================
+
+--------------------------------------------------------------------------------
+1.1. LANDING / PORTAL HOME
+--------------------------------------------------------------------------------
+File: Frontend/src/pages/Auth/Start.tsx
+Route: "/"
+Access: Public
+
+A. DATA IN (Incoming Inputs)
+   - User Interactions:
+     * Click "Sign In" -> Directs to /login
+     * Click "Get Started" / "Create Account" -> Directs to /create-account
+     * Role selection cards (Jobseeker vs. Employer)
+
+B. DATA IN FROM BACKEND (API Requests)
+   - None (Static landing presentation and portal entry point)
+
+C. DATA OUT TO BACKEND (Mutations / Submissions)
+   - None
+
+D. DATA OUT (Rendered UI / Client State)
+   - Value propositions, platform feature highlights, role selection options.
+   - Redirect navigation to "/login" or "/create-account".
+
+--------------------------------------------------------------------------------
+1.2. USER LOGIN
+--------------------------------------------------------------------------------
+File: Frontend/src/pages/Auth/Login.tsx
+Route: "/login"
+Access: Public / Unauthenticated
+
+A. DATA IN (Incoming Inputs)
+   - User Form Controls:
+     * role: "applicant" | "employer" (Tab toggle)
+     * email: string (User email address)
+     * password: string (User plaintext password)
+     * rememberMe: boolean (Checkbox)
+
+B. DATA OUT TO BACKEND (API Request)
+   - Endpoint: POST /api/auth/login
+   - Request Headers: { "Content-Type": "application/json" }
+   - Payload:
+     {
+       "role": "applicant" | "employer",
+       "email": "user@example.com",
+       "password": "secretPassword",
+       "rememberMe": true | false
+     }
+
+C. DATA IN FROM BACKEND (API Response)
+   - Response Payload (Success - 200 OK):
+     {
+       "message": "Login successful.",
+       "token": "jwt_token_string",
+       "user": {
+         "id": 12,
+         "email": "user@example.com",
+         "role": "applicant" | "employer",
+         "first_name": "Maria",
+         "last_name": "Santos",
+         "full_name": "Maria Santos",
+         "business_name": "Tech Corp (if employer)",
+         "businessName": "Tech Corp"
+       }
+     }
+   - Response Payload (Error - 400/401/500):
+     {
+       "message": "Invalid email or password."
+     }
+
+D. DATA OUT (Client Persistence & Routing)
+   - localStorage:
+     * Key: "elitecruit-user"
+     * Value: JSON.stringify(normalizedUser)
+   - Redirection:
+     * If role === "applicant" -> "/applicant-dashboard#section-overview"
+     * If role === "employer"  -> "/employer-dashboard"
+
+--------------------------------------------------------------------------------
+1.3. USER REGISTRATION
+--------------------------------------------------------------------------------
+File: Frontend/src/pages/Auth/Create-Account.tsx
+Route: "/create-account"
+Access: Public / Unauthenticated
+
+A. DATA IN (Incoming Inputs)
+   - User Form Controls:
+     * role: "applicant" | "employer"
+     * firstName: string (Applicant only)
+     * middleName: string (Applicant only, optional)
+     * lastName: string (Applicant only)
+     * businessName: string (Employer only)
+     * email: string
+     * password: string (Checked for: 8+ chars, uppercase, lowercase, digit)
+     * confirmPassword: string
+     * agreeTerms: boolean
+
+B. DATA OUT TO BACKEND (API Request)
+   - Endpoint: POST /api/auth/register
+   - Request Headers: { "Content-Type": "application/json" }
+   - Payload:
+     {
+       "role": "applicant" | "employer",
+       "email": "user@example.com",
+       "password": "StrongPassword123",
+       "firstName": "Maria",
+       "middleName": "G.",
+       "lastName": "Santos",
+       "businessName": "Santos Logistics Inc"
+     }
+
+C. DATA IN FROM BACKEND (API Response)
+   - Response Payload (Success - 201 Created):
+     {
+       "message": "Account created successfully.",
+       "user": {
+         "id": 14,
+         "email": "user@example.com",
+         "role": "applicant" | "employer"
+       }
+     }
+   - Response Payload (Error - 400/409):
+     {
+       "message": "An account with this email already exists."
+     }
+
+D. DATA OUT (Client State & Feedback)
+   - Form field error messages (Password strength meter: Weak/Fair/Good/Strong).
+   - Success notification message and auto-routing to "/login".
+
+================================================================================
+2. APPLICANT WORKSPACE PAGES
+================================================================================
+
+--------------------------------------------------------------------------------
+2.1. APPLICANT DASHBOARD
+--------------------------------------------------------------------------------
+File: Frontend/src/pages/Applicant/Applicant-Dashboard.tsx
+Route: "/applicant-dashboard"
+Access: Authenticated Applicant
+
+A. DATA IN (Incoming Inputs)
+   - Session Data: localStorage.getItem("elitecruit-user") -> { id, role, email, ... }
+   - User UI State:
+     * Section Navigation: Overview, Smart Matches, My Applications, Job Invitations
+     * Applications status filter: "all" | "pending" | "shortlisted" | "approved" | "denied"
+     * Keyword search query
+     * Modal trigger: Job Details Modal, Apply Confirmation, FAQ Drawer
+
+B. DATA IN FROM BACKEND (API Queries)
+   1. GET /api/applicants/:userId/applications
+      Response: { "applications": [ { id, job_post_id, job_title, status, submitted_at, salary_min, salary_max, ... } ] }
+   2. GET /api/applicants/:userId/invitations
+      Response: { "invitations": [ { id, job_post_id, employer_user_id, status, custom_message, job_title, business_name, ... } ] }
+   3. GET /api/applicants/:userId/profile
+      Response: { "profile": { first_name, last_name, desired_job_title, work_arrangement, expected_salary, city, skills, qualifications, certifications } }
+   4. GET /api/job-posts
+      Response: { "jobPosts": [ { id, title, location, salary_min, salary_max, work_arrangement, required_skills, ... } ] }
+   5. GET /api/employers/:employerUserId/faqs
+      Response: { "faqs": [ { id, question, answer, question_type, is_active } ] }
+
+C. DATA OUT TO BACKEND (Mutations / Submissions)
+   1. Job Application Submission:
+      - Endpoint: POST /api/applicants/:userId/applications
+      - Payload: { "job_post_id": 105 }
+      - Response: { "message": "Application submitted successfully." }
+   2. Job Invitation Response:
+      - Endpoint: PUT /api/invitations/:invitationId/respond
+      - Payload: { "status": "accepted" | "declined" }
+      - Response: { "message": "Invitation response recorded." }
+
+D. DATA OUT (Rendered UI / Client Computations)
+   - Metrics calculation: Total Applications, Under Review, Shortlisted, Smart Matches.
+   - Algorithmic Match Score computation (0-100%) based on applicant profile vs. job posting.
+   - Live scroll-sync navigation tracking via IntersectionObserver.
+   - Applications progress table with color-coded status badges.
+   - Direct job invitations alert cards with 1-click Accept / Decline buttons.
+
+--------------------------------------------------------------------------------
+2.2. JOB SEARCH & APPLICATION
+--------------------------------------------------------------------------------
+File: Frontend/src/pages/Applicant/JobSearch.tsx
+Route: "/job-search"
+Access: Authenticated Applicant
+
+A. DATA IN (Incoming Inputs)
+   - Session Data: localStorage.getItem("elitecruit-user")
+   - User Filter Controls:
+     * searchKeyword: string (Matches title, company, location, skills)
+     * selectedFunction: "All functions" | "Information Technology" | "Human Resources" | "Data and Analytics"
+     * selectedArrangement: "All arrangements" | "Remote" | "Hybrid" | "On-Site"
+     * selectedRadius: "all" | "5" | "10" | "15" (km radius)
+     * sortOrder: "recommended" | "salary_desc" | "newest"
+     * selectedJobId: number (Active job viewed in right details panel)
+
+B. DATA IN FROM BACKEND (API Queries)
+   1. GET /api/job-posts
+      Response: Array of open, active job postings with requirements, salary ranges, and company names.
+   2. GET /api/applicants/:userId/profile
+      Response: Candidate skills, desired title, location, and arrangement for live matching.
+   3. GET /api/applicants/:userId/applications
+      Response: Already applied job IDs (disables apply button and shows "Already Applied").
+   4. GET /api/employers/:employerUserId/faqs
+      Response: Company specific FAQs for "Ask Employer FAQs" drawer.
+
+C. DATA OUT TO BACKEND (Mutations)
+   - Endpoint: POST /api/applicants/:userId/applications
+   - Payload: { "job_post_id": 42 }
+   - Response: { "message": "Application submitted." }
+
+D. DATA OUT (Rendered UI)
+   - Left pane: Filterable, sortable list of job cards with salary badges, urgent indicators, and match score tags.
+   - Right pane: Detailed job description, required qualifications, company location, and action buttons.
+   - Sliding FAQ drawer for employer specific questions.
+
+--------------------------------------------------------------------------------
+2.3. APPLICANT PROFILE & CREDENTIALS (3 DISTINCT SECTIONS)
+--------------------------------------------------------------------------------
+File: Frontend/src/pages/Applicant/ApplicantProfile.tsx
+Route: "/my-profile"
+Access: Authenticated Applicant
+
+A. DATA IN (Incoming Inputs)
+   - Session Data: localStorage.getItem("elitecruit-user")
+   - Section 1 (Personal & Contact Information):
+     * first_name, middle_name, last_name, email, phone (+63 numbers-only), city (Cavite dropdown), address
+     * Pinpoint Map Coordinates: latitude, longitude (Interactive Leaflet Map Modal)
+   - Section 2 (Career Targets & Job Preferences):
+     * desired_job_title (standard dropdown of IT/CS roles)
+     * work_arrangement ("Remote" | "On-Site" | "Hybrid")
+     * expected_salary (PHP monthly formatted currency)
+     * years_of_experience (Overall Career Level: Entry, Junior, Mid, Senior, Lead)
+   - Section 3 (Competencies, Experience & Documents):
+     * Core Technical Skills: Array of up to 5 items, each with individual Years of Experience (< 1 yr, 1 yr, 2 yrs, 3 yrs, 4 yrs, 5+ yrs)
+     * Educational Qualifications: Array of up to 5 items, each with individual Years of Experience
+     * Professional Certifications: Array of up to 5 items, each with individual Years of Experience
+     * Resume / CV Document: File object (PDF, DOC, DOCX up to 10 MB)
+
+B. DATA IN FROM BACKEND (API Queries)
+   1. GET /api/applicants/:userId/profile
+      Response: Full applicant profile record (first_name, last_name, email, phone, city, address, desired_job_title, work_arrangement, expected_salary, years_of_experience, skills, qualifications, certifications, latitude, longitude, resume_path).
+   2. GET /api/applicants/:userId/resume
+      Response: Streamed PDF/Word binary document from database BYTEA storage for direct in-browser viewing.
+
+C. DATA OUT TO BACKEND (Mutations)
+   1. Update Core Profile & Career Preferences:
+      - Endpoint: PUT /api/applicants/:userId/profile
+      - Payload: { first_name, middle_name, last_name, email, phone, city, address, desired_job_title, work_arrangement, expected_salary, years_of_experience, latitude, longitude }
+   2. Update Competencies with Experience (Max 5 per category):
+      - Endpoint: PUT /api/applicants/:userId/tags
+      - Payload: { field: "skills" | "qualifications" | "certifications", items: ["React (2 years)", "Node.js (1 year)"] }
+   3. Upload Resume Document:
+      - Endpoint: POST /api/applicants/:userId/resume
+      - Payload: FormData containing "resume" File (binary stored in PostgreSQL BYTEA)
+   4. Remove Resume Document:
+      - Endpoint: DELETE /api/applicants/:userId/resume
+
+D. DATA OUT (Rendered UI)
+   - Sticky 3-section tab navigation with active step highlighting and single-section view (unselected sections remain hidden).
+   - Section 1: Personal & Contact Information (Name, email, phone, city, address).
+   - Section 2: Career Targets & Preferences + Interactive Pinpoint Map radar location card.
+   - Section 3: Category managers capped at 5 items with dynamic count badge ("X / 5 Selected") and inline experience selectors (Core Technical Skills, Educational Qualifications, Professional Certifications).
+   - Integrated ApplicantChatbotDrawer in header.
+   - Resume tracker with 1-click View and Delete actions.
+
+================================================================================
+3. EMPLOYER WORKSPACE PAGES
+================================================================================
+
+--------------------------------------------------------------------------------
+3.1. EMPLOYER DASHBOARD
+--------------------------------------------------------------------------------
+File: Frontend/src/pages/Employer/Employer-Dashboard.tsx
+Route: "/employer-dashboard"
+Access: Authenticated Employer
+
+A. DATA IN (Incoming Inputs)
+   - Session Data: localStorage.getItem("elitecruit-user") -> { id, role: "employer", business_name }
+
+B. DATA IN FROM BACKEND (API Query)
+   - Endpoint: GET /api/employers/:userId/dashboard-summary
+   - Response Payload:
+     {
+       "stats": {
+         "activeJobs": 5,
+         "applications": 42,
+         "shortlisted": 12,
+         "toReview": 18
+       },
+       "activeJobPosts": [
+         { "id": 1, "title": "Senior Web Developer", "location": "Cavite", "status": "open", "applicant_count": 8 }
+       ],
+       "recentApplications": [
+         { "id": 101, "applicant_name": "Maria Santos", "job_title": "Senior Web Developer", "status": "pending", "submitted_at": "2026-08-30" }
+       ]
+     }
+
+C. DATA OUT TO BACKEND (Mutations)
+   - None (Read & navigation hub)
+
+D. DATA OUT (Rendered UI)
+   - 4 High-level metric summary cards (Active Jobs, Applications, Shortlisted, To Review).
+   - Active Job Postings summary cards with application limits and counts.
+   - Recent Candidate Applications stream with status chips and quick review shortcuts.
+
+--------------------------------------------------------------------------------
+3.2. JOB POST CREATOR & EDITOR
+--------------------------------------------------------------------------------
+File: Frontend/src/pages/Employer/Employer-JobPosts.tsx
+Route: "/employer-job-posts"
+Access: Authenticated Employer
+
+A. DATA IN (Incoming Inputs)
+   - Session Data: localStorage.getItem("elitecruit-user")
+   - Route/Edit State: editingJobId (number | null)
+   - Form Inputs:
+     * title: string
+     * location: string (Cavite municipal options)
+     * application_limit: number (1-100)
+     * work_arrangement: "On-Site" | "Remote" | "Hybrid"
+     * close_date: YYYY-MM-DD
+     * is_urgent: boolean (Auto sets close date to 7 days from today)
+     * salary_min: number | string
+     * salary_max: number | string
+     * description: string
+     * qualifications: string
+     * responsibilities: string
+     * required_skills: string (comma-separated or selected tags)
+
+B. DATA OUT TO BACKEND (API Mutations)
+   - Create New Job Post:
+     * Endpoint: POST /api/job-posts
+     * Payload:
+       {
+         "employer_user_id": 12,
+         "title": "Software Engineer",
+         "location": "Dasmariñas, Cavite",
+         "application_limit": 50,
+         "work_arrangement": "Hybrid",
+         "close_date": "2026-09-30",
+         "is_urgent": false,
+         "salary_min": 35000,
+         "salary_max": 45000,
+         "description": "Full stack engineer role...",
+         "qualifications": "Bachelor's degree in CS...",
+         "responsibilities": "Develop scalable APIs...",
+         "required_skills": "React, Node.js, SQL"
+       }
+   - Update Existing Job Post:
+     * Endpoint: PUT /api/employers/:userId/job-posts/:jobId
+     * Payload: Same schema as creation.
+
+C. DATA IN FROM BACKEND (API Response)
+   - Success Response: { "message": "Job post published successfully.", "job_post_id": 88 }
+
+D. DATA OUT (Rendered UI & Routing)
+   - Live validation errors per field on touch/blur.
+   - Dynamic auto-close date calculator for urgent hiring.
+   - Tag management for skills and qualifications.
+   - Redirect to "/employer-job-posts-list" upon success.
+
+--------------------------------------------------------------------------------
+3.3. JOB POSTS MANAGEMENT
+--------------------------------------------------------------------------------
+File: Frontend/src/pages/Employer/Employer-JobPostsList.tsx
+Route: "/employer-job-posts-list"
+Access: Authenticated Employer
+
+A. DATA IN (Incoming Inputs)
+   - Session Data: localStorage.getItem("elitecruit-user")
+   - Filter Controls:
+     * Status Filter: "all" | "open" | "closed"
+     * Search Keyword: string
+
+B. DATA IN FROM BACKEND (API Query)
+   - Endpoint: GET /api/employers/:userId/job-posts
+   - Response Payload:
+     {
+       "jobPosts": [
+         {
+           "id": 12,
+           "title": "Frontend React Developer",
+           "location": "Silang, Cavite",
+           "work_arrangement": "Remote",
+           "salary_min": 40000,
+           "salary_max": 50000,
+           "status": "open",
+           "applicant_count": 14,
+           "application_limit": 25,
+           "close_date": "2026-09-15",
+           "created_at": "2026-08-20"
+         }
+       ]
+     }
+
+C. DATA OUT TO BACKEND (API Mutations)
+   1. Delete Job Post:
+      - Endpoint: DELETE /api/employers/:userId/job-posts/:jobPostId
+      - Response: { "message": "Job post deleted." }
+   2. Close Job Post:
+      - Endpoint: PUT /api/employers/:userId/job-posts/:jobPostId/status
+      - Payload: { "status": "closed" }
+
+D. DATA OUT (Rendered UI)
+   - Job cards display with applicant progress indicators (e.g. 14 / 25 applied).
+   - "Edit Post" and "Delete" action controls.
+
+--------------------------------------------------------------------------------
+3.4. APPLICANT MANAGEMENT
+--------------------------------------------------------------------------------
+File: Frontend/src/pages/Employer/Employer-ApplicantManagement.tsx
+Route: "/employer-applicant-management"
+Access: Authenticated Employer
+
+A. DATA IN (Incoming Inputs)
+   - Session Data: localStorage.getItem("elitecruit-user")
+   - Filter & Selection State:
+     * Status Tab: "all" | "pending" | "shortlisted" | "approved" | "denied"
+     * Job Filter Dropdown: Specific job post ID or "all"
+     * Search Keyword: string (Candidate name, title, skills)
+     * Selected Checkboxes: Set of application IDs for bulk actions
+     * Selected Candidate: Application record opened in Candidate Details Modal
+
+B. DATA IN FROM BACKEND (API Queries)
+   1. GET /api/employers/:userId/applications
+      Response: Array of applications submitted to employer's job postings.
+   2. GET /api/employers/:userId/direct-invitations
+      Response: Array of candidates invited via direct recruitment.
+   3. GET /api/applicants/:applicantUserId/profile
+      Response: Complete applicant details, contact numbers, resume path, and qualifications.
+
+C. DATA OUT TO BACKEND (API Mutations)
+   1. Single Application Status Update:
+      - Endpoint: PUT /api/applications/:id/status
+      - Payload: { "status": "shortlisted" | "approved" | "denied" | "pending" }
+   2. Bulk Status Update:
+      - Endpoint: PUT /api/applications/bulk-status
+      - Payload: { "ids": [101, 102, 103], "status": "shortlisted" }
+
+D. DATA OUT (Rendered UI & Feedback)
+   - Tabular candidate queue with match score indicators and action icons.
+   - Modal preview displaying candidate contact info, parsed skills, and PDF resume viewer.
+   - Real-time status update optimistic UI reflection.
+
+--------------------------------------------------------------------------------
+3.5. CANDIDATE SCREENING
+--------------------------------------------------------------------------------
+File: Frontend/src/pages/Employer/Employer-ApplicantScreening.tsx
+Route: "/employer-applicant-screening"
+Access: Authenticated Employer
+
+A. DATA IN (Incoming Inputs)
+   - Session Data: localStorage.getItem("elitecruit-user")
+   - Filter Controls: Job Post selector, Score filter, Status toggle.
+
+B. DATA IN FROM BACKEND (API Queries)
+   - GET /api/employers/:userId/applications
+   - GET /api/employers/:userId/direct-invitations
+
+C. DATA OUT TO BACKEND (API Mutations)
+   - Endpoint: PUT /api/applications/:id/status
+   - Payload: { "status": "shortlisted" | "approved" | "denied" }
+
+D. DATA OUT (Rendered UI)
+   - Candidate screening cards with algorithmically ranked match indicators.
+   - Skill overlap analysis (matched skills highlighted in green, missing in gray).
+   - 1-Click decision buttons (Shortlist, Approve, Deny).
+
+--------------------------------------------------------------------------------
+3.6. TALENT FINDER & INTERACTIVE MAP
+--------------------------------------------------------------------------------
+File: Frontend/src/pages/Employer/Employer-ApplicantFinder.tsx
+Route: "/employer-applicant-finder" & "/employer-nearby-applicants"
+Access: Authenticated Employer
+
+A. DATA IN (Incoming Inputs)
+   - Session Data: localStorage.getItem("elitecruit-user")
+   - Search & Filter Controls:
+     * searchMode: "manual" (List view) | "nearby" (Map radius view)
+     * selectedLocation: "All locations" | Cavite municipality
+     * selectedArrangement: "Any arrangement" | "Remote" | "Hybrid" | "On-Site"
+     * selectedMinSalary: "Any salary" | "PHP 20k+" | "PHP 40k+"
+     * selectedSkills: string[] (Multi-select filter chips)
+     * selectedDistanceRadius: "all" | "5" | "10" | "15" (km)
+   - Pinpoint Office Location:
+     * isPinpointMode: boolean
+     * tempPinCoords: { lat: number, lng: number } (Draggable map pin)
+   - Direct Invitation Modal:
+     * selectedCandidate: Candidate
+     * selectedJobId: number (Open job post to invite candidate for)
+     * customInviteMsg: string
+
+B. DATA IN FROM BACKEND (API Queries)
+   1. GET /api/employers/:userId/profile
+      Response: Employer record including business address, latitude, and longitude.
+   2. GET /api/employers/:userId/talent-pool
+      Response: Array of all searchable candidates with coordinates, desired title, skills, and rating.
+   3. GET /api/employers/:userId/job-posts
+      Response: Active job postings to populate the invitation job selector dropdown.
+
+C. DATA OUT TO BACKEND (API Mutations)
+   1. Save Office Location Pin:
+      - Endpoint: PUT /api/employers/:userId/profile
+      - Payload: { "latitude": 14.2825, "longitude": 120.8667 }
+   2. Send Direct Recruitment Invitation:
+      - Endpoint: POST /api/employers/:userId/invite-candidate
+      - Payload:
+        {
+          "applicant_user_id": 45,
+          "job_post_id": 12,
+          "custom_message": "We reviewed your portfolio and would like to invite you..."
+        }
+
+D. DATA OUT (Rendered UI)
+   - Interactive Leaflet map centered at employer office with distance circle (5km, 10km, 15km).
+   - Candidate map markers with popup cards, match badges, and distance calculation (Haversine formula).
+   - Candidate profile inspection drawer with PDF document viewer.
+   - Job carousel inside invitation modal for rapid selection.
+
+--------------------------------------------------------------------------------
+3.7. COMPANY PROFILE & BRANDING
+--------------------------------------------------------------------------------
+File: Frontend/src/pages/Employer/Employer-CompanyProfile.tsx
+Route: "/employer-company-profile"
+Access: Authenticated Employer
+
+A. DATA IN (Incoming Inputs)
+   - Session Data: localStorage.getItem("elitecruit-user")
+   - Profile Form Inputs:
+     * business_name: string
+     * business_email: string
+     * contact_number: string
+     * industry: string
+     * company_size: string
+     * website: string
+     * company_address: string
+     * company_description: string
+     * latitude: number (optional)
+     * longitude: number (optional)
+
+B. DATA IN FROM BACKEND (API Query)
+   - Endpoint: GET /api/employers/:userId/profile
+   - Response: Employer company record.
+
+C. DATA OUT TO BACKEND (API Mutation)
+   - Endpoint: PUT /api/employers/:userId/profile
+   - Payload: Full updated employer profile object.
+
+D. DATA OUT (Rendered UI & Persistence)
+   - Live profile view.
+   - Syncs updated company name to localStorage and updates sidebar branding.
+
+--------------------------------------------------------------------------------
+3.8. COMPANY FAQ MANAGEMENT
+--------------------------------------------------------------------------------
+File: Frontend/src/pages/Employer/Employer-FaqManagement.tsx
+Route: "/employer-faq-management"
+Access: Authenticated Employer
+
+A. DATA IN (Incoming Inputs)
+   - Session Data: localStorage.getItem("elitecruit-user")
+   - FAQ Creation/Edit Form:
+     * question_type: "Requirements" | "Application Process" | "Salary and Work Arrangement" | "Company Information" | "Documents" | "Other"
+     * question: string
+     * answer: string
+     * is_active: boolean
+
+B. DATA IN FROM BACKEND (API Query)
+   - Endpoint: GET /api/employers/:userId/faqs
+   - Response: { "faqs": [ { id, question, answer, question_type, is_active } ] }
+
+C. DATA OUT TO BACKEND (API Mutations)
+   1. Create FAQ:
+      - Endpoint: POST /api/employers/:userId/faqs
+      - Payload: { question, answer, question_type, is_active: 1 }
+   2. Edit FAQ:
+      - Endpoint: PUT /api/faqs/:id
+      - Payload: { question, answer, question_type, is_active }
+   3. Delete FAQ:
+      - Endpoint: DELETE /api/faqs/:id
+   4. Toggle Active Status:
+      - Endpoint: PUT /api/faqs/:id/toggle
+      - Payload: { is_active: 1 | 0 }
+
+D. DATA OUT (Rendered UI)
+   - Accordion list of company FAQs with live active/inactive switches.
+   - Instant live preview of how FAQs will render to jobseekers on active job posts.
+
+================================================================================
+4. COMMON & SHARED PAGES
+================================================================================
+
+--------------------------------------------------------------------------------
+4.1. REAL-TIME MESSAGES
+--------------------------------------------------------------------------------
+File: Frontend/src/pages/Common/Messages.tsx
+Route: "/messages"
+Access: Authenticated Users (Applicant or Employer)
+
+A. DATA IN (Incoming Inputs)
+   - Session Data: localStorage.getItem("elitecruit-user") -> detected role & user ID
+   - User Chat Controls:
+     * Selected Thread: ThreadItem (Clicked conversation from left list)
+     * Filter Tabs: "all" | "applied" | "recruited"
+     * Search Query: string (Filters threads by participant name)
+     * composeText: string (New message content)
+     * Send Message Action: Form submission or Enter key
+
+B. DATA IN FROM BACKEND (API Queries)
+   1. GET /api/users/:userId/messages
+      Response: Array of threads with last message preview, participant names, and invitation statuses.
+   2. GET /api/messages/threads/:threadId
+      Response: Array of ChatMessage objects for the conversation history.
+   3. GET /api/applicants/:applicantUserId/profile (If viewer is employer)
+      Response: Candidate profile summary rendered in right info pane.
+   4. GET /api/employers/:employerUserId/profile (If viewer is applicant)
+      Response: Company information rendered in right info pane.
+   5. GET /api/employers/:employerUserId/faqs (If viewer is applicant)
+      Response: Employer FAQs drawer.
+
+C. DATA OUT TO BACKEND (API Mutation)
+   - Endpoint: POST /api/messages/send
+   - Payload:
+     {
+       "thread_id": 8,
+       "sender_user_id": 12,
+       "receiver_user_id": 45,
+       "message_text": "Hello, thank you for reviewing my application."
+     }
+
+D. DATA OUT (Rendered UI)
+   - Thread list with "Applied" / "Recruited" status badges.
+   - Message bubbles with sender identification and formatted timestamps.
+   - Auto-scroll to bottom of conversation upon message reception or dispatch.
+   - Contextual right drawer showing candidate resume or company overview.
+
+--------------------------------------------------------------------------------
+4.2. NOTIFICATIONS CENTER
+--------------------------------------------------------------------------------
+File: Frontend/src/pages/Common/Notifications.tsx
+Route: "/notifications"
+Access: Authenticated Users (Applicant or Employer)
+
+A. DATA IN (Incoming Inputs)
+   - Session Data: localStorage.getItem("elitecruit-user")
+   - Filter Controls: "all" | "read" | "unread"
+   - User Actions:
+     * Mark single notification as read (Click)
+     * "Mark all as read" button
+     * Notification Settings Modal (Email & Push toggles)
+
+B. DATA IN FROM BACKEND (API Query)
+   - Endpoint: GET /api/users/:userId/notifications
+   - Response Payload:
+     {
+       "notifications": [
+         {
+           "id": 501,
+           "user_id": 12,
+           "type": "new_application" | "job_invitation" | "application_shortlisted" | "application_approved" | "application_denied" | "message" | "feedback",
+           "title": "Application Shortlisted",
+           "body": "Your application for Senior Web Developer has been shortlisted.",
+           "is_read": 0,
+           "created_at": "2026-08-31T12:30:00Z"
+         }
+       ]
+     }
+
+C. DATA OUT TO BACKEND (API Mutations)
+   1. Mark Single Notification Read:
+      - Endpoint: PUT /api/notifications/:id/read
+   2. Mark All Notifications Read:
+      - Endpoint: PUT /api/notifications/mark-all-read
+      - Payload: { "user_id": 12 }
+
+D. DATA OUT (Rendered UI & Navigation Badges)
+   - Dynamic calculation of unreadCount = notifications.filter(n => !n.is_read).length.
+   - Notifications grouped by category and date.
+   - Click navigation to target page (e.g. clicking invitation redirects to dashboard invitations).
+   - Sidebar notification badge dynamically reflects unreadCount (hidden when 0).
+
+--------------------------------------------------------------------------------
+4.3. FEEDBACK & RATINGS
+--------------------------------------------------------------------------------
+File: Frontend/src/pages/Applicant/Applicant-Feedback.tsx
+Route: "/feedback"
+Access: Authenticated Users (Applicant or Employer)
+
+A. DATA IN (Incoming Inputs)
+   - Session Data: localStorage.getItem("elitecruit-user") -> role detected
+   - Feedback Form Inputs:
+     * selectedTargetId: number (Company ID if applicant, or Candidate ID if employer)
+     * rating: number (1 to 5 stars)
+     * comments: string (Detailed review notes)
+
+B. DATA IN FROM BACKEND (API Queries)
+   1. For Applicants:
+      - Endpoint: GET /api/applicants/:userId/eligible-feedback-employers
+      - Response: Array of employers where the applicant has completed an interview or received an application decision.
+   2. For Employers:
+      - Endpoint: GET /api/employers/:userId/applications
+      - Response: Filtered list of applicants with shortlisted, approved, or recruited status.
+
+C. DATA OUT TO BACKEND (API Mutations)
+   1. Applicant Submitting Employer Feedback:
+      - Endpoint: POST /api/applicants/:userId/company-feedback
+      - Payload:
+        {
+          "employer_user_id": 18,
+          "rating": 5,
+          "comments": "The interview process was transparent, timely, and professional."
+        }
+   2. Employer Submitting Candidate Feedback:
+      - Endpoint: POST /api/employers/:userId/applicant-feedback
+      - Payload:
+        {
+          "applicant_user_id": 44,
+          "rating": 5,
+          "comments": "Candidate was very well prepared and punctual for the technical screening."
+        }
+
+D. DATA OUT (Rendered UI & Local History)
+   - LocalStorage History Cache:
+     * Key: "elitecruit-applicant-feedback-history" | "elitecruit-employer-feedback-history"
+   - Rendered list of past feedback cards with star rating displays and dates.
+   - Clean empty state ("No eligible targets available" / "No feedback recorded yet") when zero records exist.
+
+================================================================================
+                           END OF SPECIFICATION FILE
+================================================================================

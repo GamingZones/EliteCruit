@@ -1,25 +1,36 @@
 import React from "react";
-import Start from "./pages/Start";
-import Login from "./pages/Login";
-import CreateAccount from "./pages/Create-Account";
-import ApplicantDashboard from "./pages/Applicant-Dashboard";
-import ApplicantProfile from "./pages/ApplicantProfile";
-import JobSearch from "./pages/JobSearch";
-import Messages from "./pages/Messages";
-import Notifications from "./pages/Notifications";
-import EmployerDashboard from "./pages/Employer-Dashboard";
-import EmployerJobPosts from "./pages/Employer-JobPosts";
-import EmployerJobPostsList from "./pages/Employer-JobPostsList";
-import EmployerApplicantManagement from "./pages/Employer-ApplicantManagement";
-import EmployerCompanyProfile from "./pages/Employer-CompanyProfile";
-import EmployerFaqManagement from "./pages/Employer-FaqManagement";
-import EmployerNearbyApplicants from "./pages/Employer-NearbyApplicants";
-import ApplicantFeedback from "./pages/Applicant-Feedback";
-import ApplicantDocumentConverter from "./pages/Applicant-DocumentConverter";
+import Start from "./pages/Auth/Start";
+import Login from "./pages/Auth/Login";
+import CreateAccount from "./pages/Auth/Create-Account";
+import ApplicantDashboard from "./pages/Applicant/Applicant-Dashboard";
+import ApplicantProfile from "./pages/Applicant/ApplicantProfile";
+import JobSearch from "./pages/Applicant/JobSearch";
+import Messages from "./pages/Common/Messages";
+import Notifications from "./pages/Common/Notifications";
+import EmployerDashboard from "./pages/Employer/Employer-Dashboard";
+import EmployerJobPosts from "./pages/Employer/Employer-JobPosts";
+import EmployerJobPostsList from "./pages/Employer/Employer-JobPostsList";
+import EmployerApplicantManagement from "./pages/Employer/Employer-ApplicantManagement";
+import EmployerCompanyProfile from "./pages/Employer/Employer-CompanyProfile";
+import EmployerFaqManagement from "./pages/Employer/Employer-FaqManagement";
+import EmployerNearbyApplicants from "./pages/Employer/Employer-NearbyApplicants";
+import ApplicantFeedback from "./pages/Applicant/Applicant-Feedback";
+import AdminDashboard from "./pages/Admin/Admin-Dashboard";
+import AdminApplicantManagement from "./pages/Admin/Admin-ApplicantManagement";
+import AdminEmployerManagement from "./pages/Admin/Admin-EmployerManagement";
 
 export default function App() {
   const path = typeof window !== "undefined" ? window.location.pathname.toLowerCase() : "/";
 
+  if (path === "/admin-dashboard" || path === "/admin/dashboard" || path === "/admin") {
+    return <AdminDashboard />;
+  }
+  if (path === "/admin-applicants" || path === "/admin/applicants") {
+    return <AdminApplicantManagement />;
+  }
+  if (path === "/admin-employers" || path === "/admin/employers") {
+    return <AdminEmployerManagement />;
+  }
   if (path === "/login") {
     return <Login />;
   }
@@ -28,9 +39,6 @@ export default function App() {
   }
   if (path === "/applicant-dashboard" || path === "/applicant/dashboard") {
     return <ApplicantDashboard />;
-  }
-  if (path === "/applicant-document-converter" || path === "/applicant/document-converter") {
-    return <ApplicantDocumentConverter />;
   }
   if (path === "/job-search") {
     return <JobSearch />;
