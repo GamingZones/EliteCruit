@@ -295,6 +295,20 @@ async function ensureJobPostColumns() {
   await run("ALTER TABLE job_posts DROP COLUMN IF EXISTS responsibilities");
   await run("ALTER TABLE job_posts ADD COLUMN IF NOT EXISTS certifications TEXT");
   await run("ALTER TABLE job_posts ADD COLUMN IF NOT EXISTS experience_level TEXT");
+  await run("ALTER TABLE job_posts ADD COLUMN IF NOT EXISTS branch_name TEXT");
+  await run("ALTER TABLE job_posts ADD COLUMN IF NOT EXISTS branch_address TEXT");
+  await run("ALTER TABLE job_posts ADD COLUMN IF NOT EXISTS accepts_non_graduates INTEGER DEFAULT 0");
+  await run("ALTER TABLE job_posts ADD COLUMN IF NOT EXISTS education_requirements TEXT");
+
+  await run("ALTER TABLE applicant_profiles ADD COLUMN IF NOT EXISTS shs_strand TEXT");
+  await run("ALTER TABLE applicant_profiles ADD COLUMN IF NOT EXISTS shs_school TEXT");
+  await run("ALTER TABLE applicant_profiles ADD COLUMN IF NOT EXISTS shs_grad_year TEXT");
+  await run("ALTER TABLE applicant_profiles ADD COLUMN IF NOT EXISTS college_grad_year TEXT");
+  await run("ALTER TABLE applicant_profiles ADD COLUMN IF NOT EXISTS vocational_grad_year TEXT");
+  await run("ALTER TABLE applicant_profiles ADD COLUMN IF NOT EXISTS preferred_cities_json TEXT");
+  await run("ALTER TABLE applicant_profiles ADD COLUMN IF NOT EXISTS is_non_graduate_cert_holder INTEGER DEFAULT 0");
+
+  await run("ALTER TABLE employer_profiles ADD COLUMN IF NOT EXISTS branches_json TEXT");
 }
 
 function isValidPassword(password) {
@@ -713,7 +727,7 @@ app.get("/api/applicants/:userId/profile", async (req, res) => {
   const userId = Number(req.params.userId);
   if (!Number.isInteger(userId) || userId < 1) return res.status(400).json({ message: "Invalid applicant." });
   try {
-    const profile = await get(`SELECT p.user_id, p.first_name, p.middle_name, p.last_name, p.phone, p.city, p.address, p.desired_job_title, p.expected_salary, p.work_arrangement, p.years_of_experience, p.skills, p.certifications, p.qualifications, p.resume_path, p.profile_picture_path, p.latitude, p.longitude, u.email FROM applicant_profiles p INNER JOIN users u ON u.id = p.user_id WHERE p.user_id = ? AND u.role = 'applicant'`, [userId]);
+    const profile = await get(`SELECT p.*, u.email FROM applicant_profiles p INNER JOIN users u ON u.id = p.user_id WHERE p.user_id = ? AND u.role = 'applicant'`, [userId]);
     if (!profile) return res.status(404).json({ message: "Applicant profile not found." });
 
     const hasRatings = await tableExists("candidate_ratings");
@@ -738,9 +752,7 @@ app.get("/api/employers/:userId/profile", async (req, res) => {
 
   try {
     const profile = await get(
-      `SELECT e.user_id, e.business_name, e.industry, e.company_size, e.company_description,
-              e.contact_number, e.city, e.company_address, e.website, e.company_logo_path,
-              e.company_cover_path, e.latitude, e.longitude, u.email AS business_email
+      `SELECT e.*, u.email AS business_email
        FROM employer_profiles e
        INNER JOIN users u ON u.id = e.user_id
        WHERE e.user_id = ? AND u.role = 'employer'`,
@@ -773,11 +785,12 @@ app.put("/api/employers/:userId/profile", async (req, res) => {
     return res.status(400).json({ message: "Invalid employer ID." });
   }
 
-  const { business_name, city, company_address, contact_number, company_description, website, latitude, longitude } = req.body ?? {};
+  const { business_name, city, company_address, contact_number, company_description, website, latitude, longitude, branches, branches_json } = req.body ?? {};
 
   try {
     const latVal = latitude !== undefined && latitude !== null ? Number(latitude) : null;
     const lngVal = longitude !== undefined && longitude !== null ? Number(longitude) : null;
+    const bJson = Array.isArray(branches) ? JSON.stringify(branches) : (typeof branches_json === "string" ? branches_json : null);
 
     await run(
       `UPDATE employer_profiles 
@@ -787,6 +800,7 @@ app.put("/api/employers/:userId/profile", async (req, res) => {
            contact_number = COALESCE(?, contact_number),
            company_description = COALESCE(?, company_description),
            website = COALESCE(?, website),
+           branches_json = COALESCE(?, branches_json),
            latitude = COALESCE(?, latitude),
            longitude = COALESCE(?, longitude)
        WHERE user_id = ?`,
@@ -797,6 +811,7 @@ app.put("/api/employers/:userId/profile", async (req, res) => {
         contact_number ?? null,
         company_description ?? null,
         website ?? null,
+        bJson,
         latVal,
         lngVal,
         userId,
@@ -858,15 +873,28 @@ app.put("/api/applicants/:userId/profile", async (req, res) => {
     }
   }
 
+  const shsStrand = typeof req.body?.shs_strand === "string" ? req.body.shs_strand.trim() : null;
+  const shsSchool = typeof req.body?.shs_school === "string" ? req.body.shs_school.trim() : null;
+  const shsGradYear = typeof req.body?.shs_grad_year === "string" ? req.body.shs_grad_year.trim() : null;
+  const collegeGradYear = typeof req.body?.college_grad_year === "string" ? req.body.college_grad_year.trim() : null;
+  const vocationalGradYear = typeof req.body?.vocational_grad_year === "string" ? req.body.vocational_grad_year.trim() : null;
+  const prefCitiesJson = Array.isArray(req.body?.preferred_cities)
+    ? JSON.stringify(req.body.preferred_cities)
+    : typeof req.body?.preferred_cities_json === "string"
+    ? req.body.preferred_cities_json
+    : null;
+  const isNonGradCert = req.body?.is_non_graduate_cert_holder ? 1 : 0;
+
   try {
     await run("BEGIN TRANSACTION");
     await run("UPDATE users SET email = ? WHERE id = ? AND role = 'applicant'", [email, userId]);
     const updated = await run(
       `UPDATE applicant_profiles 
        SET first_name=?, middle_name=?, last_name=?, phone=?, city=?, address=?, desired_job_title=?, expected_salary=?, work_arrangement=?, years_of_experience=?,
+           shs_strand=?, shs_school=?, shs_grad_year=?, college_grad_year=?, vocational_grad_year=?, preferred_cities_json=?, is_non_graduate_cert_holder=?,
            latitude = COALESCE(?, latitude), longitude = COALESCE(?, longitude)
        WHERE user_id=?`,
-      [...values, latVal, lngVal, userId]
+      [...values, shsStrand, shsSchool, shsGradYear, collegeGradYear, vocationalGradYear, prefCitiesJson, isNonGradCert, latVal, lngVal, userId]
     );
     if (!updated.changes) throw new Error("PROFILE_NOT_FOUND");
     await run("COMMIT");
@@ -1419,16 +1447,20 @@ app.post("/api/employers/:userId/job-posts", async (req, res) => {
 
   if (typeof title !== "string" || !title.trim()) return res.status(400).json({ message: "Job title is required." });
   if (work_arrangement && !WORK_ARRANGEMENTS.has(work_arrangement)) return res.status(400).json({ message: "Invalid work arrangement." });
-  const numericLimit = Number(application_limit);
-  if (!Number.isInteger(numericLimit) || numericLimit < 1 || numericLimit > 100) return res.status(400).json({ message: "Application limit must be between 1 and 100." });
+  const numericLimit = Number.isInteger(Number(application_limit)) && Number(application_limit) > 0 ? Number(application_limit) : 9999;
   const parsedCloseDate = parseCloseDate(close_date);
   if (!parsedCloseDate) return res.status(400).json({ message: "Close date must be in MM/DD/YYYY format." });
   const derivedStatus = deriveJobPostStatus(parsedCloseDate);
 
+  const branchName = typeof req.body?.branch_name === "string" ? req.body.branch_name.trim() : null;
+  const branchAddress = typeof req.body?.branch_address === "string" ? req.body.branch_address.trim() : null;
+  const acceptsNonGrads = req.body?.accepts_non_graduates ? 1 : 0;
+  const eduReqs = typeof req.body?.education_requirements === "string" ? req.body.education_requirements.trim() : null;
+
   try {
     const insert = await run(
-      `INSERT INTO job_posts (employer_user_id, title, location, status, is_urgent, work_arrangement, experience_level, application_limit, close_date, salary_min, salary_max, description, qualifications, certifications, required_skills)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO job_posts (employer_user_id, title, location, status, is_urgent, work_arrangement, experience_level, application_limit, close_date, salary_min, salary_max, description, qualifications, certifications, required_skills, branch_name, branch_address, accepts_non_graduates, education_requirements)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         userId,
         title.trim(),
@@ -1445,13 +1477,81 @@ app.post("/api/employers/:userId/job-posts", async (req, res) => {
         typeof qualifications === "string" ? qualifications.trim() || null : null,
         typeof certifications === "string" ? certifications.trim() || null : null,
         typeof required_skills === "string" ? required_skills.trim() || null : null,
+        branchName,
+        branchAddress,
+        acceptsNonGrads,
+        eduReqs,
       ]
     );
 
     const jobPost = await get("SELECT * FROM job_posts WHERE id = ?", [insert.lastID]);
     res.status(201).json({ jobPost });
-  } catch {
+  } catch (err) {
+    console.error("Create job post error:", err);
     res.status(500).json({ message: "Unable to create job post." });
+  }
+});
+
+app.get("/api/employers/:userId/unapplied-matches/:jobPostId", async (req, res) => {
+  const userId = Number(req.params.userId);
+  const jobPostId = Number(req.params.jobPostId);
+  if (!Number.isInteger(userId) || !Number.isInteger(jobPostId)) {
+    return res.status(400).json({ message: "Invalid parameter IDs." });
+  }
+
+  try {
+    const job = await get("SELECT * FROM job_posts WHERE id = ? AND employer_user_id = ?", [jobPostId, userId]);
+    if (!job) return res.status(404).json({ message: "Job post not found." });
+
+    const applicants = await all(
+      `SELECT ap.*, u.email
+       FROM applicant_profiles ap
+       INNER JOIN users u ON u.id = ap.user_id
+       WHERE u.is_active = TRUE
+         AND ap.user_id NOT IN (
+           SELECT applicant_user_id FROM applications WHERE job_post_id = ?
+         )`,
+      [jobPostId]
+    );
+
+    const unappliedMatches = applicants.map((app) => {
+      let score = 30; // base potential match
+      const appSkills = typeof app.skills === "string" ? app.skills.toLowerCase() : "";
+      const jobSkills = typeof job.required_skills === "string" ? job.required_skills.toLowerCase() : "";
+      if (jobSkills && appSkills) {
+        const reqTags = jobSkills.split(",").map((s) => s.trim()).filter(Boolean);
+        let matched = 0;
+        reqTags.forEach((t) => { if (appSkills.includes(t)) matched++; });
+        if (reqTags.length > 0) score += Math.round((matched / reqTags.length) * 40);
+      }
+
+      if (app.city && job.location && app.city.toLowerCase().includes(job.location.toLowerCase())) {
+        score += 15;
+      }
+      if (app.work_arrangement && job.work_arrangement && app.work_arrangement.toLowerCase() === job.work_arrangement.toLowerCase()) {
+        score += 15;
+      }
+
+      const finalScore = Math.min(score, 98);
+      return {
+        applicantUserId: app.user_id,
+        name: [app.first_name, app.middle_name, app.last_name].filter(Boolean).join(" "),
+        email: app.email,
+        city: app.city || "Cavite",
+        desiredJobTitle: app.desired_job_title || "Applicant",
+        skills: app.skills || "",
+        certifications: app.certifications || "",
+        qualifications: app.qualifications || "",
+        matchScore: finalScore,
+        isNonGraduateCertHolder: Boolean(app.is_non_graduate_cert_holder),
+        shsStrand: app.shs_strand,
+      };
+    }).sort((a, b) => b.matchScore - a.matchScore);
+
+    res.json({ unappliedMatches });
+  } catch (err) {
+    console.error("Unapplied matches error:", err);
+    res.status(500).json({ message: "Unable to load unapplied matching candidates." });
   }
 });
 

@@ -859,9 +859,16 @@ export type ApplicantProfileInput = {
   workArrangement?: string;
   expectedSalary?: number;
   city?: string;
+  preferredCities?: string[];
   skills?: string[];
   qualifications?: string[];
   certifications?: string[];
+  shsStrand?: string;
+  shsSchool?: string;
+  shsGradYear?: string;
+  collegeGradYear?: string;
+  vocationalGradYear?: string;
+  isNonGraduateCertHolder?: boolean;
 };
 
 export type JobCardInput = {
