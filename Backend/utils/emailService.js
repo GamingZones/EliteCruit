@@ -34,6 +34,7 @@ function getTransporter() {
  * @returns {Promise<{ success: boolean, method: string }>}
  */
 export async function send2FAEmail(toEmail, code, recipientName = "User") {
+  const brevoApiKey = process.env.BREVO_API_KEY;
   const transporter = getTransporter();
 
   // Highlighted console log for development and local testing
@@ -44,51 +45,90 @@ export async function send2FAEmail(toEmail, code, recipientName = "User") {
   console.log(`   Valid For: 10 minutes`);
   console.log("=======================================================================\n");
 
-  if (transporter) {
-    const fromAddress = process.env.SMTP_FROM || `"EliteCruit Security" <noreply@elitecruit.com>`;
+  const htmlContent = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <h2 style="margin: 0; color: #0f172a; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">EliteCruit</h2>
+        <span style="color: #64748b; font-size: 13px; font-weight: 600;">Digital Recruitment Platform • Two-Factor Authentication</span>
+      </div>
 
-    const htmlContent = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
-        <div style="text-align: center; margin-bottom: 24px;">
-          <h2 style="margin: 0; color: #0f172a; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">EliteCruit</h2>
-          <span style="color: #64748b; font-size: 13px; font-weight: 600;">Digital Recruitment Platform • Two-Factor Authentication</span>
-        </div>
+      <p style="color: #334155; font-size: 15px; line-height: 1.5; margin: 0 0 16px;">
+        Hello ${recipientName || "there"},
+      </p>
 
-        <p style="color: #334155; font-size: 15px; line-height: 1.5; margin: 0 0 16px;">
-          Hello ${recipientName || "there"},
-        </p>
+      <p style="color: #334155; font-size: 15px; line-height: 1.5; margin: 0 0 24px;">
+        Use the 6-digit verification code below to complete your login to EliteCruit:
+      </p>
 
-        <p style="color: #334155; font-size: 15px; line-height: 1.5; margin: 0 0 24px;">
-          Use the 6-digit verification code below to complete your login to EliteCruit:
-        </p>
-
-        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; text-align: center; margin: 0 0 24px;">
-          <span style="font-family: monospace; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #1e293b; display: inline-block;">
-            ${code}
-          </span>
-          <div style="color: #64748b; font-size: 12px; margin-top: 8px; font-weight: 500;">
-            This code expires in 10 minutes.
-          </div>
-        </div>
-
-        <p style="color: #64748b; font-size: 13px; line-height: 1.5; margin: 0 0 24px;">
-          If you did not request this login verification code, please ignore this email or review your account password to ensure your account remains safe.
-        </p>
-
-        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0 16px;" />
-
-        <div style="text-align: center; color: #94a3b8; font-size: 11px;">
-          &copy; ${new Date().getFullYear()} EliteCruit. All rights reserved. • Automated Security System
+      <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; text-align: center; margin: 0 0 24px;">
+        <span style="font-family: monospace; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #1e293b; display: inline-block;">
+          ${code}
+        </span>
+        <div style="color: #64748b; font-size: 12px; margin-top: 8px; font-weight: 500;">
+          This code expires in 10 minutes.
         </div>
       </div>
-    `;
+
+      <p style="color: #64748b; font-size: 13px; line-height: 1.5; margin: 0 0 24px;">
+        If you did not request this login verification code, please ignore this email or review your account password to ensure your account remains safe.
+      </p>
+
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0 16px;" />
+
+      <div style="text-align: center; color: #94a3b8; font-size: 11px;">
+        &copy; ${new Date().getFullYear()} EliteCruit. All rights reserved. • Automated Security System
+      </div>
+    </div>
+  `;
+
+  const textContent = `Your EliteCruit 2FA verification code is: ${code}. This code expires in 10 minutes. If you did not request this, please secure your account.`;
+
+  // 1. Primary Production Method: Brevo HTTPS REST API (Port 443 - never blocked by cloud hosts)
+  if (brevoApiKey) {
+    try {
+      const senderEmail = process.env.BREVO_SENDER_EMAIL || process.env.SMTP_FROM || "zakiablando897@gmail.com";
+      // Extract email if wrapped in "Name <email>" format
+      const cleanSenderEmail = senderEmail.includes("<") ? senderEmail.match(/<([^>]+)>/)?.[1] || senderEmail : senderEmail;
+
+      const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "api-key": brevoApiKey.trim(),
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          sender: { name: "EliteCruit Security", email: cleanSenderEmail.trim() },
+          to: [{ email: toEmail.trim(), name: recipientName || "User" }],
+          subject: `${code} is your EliteCruit verification code`,
+          htmlContent,
+          textContent,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error("[2FA Brevo API Error] HTTP status:", response.status, errorData);
+        return { success: true, method: "brevo_api_failed" };
+      }
+
+      console.log(`[2FA Email Success] Verification code sent via Brevo HTTPS API to ${toEmail}`);
+      return { success: true, method: "brevo_api" };
+    } catch (err) {
+      console.error("[2FA Brevo API Error] Network request failed:", err?.message || err);
+    }
+  }
+
+  // 2. Secondary Method: Standard SMTP Transport (Nodemailer)
+  if (transporter) {
+    const fromAddress = process.env.SMTP_FROM || `"EliteCruit Security" <noreply@elitecruit.com>`;
 
     try {
       const sendPromise = transporter.sendMail({
         from: fromAddress,
         to: toEmail,
         subject: `${code} is your EliteCruit verification code`,
-        text: `Your EliteCruit 2FA verification code is: ${code}. This code expires in 10 minutes. If you did not request this, please secure your account.`,
+        text: textContent,
         html: htmlContent,
       });
 
