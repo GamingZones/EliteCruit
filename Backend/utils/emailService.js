@@ -15,6 +15,9 @@ function getTransporter() {
       port,
       secure: port === 465,
       auth: { user, pass },
+      connectionTimeout: 4000,
+      greetingTimeout: 4000,
+      socketTimeout: 4000,
     });
   }
 
@@ -81,7 +84,7 @@ export async function send2FAEmail(toEmail, code, recipientName = "User") {
     `;
 
     try {
-      await transporter.sendMail({
+      const sendPromise = transporter.sendMail({
         from: fromAddress,
         to: toEmail,
         subject: `${code} is your EliteCruit verification code`,
@@ -89,6 +92,11 @@ export async function send2FAEmail(toEmail, code, recipientName = "User") {
         html: htmlContent,
       });
 
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Email dispatch timed out after 5s")), 5000)
+      );
+
+      await Promise.race([sendPromise, timeoutPromise]);
       return { success: true, method: "smtp" };
     } catch (err) {
       console.error("[2FA Email Error] Failed to send email via SMTP transport:", err?.message || err);
