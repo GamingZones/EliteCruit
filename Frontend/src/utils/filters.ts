@@ -23,30 +23,274 @@ export const BSIT_BSCS_JOB_TITLES = [
 ] as const;
 
 export const CAVITE_CITIES = [
-  "Alfonso, Cavite",
-  "Amadeo, Cavite",
-  "Bacoor, Cavite",
-  "Carmona, Cavite",
-  "Cavite City, Cavite",
-  "Dasmarinas, Cavite",
-  "General Emilio Aguinaldo, Cavite",
-  "General Mariano Alvarez (GMA), Cavite",
-  "General Trias, Cavite",
-  "Imus, Cavite",
-  "Indang, Cavite",
-  "Kawit, Cavite",
-  "Magallanes, Cavite",
-  "Maragondon, Cavite",
-  "Mendez, Cavite",
-  "Naic, Cavite",
-  "Noveleta, Cavite",
-  "Rosario, Cavite",
-  "Silang, Cavite",
-  "Tagaytay, Cavite",
-  "Tanza, Cavite",
-  "Ternate, Cavite",
-  "Trece Martires, Cavite",
+  "Alfonso",
+  "Amadeo",
+  "Bacoor",
+  "Carmona",
+  "Cavite City",
+  "Dasmariñas",
+  "General Emilio Aguinaldo",
+  "General Mariano Alvarez (GMA)",
+  "General Trias",
+  "Imus",
+  "Indang",
+  "Kawit",
+  "Magallanes",
+  "Maragondon",
+  "Mendez",
+  "Naic",
+  "Noveleta",
+  "Rosario",
+  "Silang",
+  "Tagaytay",
+  "Tanza",
+  "Ternate",
+  "Trece Martires",
 ] as const;
+
+/**
+ * ============================================================================
+ * COMPLETE PHILIPPINES GEOGRAPHIC TAXONOMY (PSGC - PSA REGIONS, PROVINCES, CITIES)
+ * ============================================================================
+ */
+
+export const PHILIPPINES_REGIONS = [
+  "NCR (National Capital Region)",
+  "CAR (Cordillera Administrative Region)",
+  "Region I (Ilocos Region)",
+  "Region II (Cagayan Valley)",
+  "Region III (Central Luzon)",
+  "Region IV-A (CALABARZON)",
+  "Region IV-B (MIMAROPA)",
+  "Region V (Bicol Region)",
+  "Region VI (Western Visayas)",
+  "Region VII (Central Visayas)",
+  "Region VIII (Eastern Visayas)",
+  "Region IX (Zamboanga Peninsula)",
+  "Region X (Northern Mindanao)",
+  "Region XI (Davao Region)",
+  "Region XII (SOCCSKSARGEN)",
+  "Region XIII (Caraga)",
+  "BARMM (Bangsamoro Autonomous Region in Muslim Mindanao)",
+] as const;
+
+export const PHILIPPINES_REGION_PROVINCES_MAP: Record<string, string[]> = {
+  "NCR (National Capital Region)": ["Metro Manila"],
+  "CAR (Cordillera Administrative Region)": ["Abra", "Apayao", "Benguet", "Ifugao", "Kalinga", "Mountain Province"],
+  "Region I (Ilocos Region)": ["Ilocos Norte", "Ilocos Sur", "La Union", "Pangasinan"],
+  "Region II (Cagayan Valley)": ["Batanes", "Cagayan", "Isabela", "Nueva Vizcaya", "Quirino"],
+  "Region III (Central Luzon)": ["Bataan", "Bulacan", "Nueva Ecija", "Pampanga", "Tarlac", "Zambales", "Aurora"],
+  "Region IV-A (CALABARZON)": ["Cavite", "Laguna", "Batangas", "Rizal", "Quezon"],
+  "Region IV-B (MIMAROPA)": ["Marinduque", "Occidental Mindoro", "Oriental Mindoro", "Palawan", "Romblon"],
+  "Region V (Bicol Region)": ["Albay", "Camarines Norte", "Camarines Sur", "Catanduanes", "Masbate", "Sorsogon"],
+  "Region VI (Western Visayas)": ["Aklan", "Antique", "Capiz", "Guimaras", "Iloilo", "Negros Occidental"],
+  "Region VII (Central Visayas)": ["Bohol", "Cebu", "Negros Oriental", "Siquijor"],
+  "Region VIII (Eastern Visayas)": ["Biliran", "Eastern Samar", "Leyte", "Northern Samar", "Samar", "Southern Leyte"],
+  "Region IX (Zamboanga Peninsula)": ["Zamboanga del Norte", "Zamboanga del Sur", "Zamboanga Sibugay"],
+  "Region X (Northern Mindanao)": ["Bukidnon", "Camiguin", "Lanao del Norte", "Misamis Occidental", "Misamis Oriental"],
+  "Region XI (Davao Region)": ["Davao de Oro", "Davao del Norte", "Davao del Sur", "Davao Occidental", "Davao Oriental"],
+  "Region XII (SOCCSKSARGEN)": ["Cotabato", "Sarangani", "South Cotabato", "Sultan Kudarat"],
+  "Region XIII (Caraga)": ["Agusan del Norte", "Agusan del Sur", "Dinagat Islands", "Surigao del Norte", "Surigao del Sur"],
+  "BARMM (Bangsamoro Autonomous Region in Muslim Mindanao)": ["Basilan", "Lanao del Sur", "Maguindanao del Norte", "Maguindanao del Sur", "Sulu", "Tawi-Tawi"],
+};
+
+export const PHILIPPINES_PROVINCE_CITIES_MAP: Record<string, string[]> = {
+  "Cavite": [
+    "Alfonso", "Amadeo", "Bacoor", "Carmona", "Cavite City", "Dasmariñas",
+    "General Emilio Aguinaldo", "General Mariano Alvarez (GMA)", "General Trias",
+    "Imus", "Indang", "Kawit", "Magallanes", "Maragondon", "Mendez", "Naic",
+    "Noveleta", "Rosario", "Silang", "Tagaytay", "Tanza", "Ternate", "Trece Martires"
+  ],
+  "Metro Manila": [
+    "Manila", "Quezon City", "Makati", "Taguig (BGC)", "Pasig", "Mandaluyong",
+    "Parañaque", "Pasay", "Las Piñas", "Muntinlupa", "Caloocan", "Marikina",
+    "Valenzuela", "Malabon", "Navotas", "San Juan", "Pateros"
+  ],
+  "Laguna": [
+    "Biñan", "Cabuyao", "Calamba", "Los Baños", "San Pedro", "Santa Rosa",
+    "San Pablo", "Santa Cruz", "Alaminos", "Bay", "Calauan", "Cavinti",
+    "Famy", "Kalayaan", "Liliw", "Luisiana", "Lumban", "Mabitac", "Magdalena",
+    "Nagcarlan", "Paete", "Pagsanjan", "Pakil", "Pangil", "Rizal", "Siniloan", "Victoria"
+  ],
+  "Batangas": [
+    "Batangas City", "Lipa", "Tanauan", "Santo Tomas", "Nasugbu", "Bauan",
+    "Lemery", "Mabini", "Calatagan", "Agoncillo", "Alitagtag", "Balayan",
+    "Balete", "Calaca", "Cuenca", "Ibaan", "Laurel", "Lian", "Lobo",
+    "Malvar", "Mataasnakahoy", "Padre Garcia", "Rosario", "San Jose",
+    "San Juan", "San Luis", "San Nicolas", "San Pascual", "Santa Teresita",
+    "Taal", "Taysan", "Tingloy", "Tuy"
+  ],
+  "Rizal": [
+    "Antipolo", "Taytay", "Cainta", "Binangonan", "San Mateo", "Rodriguez (Montalban)",
+    "Angono", "Teresa", "Baras", "Cardona", "Jala-jala", "Morong", "Pililla"
+  ],
+  "Quezon": [
+    "Lucena", "Tayabas", "Candelaria", "Sariaya", "Tiaong", "Pagbilao",
+    "Calauag", "Gumaca", "Lopez", "Infanta", "Real", "General Nakar"
+  ],
+  "Batanes": [
+    "Basco", "Itbayat", "Ivana", "Mahatao", "Sabtang", "Uyugan"
+  ],
+  "Cagayan": [
+    "Tuguegarao", "Aparri", "Baggao", "Ballesteros", "Camalaniugan", "Claveria", "Gattaran", "Gonzaga", "Lal-lo", "Sanchez-Mira"
+  ],
+  "Isabela": [
+    "Ilagan", "Cauayan", "Santiago", "Alicia", "Cabagan", "Echague", "Roxas", "San Mateo", "Tumauini"
+  ],
+  "Nueva Vizcaya": [
+    "Bayombong", "Solano", "Bambang", "Aritao", "Bagabag", "Dupax del Norte", "Villaverde"
+  ],
+  "Quirino": [
+    "Cabarroguis", "Aglipay", "Diffun", "Maddela", "Nagtipunan", "Saguday"
+  ],
+  "Ilocos Norte": [
+    "Laoag", "Batac", "Bacarra", "Bangui", "Pagudpud", "Paoay", "San Nicolas"
+  ],
+  "Ilocos Sur": [
+    "Vigan", "Candon", "Cabugao", "Narvacan", "Santa", "Santa Maria", "Santo Domingo"
+  ],
+  "La Union": [
+    "San Fernando", "Agoo", "Bangar", "Bauang", "Naguilian", "Rosario", "San Juan"
+  ],
+  "Pangasinan": [
+    "Dagupan", "San Carlos", "Urdaneta", "Alaminos", "Lingayen", "Binmaley", "Calasiao", "Malasiqui", "Manaoag", "Rosales", "San Fabian", "Tayug"
+  ],
+  "Abra": ["Bangued", "Bucay", "Dolores", "La Paz", "Tayum"],
+  "Apayao": ["Kabugao", "Calanasan", "Conner", "Flora", "Luna"],
+  "Benguet": [
+    "Baguio", "La Trinidad", "Itogon", "Tuba", "Tublay", "Atok", "Bakun",
+    "Bokod", "Buguias", "Kabayan", "Kapangan", "Kibungan", "Mankayan"
+  ],
+  "Ifugao": ["Lagawe", "Banaue", "Hungduan", "Kiangan", "Mayoyao"],
+  "Kalinga": ["Tabuk", "Balbalan", "Lubuagan", "Pasil", "Tinglayan"],
+  "Mountain Province": ["Bontoc", "Bauko", "Besao", "Sagada", "Tadian"],
+  "Bataan": [
+    "Balanga", "Mariveles", "Dinalupihan", "Orani", "Hermosa", "Abucay", "Bagac", "Limay", "Orion", "Samal"
+  ],
+  "Bulacan": [
+    "Malolos", "Meycauayan", "San Jose del Monte", "Marilao", "Santa Maria",
+    "Bocaue", "Baliwag", "Hagonoy", "Plaridel", "Guiguinto", "Balagtas",
+    "Bustos", "Calumpit", "Doña Remedios Trinidad", "Norzagaray", "Obando",
+    "Pandi", "Paombong", "San Ildefonso", "San Miguel", "San Rafael"
+  ],
+  "Nueva Ecija": [
+    "Cabanatuan", "Palayan", "San Jose", "Gapan", "Science City of Muñoz", "Talavera", "Guimba", "Jaen", "Santa Rosa"
+  ],
+  "Pampanga": [
+    "San Fernando", "Angeles", "Mabalacat", "Guagua", "Lubao", "Mexico",
+    "Apalit", "Arayat", "Bacolor", "Candaba", "Floridablanca", "Macabebe",
+    "Magalang", "Masantol", "Minalin", "Porac", "San Luis", "San Simon", "Santa Ana", "Santa Rita"
+  ],
+  "Tarlac": [
+    "Tarlac City", "Capas", "Concepcion", "Gerona", "Paniqui", "Camiling", "La Paz", "Victoria"
+  ],
+  "Zambales": [
+    "Olongapo", "Iba", "Subic", "Castillejos", "San Marcelino", "San Antonio", "Botolan", "Santa Cruz"
+  ],
+  "Aurora": [
+    "Baler", "Casiguran", "Dilasag", "Dinalungan", "Dingalan", "Dipaculao", "Maria Aurora", "San Luis"
+  ],
+  "Marinduque": ["Boac", "Buenavista", "Gasan", "Mogpog", "Santa Cruz", "Torrijos"],
+  "Occidental Mindoro": ["Mamburao", "San Jose", "Sablayan", "Abra de Ilog", "Calintaan", "Paluan", "Santa Cruz"],
+  "Oriental Mindoro": ["Calapan", "Puerto Galera", "Pinamalayan", "Roxas", "Baco", "Bongabong", "Bulalacao", "Naujan", "Pola", "Victoria"],
+  "Palawan": ["Puerto Princesa", "El Nido", "Coron", "Brooke's Point", "Bataraza", "Aborlan", "Culion", "Roxas", "San Vicente", "Taytay"],
+  "Romblon": ["Romblon", "Odiongan", "Cajidiocan", "Calatrava", "Ferrol", "Looc", "Magdiwang", "San Agustin", "San Fernando"],
+  "Albay": ["Legazpi", "Daraga", "Tabaco", "Ligao", "Camalig", "Guinobatan", "Malilipot", "Polangui", "Tiwi"],
+  "Camarines Norte": ["Daet", "Labo", "Basud", "Capalonga", "Jose Panganiban", "Mercedes", "Paracale", "Vinzons"],
+  "Camarines Sur": ["Naga", "Iriga", "Pili", "Calabanga", "Libmanan", "Sipocot", "Tigaon", "Buhi", "Caramoan"],
+  "Catanduanes": ["Virac", "Bato", "Caramoran", "Gigmoto", "Pandan", "Panganiban", "San Andres", "Viga"],
+  "Masbate": ["Masbate City", "Aroroy", "Cawayan", "Dimasalang", "Milagros", "Placer", "San Jacinto", "Uson"],
+  "Sorsogon": ["Sorsogon City", "Bulan", "Gubat", "Irosin", "Castilla", "Donsol", "Casiguran", "Magallanes", "Matnog"],
+  "Aklan": ["Kalibo", "Malay (Boracay)", "Ibajay", "Banga", "Batan", "Makato", "New Washington", "Numancia"],
+  "Antique": ["San Jose de Buenavista", "Belison", "Bugasong", "Culasi", "Hamtic", "Pandan", "Sibalom", "Tibiao"],
+  "Capiz": ["Roxas City", "Dao", "Dumalag", "Dumarao", "Ivisan", "Mambusao", "Panay", "Pontevedra", "Sigma"],
+  "Guimaras": ["Jordan", "Buenavista", "Nueva Valencia", "San Lorenzo", "Sibunag"],
+  "Iloilo": [
+    "Iloilo City", "Passi", "Oton", "Santa Barbara", "Pavia", "Dumangas",
+    "Estancia", "Guimbal", "Janiuay", "Miagao", "Pototan", "Sara", "Tigbauan"
+  ],
+  "Negros Occidental": [
+    "Bacolod", "Talisay", "Silay", "Bago", "Kabankalan", "San Carlos",
+    "Cadiz", "Escalante", "Himamaylan", "La Carlota", "Sagay", "Sipalay", "Victorias"
+  ],
+  "Bohol": ["Tagbilaran", "Panglao", "Carmen", "Jagna", "Tubigon", "Ubay", "Anda", "Corella", "Dauis", "Loon"],
+  "Cebu": [
+    "Cebu City", "Mandaue", "Lapu-Lapu", "Talisay", "Toledo", "Danao",
+    "Carcar", "Naga", "Consolacion", "Liloan", "Minglanilla", "Compostela",
+    "Cordova", "Balamban", "Bantayan", "Bogo", "Dumanjug", "Moalboal", "Oslob", "San Fernando"
+  ],
+  "Negros Oriental": ["Dumaguete", "Bais", "Bayawan", "Canlaon", "Tanjay", "Bacong", "Guihulngan", "Sibulan", "Valencia"],
+  "Siquijor": ["Siquijor", "Larena", "Lazi", "Enrique Villanueva", "Maria", "San Juan"],
+  "Biliran": ["Naval", "Almeria", "Biliran", "Cabucgayan", "Caibiran", "Culaba", "Kawayan", "Maripipi"],
+  "Eastern Samar": ["Borongan", "Guiuan", "Arteche", "Balangiga", "Can-avid", "Dolores", "Oras", "Salcedo", "Sulat"],
+  "Leyte": ["Tacloban", "Ormoc", "Baybay", "Palo", "Tanauan", "Abuyog", "Barugo", "Carigara", "Hilongos", "Isabel", "Palompon"],
+  "Northern Samar": ["Catarman", "Allen", "Catubig", "Laoang", "Lope de Vega", "Mondragon", "Palapag", "San Roque"],
+  "Samar": ["Catbalogan", "Calbayog", "Basey", "Gandara", "Hinabangan", "Motiong", "Paranas", "Santa Rita", "Wright"],
+  "Southern Leyte": ["Maasin", "Sogod", "Liloan", "Malitbog", "Padre Burgos", "Pintuyan", "San Juan", "Saint Bernard", "Tomas Oppus"],
+  "Zamboanga del Norte": ["Dipolog", "Dapitan", "Sindangan", "Labason", "Liloy", "Manukan", "Roxas", "Siocon", "Tampilisan"],
+  "Zamboanga del Sur": [
+    "Zamboanga City", "Pagadian", "Aurora", "Bayog", "Dimataling", "Dinas",
+    "Dumalinao", "Guipos", "Kumalarang", "Labangan", "Lapuyan", "Mahayag", "Molave"
+  ],
+  "Zamboanga Sibugay": ["Ipil", "Buug", "Diplahan", "Kabasalan", "Mabuhay", "Malangas", "Naga", "Titay", "Tungawan"],
+  "Bukidnon": ["Malaybalay", "Valencia", "Manolo Fortich", "Maramag", "Quezon", "Don Carlos", "Kibawe", "Lantapan", "Talakag"],
+  "Camiguin": ["Mambajao", "Catarman", "Guinsiliban", "Mahinog", "Sagay"],
+  "Lanao del Norte": ["Iligan", "Tubod", "Balaoan", "Kapatagan", "Lala", "Linamon", "Maigo", "Salvador"],
+  "Misamis Occidental": ["Ozamiz", "Oroquieta", "Tangub", "Clarin", "Jimenez", "Lopez Jaena", "Plaridel", "Tudela"],
+  "Misamis Oriental": [
+    "Cagayan de Oro", "Gingoog", "El Salvador", "Alubijid", "Balingasag",
+    "Claveria", "Initao", "Jasaan", "Opol", "Tagoloan", "Villanueva"
+  ],
+  "Davao de Oro": ["Nabunturan", "Compostela", "Laak", "Mabini", "Maco", "Maragusan", "Monkayo", "Pantukan"],
+  "Davao del Norte": ["Tagum", "Panabo", "Samal (IGaCOS)", "Carmen", "Kapalong", "New Corella", "Santo Tomas"],
+  "Davao del Sur": [
+    "Davao City", "Digos", "Bansalan", "Hagonoy", "Kiblawan", "Magsaysay",
+    "Malalag", "Matanao", "Padada", "Santa Cruz", "Sulop"
+  ],
+  "Davao Occidental": ["Malita", "Don Marcelino", "Jose Abad Santos", "Sarangani", "Santa Maria"],
+  "Davao Oriental": ["Mati", "Baganga", "Boston", "Caraga", "Cateel", "Governor Generoso", "Lupon", "Manay", "Tarragona"],
+  "Cotabato": ["Kidapawan", "Midsayap", "Kabacan", "Aleosan", "Antipas", "Banisilan", "Carmen", "Makilala", "Pikit", "Tulunan"],
+  "Sarangani": ["Alabel", "Glan", "Kiamba", "Maasim", "Maitum", "Malapatan", "Malungon"],
+  "South Cotabato": [
+    "General Santos", "Koronadal", "Polomolok", "Tupi", "Surallah", "Banga",
+    "Lake Sebu", "Norala", "Santo Niño", "Tantangan", "T'Boli"
+  ],
+  "Sultan Kudarat": ["Tacurong", "Isulan", "Bagumbayan", "Columbio", "Esperanza", "Lutayan", "President Quirino", "Sen. Ninoy Aquino"],
+  "Agusan del Norte": [
+    "Butuan", "Cabadbaran", "Buenavista", "Carmen", "Jabonga", "Kitcharao",
+    "Las Nieves", "Magallanes", "Nasipit", "Remedios T. Romualdez", "Tubay"
+  ],
+  "Agusan del Sur": ["Prosperidad", "Bayugan", "Bunawan", "Esperanza", "Loreto", "Rosario", "San Francisco", "Trento", "Veruela"],
+  "Dinagat Islands": ["San Jose", "Basilisa", "Cagdianao", "Dinagat", "Libjo", "Loreto", "Tubajon"],
+  "Surigao del Norte": ["Surigao City", "Dapa (Siargao)", "Del Carmen", "General Luna", "Placer", "San Benito", "Santa Monica", "Tagana-an"],
+  "Surigao del Sur": ["Tandag", "Bislig", "Barobo", "Cantilan", "Hinatuan", "Lianga", "Lingig", "Madrid", "Tagbina"],
+  "Basilan": ["Isabela City", "Lamitan", "Maluso", "Sumisip", "Tipo-Tipo", "Tuburan"],
+  "Lanao del Sur": ["Marawi", "Balabagan", "Bumbaran", "Katai", "Malabang", "Marantao", "Ramain", "Wao"],
+  "Maguindanao del Norte": ["Cotabato City", "Datu Odin Sinsuat", "Parang", "Sultan Kudarat", "Upi", "Barira", "Matanog"],
+  "Maguindanao del Sur": ["Buluan", "Datu Paglas", "Datu Piang", "Isulan", "Mamasapano", "Rajah Buayan", "Shariff Aguak"],
+  "Sulu": ["Jolo", "Batu-Batu", "Indanan", "Luuk", "Maimbung", "Panamao", "Patikul", "Siasi", "Talipao"],
+  "Tawi-Tawi": ["Bongao", "Languyan", "Mapun", "Panglima Sugala", "Sapa-Sapa", "Simunul", "Sitangkai", "South Ubian"],
+};
+
+export const ALL_PHILIPPINES_PROVINCES = Array.from(
+  new Set(Object.values(PHILIPPINES_REGION_PROVINCES_MAP).flat())
+).sort();
+
+export const ALL_PHILIPPINES_CITIES = Array.from(
+  new Set(Object.values(PHILIPPINES_PROVINCE_CITIES_MAP).flat())
+).sort();
+
+export function getProvincesByRegion(regionName: string): string[] {
+  return PHILIPPINES_REGION_PROVINCES_MAP[regionName] || ALL_PHILIPPINES_PROVINCES;
+}
+
+export function getCitiesByProvince(provinceName: string): string[] {
+  const cities = PHILIPPINES_PROVINCE_CITIES_MAP[provinceName];
+  if (cities && cities.length > 0) {
+    return cities;
+  }
+  return [`${provinceName} Central / Capital City`];
+}
 
 export const WORK_ARRANGEMENTS = ["On-Site", "Hybrid", "Remote"] as const;
 
@@ -66,13 +310,162 @@ export function formatExperienceLevel(level?: string | null): string {
   return level;
 }
 
-export function formatLocationWithCavite(loc?: string | null): string {
-  if (!loc || !loc.trim()) return "Cavite";
-  const trimmed = loc.trim();
-  if (/cavite/i.test(trimmed)) {
-    return trimmed;
+export function isCaviteProvince(name?: string | null): boolean {
+  if (!name) return false;
+  const clean = name.toLowerCase().replace(/[\(\)]/g, "").trim();
+  return clean === "cavite" || clean === "province of cavite" || clean === "cavite province";
+}
+
+export function getCanonicalCaviteCity(name?: string | null): string | null {
+  if (!name) return null;
+  const clean = name.toLowerCase().replace(/[\(\)]/g, "").replace(/ñ/g, "n").trim();
+  if (isCaviteProvince(clean)) return null;
+
+  const found = CAVITE_CITIES.find((c) => {
+    const cClean = c.toLowerCase().replace(/[\(\)]/g, "").replace(/ñ/g, "n").trim();
+    if (clean === cClean) return true;
+    if (clean === cClean.replace(" city", "")) return true;
+    if (cClean === "cavite city") return clean === "cavite city";
+    if (
+      cClean.includes("general mariano alvarez") &&
+      (clean === "gma" || clean === "gen. mariano alvarez" || clean === "gen mariano alvarez" || clean === "general mariano alvarez")
+    ) {
+      return true;
+    }
+    if (
+      cClean.includes("general trias") &&
+      (clean === "gen. trias" || clean === "gen trias" || clean === "gentri")
+    ) {
+      return true;
+    }
+    if (
+      cClean.includes("general emilio aguinaldo") &&
+      (clean === "bailen" || clean === "gen. emilio aguinaldo" || clean === "gen emilio aguinaldo")
+    ) {
+      return true;
+    }
+    if (
+      cClean.includes("trece martires") &&
+      (clean === "trece" || clean === "tmc")
+    ) {
+      return true;
+    }
+    return false;
+  });
+  return found || null;
+}
+
+function isKnownProvince(name?: string | null): boolean {
+  if (!name) return false;
+  const lower = name.toLowerCase().replace(/[\(\)]/g, "").trim();
+  return (
+    isCaviteProvince(lower) ||
+    lower === "metro manila" ||
+    lower === "laguna" ||
+    lower === "batangas" ||
+    lower === "rizal" ||
+    lower === "quezon" ||
+    lower === "philippines" ||
+    lower.includes("province")
+  );
+}
+
+function parseLocationTokens(tokens: string[]): string[] {
+  const result: string[] = [];
+  let i = 0;
+  while (i < tokens.length) {
+    const cur = tokens[i];
+    const next = tokens[i + 1];
+
+    const curCaviteCity = getCanonicalCaviteCity(cur);
+
+    if (next && isKnownProvince(next)) {
+      if (curCaviteCity && isCaviteProvince(next)) {
+        result.push(`${curCaviteCity}, Cavite`);
+      } else {
+        result.push(`${cur}, ${next}`);
+      }
+      i += 2;
+    } else if (curCaviteCity) {
+      result.push(`${curCaviteCity}, Cavite`);
+      i += 1;
+    } else if (isCaviteProvince(cur)) {
+      if (result.length === 0 && tokens.length === 1) {
+        result.push("Cavite");
+      }
+      i += 1;
+    } else {
+      result.push(cur);
+      i += 1;
+    }
   }
-  return `${trimmed}, Cavite`;
+  return result;
+}
+
+export function cleanBranchLocation(item: string): string {
+  if (!item) return "";
+  const trimmed = item.trim();
+  const parenMatch = trimmed.match(/\(([^)]+)\)$/);
+  if (parenMatch && parenMatch[1]) {
+    const inside = parenMatch[1].trim();
+    const insideTokens = inside.split(/,\s*/).map((x) => x.trim()).filter(Boolean);
+    if (insideTokens.length >= 2) {
+      const paired = parseLocationTokens(insideTokens);
+      if (paired.length > 0) return paired[0];
+      return inside;
+    }
+    const city = getCanonicalCaviteCity(inside);
+    if (city && !inside.toLowerCase().includes("cavite")) {
+      return `${city}, Cavite`;
+    }
+    return inside;
+  }
+  const city = getCanonicalCaviteCity(trimmed);
+  if (city && !trimmed.toLowerCase().includes("cavite")) {
+    return `${city}, Cavite`;
+  }
+  return trimmed;
+}
+
+export function parseLocations(locStr?: string | null): string[] {
+  if (!locStr || !locStr.trim()) return [];
+  const s = locStr.trim();
+
+  let rawList: string[] = [];
+
+  if (s.includes(")")) {
+    const parts = s.split(/(?<=\)),\s*|[;\n]+/).map((x) => x.trim()).filter(Boolean);
+    for (const part of parts) {
+      if (part.includes(")")) {
+        rawList.push(part);
+      } else {
+        const sub = part.split(/;\s*|\n+/).map((x) => x.trim()).filter(Boolean);
+        rawList.push(...sub);
+      }
+    }
+  } else if (s.includes(";") || s.includes("\n")) {
+    rawList = s.split(/[;\n]+/).map((x) => x.trim()).filter(Boolean);
+  } else {
+    const tokens = s.split(/,\s*/).map((x) => x.trim()).filter(Boolean);
+    rawList = parseLocationTokens(tokens);
+  }
+
+  const cleanedList = rawList.map(cleanBranchLocation).filter(Boolean);
+
+  const deduplicated: string[] = [];
+  for (const loc of cleanedList) {
+    if (!deduplicated.some((d) => d.toLowerCase() === loc.toLowerCase())) {
+      deduplicated.push(loc);
+    }
+  }
+
+  return deduplicated;
+}
+
+export function formatLocationWithCavite(loc?: string | null): string {
+  const locs = parseLocations(loc);
+  if (locs.length === 0) return "Cavite";
+  return locs.join(", ");
 }
 
 export const EXP_YEARS_OPTIONS = [
@@ -110,8 +503,12 @@ export const BSIT_BSCS_SKILLS = [
   "Networking / TCP/IP & LAN/WAN",
   "Cybersecurity & Vulnerability Assessment",
   "Technical Support & Hardware Troubleshooting",
-  "Data Analytics & Power BI / Tableau",
-  "Cloud Computing (AWS / Azure / GCP)",
+  "Data Analytics",
+  "Power BI / Tableau",
+  "Cloud Computing",
+  "AWS",
+  "Azure",
+  "GCP",
   "WordPress / CMS Development",
   "Agile / Scrum Methodologies",
 ];
@@ -119,47 +516,829 @@ export const BSIT_BSCS_SKILLS = [
 export const AVAILABLE_SKILLS_LIST = BSIT_BSCS_SKILLS;
 
 /**
+ * ============================================================================
+ * COMPLETE MULTI-INDUSTRY TAXONOMY LIBRARY (CHED, TESDA, O*NET, Lightcast)
+ * ============================================================================
+ */
+
+export const SHS_STRANDS_TAXONOMY = [
+  "STEM - Science, Technology, Engineering, and Mathematics",
+  "ABM - Accountancy, Business, and Management",
+  "HUMSS - Humanities and Social Sciences",
+  "TVL - ICT Information and Communications Technology",
+  "TVL - Industrial Arts",
+  "TVL - Home Economics",
+  "TVL - Agri-Fishery Arts",
+  "GAS - General Academic Strand",
+];
+
+export const EDUCATION_LEVELS_TAXONOMY = [
+  "College Graduate - Bachelor's Degree",
+  "College Undergraduate / Level Earner",
+  "Vocational / Technical Course Graduate - TESDA NC II / NC III",
+  "Associate Degree - 2-Year Program",
+  "Senior High School - SHS Graduate",
+  "Senior High School Undergraduate",
+  "Junior High School / High School Graduate",
+];
+
+export const MULTI_INDUSTRY_COURSES = [
+  "BS Information Technology - BSIT",
+  "BS Computer Science - BSCS",
+  "BS Information Systems - BSIS",
+  "BS Business Administration - Marketing / HR / Operations",
+  "BS Accountancy - BSA / Financial Management",
+  "BS Hospitality Management - BSHM / Hotel & Restaurant",
+  "BS Tourism Management - BSTM",
+  "BS Civil Engineering - BSCE",
+  "BS Electrical Engineering - BSEE",
+  "BS Mechanical Engineering - BSME",
+  "BS Industrial Engineering - BSIE",
+  "BS Electronics Engineering - BSECE",
+  "BS Nursing - BSN / Healthcare Services",
+  "BS Pharmacy / Medical Technology",
+  "Bachelor of Secondary Education - BSEd / Elementary Education",
+  "Bachelor of Arts in Communication / Multimedia Arts",
+  "BS Psychology / Human Resources",
+  "BS Criminology / Law Enforcement",
+  "TVL - Technical-Vocational / TESDA Specialization",
+  "Associate in Computer Technology / Polytechnic Course",
+];
+
+export const IT_CLOUD_CERTIFICATIONS = [
+  "AWS Certified Cloud Practitioner",
+  "AWS Certified Solutions Architect – Associate",
+  "AWS Certified Developer – Associate",
+  "AWS Certified SysOps Administrator",
+  "Microsoft Certified: Azure Fundamentals (AZ-900)",
+  "Microsoft Certified: Azure Administrator Associate (AZ-104)",
+  "Google Cloud Associate Cloud Engineer",
+  "Google Cloud Professional Cloud Architect",
+  "Cisco Certified Network Associate (CCNA)",
+  "Cisco Certified Network Professional (CCNP)",
+  "CompTIA Security+",
+  "CompTIA Network+",
+  "CompTIA A+ Service Technician",
+  "CompTIA IT Fundamentals (ITF+)",
+  "CompTIA Cybersecurity Analyst (CySA+)",
+  "Certified Information Systems Security Professional (CISSP)",
+  "Certified Ethical Hacker (CEH)",
+  "Certified Information Security Manager (CISM)",
+  "Certified Information Systems Auditor (CISA)",
+  "Red Hat Certified System Administrator (RHCSA)",
+  "Certified Kubernetes Administrator (CKA)",
+  "HashiCorp Certified: Terraform Associate",
+  "Docker Certified Associate (DCA)",
+  "Oracle Certified Professional: Java / Database",
+  "Salesforce Certified Administrator",
+  "Salesforce Certified Platform Developer I",
+  "ISTQB Certified Tester (CTFL)",
+  "ITIL Foundation Certificate in IT Service Management",
+  "ScrumAlliance Certified ScrumMaster (CSM)",
+  "PMI Agile Certified Practitioner (PMI-ACP)",
+];
+
+export const PRC_CSC_CERTIFICATIONS = [
+  "Civil Service Eligibility (Professional)",
+  "Civil Service Eligibility (Sub-Professional)",
+  "Certified Public Accountant (CPA - PRC)",
+  "Licensed Professional Teacher (LPT - PRC)",
+  "Registered Nurse (RN - PRC)",
+  "Registered Civil Engineer (RCE - PRC)",
+  "Registered Electrical Engineer (REE - PRC)",
+  "Registered Mechanical Engineer (RME - PRC)",
+  "Registered Electronics Engineer (ECE - PRC)",
+  "Registered Chemical Engineer (PRC)",
+  "Registered Industrial Engineer (CIE - PIIE)",
+  "Registered Master Electrician (RME - PRC)",
+  "Registered Master Plumber (PRC)",
+  "Registered Architect (PRC)",
+  "Registered Pharmacist (RPh - PRC)",
+  "Registered Medical Technologist (RMT - PRC)",
+  "Registered Criminologist (PRC)",
+  "Registered Psychometrician / Psychologist (PRC)",
+  "Registered Guidance Counselor (PRC)",
+  "Licensed Real Estate Broker (PRC)",
+  "Licensed Real Estate Appraiser (PRC)",
+];
+
+export const SAFETY_HEALTH_ENVIRONMENT_CERTIFICATIONS = [
+  "Basic Occupational Safety and Health (BOSH - SO2)",
+  "Construction Occupational Safety and Health (COSH - SO2)",
+  "Safety Officer 1 (SO1 Certification)",
+  "Safety Officer 3 (SO3 Advanced Certification)",
+  "Safety Officer 4 (SO4 Specialist)",
+  "Loss Control Management (LCM)",
+  "Hazardous Waste Management / Pollution Control Officer (PCO - DENR EMB)",
+  "Philippine Red Cross Standard First Aid & BLS/CPR",
+  "ISO 9001:2015 Quality Management Lead Auditor",
+  "ISO 14001:2015 Environmental Management Lead Auditor",
+  "ISO 45001:2018 Occupational Health & Safety Lead Auditor",
+];
+
+export const BUSINESS_FINANCE_MANAGEMENT_CERTIFICATIONS = [
+  "Project Management Professional (PMP)",
+  "Certified Associate in Project Management (CAPM)",
+  "Certified Bookkeeper (CB)",
+  "Certified Internal Auditor (CIA)",
+  "Certified Management Accountant (CMA)",
+  "Chartered Financial Analyst (CFA Level I/II/III)",
+  "Financial Risk Manager (FRM)",
+  "Certified Fraud Examiner (CFE)",
+  "Certified Payroll Professional (CPP)",
+  "Six Sigma Yellow Belt",
+  "Six Sigma Green Belt",
+  "Six Sigma Black Belt",
+  "Certified Human Resource Professional (CHRP)",
+  "HubSpot Digital Marketing & Inbound Certification",
+  "Google Data Analytics Professional Certificate",
+  "Google Project Management Professional Certificate",
+  "Google UX Design Professional Certificate",
+  "Google IT Support Professional Certificate",
+];
+
+export const TESDA_VOCATIONAL_CERTIFICATIONS = [
+  "TESDA Computer System Servicing (CSS) NC II",
+  "TESDA Web Development NC III",
+  "TESDA Visual Graphic Design NC III",
+  "TESDA Electronic Products Assembly and Servicing (EPAS) NC II",
+  "TESDA Bookkeeping NC III",
+  "TESDA Electrical Installation and Maintenance (EIM) NC II",
+  "TESDA Shielded Metal Arc Welding (SMAW) NC I / NC II",
+  "TESDA Gas Metal Arc Welding (GMAW) NC II",
+  "TESDA Machining NC II",
+  "TESDA Pipefitting NC II",
+  "TESDA Heavy Equipment Operation (Backhoe / Crane / Excavator) NC II",
+  "TESDA Solar PV System Installation NC II",
+  "TESDA Domestic Refrigeration and Air-Conditioning (RAC) Servicing NC II",
+  "TESDA Plumbing NC II",
+  "TESDA Automotive Servicing NC I / NC II",
+  "TESDA Cookery NC II",
+  "TESDA Bread and Pastry Production NC II",
+  "TESDA Food and Beverage Services NC II",
+  "TESDA Barista NC II",
+  "TESDA Bartending NC II",
+  "TESDA Front Office Services NC II",
+  "TESDA Housekeeping NC II",
+  "TESDA Caregiving NC II",
+  "TESDA Emergency Medical Services NC II",
+  "TESDA Events Management Services NC III",
+  "TESDA Contact Center Services NC II (BPO)",
+];
+
+export const MARITIME_AVIATION_CERTIFICATIONS = [
+  "MARINA Seafarer's Identification and Record Book (SIRB)",
+  "MARINA Basic Safety Training (BST / STCW)",
+  "MARINA Proficiency in Survival Craft and Rescue Boats (PSCRB)",
+  "MARINA Advanced Fire Fighting (AFF)",
+  "MARINA Medical First Aid (MFA)",
+  "CAAP Private Pilot License (PPL)",
+  "CAAP Commercial Pilot License (CPL)",
+  "CAAP Aircraft Maintenance License (AML)",
+];
+
+export const MULTI_INDUSTRY_CERTIFICATIONS = Array.from(
+  new Set([
+    ...IT_CLOUD_CERTIFICATIONS,
+    ...PRC_CSC_CERTIFICATIONS,
+    ...SAFETY_HEALTH_ENVIRONMENT_CERTIFICATIONS,
+    ...BUSINESS_FINANCE_MANAGEMENT_CERTIFICATIONS,
+    ...TESDA_VOCATIONAL_CERTIFICATIONS,
+    ...MARITIME_AVIATION_CERTIFICATIONS,
+  ])
+).sort();
+
+export const CERTIFICATION_CATEGORIES_MAP: Record<string, string[]> = {
+  "All Certification Categories": MULTI_INDUSTRY_CERTIFICATIONS,
+  "IT & Cloud Infrastructure": IT_CLOUD_CERTIFICATIONS,
+  "PRC Board License & Civil Service": PRC_CSC_CERTIFICATIONS,
+  "Safety, Health & Environment (DOLE / OSHC)": SAFETY_HEALTH_ENVIRONMENT_CERTIFICATIONS,
+  "Business, Finance & Management": BUSINESS_FINANCE_MANAGEMENT_CERTIFICATIONS,
+  "TESDA & Vocational National Certificates": TESDA_VOCATIONAL_CERTIFICATIONS,
+  "Maritime & Aviation Licenses": MARITIME_AVIATION_CERTIFICATIONS,
+};
+
+export const CERTIFICATION_CATEGORIES = Object.keys(CERTIFICATION_CATEGORIES_MAP);
+
+export const SKILLS_COURSE_TAXONOMY_MAP: Record<string, string[]> = {
+  "BS Information Technology": [
+    "Web Development",
+    "Frontend Development",
+    "React",
+    "Vue.js",
+    "HTML / CSS",
+    "Backend Development",
+    "Node.js",
+    "Express",
+    "Python",
+    "Java",
+    "TypeScript & JavaScript",
+    "HTML / HTML5",
+    "CSS / CSS3",
+    "JavaScript",
+    "TypeScript",
+    "React / Next.js",
+    "PHP / Laravel",
+    "Mobile App Development",
+    "React Native",
+    "Flutter",
+    "Android",
+    "WordPress / CMS Development",
+    "REST API / Web Services",
+    "UI/UX Design & Prototyping",
+    "Figma",
+    "Adobe XD",
+    "Technical Support & Helpdesk Operations",
+  ],
+  "BS Computer Science": [
+    "Data Structures and Algorithms",
+    "Software Architecture & Design Patterns",
+    "Quality Assurance & Software Testing - QA",
+    "Manual & Automation Testing",
+    "Python",
+    "Java",
+    "C# / .NET",
+    "C++",
+    "C Programming",
+    "Linux / Bash Scripting",
+    "Git / GitHub Version Control",
+    "Agile / Scrum Methodologies",
+    "Machine Learning & AI Fundamentals",
+  ],
+  "Networking & Infrastructure": [
+    "Networking",
+    "TCP/IP & LAN/WAN",
+    "Network Configuration & Troubleshooting",
+    "Cisco Packet Tracer",
+    "Router & Switch Config",
+    "Computer Systems Servicing & Hardware Repair",
+    "Technical Support & Hardware Troubleshooting",
+    "Windows Server Administration",
+    "Linux System Administration",
+    "Firewall & Router Configuration",
+    "Virtualization",
+    "VMware",
+    "VirtualBox",
+  ],
+  "Cybersecurity & InfoSec": [
+    "Cybersecurity & Information Security",
+    "Cybersecurity & Vulnerability Assessment",
+    "Network Security & Firewalls",
+    "Penetration Testing & Ethical Hacking",
+    "Information Security Compliance & Auditing",
+    "Identity & Access Management - IAM",
+    "Security Incident & Event Management - SIEM",
+  ],
+  "Cloud & DevOps Engineering": [
+    "Cloud Computing",
+    "AWS",
+    "GCP",
+    "Azure",
+    "Docker / Containerization",
+    "Kubernetes & Container Orchestration",
+    "CI/CD Pipelines - GitHub Actions, Jenkins",
+    "Infrastructure as Code - Terraform",
+    "Serverless Architecture",
+  ],
+  "Business & Accountancy": [
+    "Financial Accounting & Bookkeeping",
+    "Tax Compliance & Filing - BIR",
+    "Accounts Payable & Accounts Receivable - AP/AR",
+    "QuickBooks",
+    "Xero Accounting Software",
+    "Financial Reporting & Variance Analysis",
+    "Payroll Administration & Processing",
+    "Auditing & Internal Control Systems",
+    "Budgeting & Cash Flow Forecasting",
+    "SAP / Oracle ERP Fundamentals",
+  ],
+  "Marketing, Sales & Customer Support": [
+    "Digital Marketing & Social Media Strategy",
+    "Search Engine Optimization - SEO & SEM",
+    "SEO",
+    "SEM",
+    "Content Writing & Copywriting",
+    "Customer Support & Contact Center Operations - BPO",
+    "CRM Management",
+    "HubSpot",
+    "Salesforce",
+    "B2B Sales & Lead Generation",
+    "Market Research & Consumer Analysis",
+    "Email Marketing & Automation",
+  ],
+  "Human Resources & Administration": [
+    "Recruitment & Talent Acquisition",
+    "Employee Relations & DOLE Labor Standards",
+    "HR Information Systems - HRIS",
+    "Compensation & Benefits Administration",
+    "Onboarding & Training Facilitation",
+    "Records & Office Document Management",
+    "Performance Evaluation & Appraisal",
+  ],
+  "Engineering & Architecture": [
+    "AutoCAD 2D / 3D Computer-Aided Drafting",
+    "Revit & Building Information Modeling - BIM",
+    "SolidWorks & 3D Mechanical Design",
+    "Construction Project Estimation & Costing",
+    "Structural Analysis & Engineering Design",
+    "Electrical Wiring & Circuit Installation",
+    "Quality Control & Inspection - QC/QA",
+    "Safety Inspection & Compliance - BOSH / COSH",
+  ],
+  "Hospitality, Tourism & F&B": [
+    "Food & Beverage Service - F&B",
+    "Front Office & Hotel Desk Operations",
+    "Hotel Property Management Systems - Opera PMS",
+    "Culinary Arts & Kitchen Food Preparation",
+    "Barista & Coffee Brewing Techniques",
+    "Housekeeping & Sanitation Protocols",
+    "Event Coordination & Banquet Planning",
+    "Travel Itinerary Planning & Tour Guiding",
+  ],
+  "Healthcare & Allied Medical": [
+    "Patient Care & Vital Signs Monitoring",
+    "First Aid & Basic Life Support - BLS / CPR",
+    "Medical Records Management & Billing",
+    "Medication Dispensing & Pharmacology Support",
+    "Phlebotomy & Clinical Specimen Handling",
+    "Infection Control & Healthcare Sanitation",
+    "Triage & Emergency Patient Assistance",
+  ],
+  "TVL-ICT & Technical Trades": [
+    "Computer Systems Servicing & Hardware Repair - CSS NC II",
+    "Visual Graphic Design",
+    "Photoshop",
+    "Illustrator",
+    "Electrical Installation & Maintenance - EIM NC II",
+    "Electronic Products Assembly & Servicing - EPAS NC II",
+    "Shielded Metal Arc Welding - SMAW NC II",
+    "Automotive Servicing & Engine Tune-up",
+    "Air Conditioning & Refrigeration Servicing - RAC NC II",
+    "Basic Web Page Design",
+  ],
+  "Creative Arts, Media & Education": [
+    "Graphic Design & Branding",
+    "Adobe Photoshop",
+    "Illustrator",
+    "Video Editing & Color Grading",
+    "Premiere Pro",
+    "DaVinci",
+    "Motion Graphics & Animation - After Effects",
+    "English Language Instruction - ESL / Online Teaching",
+    "Curriculum Development & Lesson Planning",
+    "Public Speaking & Presentation Skills",
+    "Photography & Photo Post-Processing",
+  ],
+  "General Professional Skills": [
+    "Project Management & Agile/Scrum",
+    "Technical Documentation & User Training",
+    "Critical Thinking & Problem Solving",
+    "Data Analytics & Business Intelligence",
+    "PowerBI",
+    "Tableau",
+    "Database Administration",
+    "SQL",
+    "PostgreSQL",
+    "MongoDB",
+    "ITIL Service Management Fundamentals",
+    "Advanced Microsoft Excel",
+    "VLOOKUP",
+    "Pivot Tables",
+  ],
+};
+
+export const ALL_UNIFIED_SKILLS: string[] = Array.from(
+  new Set(Object.values(SKILLS_COURSE_TAXONOMY_MAP).flat())
+).sort();
+
+export const ALL_UNIFIED_QUALIFICATIONS: string[] = Array.from(
+  new Set([
+    ...MULTI_INDUSTRY_COURSES,
+    ...EDUCATION_LEVELS_TAXONOMY,
+    ...SHS_STRANDS_TAXONOMY,
+    "Internship / OJT Completion",
+    "Capstone / Thesis Project Completion",
+    "Professional Apprenticeship",
+  ])
+).sort();
+
+export const ALL_UNIFIED_CERTIFICATIONS: string[] = Array.from(
+  new Set(MULTI_INDUSTRY_CERTIFICATIONS)
+).sort();
+
+export const PHILIPPINES_UNIVERSITIES_COLLEGES: string[] = [
+  "Cavite State University (CvSU) - Main Campus (Indang)",
+  "Cavite State University (CvSU) - Bacoor Campus",
+  "Cavite State University (CvSU) - Carmona Campus",
+  "Cavite State University (CvSU) - Cavite City Campus",
+  "Cavite State University (CvSU) - Imus Campus",
+  "Cavite State University (CvSU) - Naic Campus",
+  "Cavite State University (CvSU) - Rosario Campus",
+  "Cavite State University (CvSU) - Silang Campus",
+  "Cavite State University (CvSU) - Tanza Campus",
+  "Cavite State University (CvSU) - Trece Martires Campus",
+  "De La Salle University - Dasmariñas (DLSU-D)",
+  "De La Salle Medical and Health Sciences Institute (DLSMHSI)",
+  "Lyceum of the Philippines University (LPU) - Cavite Campus",
+  "Emilio Aguinaldo College (EAC) - Cavite",
+  "San Sebastian College - Recoletos de Cavite",
+  "St. Dominic College of Asia (SDCA)",
+  "Philippine Christian University (PCU) - Dasmariñas",
+  "National University (NU) - Dasmariñas",
+  "AMA Computer College - Cavite / Dasmariñas",
+  "STI College - Bacoor",
+  "STI College - Dasmariñas",
+  "STI College - Carmona",
+  "Imus Computer College (ICC)",
+  "City College of Tagaytay (CCT)",
+  "Polytechnic University of the Philippines (PUP) - Maragondon",
+  "Technological University of the Philippines (TUP) - Cavite",
+  "Far Eastern University (FEU) - Cavite",
+  "Ateneo de Manila University",
+  "De La Salle University - Manila",
+  "University of the Philippines (UP Diliman / UPLB)",
+  "University of Santo Tomas (UST)",
+  "Mapúa University",
+  "Adamson University",
+  "University of the East (UE)",
+  "Polytechnic University of the Philippines (PUP Main)",
+];
+
+export const PHILIPPINES_SENIOR_HIGH_SCHOOLS: string[] = Array.from(
+  new Set([
+    // Cavite High Schools & Tech-Voc
+    "Alfonso National High School",
+    "Amadeo National High School",
+    "Bacoor City Senior High School - Dulong Bayan",
+    "Bacoor City Senior High School - San Nicolas",
+    "Bacoor National High School - Gawaran",
+    "Bacoor National High School - Molino",
+    "Bacoor National High School - Villa Maria / Main",
+    "Bailen National High School (Gen. E. Aguinaldo)",
+    "Binakayan National High School (Kawit)",
+    "Carmona National High School",
+    "Carmona Senior High School",
+    "Cavite National High School - Cavite City",
+    "Cavite National Science High School",
+    "Cavite State University Science High School (CvSU SHS)",
+    "Coastal High School - Naic",
+    "Dasmariñas East National High School",
+    "Dasmariñas Integrated High School",
+    "Dasmariñas North National High School",
+    "Dasmariñas West National High School",
+    "De La Salle University - Dasmariñas Integrated School (DLSUD-IS)",
+    "Emiliano Tria Tirona Memorial National High School (Kawit)",
+    "Far Eastern University (FEU) - Cavite High School",
+    "General Licerio Topacio National High School (Imus)",
+    "General Mariano Alvarez Technical High School (GMATHS)",
+    "General Trias City Senior High School",
+    "General Trias National High School",
+    "Governor Ferrer Memorial Integrated National High School (GFMINHS)",
+    "Imus City Senior High School",
+    "Imus National High School",
+    "Indang National High School - Senior High",
+    "Kawit National High School",
+    "Lyceum of the Philippines University - Cavite (LPU SHS)",
+    "Magallanes National High School",
+    "Maragondon National High School",
+    "Naic National High School",
+    "Noveleta National High School",
+    "Rosario National High School",
+    "San Jose Community High School (GMA)",
+    "San Sebastian College - Recoletos de Cavite High School",
+    "Silang National High School",
+    "Tagaytay City National High School",
+    "Tagaytay City Science National High School",
+    "Tanza National Comprehensive High School",
+    "Tanza National Trade School (TNTS)",
+    "Trece Martires City National High School",
+    "Trece Martires City Senior High School (TMCSHS)",
+    "University of Perpetual Help System DALTA - Molino High School",
+
+    // Philippine Science High School (PSHS) Campuses Nationwide
+    "Philippine Science High School - Main Campus (Diliman, Quezon City)",
+    "Philippine Science High School - Ilocos Region Campus (San Ildefonso, Ilocos Sur)",
+    "Philippine Science High School - Cagayan Valley Campus (Bayombong, Nueva Vizcaya)",
+    "Philippine Science High School - Cordillera Administrative Region Campus (Baguio City)",
+    "Philippine Science High School - Central Luzon Campus (Clark, Pampanga)",
+    "Philippine Science High School - CALABARZON Region Campus (Batangas City)",
+    "Philippine Science High School - MIMAROPA Region Campus (Odiongan, Romblon)",
+    "Philippine Science High School - Bicol Region Campus (Goa, Camarines Sur)",
+    "Philippine Science High School - Western Visayas Campus (Jaro, Iloilo City)",
+    "Philippine Science High School - Central Visayas Campus (Argao, Cebu)",
+    "Philippine Science High School - Eastern Visayas Campus (Palo, Leyte)",
+    "Philippine Science High School - Zamboanga Peninsula Campus (Dipolog City)",
+    "Philippine Science High School - Central Mindanao Campus (Balo-i, Lanao del Norte)",
+    "Philippine Science High School - Southern Mindanao Campus (Tugbok, Davao City)",
+    "Philippine Science High School - SOCCSKSARGEN Region Campus (Koronadal City)",
+    "Philippine Science High School - Caraga Region Campus (Butuan City)",
+
+    // NCR / Metro Manila High Schools
+    "Adamson University Senior High School",
+    "Araullo High School (Manila)",
+    "Arellano University High School (Manila / Pasay / Pasig)",
+    "Ateneo de Manila Senior High School (Quezon City)",
+    "Bagong Silang High School (Caloocan)",
+    "Batasan Hills National High School (Quezon City)",
+    "Benigno 'Ninoy' S. Aquino High School (Makati)",
+    "Caloocan City Science High School",
+    "Caloocan High School",
+    "Camarin High School (Caloocan)",
+    "Centro Escolar University (CEU) Senior High School",
+    "Commonwealth High School (Quezon City)",
+    "Concepcion Integrated School (Marikina)",
+    "De La Salle University Senior High School (Manila / Laguna)",
+    "Dr. Arcadio Santos National High School (Parañaque)",
+    "Ernesto Rondon High School (Quezon City)",
+    "Eusebio High School (Pasig)",
+    "Far Eastern University (FEU) High School (Manila)",
+    "Fort Bonifacio High School (Makati)",
+    "Judge Feliciano Belmonte Sr. High School (Quezon City)",
+    "Las Piñas City National Science High School",
+    "Las Piñas National High School - Main / Almanza",
+    "Makati High School",
+    "Makati Science High School",
+    "Malabon National High School",
+    "Malinta National High School (Valenzuela)",
+    "Mandaluyong High School",
+    "Manila High School (Intramuros)",
+    "Manila Science High School",
+    "Mapúa University Senior High School (Intramuros / Makati)",
+    "Marikina High School",
+    "Marikina Science High School",
+    "Moonwalk National High School (Parañaque)",
+    "Muntinlupa National High School",
+    "Muntinlupa Science High School",
+    "National University (NU) Senior High School (Manila / MOA / Fairview)",
+    "Navotas National High School",
+    "Our Lady of Fatima University (OLFU) Basic Education (Valenzuela / QC)",
+    "Parañaque National High School - Main",
+    "Parañaque Science High School",
+    "Parang High School (Marikina)",
+    "Pasay City North High School",
+    "Pasay City South High School",
+    "Pasay City West High School",
+    "Pasig City Science High School",
+    "Pedro E. Diaz High School (Muntinlupa)",
+    "Pinagbuhatan High School (Pasig)",
+    "Quezon City High School",
+    "Quezon City Science High School",
+    "Quirino High School (Quezon City)",
+    "Ramon Magsaysay High School (Cubao, Quezon City)",
+    "Ramon Magsaysay High School (Manila)",
+    "Rizal High School (Pasig City)",
+    "Sagad High School (Pasig)",
+    "San Beda University Senior High School (Manila / Taytay)",
+    "San Francisco High School (Quezon City)",
+    "Sen. Renato 'Compañero' Cayetano Memorial Science and Technology High School (Taguig)",
+    "Signal Village National High School (Taguig)",
+    "Taguig National High School",
+    "Taguig Science High School",
+    "Technological Institute of the Philippines (TIP) Senior High School",
+    "University of Santo Tomas (UST) Senior High School",
+    "University of the East (UE) Basic Education Department",
+    "University of the Philippines Integrated School (UPIS - Diliman)",
+    "Upper Bicutan National High School (Taguig)",
+    "Valenzuela City Science High School",
+    "Valenzuela National High School",
+    "Victorino Mapa High School (Manila)",
+    "Western Bicutan National High School (Taguig)",
+
+    // Region IV-A (Laguna, Batangas, Rizal, Quezon)
+    "Angono National High School (Rizal)",
+    "Antipolo City Senior High School",
+    "Antipolo National High School",
+    "Balayan National High School (Batangas)",
+    "Batangas National High School (Batangas City)",
+    "Batangas Province Science High School",
+    "Bauan Technical High School (Batangas)",
+    "Biñan City Senior High School",
+    "Cabuyao Integrated National High School",
+    "Cainta Catholic College - High School",
+    "Calamba Bayside Integrated High School",
+    "Calamba City Science High School",
+    "Camp Vicente Lim Integrated School (Calamba)",
+    "Candelaria Institute of Technology High School",
+    "Francisco P. Felix Memorial National High School (Cainta)",
+    "Gov. Feliciano Leviste Memorial National High School (Malvar, Batangas)",
+    "Gumaca National High School (Quezon)",
+    "Laguna State Polytechnic University (LSPU) Laboratory High School",
+    "Lemery National High School (Batangas)",
+    "Lipa City National High School",
+    "Lipa City Science High School",
+    "Los Baños National High School",
+    "Lucena City National High School",
+    "Morong National High School (Rizal)",
+    "Nasugbu East National High School",
+    "Pacita Complex National High School (San Pedro, Laguna)",
+    "Pedro Guevara Memorial National High School (Santa Cruz, Laguna)",
+    "Quezon National High School (Lucena City)",
+    "Rizal National Science High School (Binangonan, Rizal)",
+    "Rodriguez National High School (Montalban, Rizal)",
+    "San Mateo National High School (Rizal)",
+    "San Pedro Relocation Center National High School (SPRCNHS)",
+    "Santa Rosa Educational Institution",
+    "Santa Rosa Science and Technology High School",
+    "Sariaya National High School (Quezon)",
+    "Tanauan City Integrated High School",
+    "Tanauan City National High School",
+    "Tanay National High School (Rizal)",
+    "Tayabas Western Academy High School",
+    "Taytay National High School (Rizal)",
+    "University of the Philippines Rural High School (UPRHS - Los Baños)",
+
+    // Region III (Central Luzon)
+    "Angeles City National High School (Pampanga)",
+    "Angeles City Science High School",
+    "Baliuag National High School (Mariano Ponce NHS)",
+    "Bataan National High School (Balanga City)",
+    "Bataan Peninsula State University - Laboratory High School",
+    "Bulihan National High School (Malolos, Bulacan)",
+    "Capas National High School (Tarlac)",
+    "Central Luzon State University (CLSU) Science High School (Muñoz)",
+    "City of San Jose del Monte National Science High School",
+    "Guagua National Colleges High School",
+    "Honorato C. Perez Sr. Memorial Science High School (Cabanatuan)",
+    "Mabalacat National High School (Pampanga)",
+    "Marcelo H. del Pilar National High School (Malolos, Bulacan)",
+    "Marilao National High School (Bulacan)",
+    "Mariveles National High School - Camaya (Bataan)",
+    "Meycauayan National High School (Bulacan)",
+    "Muñoz National High School - Main (Nueva Ecija)",
+    "Nueva Ecija High School (Cabanatuan City)",
+    "Olongapo City National High School",
+    "Pampanga High School (City of San Fernando)",
+    "Regional Science High School III (Olongapo City)",
+    "San Jose del Monte National High School (Bulacan)",
+    "Santa Maria National High School (Bulacan)",
+    "Subic National High School",
+    "Tarlac National High School",
+    "Zambales National High School (Iba)",
+
+    // Northern Luzon & CAR (Regions I, II, CAR)
+    "Alaminos City National High School (Pangasinan)",
+    "Baguio City National High School (BCNHS - Main)",
+    "Cagayan National High School (Tuguegarao City)",
+    "Cauayan City National High School (Isabela)",
+    "Dagupan City National High School (Pangasinan)",
+    "Ilocos Norte National High School (Laoag City)",
+    "Ilocos Sur National High School (Vigan City)",
+    "Isabela National High School (Ilagan City)",
+    "La Union National High School (San Fernando)",
+    "Mariano Marcos State University Laboratory High School (Batac)",
+    "Nueva Vizcaya General Comprehensive High School (Bayombong)",
+    "Pangasinan National High School (Lingayen)",
+    "Pines City National High School (Baguio City)",
+    "Saint Louis University Laboratory High School (Baguio City)",
+    "San Carlos City National High School (Pangasinan)",
+    "Santiago City National High School (Isabela)",
+    "Tuguegarao City Science High School",
+    "University of the Cordilleras High School",
+    "Urdaneta City National High School (Pangasinan)",
+
+    // MIMAROPA & Bicol Region (Regions IV-B & V)
+    "Albay Central School / Albay High School (Legazpi City)",
+    "Ateneo de Naga University Junior & Senior High School",
+    "Bicol University Laboratory High School (Legazpi City)",
+    "Camarines Norte National High School (Daet)",
+    "Camarines Sur National High School (Naga City)",
+    "Catanduanes National High School (Virac)",
+    "Legazpi City National High School",
+    "Marinduque National High School (Boac)",
+    "Masbate National Comprehensive High School",
+    "Naga City Science High School",
+    "Occidental Mindoro National High School (San Jose)",
+    "Oriental Mindoro National High School (Calapan City)",
+    "Palawan National School (Puerto Princesa)",
+    "Puerto Princesa City National Science High School",
+    "Romblon National High School",
+    "Sorsogon National High School",
+
+    // Visayas (Regions VI, VII, VIII)
+    "Abellana National School (Cebu City)",
+    "Aklan National High School for Arts and Trades (Kalibo)",
+    "Antique National School (San Jose de Buenavista)",
+    "Bacolod City National High School",
+    "Capiz National High School (Roxas City)",
+    "Cebu City National Science High School",
+    "Cebu Normal University - Integrated Laboratory School",
+    "Central Philippine University (CPU) High School (Iloilo City)",
+    "Dr. Cecilio Putong National High School (Tagbilaran City, Bohol)",
+    "Dumaguete Science High School",
+    "Eastern Samar National Comprehensive High School (Borongan)",
+    "Holy Name University High School (Tagbilaran City)",
+    "Iloilo National High School",
+    "Lapu-Lapu City National High School",
+    "Leyte National High School (Tacloban City)",
+    "Mandaue City Comprehensive National High School",
+    "Negros Occidental High School (Bacolod City)",
+    "Negros Oriental High School (Dumaguete City)",
+    "Northern Samar National High School (Catarman)",
+    "Ormoc City National High School",
+    "Samar National School (Catbalogan City)",
+    "Silliman University High School (Dumaguete City)",
+    "Siquijor Provincial Science High School",
+    "Tacloban City National High School",
+    "Tagbilaran City Science High School (Bohol)",
+    "Talisay City National High School (Cebu)",
+    "Toledo City National High School (Cebu)",
+    "University of San Carlos (USC) Basic Education Department (Cebu)",
+    "University of St. La Salle - Integrated School (Bacolod)",
+    "University of the Philippines High School in Iloilo (UPHSI)",
+    "West Visayas State University (WVSU) Integrated Laboratory School",
+
+    // Mindanao (Regions IX, X, XI, XII, CARAGA, BARMM)
+    "Agusan National High School (Butuan City)",
+    "Ateneo de Davao University Junior & Senior High School",
+    "Ateneo de Zamboanga University High School",
+    "Bayugan National Comprehensive High School (Agusan del Sur)",
+    "Bukidnon National High School (Malaybalay City)",
+    "Cagayan de Oro National High School",
+    "Cotabato City National High School",
+    "Daniel R. Aguinaldo National High School (Davao City)",
+    "Davao City National High School (DCNHS)",
+    "Digos City National High School",
+    "Dipolog City National High School",
+    "Father Saturnino Urios University High School (Butuan City)",
+    "General Santos City National High School",
+    "Iligan City National High School",
+    "Kidapawan City National High School",
+    "Koronadal National Comprehensive High School",
+    "Mati National Comprehensive High School (Davao Oriental)",
+    "Misamis Oriental General Comprehensive High School (MOGCHS - CDO)",
+    "Notre Dame of Dadiangas University High School (GenSan)",
+    "Ozamiz City National High School",
+    "Pagadian City National High School",
+    "Panabo City National High School",
+    "Regional Science High School IX (Zamboanga City)",
+    "Surigao City National High School",
+    "Tacurong National High School (Sultan Kudarat)",
+    "Tagum City National High School",
+    "Tandag National Science High School (Surigao del Sur)",
+    "University of the Immaculate Conception High School (Davao)",
+    "Valencia City National High School (Bukidnon)",
+    "Xavier University - Ateneo de Cagayan High School",
+    "Zamboanga City High School (Main)",
+    "Zamboanga City State Polytechnic College High School",
+
+    // Vocational, Technical, and Training Institutions (TESDA & Tech-Voc)
+    "Cavite Provincial Training Center (TESDA PTC - Rosario / Paliparan)",
+    "CITE Technical Institute (San Jose, Cebu City)",
+    "Don Bosco Boys Home and Training Center - Liloan, Cebu",
+    "Don Bosco Technical College - Mandaluyong (DBTC)",
+    "Don Bosco Technical Institute - Makati (DBTI Makati)",
+    "Don Bosco Training Center - San Jose, Nueva Ecija",
+    "Don Bosco TVET Center - Canlubang, Laguna",
+    "Don Bosco TVET Center - Tondo, Manila",
+    "Dualtech Training Center (Canlubang, Laguna)",
+    "Jacobo Z. Gonzales Memorial National Agricultural School (Biñan)",
+    "MFI Polytechnic Institute (Pasig / Calamba)",
+    "Quezon National Agricultural School (Pagbilao, Quezon)",
+    "Regional Training Center - Central Luzon (TESDA Guiguinto / Mariveles)",
+    "Regional Training Center - Central Visayas (TESDA Cebu City)",
+    "Regional Training Center - Davao (Korea-Philippines Vocational Training Center)",
+    "Regional Training Center - Ilocos Region (TESDA San Fernando, La Union)",
+    "Regional Training Center - NCR (TESDA Taguig)",
+    "Regional Training Center - Northern Mindanao (TESDA Tagoloan)",
+    "Regional Training Center - Western Visayas (TESDA Talisay City)",
+    "Regional Training Center - Zamboanga Peninsula (TESDA Zamboanga City)",
+    "Rizal Provincial Technical Education and Skills Development Center (Binangonan)",
+    "Technical Education and Skills Development Authority (TESDA) - Regional Training Center IV-A",
+    "Technical Education and Skills Development Authority (TESDA) - Women's Center",
+
+    // Nationwide Private Senior High School Networks
+    "AMA Basic Education / Senior High School",
+    "AMA Computer Learning Center (ACLC) Senior High School",
+    "APEC Schools (Affordable Private Education Center)",
+    "Informatics College Senior High School",
+    "Phinma Education Senior High Schools",
+    "STI Senior High School",
+  ])
+).sort();
+
+export async function fetchPhilippineUniversitiesApi(): Promise<string[]> {
+  try {
+    const res = await fetch("http://universities.hipolabs.com/search?country=Philippines");
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        const fetchedNames = data.map((u: any) => u.name).filter(Boolean);
+        return Array.from(new Set([...PHILIPPINES_UNIVERSITIES_COLLEGES, ...fetchedNames])).sort();
+      }
+    }
+  } catch (err) {}
+  return PHILIPPINES_UNIVERSITIES_COLLEGES;
+}
+
+/**
  * 2. Educational Qualifications (Degrees, Bootcamps, OJT, & Formal Training)
  */
-export const BSIT_BSCS_QUALIFICATIONS = [
-  "BS Information Technology (BSIT)",
-  "BS Computer Science (BSCS)",
-  "BS Information Systems (BSIS)",
-  "Associate in Computer Technology (ACT)",
-  "Internship / OJT Completion",
-  "Capstone / Thesis Project Completion",
-  "Web Development Bootcamp Completion",
-  "Full-Stack Web Development Training",
-  "Software Engineering Training",
-  "Database Management & SQL Training",
-  "Network Administration & Routing Training",
-  "Cybersecurity & SOC Fundamentals Training",
-  "Data Analytics & Business Intelligence Training",
-  "Cloud Architecture & Operations Training",
-  "UI/UX Design Bootcamp Completion",
-  "IT Helpdesk & Technical Support Training",
-];
+export const BSIT_BSCS_QUALIFICATIONS = ALL_UNIFIED_QUALIFICATIONS;
 
 /**
  * 3. Professional Certifications (Recognized Industry Credentials & Vendor Certificates)
  */
-export const BSIT_BSCS_CERTIFICATIONS = [
-  "CompTIA IT Fundamentals (ITF+)",
-  "CompTIA A+",
-  "CompTIA Network+",
-  "CompTIA Security+",
-  "Cisco Certified Network Associate (CCNA)",
-  "AWS Certified Cloud Practitioner",
-  "Microsoft Certified: Azure Fundamentals (AZ-900)",
-  "Google Cloud Certified Associate Cloud Engineer",
-  "Oracle Certified Professional: Java / Database",
-  "Fortinet Certified Associate Cybersecurity",
-  "Scrum Fundamentals Certified (SFC)",
-  "Information Technology Specialist (ITS) - JavaScript / Python / HTML",
-  "ISTQB Certified Tester Foundation Level (CTFL)",
-  "Certified Associate in Python Programming (PCAP)",
-  "Microsoft Certified: Power BI Data Analyst Associate",
-];
+export const BSIT_BSCS_CERTIFICATIONS = ALL_UNIFIED_CERTIFICATIONS;
 
 export interface JobRoleDefinition {
   title: string;
@@ -791,9 +1970,29 @@ export function matchesRadius(
 export function parseExpectedSalary(raw: string | number | null | undefined): number {
   if (!raw) return 0;
   if (typeof raw === "number") return raw;
-  const amount = Number(String(raw).replace(/[^0-9.]/g, ""));
+  const firstPart = String(raw).split("-")[0];
+  const amount = Number(firstPart.replace(/[^0-9.]/g, ""));
   return Number.isFinite(amount) ? amount : 0;
 }
+
+export const PREFERRED_LOCATION_OPTIONS: string[] = Array.from(
+  new Set([
+    "Open to Any Location in Cavite",
+    "Open to Relocation / Remote",
+    ...CAVITE_CITIES,
+    "Makati City",
+    "Taguig City / BGC",
+    "Pasig City",
+    "Quezon City",
+    "Mandaluyong City",
+    "Pasay City",
+    "Parañaque City",
+    "Muntinlupa City / Alabang",
+    "Santa Rosa, Laguna",
+    "Calamba, Laguna",
+    "Biñan, Laguna",
+  ])
+).sort();
 
 export type CandidateMatchInput = {
   desired_job_title?: string | null;
@@ -802,6 +2001,7 @@ export type CandidateMatchInput = {
   distance_km?: number;
   city?: string | null;
   address?: string | null;
+  preferred_locations?: string | null;
   skills?: string | null;
   qualifications?: string | null;
   certifications?: string | null;
@@ -846,6 +2046,7 @@ export function calculateCandidateMatch(
     workArrangement: cand.work_arrangement || "Any",
     expectedSalary: cand.expected_salary ? parseExpectedSalary(cand.expected_salary) : 0,
     city: cand.city || cand.address || "Cavite",
+    preferred_locations: parseCompetencyDisplayTags(cand.preferred_locations),
     skills: parseCompetencyDisplayTags(cand.skills),
     qualifications: parseCompetencyDisplayTags(cand.qualifications),
     certifications: parseCompetencyDisplayTags(cand.certifications),
@@ -860,6 +2061,7 @@ export type ApplicantProfileInput = {
   expectedSalary?: number;
   city?: string;
   preferredCities?: string[];
+  preferred_locations?: string[];
   skills?: string[];
   qualifications?: string[];
   certifications?: string[];
@@ -983,22 +2185,179 @@ export const SKILL_KEYWORD_TAXONOMY: Record<string, string[]> = {
   ]
 };
 
+/**
+ * Calculates the total active experience duration in years for a skill or credential.
+ * Automatically parses acquisition year e.g. "JavaScript (Since 2022)" or "(2022)"
+ * and computes: CurrentYear - AcquiredYear.
+ */
+export function calculateSkillExperienceYears(rawSkill: string | null | undefined): number {
+  if (!rawSkill || !rawSkill.trim()) return 1;
+
+  const currentYear = new Date().getFullYear();
+
+  // 1. Check for "Since YYYY" or "(YYYY)" or "Acquired YYYY" or "[Course] (Since YYYY)"
+  const yearMatch = rawSkill.match(/(?:Since|Acquired|from|year|yr|in)?\s*\(?\s*(\b20\d{2}\b|\b19\d{2}\b)\s*\)?/i);
+  if (yearMatch) {
+    const startYear = parseInt(yearMatch[1], 10);
+    if (!isNaN(startYear) && startYear <= currentYear) {
+      const duration = currentYear - startYear;
+      return Math.max(1, duration);
+    }
+  }
+
+  // 2. Check for explicit year range e.g. "(2020 - 2024)"
+  const rangeMatch = rawSkill.match(/(\b20\d{2}\b)\s*[-–]\s*(\b20\d{2}\b)/);
+  if (rangeMatch) {
+    const startYear = parseInt(rangeMatch[1], 10);
+    const endYear = parseInt(rangeMatch[2], 10);
+    if (!isNaN(startYear) && !isNaN(endYear) && endYear >= startYear) {
+      return Math.max(1, endYear - startYear);
+    }
+  }
+
+  // 3. Check for explicit "X years" text e.g. "(3 years)"
+  const yearsTextMatch = rawSkill.match(/(\d+)\s*(?:years|year|yrs|yr)/i);
+  if (yearsTextMatch) {
+    const yrs = parseInt(yearsTextMatch[1], 10);
+    if (!isNaN(yrs)) return Math.max(1, yrs);
+  }
+
+  return 1;
+}
+
+export const QUALIFICATION_TAXONOMY_MAP: Record<string, string[]> = {
+  "tvl - ict": [
+    "tvl - ict",
+    "tvl-ict",
+    "ict",
+    "information and communications technology",
+    "tvl - ict information and communications technology",
+    "tvl - ict (information and communications technology)",
+    "tvl-ict (information and communications technology)",
+    "information & communications technology",
+    "ict strand",
+    "tvl ict",
+  ],
+  "stem": [
+    "stem",
+    "science technology engineering and mathematics",
+    "science, technology, engineering, and mathematics",
+    "stem - science, technology, engineering, and mathematics",
+    "stem strand",
+  ],
+  "abm": [
+    "abm",
+    "accountancy business and management",
+    "accountancy, business, and management",
+    "abm - accountancy, business, and management",
+    "abm strand",
+  ],
+  "humss": [
+    "humss",
+    "humanities and social sciences",
+    "humss - humanities and social sciences",
+    "humss strand",
+  ],
+  "gas": [
+    "gas",
+    "general academic strand",
+    "gas - general academic strand",
+    "gas strand",
+  ],
+  "bsit": [
+    "bsit",
+    "bs information technology",
+    "bachelor of science in information technology",
+    "bs information technology - bsit",
+    "bs information technology (bsit)",
+    "information technology degree",
+  ],
+  "bscs": [
+    "bscs",
+    "bs computer science",
+    "bachelor of science in computer science",
+    "bs computer science - bscs",
+    "bs computer science (bscs)",
+    "computer science degree",
+  ],
+  "bsis": [
+    "bsis",
+    "bs information systems",
+    "bachelor of science in information systems",
+  ],
+  "bscpe": [
+    "bscpe",
+    "bs computer engineering",
+    "computer engineering",
+  ],
+};
+
+function normalizeCompetencyText(raw: string): string {
+  if (!raw) return "";
+  let text = raw.toLowerCase().trim();
+
+  // 1. Strip duration/years in parentheses like "(1 year)", "(2 years)", "(2021 - 2023)", "(since 2022)"
+  text = text.replace(/\s*\((?:\d+|less|since|\d{4}\s*[-–]\s*\d{4}|\d+\s*years?|\d+\s*yrs?)[^)]*\)/gi, "");
+
+  // 2. Strip bracket tags like "[SHS]", "[College]", "[TESDA]", "[Vocational]"
+  text = text.replace(/\s*\[.*?\]/g, "");
+
+  // 3. Extract qualification/degree part before school "@ School Name" if present
+  // e.g., "TVL - ICT (Information and Communications Technology) @ Notre Dame of Trece Martires City"
+  if (text.includes("@")) {
+    text = text.split("@")[0].trim();
+  }
+
+  // 4. Remove remaining trailing parentheses that only contain dates or numbers
+  text = text.replace(/\s*\(\s*\d{4}\s*[-–]?\s*\d{0,4}\s*\)/g, "");
+
+  return text.trim();
+}
+
+function toNormalizedSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[()[\]{}@]/g, " ")
+    .replace(/[-_/,+&|;]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function isSkillMatch(itemA: string, itemB: string): boolean {
   if (!itemA || !itemB) return false;
 
-  const cleanA = itemA.toLowerCase().replace(/\s*\(.*?\)/g, "").trim();
-  const cleanB = itemB.toLowerCase().replace(/\s*\(.*?\)/g, "").trim();
-  if (!cleanA || !cleanB) return false;
-
-  // 1. Direct equality or substring match
-  if (cleanA === cleanB || cleanA.includes(cleanB) || cleanB.includes(cleanA)) {
+  // Direct raw equality
+  const rawCleanA = itemA.toLowerCase().replace(/\s*\(.*?\)/g, "").trim();
+  const rawCleanB = itemB.toLowerCase().replace(/\s*\(.*?\)/g, "").trim();
+  if (rawCleanA && rawCleanB && (rawCleanA === rawCleanB || rawCleanA.includes(rawCleanB) || rawCleanB.includes(rawCleanA))) {
     return true;
   }
 
-  // 2. Tokenize by slashes, commas, and hyphens (e.g., "HTML / HTML5" -> ["html", "html5"])
+  const normA = normalizeCompetencyText(itemA);
+  const normB = normalizeCompetencyText(itemB);
+  if (!normA || !normB) return false;
+
+  const slugA = toNormalizedSlug(normA);
+  const slugB = toNormalizedSlug(normB);
+
+  // 1. Direct equality or substring match on normalized slugs
+  if (slugA === slugB || (slugA.length >= 3 && slugB.includes(slugA)) || (slugB.length >= 3 && slugA.includes(slugB))) {
+    return true;
+  }
+
+  // 2. Check Qualification / Strand Taxonomy
+  for (const [, keywords] of Object.entries(QUALIFICATION_TAXONOMY_MAP)) {
+    const matchesA = keywords.some((kw) => slugA === kw || slugA.includes(kw) || kw.includes(slugA));
+    const matchesB = keywords.some((kw) => slugB === kw || slugB.includes(kw) || kw.includes(slugB));
+    if (matchesA && matchesB) {
+      return true;
+    }
+  }
+
+  // 3. Tokenize by slashes, commas, and hyphens (e.g., "HTML / HTML5" -> ["html", "html5"])
   const splitRegex = /[/,+&|;]|\s+and\s+|\s+or\s+/i;
-  const tokensA = cleanA.split(splitRegex).map((t) => t.trim()).filter(Boolean);
-  const tokensB = cleanB.split(splitRegex).map((t) => t.trim()).filter(Boolean);
+  const tokensA = slugA.split(splitRegex).map((t) => t.trim()).filter(Boolean);
+  const tokensB = slugB.split(splitRegex).map((t) => t.trim()).filter(Boolean);
 
   for (const tA of tokensA) {
     for (const tB of tokensB) {
@@ -1008,13 +2367,13 @@ export function isSkillMatch(itemA: string, itemB: string): boolean {
     }
   }
 
-  // 3. Taxonomy / Subcategory lookup
+  // 4. Skills Taxonomy / Subcategory lookup
   for (const [category, keywords] of Object.entries(SKILL_KEYWORD_TAXONOMY)) {
-    const isCategoryA = cleanA === category || cleanA.includes(category) || category.includes(cleanA) || tokensA.some((t) => t === category || category.includes(t));
-    const isCategoryB = cleanB === category || cleanB.includes(category) || category.includes(cleanB) || tokensB.some((t) => t === category || category.includes(t));
+    const isCategoryA = slugA === category || slugA.includes(category) || category.includes(slugA) || tokensA.some((t) => t === category || category.includes(t));
+    const isCategoryB = slugB === category || slugB.includes(category) || category.includes(slugB) || tokensB.some((t) => t === category || category.includes(t));
 
-    const matchesKeywordA = keywords.some((kw) => cleanA === kw || cleanA.includes(kw) || kw.includes(cleanA) || tokensA.some((t) => t === kw || kw.includes(t)));
-    const matchesKeywordB = keywords.some((kw) => cleanB === kw || cleanB.includes(kw) || kw.includes(cleanB) || tokensB.some((t) => t === kw || kw.includes(t)));
+    const matchesKeywordA = keywords.some((kw) => slugA === kw || slugA.includes(kw) || kw.includes(slugA) || tokensA.some((t) => t === kw || kw.includes(t)));
+    const matchesKeywordB = keywords.some((kw) => slugB === kw || slugB.includes(kw) || kw.includes(slugB) || tokensB.some((t) => t === kw || kw.includes(t)));
 
     // Case A: Item A is the broad category (e.g. "Web Development") and Item B is a subcategory (e.g. "HTML")
     if (isCategoryA && matchesKeywordB) return true;
@@ -1062,9 +2421,11 @@ export function calculateJobMatchDetails(
   const missingSkills: string[] = [];
 
   rawJobSkills.forEach((item) => {
-    const isMatched = profileSkills.some((ps) => isSkillMatch(item, ps));
-    if (isMatched) {
-      matchedSkills.push(item);
+    const matchingProfileSkill = profileSkills.find((ps) => isSkillMatch(item, ps));
+    if (matchingProfileSkill) {
+      const expYears = calculateSkillExperienceYears(matchingProfileSkill);
+      const displayLabel = expYears > 1 ? `${item} (${expYears} yrs exp)` : item;
+      matchedSkills.push(displayLabel);
     } else {
       missingSkills.push(item);
     }
@@ -1083,9 +2444,11 @@ export function calculateJobMatchDetails(
   const missingQuals: string[] = [];
 
   rawJobQuals.forEach((item) => {
-    const isMatched = profileQuals.some((pq) => isSkillMatch(item, pq)) || profileSkills.some((ps) => isSkillMatch(item, ps));
-    if (isMatched) {
-      matchedQuals.push(item);
+    const matchingQual = profileQuals.find((pq) => isSkillMatch(item, pq)) || profileSkills.find((ps) => isSkillMatch(item, ps));
+    if (matchingQual) {
+      const expYears = calculateSkillExperienceYears(matchingQual);
+      const displayLabel = expYears > 1 ? `${item} (${expYears} yrs exp)` : item;
+      matchedQuals.push(displayLabel);
     } else {
       missingQuals.push(item);
     }
@@ -1136,11 +2499,18 @@ export function calculateJobMatchDetails(
 
   let locationPts = 0;
   let locationSummary = "";
-  const pCity = (profile.city || "").toLowerCase();
-  const jLoc = (job.location || "").toLowerCase();
-  if (!pCity || !jLoc || pCity.includes(jLoc) || jLoc.includes(pCity) || jSetup.includes("remote")) {
+  const pCity = (profile.city || "").toLowerCase().trim();
+  const jLoc = (job.location || "").toLowerCase().trim();
+  const prefLocs = (profile.preferred_locations || profile.preferredCities || []).map((l) => l.toLowerCase().trim());
+  const matchesPref = prefLocs.some((pl) => pl && (jLoc.includes(pl) || pl.includes(jLoc) || pl.includes("cavite") || pl.includes("remote")));
+
+  if (!pCity || !jLoc || pCity.includes(jLoc) || jLoc.includes(pCity) || jSetup.includes("remote") || matchesPref) {
     locationPts = 15;
-    locationSummary = jSetup.includes("remote") ? "Remote Opportunity" : `Nearby in ${formatLocationWithCavite(job.location)}`;
+    locationSummary = jSetup.includes("remote")
+      ? "Remote Opportunity"
+      : matchesPref
+      ? `Matches Preferred Location: ${formatLocationWithCavite(job.location)}`
+      : `Nearby in ${formatLocationWithCavite(job.location)}`;
   } else {
     locationPts = 8;
     locationSummary = `${formatLocationWithCavite(job.location)}`;
@@ -1254,16 +2624,68 @@ export function parseCompetencyDisplayTags(raw: string | null | undefined): stri
     }
   } catch {}
 
-  return raw
-    .split(/[\n,;•|]+/)
+  const res: string[] = [];
+  let current = "";
+  let parenCount = 0;
+  let bracketCount = 0;
+  for (let i = 0; i < raw.length; i++) {
+    const char = raw[i];
+    if (char === "(") parenCount++;
+    else if (char === ")") parenCount = Math.max(0, parenCount - 1);
+    else if (char === "[") bracketCount++;
+    else if (char === "]") bracketCount = Math.max(0, bracketCount - 1);
+
+    if (
+      (char === "," || char === "\n" || char === ";" || char === "•" || char === "|") &&
+      parenCount === 0 &&
+      bracketCount === 0
+    ) {
+      if (current.trim()) res.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  if (current.trim()) res.push(current.trim());
+
+  return res
     .map((s) => s.trim())
     .filter(Boolean)
     .map((token) => {
-      const match = token.match(/^(.*?)\s*\((.*?)\)$/);
+      const match = token.match(/^(.*?)\s*(?:\[(.*?)\]\s*)?\((.*?)\)$/);
       if (match) {
-        return `${match[1].trim()} (${match[2].trim()})`;
+        return `${match[1].trim()} (${match[3].trim()})`;
       }
       return token;
     });
+}
+
+export function parsePreferredLocationTags(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    return (raw as any[]).map(String).map((s) => s.trim()).filter(Boolean);
+  }
+  if (typeof raw !== "string") return [];
+  let trimmed = raw.trim();
+  if (!trimmed) return [];
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (Array.isArray(parsed)) {
+      return parsed.map((item) => String(item).trim()).filter(Boolean);
+    }
+  } catch {}
+  if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+    trimmed = trimmed.slice(1, -1).trim();
+  }
+  if (trimmed.includes("|")) {
+    return trimmed.split("|").map((s) => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+  }
+  if (trimmed.includes(";")) {
+    return trimmed.split(";").map((s) => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+  }
+  if (trimmed.includes("\n")) {
+    return trimmed.split("\n").map((s) => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+  }
+  return [trimmed.replace(/^["']|["']$/g, "").trim()].filter(Boolean);
 }
 

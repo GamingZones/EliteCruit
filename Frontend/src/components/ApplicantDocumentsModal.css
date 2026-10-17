@@ -1,0 +1,393 @@
+/* ─── Applicant Documents & Attachments Modal (Simplified Uncategorized) ─── */
+.doc-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: docModalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.doc-modal-card {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.38);
+  width: 100%;
+  max-width: 640px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: docModalScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Header */
+.doc-modal-header {
+  padding: 18px 24px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: #ffffff;
+}
+
+.doc-modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.doc-modal-icon-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #e0f2fe;
+  color: #0369a1;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.doc-modal-title-group h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.doc-modal-title-group p {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.doc-modal-close-btn {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.doc-modal-close-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+/* Message alert */
+.doc-modal-alert {
+  padding: 10px 24px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.doc-modal-alert.alert-success {
+  background: #f0fdf4;
+  color: #166534;
+  border-bottom: 1px solid #bbf7d0;
+}
+
+.doc-modal-alert.alert-error {
+  background: #fef2f2;
+  color: #991b1b;
+  border-bottom: 1px solid #fecaca;
+}
+
+/* Body */
+.doc-modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Dropzone */
+.doc-dropzone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 22px 18px;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  text-align: center;
+}
+
+.doc-dropzone:hover,
+.doc-dropzone.dragging {
+  border-color: #0284c7;
+  background: #f0f9ff;
+}
+
+.dropzone-icon {
+  margin-bottom: 2px;
+}
+
+.dropzone-text strong {
+  display: block;
+  font-size: 0.9rem;
+  color: #0f172a;
+}
+
+.dropzone-text small {
+  display: block;
+  font-size: 0.76rem;
+  color: #64748b;
+  margin-top: 3px;
+}
+
+.dropzone-btn {
+  background: #0284c7;
+  color: #ffffff;
+  border: none;
+  border-radius: 7px;
+  padding: 7px 16px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  margin-top: 4px;
+}
+
+.dropzone-btn:hover:not(:disabled) {
+  background: #0369a1;
+}
+
+/* List Section */
+.doc-list-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.doc-list-heading {
+  font-size: 0.85rem;
+  color: #334155;
+  font-weight: 700;
+}
+
+.attachments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Item Row */
+.doc-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: all 0.15s ease;
+}
+
+.doc-item-row:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.doc-file-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.doc-file-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.doc-file-icon.pdf {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.doc-file-icon.word {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.doc-file-icon.image {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.doc-file-icon.generic {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.doc-file-meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.doc-file-name {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.doc-file-subtext {
+  font-size: 0.74rem;
+  color: #64748b;
+  display: block;
+  margin-top: 2px;
+}
+
+/* Actions */
+.doc-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.doc-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.doc-action-btn.view-btn {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #0369a1;
+}
+
+.doc-action-btn.view-btn:hover {
+  background: #f0f9ff;
+  border-color: #0284c7;
+}
+
+.doc-action-btn.download-btn {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.doc-action-btn.download-btn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.doc-action-btn.delete-btn {
+  background: #ffffff;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.doc-action-btn.delete-btn:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+}
+
+.no-attachments-notice {
+  text-align: center;
+  padding: 28px 16px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+/* Footer */
+.doc-modal-footer {
+  padding: 14px 24px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  background: #f8fafc;
+}
+
+.doc-modal-btn-done {
+  background: #0284c7;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 24px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.doc-modal-btn-done:hover {
+  background: #0369a1;
+}
+
+/* Animations */
+@keyframes docModalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes docModalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@media (max-width: 580px) {
+  .doc-item-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .doc-item-actions {
+    width: 100%;
+    justify-content: flex-end;
+    margin-top: 8px;
+  }
+}

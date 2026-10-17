@@ -1,0 +1,19 @@
+# EliteCruit - Features On Hold (For Future Implementation)
+
+The following features and system modules are currently on hold. They will be implemented in future development phases upon user request:
+
+1. Swipe-Based Job & Candidate Browsing (Tinder-Like Interface)
+   - Description: Interactive card deck swipe interface for Applicants (swiping through job recommendations) and Employers (swiping through candidate profiles).
+   - Status: On Hold for UI/UX update and refresh.
+
+2. ATS Resume Format Generator & Profile Scanner
+   - Description: System scans the applicant's profile data (personal info, contact details, skills, qualifications, experience, education) and automatically transfers/formats the details into a clean, standardized, single-column ATS-formatted resume layout (previewable and exportable).
+   - Status: On Hold for future implementation.
+
+3. Admin Hiring Trends Analytics & Reports
+   - Description: Interactive visual charts for hiring trends, applicant volume analytics, and exportable PDF/CSV administrative reports within the Admin Dashboard.
+   - Status: TBD / On Hold for future implementation.
+
+4. Advanced Employer Chatbot Automated Response Manager
+   - Description: Additional automation rules and custom AI knowledge-base management tools (currently handled via FAQ Management in Employer-FaqManagement.tsx).
+   - Status: On Hold for future enhancement.

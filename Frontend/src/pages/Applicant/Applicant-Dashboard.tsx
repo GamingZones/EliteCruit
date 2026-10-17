@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ApplicantChatbotDrawer from "../../components/ApplicantChatbotDrawer";
+import CalendarDrawer from "../../components/CalendarDrawer";
+import ConfirmationModal from "../../components/ConfirmationModal";
 import {
   calculateJobMatch,
   calculateJobMatchDetails,
@@ -8,16 +10,14 @@ import {
   parseCompetencyDisplayTags,
   formatExperienceLevel,
   formatLocationWithCavite,
+  parseLocations,
 } from "../../utils/filters";
+import { useUnreadNotificationsCount } from "../../hooks/useUnreadNotificationsCount";
+import { useUnreadMessagesCount } from "../../hooks/useUnreadMessagesCount";
 import "./Applicant-Dashboard.css";
+import "./JobSearch.css";
+import { SideIcon, ChevronIcon, type SideNavItem } from "../../components/Icons";
 
-type SideNavItem = {
-  label: string;
-  icon: "overview" | "star" | "applications" | "documents" | "feedback" | "profile" | "search" | "chat" | "messages" | "notifications" | "logout";
-  badge?: string;
-  sectionId?: string;
-  href?: string;
-};
 
 type StatCard = {
   label: string;
@@ -57,6 +57,8 @@ type JobCard = {
   createdAt?: string | null;
   createdRank?: number;
   employerUserId?: number;
+  companyLogoPath?: string | null;
+  companyCoverPath?: string | null;
   rating?: string;
 };
 
@@ -126,10 +128,10 @@ type JobInvitationItem = {
 };
 
 const baseStatCards: StatCard[] = [
-  { label: "Applications", value: "0", hint: "Submitted roles", icon: "applications" },
-  { label: "Under Review", value: "0", hint: "Recruiter opened", icon: "notifications" },
-  { label: "Shortlisted", value: "0", hint: "Ready for next step", icon: "star" },
-  { label: "Smart Matches", value: "0", hint: "Ranked recommendations", icon: "search" },
+  { label: "My Applications", value: "0", hint: "Active submissions", icon: "applications" },
+  { label: "Direct Invitations", value: "0", hint: "Employer invites", icon: "notifications" },
+  { label: "Smart Matches", value: "0", hint: "High compatibility", icon: "search" },
+  { label: "Saved Jobs", value: "0", hint: "Bookmarked openings", icon: "star" },
 ];
 
 const navWorkspace: SideNavItem[] = [
@@ -198,6 +200,44 @@ function MiniIcon({ name }: { name: "company" | "location" | "bookmark" | "bookm
   );
 }
 
+function RenderLocationMeta({ location }: { location?: string | null }) {
+  const locItems = parseLocations(location);
+
+  if (locItems.length === 0) {
+    return (
+      <span className="location-meta">
+        <MiniIcon name="location" />
+        <span>Location not set</span>
+      </span>
+    );
+  }
+
+  if (locItems.length === 1) {
+    return (
+      <span className="location-meta">
+        <MiniIcon name="location" />
+        <span>{locItems[0]}</span>
+      </span>
+    );
+  }
+
+  const fullListText = locItems.join(", ");
+
+  return (
+    <span className="location-meta">
+      <MiniIcon name="location" />
+      <span>{locItems[0]}</span>
+      <span className="overflow-dots-badge" tabIndex={0} aria-label="View all locations">
+        ...
+        <span className="overflow-tooltip">
+          <strong>Locations:</strong>
+          <span>{fullListText}</span>
+        </span>
+      </span>
+    </span>
+  );
+}
+
 function parseSkills(raw: string | null | undefined) {
   if (!raw) return [] as string[];
   return raw
@@ -256,49 +296,7 @@ function formatDate(d: string | null) {
   return isNaN(dt.getTime()) ? d : dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-export function SideIcon({ name }: { name: SideNavItem["icon"] }) {
-  const icons: Record<SideNavItem["icon"], JSX.Element> = {
-    overview: <path d="M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z" />,
-    star: <path d="m12 3 2.8 5.6L21 9.5l-4.5 4.4 1.1 6.1L12 17.1 6.4 20l1.1-6.1L3 9.5l6.2-.9L12 3Z" />,
-    applications: <path d="M7 4h10v4H7V4Zm-1 6h12v10H6V10Zm2 2v2h2v-2H8Zm0 4v2h2v-2H8Zm4-4v2h4v-2h-4Zm0 4v2h4v-2h-4Z" />,
-    documents: <path d="M7 3h7l5 5v13H7V3Zm7 1.5V9h4.5M9 12h8M9 15h8M9 18h6" />,
-    feedback: <path d="M4 11h3v9H4v-9Zm5 9V9.5L12.5 6h4.2c1 0 1.7 1 1.4 2l-1 3h2.6c1.1 0 1.9 1 1.5 2l-1.8 5.6c-.2.6-.8 1-1.4 1H9Z" />,
-    profile: <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 1 1 14 0" />,
-    search: <path d="M11 4a7 7 0 1 0 4.4 12.4l4.1 4.1 1.5-1.5-4.1-4.1A7 7 0 0 0 11 4Z" />,
-    chat: (
-      <g stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="11" width="18" height="10" rx="3" />
-        <circle cx="8.5" cy="15.5" r="1.2" fill="currentColor" />
-        <circle cx="15.5" cy="15.5" r="1.2" fill="currentColor" />
-        <path d="M12 2v5m-4 4V7a4 4 0 0 1 8 0v4" />
-      </g>
-    ),
-    messages: <path d="M3 6h18v11H8l-5 4v-4H3V6Zm3 3h12M6 12h8" />,
-    notifications: <path d="M12 3a5 5 0 0 1 5 5v2.8l1.4 2.3c.5.8 0 1.9-.9 1.9H6.5c-.9 0-1.4-1.1-.9-1.9L7 10.8V8a5 5 0 0 1 5-5Zm-2 14a2 2 0 1 0 4 0" />,
-    logout: <path d="M9 4H5v16h4M14 8l4 4-4 4M10 12h8" />,
-  };
-
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      {icons[name]}
-    </svg>
-  );
-}
-
-export function ChevronIcon({ direction }: { direction: "up" | "down" | "left" | "right" }) {
-  const paths: Record<"up" | "down" | "left" | "right", string> = {
-    up: "M6 14l6-6 6 6",
-    down: "M6 10l6 6 6-6",
-    left: "M14 6l-6 6 6 6",
-    right: "M10 6l6 6-6 6",
-  };
-
-  return (
-    <svg viewBox="0 0 24 24" className="chevron-icon" aria-hidden="true">
-      <path d={paths[direction]} />
-    </svg>
-  );
-}
+export { SideIcon, ChevronIcon } from "../../components/Icons";
 
 function MenuIcon() {
   return (
@@ -324,13 +322,14 @@ function getInitialApplicantName() {
 }
 
 export default function ApplicantDashboard() {
+  const unreadNotifCount = useUnreadNotificationsCount();
+  const unreadMessagesCount = useUnreadMessagesCount();
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(true);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("section-overview");
   const [applicantLabel, setApplicantLabel] = useState(getInitialApplicantName);
-  const [dashboardStats, setDashboardStats] = useState<StatCard[]>(baseStatCards);
   const [myApplicationsList, setMyApplicationsList] = useState<any[]>([]);
   const [invitationsList, setInvitationsList] = useState<JobInvitationItem[]>([]);
   const [invitationFilter, setInvitationFilter] = useState<"all" | "pending" | "accepted" | "declined">("all");
@@ -350,6 +349,25 @@ export default function ApplicantDashboard() {
   const [faqLoading, setFaqLoading] = useState(false);
   const [expandedFaqIds, setExpandedFaqIds] = useState<number[]>([]);
   const [isFaqDrawerOpen, setIsFaqDrawerOpen] = useState(false);
+
+  // DOUBLE VERIFICATION MODAL STATES
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [declineInvTarget, setDeclineInvTarget] = useState<JobInvitationItem | null>(null);
+  const [applyJobTarget, setApplyJobTarget] = useState<{ jobId: number; title: string } | null>(null);
+
+  const handleConfirmDeclineInvitation = async () => {
+    if (!declineInvTarget) return;
+    const invId = declineInvTarget.id;
+    setDeclineInvTarget(null);
+    await handleRespondInvitation(invId, "decline");
+  };
+
+  const handleConfirmApply = async () => {
+    if (!applyJobTarget) return;
+    const targetId = applyJobTarget.jobId;
+    setApplyJobTarget(null);
+    await applyToJob(targetId);
+  };
 
   const mainRef = useRef<HTMLElement | null>(null);
 
@@ -444,13 +462,6 @@ export default function ApplicantDashboard() {
                 .filter((id: number) => Number.isInteger(id) && id > 0)
             : [];
           setAppliedJobIds(ids);
-
-          setDashboardStats((current) => [
-            { label: "Applications", value: String(total), hint: "Submitted roles", icon: "applications" },
-            { label: "Under Review", value: String(underReview), hint: "Recruiter opened", icon: "notifications" },
-            { label: "Shortlisted", value: String(shortlisted), hint: "Ready for next step", icon: "star" },
-            current[3] || baseStatCards[3],
-          ]);
         })
         .catch(() => {});
 
@@ -551,6 +562,8 @@ export default function ApplicantDashboard() {
       createdAt: inv.created_at,
       createdRank: 0,
       employerUserId: Number(inv.employer_user_id) || undefined,
+      companyLogoPath: (inv as any).company_logo_path || null,
+      companyCoverPath: (inv as any).company_cover_path || null,
       rating: (inv as any).rating ? String((inv as any).rating) : "0.0",
     };
     setDetailsJob(jobObj);
@@ -601,15 +614,11 @@ export default function ApplicantDashboard() {
           createdAt: typeof row.created_at === "string" ? row.created_at : null,
           createdRank: index,
           employerUserId: Number(row.employer_user_id) || undefined,
+          companyLogoPath: row.company_logo_path || null,
+          companyCoverPath: row.company_cover_path || null,
           rating: row.rating ? String(row.rating) : "0.0",
         }));
         setJobs(mapped);
-        setDashboardStats((current) => [
-          current[0] || baseStatCards[0],
-          current[1] || baseStatCards[1],
-          current[2] || baseStatCards[2],
-          { label: "Smart Matches", value: String(mapped.length), hint: "Ranked recommendations", icon: "search" },
-        ]);
       })
       .catch(() => setJobs([]));
   }, []);
@@ -618,6 +627,33 @@ export default function ApplicantDashboard() {
     const unappliedJobs = jobs.filter((job) => !appliedJobIds.includes(job.id));
     return [...unappliedJobs].sort((a, b) => calculateJobMatch(b, applicantMatchProfile) - calculateJobMatch(a, applicantMatchProfile));
   }, [jobs, appliedJobIds, applicantMatchProfile]);
+
+  const dashboardStats: StatCard[] = useMemo(() => [
+    {
+      label: "My Applications",
+      value: String(myApplicationsList.length),
+      hint: "Active submissions",
+      icon: "applications",
+    },
+    {
+      label: "Direct Invitations",
+      value: String(invitationsList.length),
+      hint: "Employer invites",
+      icon: "notifications",
+    },
+    {
+      label: "Smart Matches",
+      value: String(sortedSmartMatches.length),
+      hint: "High compatibility",
+      icon: "search",
+    },
+    {
+      label: "Saved Jobs",
+      value: String(bookmarkedIds.length),
+      hint: "Bookmarked openings",
+      icon: "star",
+    },
+  ], [myApplicationsList.length, invitationsList.length, sortedSmartMatches.length, bookmarkedIds.length]);
 
   const applyToJob = async (jobId: number) => {
     if (!applicantUserId) {
@@ -692,6 +728,8 @@ export default function ApplicantDashboard() {
       createdAt: typeof app.created_at === "string" ? app.created_at : null,
       createdRank: 0,
       employerUserId: Number(app.employer_user_id) || undefined,
+      companyLogoPath: app.company_logo_path || null,
+      companyCoverPath: app.company_cover_path || null,
       rating: app.rating ? String(app.rating) : "0.0",
     };
     setDetailsJob(jobObj);
@@ -791,17 +829,26 @@ export default function ApplicantDashboard() {
             )}
           </li>
 
-          {navGeneral.map((item) => (
-            <li key={item.label} className={item.sectionId === activeSection ? "active" : ""}>
-              <a href={item.href ?? (item.sectionId ? `#${item.sectionId}` : "#applicant-overview")} onClick={(event) => handleSectionClick(event, item.sectionId)}>
-                <span className="item-icon">
-                  <SideIcon name={item.icon} />
-                </span>
-                <span>{item.label}</span>
-                {item.badge ? <span className="item-badge">{item.badge}</span> : null}
-              </a>
-            </li>
-          ))}
+          {navGeneral.map((item) => {
+            const isNotif = item.label === "Notifications";
+            const isMessages = item.label === "Messages";
+            const badgeCount = isNotif
+              ? (unreadNotifCount > 0 ? unreadNotifCount : null)
+              : isMessages
+              ? (unreadMessagesCount > 0 ? unreadMessagesCount : null)
+              : item.badge;
+            return (
+              <li key={item.label} className={item.sectionId === activeSection ? "active" : ""}>
+                <a href={item.href ?? (item.sectionId ? `#${item.sectionId}` : "#applicant-overview")} onClick={(event) => handleSectionClick(event, item.sectionId)}>
+                  <span className="item-icon">
+                    <SideIcon name={item.icon} />
+                  </span>
+                  <span>{item.label}</span>
+                  {badgeCount ? <span className="item-badge">{badgeCount}</span> : null}
+                </a>
+              </li>
+            );
+          })}
         </ul>
         <div className="appdash-profile-control">
           <button type="button" className="appdash-profile-anchor" onClick={() => setIsProfileMenuOpen((value) => !value)} aria-expanded={isProfileMenuOpen}>
@@ -809,7 +856,7 @@ export default function ApplicantDashboard() {
             <span className="profile-user-copy"><strong>{applicantLabel}</strong><small>Applicant</small></span>
             <ChevronIcon direction={isProfileMenuOpen ? "down" : "up"} />
           </button>
-          {isProfileMenuOpen && <div className="appdash-profile-menu"><a href="/my-profile"><SideIcon name="profile" />My Profile</a><a href="/"><SideIcon name="logout" />Logout</a></div>}
+          {isProfileMenuOpen && <div className="appdash-profile-menu"><a href="/my-profile"><SideIcon name="profile" />My Profile</a><button type="button" className="appdash-profile-menu-btn" onClick={() => setIsLogoutModalOpen(true)}><SideIcon name="logout" />Logout</button></div>}
         </div>
       </aside>
 
@@ -827,20 +874,11 @@ export default function ApplicantDashboard() {
               onToggle={() => setIsChatbotOpen((prev) => !prev)}
               pageTitle="Dashboard"
             />
+            <CalendarDrawer />
           </div>
         </header>
 
-        <section className="hero-card section-anchor" id="section-overview">
-          <div>
-            <small>Applicant Workspace</small>
-            <h1>Dashboard</h1>
-            <p>
-              Track applications, review Smart Matches, and manage your applicant workflow.
-            </p>
-          </div>
-        </section>
-
-        <section className="stats-grid" aria-label="Dashboard metrics">
+        <section className="stats-grid section-anchor" id="section-overview" aria-label="Dashboard metrics">
           {dashboardStats.map((card) => (
             <article key={card.label} className="stat-card">
               <div className="stat-head">
@@ -874,7 +912,7 @@ export default function ApplicantDashboard() {
               </div>
             </article>
           ) : (
-            sortedSmartMatches.map((job) => (
+            sortedSmartMatches.slice(0, 5).map((job) => (
               <article key={job.id} className="result-card" style={{ marginBottom: "12px" }}>
                 <div className="result-card-main">
                   <div className="result-left-col">
@@ -883,7 +921,7 @@ export default function ApplicantDashboard() {
                     </div>
                     <p className="meta-line">
                       <span><MiniIcon name="company" />{job.company}</span>
-                      <span><MiniIcon name="location" />{job.location}</span>
+                      <RenderLocationMeta location={job.location} />
                     </p>
                     <p className="result-summary">{job.summary || "No job description provided yet."}</p>
                     <div className="result-tags">
@@ -897,7 +935,7 @@ export default function ApplicantDashboard() {
 
                   <div className="result-middle-col">
                     <div className="result-middle-meta">
-                      <span>Applications: {job.applicantCount}/{job.applicationLimit}</span>
+                      <span>Applications: {job.applicantCount}</span>
                       <span>Close Date: {job.closeDate}</span>
                       {job.skillTags.length > 0 && (
                         <div className="js-meta-tag-line">
@@ -938,7 +976,7 @@ export default function ApplicantDashboard() {
                     </div>
                     <button type="button" className="details-btn" onClick={() => setDetailsJob(job)}>Details</button>
                     <div className="card-bottom-actions">
-                      <button type="button" className={`solid-btn apply-right-btn ${appliedJobIds.includes(job.id) ? "applied-btn" : ""}`} onClick={() => applyToJob(job.id)} disabled={appliedJobIds.includes(job.id) || applyingJobId === job.id}>{appliedJobIds.includes(job.id) ? "Applied" : applyingJobId === job.id ? "Applying..." : "Apply"}</button>
+                      <button type="button" className={`solid-btn apply-right-btn ${appliedJobIds.includes(job.id) ? "applied-btn" : ""}`} onClick={() => setApplyJobTarget({ jobId: job.id, title: job.title })} disabled={appliedJobIds.includes(job.id) || applyingJobId === job.id}>{appliedJobIds.includes(job.id) ? "Applied" : applyingJobId === job.id ? "Applying..." : "Apply"}</button>
                       <button type="button" className="bookmark-icon-btn" aria-label={bookmarkedIds.includes(job.id) ? "Remove bookmark" : "Bookmark job"} onClick={() => toggleBookmark(job.id)}>
                         <MiniIcon name={bookmarkedIds.includes(job.id) ? "bookmarkFilled" : "bookmark"} />
                       </button>
@@ -962,7 +1000,7 @@ export default function ApplicantDashboard() {
           </div>
 
           {myApplicationsList.length === 0 ? (
-            <article className="job-card">
+            <article className="job-card job-empty-card">
               <div>
                 <h3>No applications submitted yet.</h3>
                 <p>Browse open job listings on the Job Search page and submit applications.</p>
@@ -1035,9 +1073,13 @@ export default function ApplicantDashboard() {
           </div>
 
           {invitationsList.filter((inv) => invitationFilter === "all" || (inv.status || "pending").toLowerCase() === invitationFilter).length === 0 ? (
-            <article className="job-card">
+            <article className="job-card job-empty-card">
               <div>
-                <h3>No job invitations found under "{invitationFilter}".</h3>
+                <h3>
+                  {invitationFilter === "all"
+                    ? "No job invitations found."
+                    : `No ${invitationFilter} job invitations found.`}
+                </h3>
                 <p>When employers discover your profile and invite you to their open positions, they will appear here.</p>
               </div>
               <div className="job-actions">
@@ -1088,7 +1130,7 @@ export default function ApplicantDashboard() {
                           <button
                             type="button"
                             className="inv-action-btn inv-decline-btn"
-                            onClick={() => handleRespondInvitation(inv.id, "decline")}
+                            onClick={() => setDeclineInvTarget(inv)}
                             disabled={isRespondingInvId === inv.id}
                           >
                             {isRespondingInvId === inv.id ? "..." : "Decline"}
@@ -1118,18 +1160,56 @@ export default function ApplicantDashboard() {
       {detailsJob && (
         <div className="jd-overlay" role="dialog" aria-modal="true" aria-label="Job Details" onClick={(e) => { if (e.target === e.currentTarget) setDetailsJob(null); }}>
           <div className="jd-panel">
+            {/* Cover banner */}
             <div className="jd-cover-banner">
-              <div className="jd-cover-placeholder">
+              {detailsJob.companyCoverPath ? (
+                <img
+                  src={detailsJob.companyCoverPath.startsWith("http") || detailsJob.companyCoverPath.startsWith("/api") ? detailsJob.companyCoverPath : `/api/employers/${detailsJob.employerUserId}/cover`}
+                  alt={`${detailsJob.company} cover`}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLElement).style.display = "none";
+                    const placeholder = e.currentTarget.parentElement?.querySelector(".jd-cover-placeholder") as HTMLElement;
+                    if (placeholder) placeholder.style.display = "flex";
+                  }}
+                />
+              ) : null}
+              <div className="jd-cover-placeholder" style={{ display: detailsJob.companyCoverPath ? "none" : "flex" }}>
                 <span>Cover photo</span>
               </div>
-              <div className="jd-employer-strip">
+            </div>
+
+            <div className="jd-employer-strip">
                 <div className="jd-employer-logo-info">
-                  <div className="jd-employer-logo" aria-label="Company logo">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 11h2m2 0h2M9 15h2m2 0h2" /></svg>
+                  <div className="jd-employer-logo" aria-label="Company logo" style={{ overflow: "hidden", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {(() => {
+                      const logoSrc = detailsJob.companyLogoPath
+                        ? (detailsJob.companyLogoPath.startsWith("http") || detailsJob.companyLogoPath.startsWith("/api") ? detailsJob.companyLogoPath : `/api/employers/${detailsJob.employerUserId}/logo`)
+                        : (detailsJob.employerUserId ? `/api/employers/${detailsJob.employerUserId}/logo` : null);
+                      return (
+                        <>
+                          {logoSrc && (
+                            <img
+                              src={logoSrc}
+                              alt={detailsJob.company}
+                              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                              onError={(e) => {
+                                (e.currentTarget as HTMLElement).style.display = "none";
+                                if (e.currentTarget.nextElementSibling) {
+                                  (e.currentTarget.nextElementSibling as HTMLElement).style.display = "block";
+                                }
+                              }}
+                            />
+                          )}
+                          <svg viewBox="0 0 24 24" aria-hidden="true" style={{ display: logoSrc ? "none" : "block" }}>
+                            <path d="M3 21h18M5 21V7l7-4 7 4v14M9 11h2m2 0h2M9 15h2m2 0h2" />
+                          </svg>
+                        </>
+                      );
+                    })()}
                   </div>
                   <div>
                     <strong className="jd-employer-name">{detailsJob.company}</strong>
-                    <span className="jd-employer-location"><MiniIcon name="location" />{detailsJob.location}</span>
+                    <span className="jd-employer-location"><RenderLocationMeta location={detailsJob.location} /></span>
                   </div>
                 </div>
                 <div className="jd-header-right-actions">
@@ -1161,7 +1241,6 @@ export default function ApplicantDashboard() {
                   </button>
                 </div>
               </div>
-            </div>
 
             <div className="jd-body-wrapper">
               <div className="jd-body">
@@ -1264,7 +1343,7 @@ export default function ApplicantDashboard() {
 
             <div className="jd-panel-footer">
               <div className="jd-footer-meta">
-                <span><strong>Applications:</strong> {detailsJob.applicantCount} / {detailsJob.applicationLimit}</span>
+                <span><strong>Applications:</strong> {detailsJob.applicantCount}</span>
                 <span><strong>Close Date:</strong> {detailsJob.closeDate}</span>
               </div>
               <div className="jd-footer-actions">
@@ -1272,7 +1351,7 @@ export default function ApplicantDashboard() {
                 <button
                   type="button"
                   className={`solid-btn ${appliedJobIds.includes(detailsJob.id) ? "applied-btn" : ""}`}
-                  onClick={() => applyToJob(detailsJob.id)}
+                  onClick={() => setApplyJobTarget({ jobId: detailsJob.id, title: detailsJob.title })}
                   disabled={appliedJobIds.includes(detailsJob.id) || applyingJobId === detailsJob.id}
                 >
                   {appliedJobIds.includes(detailsJob.id) ? "Applied" : applyingJobId === detailsJob.id ? "Applying..." : "Apply Now"}
@@ -1302,6 +1381,66 @@ export default function ApplicantDashboard() {
           <MenuIcon />
         </button>
       )}
+
+      {/* DOUBLE VERIFICATION: LOGOUT CONFIRMATION MODAL */}
+      <ConfirmationModal
+        isOpen={isLogoutModalOpen}
+        type="warning"
+        title="Log Out of EliteCruit"
+        message="Are you sure you want to log out of your applicant account?"
+        cancelLabel="Stay Signed In"
+        confirmLabel="Log Out"
+        onCancel={() => setIsLogoutModalOpen(false)}
+        onConfirm={() => {
+          localStorage.removeItem("elitecruit-user");
+          window.location.href = "/";
+        }}
+      />
+
+      {/* DOUBLE VERIFICATION: DECLINE INVITATION MODAL */}
+      <ConfirmationModal
+        isOpen={!!declineInvTarget}
+        type="danger"
+        title="Decline Job Invitation"
+        message={
+          <div>
+            <p style={{ margin: "0 0 8px" }}>
+              Are you sure you want to decline the invitation for{" "}
+              <strong>{declineInvTarget?.job_title || "this position"}</strong> at{" "}
+              <strong>{declineInvTarget?.business_name || "the employer"}</strong>?
+            </p>
+            <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>
+              You will not be able to accept this recruitment invitation once declined.
+            </p>
+          </div>
+        }
+        cancelLabel="Keep Invitation"
+        confirmLabel="Decline Invitation"
+        onCancel={() => setDeclineInvTarget(null)}
+        onConfirm={handleConfirmDeclineInvitation}
+      />
+
+      {/* DOUBLE VERIFICATION: APPLY TO JOB MODAL */}
+      <ConfirmationModal
+        isOpen={!!applyJobTarget}
+        type="info"
+        title="Submit Job Application"
+        message={
+          <div>
+            <p style={{ margin: "0 0 8px" }}>
+              Are you sure you want to apply for <strong>{applyJobTarget?.title || "this position"}</strong>?
+            </p>
+            <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>
+              Your profile, qualifications, and attached resume will be submitted to the employer for review.
+            </p>
+          </div>
+        }
+        cancelLabel="Cancel"
+        confirmLabel="Confirm & Apply"
+        onCancel={() => setApplyJobTarget(null)}
+        onConfirm={handleConfirmApply}
+      />
     </div>
   );
 }
+

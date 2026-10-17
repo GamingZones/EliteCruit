@@ -1,9 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronIcon, SideIcon } from "./Applicant-Dashboard";
+import { ChevronIcon, SideIcon } from "../../components/Icons";
 import ApplicantChatbotDrawer from "../../components/ApplicantChatbotDrawer";
+import CalendarDrawer from "../../components/CalendarDrawer";
+import ConfirmationModal from "../../components/ConfirmationModal";
 import {
   calculateJobMatch,
   calculateJobMatchDetails,
+  calculateSkillExperienceYears,
   getMatchColorClass,
   inferMatchScore,
   isSkillMatch,
@@ -11,12 +14,20 @@ import {
   BSIT_BSCS_SKILLS,
   BSIT_BSCS_QUALIFICATIONS,
   BSIT_BSCS_CERTIFICATIONS,
+  ALL_UNIFIED_SKILLS,
+  ALL_UNIFIED_QUALIFICATIONS,
+  ALL_UNIFIED_CERTIFICATIONS,
+  CERTIFICATION_CATEGORIES,
+  CERTIFICATION_CATEGORIES_MAP,
+  ALL_PHILIPPINES_PROVINCES,
+  getCitiesByProvince,
   CAVITE_CITIES,
   WORK_ARRANGEMENTS,
   EXPERIENCE_LEVELS,
   EXP_YEARS_OPTIONS,
   formatExperienceLevel,
   formatLocationWithCavite,
+  parseLocations,
   POPULAR_KEYWORD_FILTERS,
   matchesJobWithTaxonomy,
   getKeywordsForJobRole,
@@ -25,6 +36,8 @@ import {
 } from "../../utils/filters";
 import "./Applicant-Dashboard.css";
 import "./JobSearch.css";
+import { useUnreadNotificationsCount } from "../../hooks/useUnreadNotificationsCount";
+import { useUnreadMessagesCount } from "../../hooks/useUnreadMessagesCount";
 
 type JobCard = {
   id: number;
@@ -54,6 +67,8 @@ type JobCard = {
   certifications?: string;
   responsibilities: string;
   employerUserId?: number;
+  companyLogoPath?: string | null;
+  companyCoverPath?: string | null;
   rating?: string;
 };
 
@@ -485,6 +500,44 @@ function MiniIcon({ name }: { name: "filters" | "company" | "location" | "bookma
   );
 }
 
+function RenderLocationMeta({ location }: { location?: string | null }) {
+  const locItems = parseLocations(location);
+
+  if (locItems.length === 0) {
+    return (
+      <span className="location-meta">
+        <MiniIcon name="location" />
+        <span>Location not set</span>
+      </span>
+    );
+  }
+
+  if (locItems.length === 1) {
+    return (
+      <span className="location-meta">
+        <MiniIcon name="location" />
+        <span>{locItems[0]}</span>
+      </span>
+    );
+  }
+
+  const fullListText = locItems.join(", ");
+
+  return (
+    <span className="location-meta">
+      <MiniIcon name="location" />
+      <span>{locItems[0]}</span>
+      <span className="overflow-dots-badge" tabIndex={0} aria-label="View all locations">
+        ...
+        <span className="overflow-tooltip">
+          <strong>Locations:</strong>
+          <span>{fullListText}</span>
+        </span>
+      </span>
+    </span>
+  );
+}
+
 function parseSkills(raw: string | null | undefined) {
   if (!raw) return [] as string[];
   return raw
@@ -533,6 +586,8 @@ function parseExpectedSalary(raw: string | null | undefined) {
 }
 
 export default function JobSearch() {
+  const unreadNotifCount = useUnreadNotificationsCount();
+  const unreadMessagesCount = useUnreadMessagesCount();
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(true);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
@@ -544,10 +599,17 @@ export default function JobSearch() {
   const [appliedSearch, setAppliedSearch] = useState("");
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState("All roles");
-  const [selectedLocation, setSelectedLocation] = useState("All locations");
+  const [selectedProvince, setSelectedProvince] = useState("All provinces");
+  const [selectedCity, setSelectedCity] = useState("All cities/municipalities");
   const [selectedWorkArrangement, setSelectedWorkArrangement] = useState("Any arrangement");
   const [selectedMinSalary, setSelectedMinSalary] = useState("Any salary");
-  const [selectedExperience, setSelectedExperience] = useState("Any experience");
+
+  const availableCities = useMemo(() => {
+    if (selectedProvince !== "All provinces") {
+      return getCitiesByProvince(selectedProvince);
+    }
+    return CAVITE_CITIES;
+  }, [selectedProvince]);
   const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null);
   const [filterSkills, setFilterSkills] = useState<ItemWithExp[]>([]);
   const [filterQualifications, setFilterQualifications] = useState<ItemWithExp[]>([]);
@@ -742,6 +804,8 @@ export default function JobSearch() {
           createdAt: typeof row.created_at === "string" ? row.created_at : null,
           createdRank: index,
           employerUserId: Number(row.employer_user_id) || undefined,
+          companyLogoPath: row.company_logo_path || null,
+          companyCoverPath: row.company_cover_path || null,
           rating: row.rating ? String(row.rating) : "0.0",
         }));
         setJobs(mapped);
@@ -752,10 +816,10 @@ export default function JobSearch() {
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (selectedRole !== "All roles") count++;
-    if (selectedLocation !== "All locations") count++;
+    if (selectedProvince !== "All provinces") count++;
+    if (selectedCity !== "All cities/municipalities") count++;
     if (selectedWorkArrangement !== "Any arrangement") count++;
     if (selectedMinSalary !== "Any salary") count++;
-    if (selectedExperience !== "Any experience") count++;
     if (selectedKeyword) count++;
     if (sortBy !== "Newest") count++;
     count += filterSkills.length;
@@ -764,10 +828,10 @@ export default function JobSearch() {
     return count;
   }, [
     selectedRole,
-    selectedLocation,
+    selectedProvince,
+    selectedCity,
     selectedWorkArrangement,
     selectedMinSalary,
-    selectedExperience,
     selectedKeyword,
     sortBy,
     filterSkills,
@@ -777,10 +841,10 @@ export default function JobSearch() {
 
   const resetFilters = () => {
     setSelectedRole("All roles");
-    setSelectedLocation("All locations");
+    setSelectedProvince("All provinces");
+    setSelectedCity("All cities/municipalities");
     setSelectedWorkArrangement("Any arrangement");
     setSelectedMinSalary("Any salary");
-    setSelectedExperience("Any experience");
     setSelectedKeyword(null);
     setFilterSkills([]);
     setFilterQualifications([]);
@@ -788,6 +852,7 @@ export default function JobSearch() {
     setSortBy("Newest");
     setSearchInput("");
     setAppliedSearch("");
+    setCurrentPage(1);
   };
 
   const visibleJobs = useMemo(() => {
@@ -839,10 +904,15 @@ export default function JobSearch() {
           selectedRole
         );
 
-      const byLocation =
-        selectedLocation === "All locations" ||
-        job.location.toLowerCase().includes(selectedLocation.toLowerCase()) ||
-        selectedLocation.toLowerCase().includes(job.location.toLowerCase());
+      const byProvince =
+        selectedProvince === "All provinces" ||
+        job.location.toLowerCase().includes(selectedProvince.toLowerCase()) ||
+        selectedProvince.toLowerCase().includes(job.location.toLowerCase());
+
+      const byCity =
+        selectedCity === "All cities/municipalities" ||
+        job.location.toLowerCase().includes(selectedCity.toLowerCase()) ||
+        selectedCity.toLowerCase().includes(job.location.toLowerCase());
 
       const byWorkArrangement =
         selectedWorkArrangement === "Any arrangement" ||
@@ -850,49 +920,51 @@ export default function JobSearch() {
 
       const bySalary = minSalary === 0 || job.salaryMin >= minSalary;
 
-      const byExperience =
-        selectedExperience === "Any experience" ||
-        (job.experienceLevel && (
-          formatExperienceLevel(job.experienceLevel).toLowerCase() === selectedExperience.toLowerCase() ||
-          job.experienceLevel.toLowerCase().includes(selectedExperience.toLowerCase()) ||
-          selectedExperience.toLowerCase().includes(job.experienceLevel.toLowerCase()) ||
-          (selectedExperience.toLowerCase().includes("fresh") && job.experienceLevel.toLowerCase().includes("fresh"))
-        )) ||
-        job.summary.toLowerCase().includes(selectedExperience.toLowerCase()) ||
-        job.qualifications.toLowerCase().includes(selectedExperience.toLowerCase());
-
       const bySkills =
         filterSkills.length === 0 ||
         filterSkills.some((fs) => {
-          const sName = fs.name.toLowerCase();
+          const sName = fs.name;
+          const sLower = sName.toLowerCase();
           return (
-            job.skillTags.some((st) => st.toLowerCase().includes(sName) || sName.includes(st.toLowerCase())) ||
-            job.badges.some((b) => b.toLowerCase().includes(sName) || sName.includes(b.toLowerCase())) ||
-            job.summary.toLowerCase().includes(sName) ||
-            job.qualifications.toLowerCase().includes(sName) ||
-            job.responsibilities.toLowerCase().includes(sName)
+            job.skillTags.some((st) => isSkillMatch(sName, st) || st.toLowerCase().includes(sLower) || sLower.includes(st.toLowerCase())) ||
+            job.badges.some((b) => isSkillMatch(sName, b) || b.toLowerCase().includes(sLower) || sLower.includes(b.toLowerCase())) ||
+            isSkillMatch(sName, job.summary) ||
+            isSkillMatch(sName, job.qualifications) ||
+            isSkillMatch(sName, job.responsibilities) ||
+            job.summary.toLowerCase().includes(sLower) ||
+            job.qualifications.toLowerCase().includes(sLower) ||
+            job.responsibilities.toLowerCase().includes(sLower)
           );
         });
 
       const byQualifications =
         filterQualifications.length === 0 ||
         filterQualifications.some((fq) => {
-          const qName = fq.name.toLowerCase();
+          const qName = fq.name;
+          const qLower = qName.toLowerCase();
           return (
-            job.qualTags.some((qt) => qt.toLowerCase().includes(qName) || qName.includes(qt.toLowerCase())) ||
-            job.qualifications.toLowerCase().includes(qName) ||
-            job.summary.toLowerCase().includes(qName)
+            job.qualTags.some((qt) => isSkillMatch(qName, qt) || qt.toLowerCase().includes(qLower) || qLower.includes(qt.toLowerCase())) ||
+            isSkillMatch(qName, job.qualifications) ||
+            isSkillMatch(qName, job.summary) ||
+            job.qualifications.toLowerCase().includes(qLower) ||
+            job.summary.toLowerCase().includes(qLower)
           );
         });
 
       const byCertifications =
         filterCertifications.length === 0 ||
         filterCertifications.some((fc) => {
-          const cName = fc.name.toLowerCase();
+          const cName = fc.name;
+          const cLower = cName.toLowerCase();
           return (
-            job.qualifications.toLowerCase().includes(cName) ||
-            job.summary.toLowerCase().includes(cName) ||
-            job.qualTags.some((qt) => qt.toLowerCase().includes(cName) || cName.includes(qt.toLowerCase()))
+            job.certTags.some((ct) => isSkillMatch(cName, ct) || ct.toLowerCase().includes(cLower) || cLower.includes(ct.toLowerCase())) ||
+            job.qualTags.some((qt) => isSkillMatch(cName, qt) || qt.toLowerCase().includes(cLower) || cLower.includes(qt.toLowerCase())) ||
+            isSkillMatch(cName, job.qualifications) ||
+            isSkillMatch(cName, job.certifications || "") ||
+            isSkillMatch(cName, job.summary) ||
+            job.qualifications.toLowerCase().includes(cLower) ||
+            (job.certifications && job.certifications.toLowerCase().includes(cLower)) ||
+            job.summary.toLowerCase().includes(cLower)
           );
         });
 
@@ -900,10 +972,10 @@ export default function JobSearch() {
         bySearch &&
         byKeyword &&
         byRole &&
-        byLocation &&
+        byProvince &&
+        byCity &&
         byWorkArrangement &&
         bySalary &&
-        byExperience &&
         bySkills &&
         byQualifications &&
         byCertifications
@@ -936,10 +1008,10 @@ export default function JobSearch() {
     jobs,
     appliedSearch,
     selectedRole,
-    selectedLocation,
+    selectedProvince,
+    selectedCity,
     selectedWorkArrangement,
     selectedMinSalary,
-    selectedExperience,
     filterSkills,
     filterQualifications,
     filterCertifications,
@@ -949,7 +1021,97 @@ export default function JobSearch() {
     initialAppliedJobIds,
   ]);
 
+  const JOBS_PER_PAGE = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(visibleJobs.length / JOBS_PER_PAGE));
+  const paginatedJobs = useMemo(() => {
+    const start = (currentPage - 1) * JOBS_PER_PAGE;
+    return visibleJobs.slice(start, start + JOBS_PER_PAGE);
+  }, [visibleJobs, currentPage]);
+
+  // Reset page to 1 whenever any filter or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    appliedSearch,
+    selectedKeyword,
+    selectedRole,
+    selectedProvince,
+    selectedCity,
+    selectedWorkArrangement,
+    selectedMinSalary,
+    filterSkills,
+    filterQualifications,
+    filterCertifications,
+    sortBy,
+  ]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const mainRef = useRef<HTMLElement | null>(null);
+  const isFirstMount = useRef(true);
+
+  const scrollToTop = () => {
+    // 1. Scroll main ref container
+    if (mainRef.current) {
+      try {
+        mainRef.current.scrollTo({ top: 0, behavior: "smooth" });
+      } catch {}
+      mainRef.current.scrollTop = 0;
+    }
+    // 2. Query any appdash-main or page containers
+    const containers = document.querySelectorAll<HTMLElement>(
+      ".appdash-main, .jobsearch-main, .jobsearch-content-grid, .job-results-col"
+    );
+    containers.forEach((el) => {
+      try {
+        el.scrollTo({ top: 0, behavior: "smooth" });
+      } catch {}
+      el.scrollTop = 0;
+    });
+    // 3. Native scrollIntoView on header / search bar
+    const topAnchor = document.querySelector(".results-container, .results-head, .search-bar-card, .appdash-topbar") as HTMLElement | null;
+    if (topAnchor) {
+      try {
+        topAnchor.scrollIntoView({ behavior: "smooth", block: "start" });
+      } catch {}
+    }
+    // 4. Window / body scroll fallback
+    try {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch {
+      window.scrollTo(0, 0);
+    }
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  };
+
+  useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
+    requestAnimationFrame(() => {
+      scrollToTop();
+    });
+  }, [currentPage]);
+
+  // DOUBLE VERIFICATION MODAL STATES
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [applyJobTarget, setApplyJobTarget] = useState<{ jobId: number; title: string } | null>(null);
+
   const applySearch = () => setAppliedSearch(searchInput);
+
+  const handleConfirmApply = async () => {
+    if (!applyJobTarget) return;
+    const targetId = applyJobTarget.jobId;
+    setApplyJobTarget(null);
+    await applyToJob(targetId);
+  };
 
   const applyToJob = async (jobId: number) => {
     if (!applicantUserId) {
@@ -1032,8 +1194,8 @@ export default function JobSearch() {
           </li>
 
           <li className="active"><a href="/job-search"><span className="item-icon"><SideIcon name="search" /></span><span>Job Search</span></a></li>
-          <li><a href="/messages"><span className="item-icon"><SideIcon name="messages" /></span><span>Messages</span></a></li>
-          <li><a href="/notifications"><span className="item-icon"><SideIcon name="notifications" /></span><span>Notifications</span></a></li>
+          <li><a href="/messages"><span className="item-icon"><SideIcon name="messages" /></span><span>Messages</span>{unreadMessagesCount > 0 && <span className="item-badge">{unreadMessagesCount}</span>}</a></li>
+          <li><a href="/notifications"><span className="item-icon"><SideIcon name="notifications" /></span><span>Notifications</span>{unreadNotifCount > 0 && <span className="item-badge">{unreadNotifCount}</span>}</a></li>
           <li><a href="/feedback"><span className="item-icon"><SideIcon name="feedback" /></span><span>Feedback</span></a></li>
         </ul>
 
@@ -1046,13 +1208,19 @@ export default function JobSearch() {
           {isProfileMenuOpen && (
             <div className="appdash-profile-menu">
               <a href="/my-profile"><SideIcon name="profile" />My Profile</a>
-              <a href="/"><SideIcon name="logout" />Logout</a>
+              <button
+                type="button"
+                className="appdash-profile-menu-btn"
+                onClick={() => setIsLogoutModalOpen(true)}
+              >
+                <SideIcon name="logout" />Logout
+              </button>
             </div>
           )}
         </div>
       </aside>
 
-      <main className="appdash-main jobsearch-main">
+      <main ref={mainRef} className="appdash-main jobsearch-main">
         <header className="appdash-topbar">
           <div className="appdash-top-left">
             <div>
@@ -1066,6 +1234,7 @@ export default function JobSearch() {
               onToggle={() => setIsChatbotOpen((prev) => !prev)}
               pageTitle="Job Search"
             />
+            <CalendarDrawer />
           </div>
         </header>
 
@@ -1119,10 +1288,26 @@ export default function JobSearch() {
                 </div>
 
                 <div className="filter-field">
-                  <label>Location</label>
-                  <select value={selectedLocation} onChange={(e) => setSelectedLocation(e.target.value)}>
-                    <option>All locations</option>
-                    {CAVITE_CITIES.map((city) => (
+                  <label>Province</label>
+                  <select
+                    value={selectedProvince}
+                    onChange={(e) => {
+                      setSelectedProvince(e.target.value);
+                      setSelectedCity("All cities/municipalities");
+                    }}
+                  >
+                    <option>All provinces</option>
+                    {ALL_PHILIPPINES_PROVINCES.map((prov) => (
+                      <option key={prov} value={prov}>{prov}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="filter-field">
+                  <label>City / Municipality</label>
+                  <select value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)}>
+                    <option>All cities/municipalities</option>
+                    {availableCities.map((city) => (
                       <option key={city} value={city}>{city}</option>
                     ))}
                   </select>
@@ -1134,16 +1319,6 @@ export default function JobSearch() {
                     <option>Any arrangement</option>
                     {WORK_ARRANGEMENTS.map((wa) => (
                       <option key={wa} value={wa}>{wa}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="filter-field">
-                  <label>Experience Level</label>
-                  <select value={selectedExperience} onChange={(e) => setSelectedExperience(e.target.value)}>
-                    <option>Any experience</option>
-                    {EXPERIENCE_LEVELS.map((lvl) => (
-                      <option key={lvl} value={lvl}>{lvl}</option>
                     ))}
                   </select>
                 </div>
@@ -1172,19 +1347,19 @@ export default function JobSearch() {
               <div className="filter-competencies-grid">
                 <FilterCategoryEditor
                   title="Technical Skills"
-                  availableOptions={BSIT_BSCS_SKILLS}
+                  availableOptions={ALL_UNIFIED_SKILLS}
                   items={filterSkills}
                   onChange={setFilterSkills}
                 />
                 <FilterCategoryEditor
                   title="Qualifications"
-                  availableOptions={BSIT_BSCS_QUALIFICATIONS}
+                  availableOptions={ALL_UNIFIED_QUALIFICATIONS}
                   items={filterQualifications}
                   onChange={setFilterQualifications}
                 />
                 <FilterCategoryEditor
                   title="Certifications"
-                  availableOptions={BSIT_BSCS_CERTIFICATIONS}
+                  availableOptions={ALL_UNIFIED_CERTIFICATIONS}
                   items={filterCertifications}
                   onChange={setFilterCertifications}
                 />
@@ -1212,7 +1387,11 @@ export default function JobSearch() {
           <div className="job-results-col">
             <section className="results-container">
               <header className="results-head">
-                <p>{visibleJobs.length} jobs found</p>
+                <p>
+                  {visibleJobs.length === 0
+                    ? "0 jobs found"
+                    : `Showing ${(currentPage - 1) * JOBS_PER_PAGE + 1} - ${Math.min(currentPage * JOBS_PER_PAGE, visibleJobs.length)} of ${visibleJobs.length} job${visibleJobs.length === 1 ? "" : "s"} found`}
+                </p>
               </header>
 
               {jobsMessage ? <p className="profile-message">{jobsMessage}</p> : null}
@@ -1227,7 +1406,7 @@ export default function JobSearch() {
                   </div>
                 </article>
               ) : (
-                visibleJobs.map((job) => (
+                paginatedJobs.map((job) => (
                   <article key={job.id} className="result-card">
                     <div className="result-card-main">
                       <div className="result-left-col">
@@ -1236,7 +1415,7 @@ export default function JobSearch() {
                         </div>
                         <p className="meta-line">
                           <span><MiniIcon name="company" />{job.company}</span>
-                          <span><MiniIcon name="location" />{job.location}</span>
+                          <RenderLocationMeta location={job.location} />
                         </p>
                         <p className="result-summary">{job.summary || "No job description provided yet."}</p>
                         <div className="result-tags">
@@ -1250,7 +1429,7 @@ export default function JobSearch() {
 
                       <div className="result-middle-col">
                         <div className="result-middle-meta">
-                          <span>Applications: {job.applicantCount}/{job.applicationLimit}</span>
+                          <span>Applications: {job.applicantCount}</span>
                           <span>Close Date: {job.closeDate}</span>
                           {job.skillTags.length > 0 && (
                             <div className="js-meta-tag-line">
@@ -1291,7 +1470,7 @@ export default function JobSearch() {
                         </div>
                         <button type="button" className="details-btn" onClick={() => setDetailsJob(job)}>Details</button>
                         <div className="card-bottom-actions">
-                          <button type="button" className={`solid-btn apply-right-btn ${appliedJobIds.includes(job.id) ? "applied-btn" : ""}`} onClick={() => applyToJob(job.id)} disabled={appliedJobIds.includes(job.id) || applyingJobId === job.id}>{appliedJobIds.includes(job.id) ? "Applied" : applyingJobId === job.id ? "Applying..." : "Apply"}</button>
+                          <button type="button" className={`solid-btn apply-right-btn ${appliedJobIds.includes(job.id) ? "applied-btn" : ""}`} onClick={() => setApplyJobTarget({ jobId: job.id, title: job.title })} disabled={appliedJobIds.includes(job.id) || applyingJobId === job.id}>{appliedJobIds.includes(job.id) ? "Applied" : applyingJobId === job.id ? "Applying..." : "Apply"}</button>
                           <button type="button" className="bookmark-icon-btn" aria-label={bookmarkedIds.includes(job.id) ? "Remove bookmark" : "Bookmark job"} onClick={() => toggleBookmark(job.id)}>
                             <MiniIcon name={bookmarkedIds.includes(job.id) ? "bookmarkFilled" : "bookmark"} />
                           </button>
@@ -1300,6 +1479,70 @@ export default function JobSearch() {
                     </div>
                   </article>
                 ))
+              )}
+
+              {totalPages > 1 && (
+                <div
+                  className="jobsearch-pagination"
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: "12px",
+                    marginTop: "24px",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="pagination-btn"
+                    disabled={currentPage === 1}
+                    onClick={() => {
+                      setCurrentPage((p) => Math.max(1, p - 1));
+                      scrollToTop();
+                    }}
+                    style={{
+                      padding: "8px 18px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      background: currentPage === 1 ? "#f8fafc" : "#ffffff",
+                      color: currentPage === 1 ? "#94a3b8" : "#1e293b",
+                      cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                      fontWeight: 600,
+                      fontSize: "0.88rem",
+                      boxShadow: currentPage === 1 ? "none" : "0 1px 2px rgba(0,0,0,0.05)",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    &larr; Previous
+                  </button>
+                  <span style={{ fontSize: "0.88rem", color: "#64748b", fontWeight: 600 }}>
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    className="pagination-btn"
+                    disabled={currentPage === totalPages}
+                    onClick={() => {
+                      setCurrentPage((p) => Math.min(totalPages, p + 1));
+                      scrollToTop();
+                    }}
+                    style={{
+                      padding: "8px 18px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      background: currentPage === totalPages ? "#f8fafc" : "#ffffff",
+                      color: currentPage === totalPages ? "#94a3b8" : "#1e293b",
+                      cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                      fontWeight: 600,
+                      fontSize: "0.88rem",
+                      boxShadow: currentPage === totalPages ? "none" : "0 1px 2px rgba(0,0,0,0.05)",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    Next &rarr;
+                  </button>
+                </div>
               )}
             </section>
           </div>
@@ -1326,17 +1569,54 @@ export default function JobSearch() {
             <div className="jd-panel">
               {/* Cover banner */}
               <div className="jd-cover-banner">
-                <div className="jd-cover-placeholder">
+                {detailsJob.companyCoverPath ? (
+                  <img
+                    src={detailsJob.companyCoverPath.startsWith("http") || detailsJob.companyCoverPath.startsWith("/api") ? detailsJob.companyCoverPath : `/api/employers/${detailsJob.employerUserId}/cover`}
+                    alt={`${detailsJob.company} cover`}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLElement).style.display = "none";
+                      const placeholder = e.currentTarget.parentElement?.querySelector(".jd-cover-placeholder") as HTMLElement;
+                      if (placeholder) placeholder.style.display = "flex";
+                    }}
+                  />
+                ) : null}
+                <div className="jd-cover-placeholder" style={{ display: detailsJob.companyCoverPath ? "none" : "flex" }}>
                   <span>Cover photo</span>
                 </div>
-                <div className="jd-employer-strip">
-                  <div className="jd-employer-logo-info">
-                    <div className="jd-employer-logo" aria-label="Company logo">
-                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 11h2m2 0h2M9 15h2m2 0h2" /></svg>
+              </div>
+
+              <div className="jd-employer-strip">
+                <div className="jd-employer-logo-info">
+                  <div className="jd-employer-logo" aria-label="Company logo" style={{ overflow: "hidden", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {(() => {
+                      const logoSrc = detailsJob.companyLogoPath
+                        ? (detailsJob.companyLogoPath.startsWith("http") || detailsJob.companyLogoPath.startsWith("/api") ? detailsJob.companyLogoPath : `/api/employers/${detailsJob.employerUserId}/logo`)
+                        : (detailsJob.employerUserId ? `/api/employers/${detailsJob.employerUserId}/logo` : null);
+                      return (
+                        <>
+                          {logoSrc && (
+                            <img
+                              src={logoSrc}
+                              alt={detailsJob.company}
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLElement).style.display = "none";
+                                  if (e.currentTarget.nextElementSibling) {
+                                    (e.currentTarget.nextElementSibling as HTMLElement).style.display = "block";
+                                  }
+                                }}
+                              />
+                            )}
+                            <svg viewBox="0 0 24 24" aria-hidden="true" style={{ display: logoSrc ? "none" : "block" }}>
+                              <path d="M3 21h18M5 21V7l7-4 7 4v14M9 11h2m2 0h2M9 15h2m2 0h2" />
+                            </svg>
+                          </>
+                        );
+                      })()}
                     </div>
                     <div>
                       <strong className="jd-employer-name">{detailsJob.company}</strong>
-                      <span className="jd-employer-location"><MiniIcon name="location" />{detailsJob.location}</span>
+                      <span className="jd-employer-location"><RenderLocationMeta location={detailsJob.location} /></span>
                     </div>
                   </div>
                   <div className="jd-header-right-actions">
@@ -1371,7 +1651,6 @@ export default function JobSearch() {
                     </button>
                   </div>
                 </div>
-              </div>
 
               {/* Scrollable body & drawer container */}
               <div className="jd-body-wrapper">
@@ -1477,7 +1756,7 @@ export default function JobSearch() {
 
               <div className="jd-panel-footer">
                 <div className="jd-footer-meta">
-                  <span><strong>Applications:</strong> {detailsJob.applicantCount} / {detailsJob.applicationLimit}</span>
+                  <span><strong>Applications:</strong> {detailsJob.applicantCount}</span>
                   <span><strong>Close Date:</strong> {detailsJob.closeDate}</span>
                 </div>
                 <div className="jd-footer-middle">
@@ -1505,7 +1784,7 @@ export default function JobSearch() {
                   <button
                     type="button"
                     className={`solid-btn ${appliedJobIds.includes(detailsJob.id) ? "applied-btn" : ""}`}
-                    onClick={() => applyToJob(detailsJob.id)}
+                    onClick={() => setApplyJobTarget({ jobId: detailsJob.id, title: detailsJob.title })}
                     disabled={appliedJobIds.includes(detailsJob.id) || applyingJobId === detailsJob.id}
                   >
                     {appliedJobIds.includes(detailsJob.id) ? "Applied" : applyingJobId === detailsJob.id ? "Applying..." : "Apply Now"}
@@ -1866,6 +2145,43 @@ export default function JobSearch() {
           </div>
         </div>
       )}
+
+      {/* DOUBLE VERIFICATION: LOGOUT CONFIRMATION MODAL */}
+      <ConfirmationModal
+        isOpen={isLogoutModalOpen}
+        type="warning"
+        title="Log Out of EliteCruit"
+        message="Are you sure you want to log out of your applicant account?"
+        cancelLabel="Stay Signed In"
+        confirmLabel="Log Out"
+        onCancel={() => setIsLogoutModalOpen(false)}
+        onConfirm={() => {
+          localStorage.removeItem("elitecruit-user");
+          window.location.href = "/";
+        }}
+      />
+
+      {/* DOUBLE VERIFICATION: APPLY TO JOB MODAL */}
+      <ConfirmationModal
+        isOpen={!!applyJobTarget}
+        type="info"
+        title="Submit Job Application"
+        message={
+          <div>
+            <p style={{ margin: "0 0 8px" }}>
+              Are you sure you want to apply for <strong>{applyJobTarget?.title || "this position"}</strong>?
+            </p>
+            <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>
+              Your profile, qualifications, and attached resume will be submitted to the employer for review.
+            </p>
+          </div>
+        }
+        cancelLabel="Cancel"
+        confirmLabel="Confirm & Apply"
+        onCancel={() => setApplyJobTarget(null)}
+        onConfirm={handleConfirmApply}
+      />
     </div>
   );
 }
+

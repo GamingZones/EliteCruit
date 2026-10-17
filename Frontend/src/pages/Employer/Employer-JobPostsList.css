@@ -351,13 +351,22 @@
   border-radius: 8px;
   font-size: 0.78rem;
   font-weight: 400;
-  white-space: nowrap;
+  white-space: normal;
+  max-width: 380px;
+  min-width: 180px;
+  width: max-content;
   box-shadow: 0 4px 16px rgba(9, 31, 52, 0.35);
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.2s ease, transform 0.2s ease;
   z-index: 10000;
+  line-height: 1.45;
+}
+
+.overflow-tooltip span {
+  display: inline;
+  color: #ffffff;
 }
 
 .overflow-tooltip::after {

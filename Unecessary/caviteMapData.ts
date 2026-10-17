@@ -1,7 +1,12 @@
+﻿/*
+ * UNNECESSARY / DEPRECATED:
+ * Superseded by Frontend/src/data/mapData.ts which supports nationwide
+ * Philippine mapping, geocoding, and initial badges across all provinces and cities.
+ *
 /**
  * 100% Self-Contained Local Cavite Municipalities & Geocoding Engine
  * Supports High-Precision Street Mapping, Block Interpolation & Subdivision Centroids
- */
+ * /
 
 export interface GeoLocation {
   lat: number;
@@ -54,8 +59,8 @@ export const CAVITE_MUNICIPALITIES: Record<string, MunicipalityBoundary> = {
       [14.170, 120.850],
     ],
   },
-  "Dasmariñas": {
-    name: "Dasmariñas City",
+  "DasmariÃ±as": {
+    name: "DasmariÃ±as City",
     center: [14.3294, 120.9367],
     coordinates: [
       [14.290, 120.910],
@@ -175,6 +180,116 @@ export const CAVITE_MUNICIPALITIES: Record<string, MunicipalityBoundary> = {
       [14.295, 121.030],
     ],
   },
+  "Alfonso": {
+    name: "Alfonso",
+    center: [14.1383, 120.8533],
+    coordinates: [
+      [14.100, 120.820],
+      [14.165, 120.825],
+      [14.160, 120.880],
+      [14.095, 120.875],
+      [14.100, 120.820],
+    ],
+  },
+  "Amadeo": {
+    name: "Amadeo",
+    center: [14.1706, 120.9228],
+    coordinates: [
+      [14.145, 120.900],
+      [14.195, 120.905],
+      [14.190, 120.945],
+      [14.140, 120.940],
+      [14.145, 120.900],
+    ],
+  },
+  "Cavite City": {
+    name: "Cavite City",
+    center: [14.4833, 120.9000],
+    coordinates: [
+      [14.460, 120.880],
+      [14.500, 120.885],
+      [14.495, 120.920],
+      [14.455, 120.915],
+      [14.460, 120.880],
+    ],
+  },
+  "General Emilio Aguinaldo": {
+    name: "General Emilio Aguinaldo (Bailen)",
+    center: [14.1833, 120.7958],
+    coordinates: [
+      [14.155, 120.770],
+      [14.205, 120.775],
+      [14.200, 120.820],
+      [14.150, 120.815],
+      [14.155, 120.770],
+    ],
+  },
+  "General Mariano Alvarez": {
+    name: "General Mariano Alvarez (GMA)",
+    center: [14.3000, 121.0000],
+    coordinates: [
+      [14.280, 120.985],
+      [14.320, 120.990],
+      [14.315, 121.020],
+      [14.275, 121.015],
+      [14.280, 120.985],
+    ],
+  },
+  "Magallanes": {
+    name: "Magallanes",
+    center: [14.1894, 120.7556],
+    coordinates: [
+      [14.160, 120.725],
+      [14.215, 120.730],
+      [14.210, 120.780],
+      [14.155, 120.775],
+      [14.160, 120.725],
+    ],
+  },
+  "Maragondon": {
+    name: "Maragondon",
+    center: [14.2750, 120.7389],
+    coordinates: [
+      [14.240, 120.700],
+      [14.305, 120.705],
+      [14.300, 120.770],
+      [14.235, 120.765],
+      [14.240, 120.700],
+    ],
+  },
+  "Mendez": {
+    name: "Mendez (Mendez-NuÃ±ez)",
+    center: [14.1294, 120.9042],
+    coordinates: [
+      [14.110, 120.885],
+      [14.150, 120.890],
+      [14.145, 120.925],
+      [14.105, 120.920],
+      [14.110, 120.885],
+    ],
+  },
+  "Noveleta": {
+    name: "Noveleta",
+    center: [14.4267, 120.8789],
+    coordinates: [
+      [14.410, 120.865],
+      [14.440, 120.870],
+      [14.435, 120.895],
+      [14.405, 120.890],
+      [14.410, 120.865],
+    ],
+  },
+  "Ternate": {
+    name: "Ternate",
+    center: [14.2861, 120.7167],
+    coordinates: [
+      [14.260, 120.680],
+      [14.310, 120.685],
+      [14.305, 120.735],
+      [14.255, 120.730],
+      [14.260, 120.680],
+    ],
+  },
 };
 
 // Precise Street Directory for Barangay Lapidario (CHES 1 & CHES 2)
@@ -219,7 +334,7 @@ const CHES_1_STREETS: Record<string, { lat: number; lng: number; name: string }>
 /**
  * Detailed Multi-Tiered Local Geocoder
  * Returns the exact coordinates, resolution method, and estimated accuracy
- */
+ * /
 export function resolveLocalGeocodeDetailed(address?: string | null, city?: string | null): ResolvedGeocodeResult {
   const addr = (address || "").trim().toLowerCase();
 
@@ -408,7 +523,7 @@ export function resolveLocalGeocodeDetailed(address?: string | null, city?: stri
       lng: 120.9320,
       method: "subdivision_centroid",
       methodLabel: "Alternative 3: Area Centroid",
-      matchedName: "Greenbreeze / Langkaan, Dasmariñas",
+      matchedName: "Greenbreeze / Langkaan, DasmariÃ±as",
       accuracyEstimateMeters: 300,
     };
   }
@@ -418,7 +533,7 @@ export function resolveLocalGeocodeDetailed(address?: string | null, city?: stri
       lng: 120.9420,
       method: "subdivision_centroid",
       methodLabel: "Alternative 3: Area Centroid",
-      matchedName: "Golden City, Salawag, Dasmariñas",
+      matchedName: "Golden City, Salawag, DasmariÃ±as",
       accuracyEstimateMeters: 300,
     };
   }
@@ -473,8 +588,75 @@ export function resolveLocalGeocodeDetailed(address?: string | null, city?: stri
 
 /**
  * Standard backward-compatible geocoder returning { lat, lng }
- */
+ * /
 export function resolveLocalGeocode(address?: string | null, city?: string | null): GeoLocation {
   const result = resolveLocalGeocodeDetailed(address, city);
   return { lat: result.lat, lng: result.lng };
 }
+
+/**
+ * Recognizable 2-letter uppercase initials for Cavite Municipalities / Cities
+ * /
+export const CAVITE_AREA_INITIALS: Record<string, string> = {
+  "alfonso": "AL",
+  "amadeo": "AM",
+  "bacoor": "BC",
+  "carmona": "CR",
+  "cavite city": "CC",
+  "dasmarinas": "DM",
+  "dasmariÃ±as": "DM",
+  "general emilio aguinaldo": "GA",
+  "bailen": "GA",
+  "general mariano alvarez": "GM",
+  "gma": "GM",
+  "general trias": "GT",
+  "imus": "IM",
+  "indang": "IN",
+  "kawit": "KW",
+  "magallanes": "MG",
+  "maragondon": "MR",
+  "mendez": "MD",
+  "naic": "NC",
+  "noveleta": "NV",
+  "rosario": "RS",
+  "silang": "SL",
+  "tagaytay": "TG",
+  "tanza": "TZ",
+  "ternate": "TR",
+  "trece martires": "TM",
+};
+
+/**
+ * Returns a 2-letter geographic abbreviation based on the place name (not the applicant's name).
+ * /
+export function getAreaInitials(areaName?: string | null): string {
+  if (!areaName) return "ðŸ“";
+  const raw = areaName.trim();
+  const lower = raw.toLowerCase();
+
+  for (const [key, code] of Object.entries(CAVITE_AREA_INITIALS)) {
+    if (lower === key || lower.includes(key)) {
+      return code;
+    }
+  }
+
+  // Generic algorithm for any other municipality/city:
+  const words = raw
+    .replace(/\b(City|Municipality|Of|The|Brgy\.?|Barangay)\b/gi, "")
+    .trim()
+    .split(/[\s\-]+/)
+    .filter(Boolean);
+
+  if (words.length >= 2) {
+    return (words[0][0] + words[1][0]).toUpperCase();
+  }
+  if (words.length === 1 && words[0].length >= 2) {
+    return words[0].slice(0, 2).toUpperCase();
+  }
+  return raw.slice(0, 2).toUpperCase() || "ðŸ“";
+}
+
+
+*/
+export {};
+

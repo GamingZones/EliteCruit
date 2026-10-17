@@ -1,7 +1,12 @@
-import React, { useEffect, useState } from "react";
-import { ChevronIcon, SideIcon } from "../Applicant/Applicant-Dashboard";
-import { useEmployerCompanyLabel } from "../useEmployerCompanyLabel";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronIcon, SideIcon } from "../../components/Icons";
+import { useEmployerCompanyLabel } from "../../hooks/useEmployerCompanyLabel";
+import { useUnreadNotificationsCount } from "../../hooks/useUnreadNotificationsCount";
+import { useUnreadMessagesCount } from "../../hooks/useUnreadMessagesCount";
 import EmployerChatbotDrawer, { EmployerFAQItem as FAQItem } from "../../components/EmployerChatbotDrawer";
+import CalendarDrawer from "../../components/CalendarDrawer";
+import ConfirmationModal from "../../components/ConfirmationModal";
+import { cleanBranchLocation, parseLocations } from "../../utils/filters";
 import "../Applicant/Applicant-Dashboard.css";
 import "./Employer-JobPostsList.css";
 
@@ -103,14 +108,122 @@ function RenderTagChips({
   );
 }
 
+function RenderLocationMeta({ location }: { location?: string | null }) {
+  const locItems = parseLocations(location);
+
+  if (locItems.length === 0) {
+    return (
+      <span className="location-meta">
+        <svg className="location-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 22s7-6 7-12a7 7 0 1 0-14 0c0 6 7 12 7 12Zm0-9a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z" />
+        </svg>
+        <span>Location not set</span>
+      </span>
+    );
+  }
+
+  if (locItems.length === 1) {
+    return (
+      <span className="location-meta">
+        <svg className="location-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 22s7-6 7-12a7 7 0 1 0-14 0c0 6 7 12 7 12Zm0-9a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z" />
+        </svg>
+        <span>{locItems[0]}</span>
+      </span>
+    );
+  }
+
+  const fullListText = locItems.join(", ");
+
+  return (
+    <span className="location-meta">
+      <svg className="location-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 22s7-6 7-12a7 7 0 1 0-14 0c0 6 7 12 7 12Zm0-9a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z" />
+      </svg>
+      <span>{locItems[0]}</span>
+      <span className="overflow-dots-badge" tabIndex={0} aria-label="View all locations">
+        ...
+        <span className="overflow-tooltip">
+          <strong>Locations:</strong>
+          <span>{fullListText}</span>
+        </span>
+      </span>
+    </span>
+  );
+}
+
 export default function EmployerJobPostsList() {
   const [isScreeningOpen, setIsScreeningOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
+  const unreadNotifCount = useUnreadNotificationsCount();
+  const unreadMessagesCount = useUnreadMessagesCount();
   const [jobs, setJobs] = useState<JobPost[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const JOBS_PER_PAGE = 10;
   const [message, setMessage] = useState("");
   const [userId, setUserId] = useState<number | null>(null);
   const companyLabel = useEmployerCompanyLabel("Employer");
+
+  const totalPages = Math.max(1, Math.ceil(jobs.length / JOBS_PER_PAGE));
+  const paginatedJobs = useMemo(() => {
+    const start = (currentPage - 1) * JOBS_PER_PAGE;
+    return jobs.slice(start, start + JOBS_PER_PAGE);
+  }, [jobs, currentPage]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
+  const mainRef = useRef<HTMLElement | null>(null);
+  const isFirstMount = useRef(true);
+
+  const scrollToTop = () => {
+    // 1. Scroll main ref container
+    if (mainRef.current) {
+      try {
+        mainRef.current.scrollTo({ top: 0, behavior: "smooth" });
+      } catch {}
+      mainRef.current.scrollTop = 0;
+    }
+    // 2. Query any appdash-main or page containers
+    const containers = document.querySelectorAll<HTMLElement>(
+      ".appdash-main, .joblist-main, .joblist-grid"
+    );
+    containers.forEach((el) => {
+      try {
+        el.scrollTo({ top: 0, behavior: "smooth" });
+      } catch {}
+      el.scrollTop = 0;
+    });
+    // 3. Native scrollIntoView on header / topbar
+    const topAnchor = document.querySelector(".joblist-head, .appdash-topbar") as HTMLElement | null;
+    if (topAnchor) {
+      try {
+        topAnchor.scrollIntoView({ behavior: "smooth", block: "start" });
+      } catch {}
+    }
+    // 4. Window / body scroll fallback
+    try {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch {
+      window.scrollTo(0, 0);
+    }
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  };
+
+  useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
+    requestAnimationFrame(() => {
+      scrollToTop();
+    });
+  }, [currentPage]);
 
   const jobPostsFaqs: FAQItem[] = [
     {
@@ -194,20 +307,30 @@ export default function EmployerJobPostsList() {
     }
   }, []);
 
-  const deleteJobPost = async (jobPostId: number) => {
-    if (!userId) return;
-    const confirmed = window.confirm("Are you sure you want to delete this job post?");
-    if (!confirmed) return;
+  const [jobToDelete, setJobToDelete] = useState<JobPost | null>(null);
+  const [isDeletingJob, setIsDeletingJob] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
+  const deleteJobPost = (job: JobPost) => {
+    setJobToDelete(job);
+  };
+
+  const handleConfirmDeleteJob = async () => {
+    if (!userId || !jobToDelete) return;
 
     try {
-      const response = await fetch(`/api/employers/${userId}/job-posts/${jobPostId}`, {
+      setIsDeletingJob(true);
+      const response = await fetch(`/api/employers/${userId}/job-posts/${jobToDelete.id}`, {
         method: "DELETE",
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data?.message || "Unable to delete job post.");
-      setJobs((prev) => prev.filter((job) => job.id !== jobPostId));
+      setJobs((prev) => prev.filter((job) => job.id !== jobToDelete.id));
+      setJobToDelete(null);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to delete job post.");
+    } finally {
+      setIsDeletingJob(false);
     }
   };
 
@@ -249,9 +372,9 @@ export default function EmployerJobPostsList() {
               )}
             </li>
             <li><a href="/employer-applicant-finder"><span className="item-icon"><EmployerIcon name="nearby" /></span><span>Applicant Finder</span></a></li>
-            <li><a href="/employer-faq-management"><span className="item-icon"><EmployerIcon name="faq" /></span><span>FAQ Management</span></a></li>
-            <li><a href="/messages"><span className="item-icon"><EmployerIcon name="messages" /></span><span>Messages</span></a></li>
-            <li><a href="/notifications"><span className="item-icon"><EmployerIcon name="notifications" /></span><span>Notifications</span><span className="item-badge">8</span></a></li>
+            <li><a href="/employer-notices-faqs"><span className="item-icon"><EmployerIcon name="faq" /></span><span>Notices & FAQs</span></a></li>
+            <li><a href="/messages"><span className="item-icon"><EmployerIcon name="messages" /></span><span>Messages</span>{unreadMessagesCount > 0 && <span className="item-badge">{unreadMessagesCount}</span>}</a></li>
+            <li><a href="/notifications"><span className="item-icon"><EmployerIcon name="notifications" /></span><span>Notifications</span>{unreadNotifCount > 0 && <span className="item-badge">{unreadNotifCount}</span>}</a></li>
             <li><a href="/feedback"><span className="item-icon"><EmployerIcon name="feedback" /></span><span>Feedback</span></a></li>
           </ul>
         </div>
@@ -262,11 +385,22 @@ export default function EmployerJobPostsList() {
             <span className="profile-user-copy"><strong>{companyLabel}</strong><small>Employer</small></span>
             <ChevronIcon direction={isProfileMenuOpen ? "down" : "up"} />
           </button>
-          {isProfileMenuOpen && <div className="appdash-profile-menu"><a href="/employer-company-profile"><EmployerIcon name="profile" />Company Profile</a><a href="/"><EmployerIcon name="logout" />Logout</a></div>}
+          {isProfileMenuOpen && (
+            <div className="appdash-profile-menu">
+              <a href="/employer-company-profile"><EmployerIcon name="profile" />Company Profile</a>
+              <button
+                type="button"
+                className="appdash-profile-menu-btn"
+                onClick={() => setIsLogoutModalOpen(true)}
+              >
+                <EmployerIcon name="logout" />Logout
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 
-      <main className="appdash-main joblist-main">
+      <main ref={mainRef} className="appdash-main joblist-main">
         <header className="appdash-topbar">
           <div className="appdash-top-left"><div><strong>Job Posts</strong></div></div>
           <div className="appdash-top-right">
@@ -278,13 +412,18 @@ export default function EmployerJobPostsList() {
                 customFaqs={jobPostsFaqs}
               />
             </div>
+            <CalendarDrawer />
           </div>
         </header>
 
         <section className="joblist-head">
           <div>
             <h1>All Job Posts</h1>
-            <p>View every job posting created by your employer account.</p>
+            <p>
+              {jobs.length === 0
+                ? "View every job posting created by your employer account."
+                : `Showing ${jobs.length === 0 ? 0 : `${(currentPage - 1) * JOBS_PER_PAGE + 1} - ${Math.min(currentPage * JOBS_PER_PAGE, jobs.length)}`} of ${jobs.length} job post${jobs.length === 1 ? "" : "s"}`}
+            </p>
           </div>
           <a className="create-job-btn" href="/employer-job-posts/create">Create Job Post</a>
         </section>
@@ -298,7 +437,7 @@ export default function EmployerJobPostsList() {
               <p>Create your first posting to start accepting applicants.</p>
             </article>
           ) : (
-            jobs.map((job) => {
+            paginatedJobs.map((job) => {
               const skillItems = parseTags(job.required_skills);
               const qualItems = parseTags(job.qualifications);
               const certItems = parseTags(job.certifications);
@@ -313,7 +452,7 @@ export default function EmployerJobPostsList() {
                         <h3 className="job-card-title" title={job.title}>{job.title}</h3>
                       </div>
                       <div className="job-card-submeta">
-                        <span className="location-meta"><svg className="location-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6 7-12a7 7 0 1 0-14 0c0 6 7 12 7 12Zm0-9a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z" /></svg>{job.location || "Location not set"}</span>
+                        <RenderLocationMeta location={job.location} />
                       </div>
                       <p>{toPreviewText(job.description, "No description provided.")}</p>
                       <div className="job-chip-row">
@@ -324,7 +463,6 @@ export default function EmployerJobPostsList() {
                     </div>
                     <div className="job-card-center">
                       <div className="job-meta">
-                        <span>Applications: {job.applicant_count ?? 0}/{job.application_limit ?? 0}</span>
                         <span>Close Date: {job.close_date || "-"}</span>
 
                         {skillItems.length > 0 && (
@@ -353,7 +491,7 @@ export default function EmployerJobPostsList() {
                       <div className="job-actions">
                         <button type="button">Review</button>
                         <a className="job-action-link" href={`/employer-job-posts/create?edit=${job.id}`}>Edit</a>
-                        <button type="button" className="danger" onClick={() => deleteJobPost(job.id)}>Delete</button>
+                        <button type="button" className="danger" onClick={() => deleteJobPost(job)}>Delete</button>
                       </div>
                     </div>
                   </div>
@@ -362,7 +500,109 @@ export default function EmployerJobPostsList() {
             })
           )}
         </section>
+
+        {totalPages > 1 && (
+          <div
+            className="joblist-pagination"
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: "12px",
+              marginTop: "20px",
+              marginBottom: "24px",
+            }}
+          >
+            <button
+              type="button"
+              className="pagination-btn"
+              disabled={currentPage === 1}
+              onClick={() => {
+                setCurrentPage((p) => Math.max(1, p - 1));
+                scrollToTop();
+              }}
+              style={{
+                padding: "8px 16px",
+                borderRadius: "8px",
+                border: "1px solid #cbd5e1",
+                background: currentPage === 1 ? "#f8fafc" : "#ffffff",
+                color: currentPage === 1 ? "#94a3b8" : "#1e293b",
+                cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                fontWeight: 600,
+                fontSize: "0.88rem",
+                boxShadow: currentPage === 1 ? "none" : "0 1px 2px rgba(0,0,0,0.05)",
+                transition: "all 0.15s ease",
+              }}
+            >
+              &larr; Previous
+            </button>
+            <span style={{ fontSize: "0.88rem", color: "#64748b", fontWeight: 600 }}>
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              type="button"
+              className="pagination-btn"
+              disabled={currentPage === totalPages}
+              onClick={() => {
+                setCurrentPage((p) => Math.min(totalPages, p + 1));
+                scrollToTop();
+              }}
+              style={{
+                padding: "8px 16px",
+                borderRadius: "8px",
+                border: "1px solid #cbd5e1",
+                background: currentPage === totalPages ? "#f8fafc" : "#ffffff",
+                color: currentPage === totalPages ? "#94a3b8" : "#1e293b",
+                cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                fontWeight: 600,
+                fontSize: "0.88rem",
+                boxShadow: currentPage === totalPages ? "none" : "0 1px 2px rgba(0,0,0,0.05)",
+                transition: "all 0.15s ease",
+              }}
+            >
+              Next &rarr;
+            </button>
+          </div>
+        )}
+
+        {/* DELETE JOB CONFIRMATION MODAL */}
+        <ConfirmationModal
+          isOpen={Boolean(jobToDelete)}
+          type="danger"
+          title="Delete Job Post"
+          message={
+            <div>
+              <p style={{ margin: "0 0 8px" }}>
+                Are you sure you want to permanently delete <strong>'{jobToDelete?.title}'</strong>?
+              </p>
+              <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>
+                All active candidate applications, match records, and screening history linked to this posting will also be removed. This action cannot be undone.
+              </p>
+            </div>
+          }
+          cancelLabel="Keep Job Post"
+          confirmLabel="Delete Permanently"
+          isConfirming={isDeletingJob}
+          onCancel={() => setJobToDelete(null)}
+          onConfirm={handleConfirmDeleteJob}
+        />
+
+        {/* LOGOUT CONFIRMATION MODAL */}
+        <ConfirmationModal
+          isOpen={isLogoutModalOpen}
+          type="info"
+          title="Log Out of EliteCruit"
+          message="Are you sure you want to log out of your employer account?"
+          cancelLabel="Stay Signed In"
+          confirmLabel="Log Out"
+          onCancel={() => setIsLogoutModalOpen(false)}
+          onConfirm={() => {
+            localStorage.removeItem("elitecruit-user");
+            window.location.href = "/";
+          }}
+        />
       </main>
     </div>
   );
 }
+

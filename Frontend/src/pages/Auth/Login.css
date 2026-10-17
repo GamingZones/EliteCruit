@@ -241,11 +241,19 @@
   color: #ffffff;
 }
 
+.login-title {
+  margin: 0 0 6px;
+  font-family: "Sora", sans-serif;
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: #0b2340;
+}
+
 .login-sub {
-  margin: 12px 0 14px;
-  color: #365070;
-  font-size: 0.96rem;
-  line-height: 1.42;
+  margin: 0 0 18px;
+  color: #4b6382;
+  font-size: 0.94rem;
+  line-height: 1.45;
 }
 
 .field-label {
@@ -410,6 +418,176 @@
   margin: 0;
   color: #566e8e;
   font-size: 0.84rem;
+}
+
+/* Two-Factor Authentication (2FA) Styles */
+.mfa-card {
+  animation: mfaFadeIn 0.3s ease-out;
+}
+
+@keyframes mfaFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mfa-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.mfa-icon-badge {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+  color: #0284c7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15);
+  border: 1px solid rgba(2, 132, 199, 0.2);
+}
+
+.mfa-highlight-email {
+  color: #0d3156;
+  font-weight: 700;
+  word-break: break-all;
+}
+
+.dev-otp-callout {
+  background: #fefce8;
+  border: 1px dashed #ca8a04;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 18px;
+  text-align: center;
+}
+
+.dev-otp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.dev-otp-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  background: #eab308;
+  color: #713f12;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.dev-otp-note {
+  font-size: 0.76rem;
+  color: #854d0e;
+}
+
+.dev-otp-code-display {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.25em;
+  color: #854d0e;
+}
+
+.mfa-code-group {
+  margin-bottom: 18px;
+}
+
+.mfa-input-container {
+  margin-top: 6px;
+}
+
+.mfa-digit-input {
+  width: 100%;
+  height: 54px;
+  border-radius: 12px;
+  border: 2px solid #cbd5e1;
+  background: #ffffff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: 0.4em;
+  text-align: center;
+  color: #0f172a;
+  transition: all 0.2s ease;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+.mfa-digit-input:focus {
+  outline: none;
+  border-color: #0284c7;
+  box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.15);
+}
+
+.mfa-hint-text {
+  display: block;
+  font-size: 0.78rem;
+  color: #64748b;
+  margin-top: 6px;
+  text-align: center;
+}
+
+.mfa-submit-btn {
+  margin-top: 8px;
+}
+
+.mfa-footer-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.mfa-resend-btn {
+  background: none;
+  border: none;
+  color: #0284c7;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 0.15s ease;
+}
+
+.mfa-resend-btn:hover:not(:disabled) {
+  color: #0369a1;
+  text-decoration: underline;
+}
+
+.mfa-resend-btn:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.mfa-back-link {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 0.84rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: color 0.15s ease;
+}
+
+.mfa-back-link:hover {
+  color: #334155;
+  text-decoration: underline;
 }
 
 @media (max-width: 1150px) {

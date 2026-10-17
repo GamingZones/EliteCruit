@@ -8,3 +8,23 @@
 	- if a page (new or not) is specified for that module it will be put in the folder with the other pages for that module
 
 4. do not create anymore implementation plans, execute/implement immediately without asking for approval on plans.
+
+5. Differentiate general questions/inquiries from actionable tasks:
+	- When the user asks a general question or inquiry (e.g., "is X there?", "does Y exist?", "where is Z?"), DO NOT make code edits or modifications immediately.
+	- Simply inspect the codebase/data, report the findings clearly, and wait for the user to give explicit instructions before taking action.
+
+6. Popup Message Modal Design & Behavior (Popup Messages Only):
+	- Whenever requested to create a popup message/modal (warnings, alerts), strictly follow this design:
+	  * Backdrop: Centered modal card over a dark semi-transparent blurred backdrop overlay.
+	  * Icon Badge: Circular soft yellow/amber background badge (`#fef9c3`) with a warning triangle icon centered at the top.
+	  * Title: Centered bold navy title ("Warning").
+	  * Body Message: Centered body message text (e.g., "Main branch cannot be removed.").
+	  * Action Button: Centered solid navy blue "OK" button (`#103f65` / `#00385e`), rounded corners, white bold text.
+	  * Persistence: Popup messages must NOT auto-dismiss after a few seconds; they MUST remain open until the user manually clicks "OK" or closes the modal.
+	  * Scope: Applies strictly to popup modals; standard inline page top messages/banners remain separate.
+
+7. Command Execution Control:
+	- DO NOT run build commands (e.g. `cmd /c npm run build`), `git status`, or terminal verification commands automatically after edits unless explicitly requested by the user.
+
+8. File Content & Change Inspection:
+	- When checking file contents or inspecting file modifications, use 1 command prompt instead of fragmenting it across multiple commands/prompts to check the contents of the file changes.

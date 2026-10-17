@@ -1,5 +1,7 @@
 import React, { useState } from "react";
+import ConfirmationModal from "./ConfirmationModal";
 import "./AdminSidebar.css";
+import { clearAuth } from "../utils/auth";
 
 export type AdminNavIcon =
   | "dashboard"
@@ -38,18 +40,18 @@ export default function AdminSidebar({
   adminName = "Administrator",
 }: AdminSidebarProps) {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const navItems = [
     { label: "Overview", icon: "dashboard" as AdminNavIcon, href: "/admin-dashboard" },
     { label: "Applicant Management", icon: "users" as AdminNavIcon, href: "/admin-applicants" },
+    { label: "Applicant Analytics", icon: "audit" as AdminNavIcon, href: "/admin-applicant-analytics" },
     { label: "Employer Management", icon: "jobs" as AdminNavIcon, href: "/admin-employers" },
+    { label: "Employer Analytics", icon: "settings" as AdminNavIcon, href: "/admin-employer-analytics" },
   ];
 
   const handleLogout = () => {
-    try {
-      localStorage.removeItem("elitecruit-user");
-      localStorage.removeItem("token");
-    } catch {}
+    clearAuth();
     window.location.href = "/login";
   };
 
@@ -104,7 +106,8 @@ export default function AdminSidebar({
           <div className="appdash-profile-menu">
             <button
               type="button"
-              onClick={handleLogout}
+              className="appdash-profile-menu-btn"
+              onClick={() => setIsLogoutModalOpen(true)}
             >
               <AdminNavIconSvg name="logout" />
               Logout
@@ -112,6 +115,18 @@ export default function AdminSidebar({
           </div>
         )}
       </div>
+
+      {/* DOUBLE VERIFICATION: ADMIN LOGOUT CONFIRMATION MODAL */}
+      <ConfirmationModal
+        isOpen={isLogoutModalOpen}
+        type="warning"
+        title="Log Out of Admin Portal"
+        message="Are you sure you want to end your administrator session?"
+        cancelLabel="Stay Signed In"
+        confirmLabel="Log Out"
+        onCancel={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleLogout}
+      />
     </aside>
   );
 }

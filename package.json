@@ -3,8 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "concurrently -n \"BACKEND,FRONTEND\" -c \"blue,green\" \"cd Backend && node server.js\" \"cd Frontend && npm.cmd run dev\"",
-    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"blue,green\" \"cd Backend && node server.js\" \"cd Frontend && npm.cmd run dev\""
+    "start": "node Backend/server.js",
+    "backend": "node Backend/server.js",
+    "dev:backend": "cd Backend && node server.js",
+    "dev:frontend": "npm --prefix Frontend run dev",
+    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"blue,green\" \"npm run dev:backend\" \"npm run dev:frontend\""
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

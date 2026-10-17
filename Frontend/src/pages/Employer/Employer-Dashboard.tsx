@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { ChevronIcon, SideIcon } from "../Applicant/Applicant-Dashboard";
-import { useEmployerCompanyLabel } from "../useEmployerCompanyLabel";
+import { ChevronIcon, SideIcon } from "../../components/Icons";
+import { useEmployerCompanyLabel } from "../../hooks/useEmployerCompanyLabel";
+import { useUnreadNotificationsCount } from "../../hooks/useUnreadNotificationsCount";
+import { useUnreadMessagesCount } from "../../hooks/useUnreadMessagesCount";
 import EmployerChatbotDrawer, { EmployerFAQItem as FAQItem } from "../../components/EmployerChatbotDrawer";
+import CalendarDrawer from "../../components/CalendarDrawer";
+import ConfirmationModal from "../../components/ConfirmationModal";
+import { cleanBranchLocation, parseLocations } from "../../utils/filters";
 import "../Applicant/Applicant-Dashboard.css";
 import "./Employer-Dashboard.css";
 
@@ -62,6 +67,8 @@ type RecentApplication = {
   submitted_at: string | null;
   job_title: string | null;
   applicant_name: string | null;
+  applicant_user_id?: number;
+  profile_picture_path?: string | null;
 };
 
 type DashboardSummary = {
@@ -73,13 +80,6 @@ type DashboardSummary = {
   };
   activeJobPosts: ActiveJobPost[];
   recentApplications: RecentApplication[];
-};
-
-type StatMetric = {
-  label: string;
-  value: number;
-  hint: string;
-  icon: EmployerIconName;
 };
 
 function initialsFromName(name: string | null | undefined) {
@@ -103,11 +103,58 @@ function appStatusClass(status: string | null | undefined) {
   return "status-blue";
 }
 
+function RenderLocationMeta({ location }: { location?: string | null }) {
+  const locItems = parseLocations(location);
+
+  if (locItems.length === 0) {
+    return (
+      <span className="location-meta">
+        <svg className="location-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 22s7-6 7-12a7 7 0 1 0-14 0c0 6 7 12 7 12Zm0-9a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z" />
+        </svg>
+        <span>Location not set</span>
+      </span>
+    );
+  }
+
+  if (locItems.length === 1) {
+    return (
+      <span className="location-meta">
+        <svg className="location-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 22s7-6 7-12a7 7 0 1 0-14 0c0 6 7 12 7 12Zm0-9a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z" />
+        </svg>
+        <span>{locItems[0]}</span>
+      </span>
+    );
+  }
+
+  const fullListText = locItems.join(", ");
+
+  return (
+    <span className="location-meta">
+      <svg className="location-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 22s7-6 7-12a7 7 0 1 0-14 0c0 6 7 12 7 12Zm0-9a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z" />
+      </svg>
+      <span>{locItems[0]}</span>
+      <span className="overflow-dots-badge" tabIndex={0} aria-label="View all locations">
+        ...
+        <span className="overflow-tooltip">
+          <strong>Locations:</strong>
+          <span>{fullListText}</span>
+        </span>
+      </span>
+    </span>
+  );
+}
+
 export default function EmployerDashboard() {
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+  const unreadNotifCount = useUnreadNotificationsCount();
+  const unreadMessagesCount = useUnreadMessagesCount();
   const [isScreeningOpen, setIsScreeningOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [profileMessage, setProfileMessage] = useState("");
   const [summary, setSummary] = useState<DashboardSummary>({
     stats: { activeJobs: 0, applications: 0, shortlisted: 0, toReview: 0 },
@@ -147,13 +194,6 @@ export default function EmployerDashboard() {
       actionLabel: "Company Profile",
       actionHref: "/employer-company-profile",
     },
-  ];
-
-  const statMetrics: StatMetric[] = [
-    { label: "Active Jobs", value: summary.stats.activeJobs, hint: "Open postings", icon: "jobposts" },
-    { label: "Applications", value: summary.stats.applications, hint: "Across active roles", icon: "applicant" },
-    { label: "Shortlisted", value: summary.stats.shortlisted, hint: "Candidate pipeline", icon: "shortlisted" },
-    { label: "To Review", value: summary.stats.toReview, hint: "Needs attention", icon: "screening" },
   ];
 
   useEffect(() => {
@@ -228,9 +268,9 @@ export default function EmployerDashboard() {
               )}
             </li>
             <li><a href="/employer-applicant-finder"><span className="item-icon"><EmployerIcon name="nearby" /></span><span>Applicant Finder</span></a></li>
-            <li><a href="/employer-faq-management"><span className="item-icon"><EmployerIcon name="faq" /></span><span>FAQ Management</span></a></li>
-            <li><a href="/messages"><span className="item-icon"><EmployerIcon name="messages" /></span><span>Messages</span></a></li>
-            <li><a href="/notifications"><span className="item-icon"><EmployerIcon name="notifications" /></span><span>Notifications</span><span className="item-badge">8</span></a></li>
+            <li><a href="/employer-notices-faqs"><span className="item-icon"><EmployerIcon name="faq" /></span><span>Notices & FAQs</span></a></li>
+            <li><a href="/messages"><span className="item-icon"><EmployerIcon name="messages" /></span><span>Messages</span>{unreadMessagesCount > 0 && <span className="item-badge">{unreadMessagesCount}</span>}</a></li>
+            <li><a href="/notifications"><span className="item-icon"><EmployerIcon name="notifications" /></span><span>Notifications</span>{unreadNotifCount > 0 && <span className="item-badge">{unreadNotifCount}</span>}</a></li>
             <li><a href="/feedback"><span className="item-icon"><EmployerIcon name="feedback" /></span><span>Feedback</span></a></li>
           </ul>
         </div>
@@ -244,7 +284,13 @@ export default function EmployerDashboard() {
           {isProfileMenuOpen && (
             <div className="appdash-profile-menu">
               <a href="/employer-company-profile"><EmployerIcon name="profile" />Company Profile</a>
-              <a href="/"><EmployerIcon name="logout" />Logout</a>
+              <button
+                type="button"
+                className="appdash-profile-menu-btn"
+                onClick={() => setIsLogoutModalOpen(true)}
+              >
+                <EmployerIcon name="logout" />Logout
+              </button>
             </div>
           )}
         </div>
@@ -262,26 +308,9 @@ export default function EmployerDashboard() {
                 customFaqs={dashboardFaqs}
               />
             </div>
+            <CalendarDrawer />
           </div>
         </header>
-
-        <section className="hero-card">
-          <div>
-            <small>Employer Workspace</small>
-            <h1>Employer Dashboard</h1>
-            <p>Manage job posts, applicant queues, nearby applicants, shortlists, feedback, and company response content.</p>
-          </div>
-        </section>
-
-        <section className="employer-stats-grid" aria-label="Employer stats">
-          {statMetrics.map((metric) => (
-            <article className="employer-stat-card" key={metric.label}>
-              <div><small>{metric.label}</small><span className="mini-icon" aria-hidden="true"><EmployerIcon name={metric.icon} /></span></div>
-              <strong>{metric.value}</strong>
-              <p>{metric.hint}</p>
-            </article>
-          ))}
-        </section>
 
         {profileMessage && <p className="profile-message">{profileMessage}</p>}
 
@@ -296,16 +325,20 @@ export default function EmployerDashboard() {
                 </div>
               </div>
             ) : (
-              summary.activeJobPosts.map((job) => (
+              summary.activeJobPosts.slice(0, 5).map((job) => (
                 <div className="job-post-row" key={job.id}>
-                  <div>
-                    <strong>{job.title}</strong>
-                    <p>{job.location || "Location not set"}</p>
+                  <div className="job-post-info">
+                    <strong title={job.title}>{job.title}</strong>
+                    <div className="job-post-location">
+                      <RenderLocationMeta location={job.location} />
+                    </div>
                     <small>{job.applicant_count || 0} applications</small>
                   </div>
-                  <div>
+                  <div className="job-post-actions">
                     <span className="status-green">{job.status || "open"}</span>
-                    <a href="/employer-applicant-management">View applicants</a>
+                    <a href="/employer-applicant-management" className="view-applicants-btn">
+                      View applicants
+                    </a>
                   </div>
                 </div>
               ))
@@ -316,33 +349,55 @@ export default function EmployerDashboard() {
             <header><h2>Recent Applications</h2><a href="/employer-applicant-management">View All</a></header>
             {summary.recentApplications.length === 0 ? (
               <div className="recent-app-row">
-                <div>
+                <div className="recent-app-info">
                   <strong>No applications yet.</strong>
                   <small>Applicants for your posted jobs will appear here.</small>
                 </div>
               </div>
             ) : (
-              summary.recentApplications.map((item) => (
-                <div className="recent-app-row" key={item.id}>
-                  <span className="initials-pill">{initialsFromName(item.applicant_name)}</span>
-                  <div>
-                    <strong>{item.applicant_name || "Applicant"}</strong>
-                    <p>{item.job_title || "Job Post"}</p>
-                    <small>{formatDate(item.submitted_at)}</small>
+              summary.recentApplications.slice(0, 5).map((item) => {
+                const picUrl = item.profile_picture_path
+                  ? (item.profile_picture_path.startsWith("http") || item.profile_picture_path.startsWith("/api")
+                      ? item.profile_picture_path
+                      : `/api/applicants/${item.applicant_user_id}/profile-picture`)
+                  : null;
+                return (
+                  <div className="recent-app-row" key={item.id}>
+                    <span className="initials-pill" style={{ overflow: "hidden", position: "relative" }}>
+                      {picUrl && (
+                        <img
+                          src={picUrl}
+                          alt={item.applicant_name || "Applicant"}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = "none";
+                            if (e.currentTarget.nextElementSibling) {
+                              (e.currentTarget.nextElementSibling as HTMLElement).style.display = "inline";
+                            }
+                          }}
+                        />
+                      )}
+                      <span style={{ display: picUrl ? "none" : "inline" }}>
+                        {initialsFromName(item.applicant_name)}
+                      </span>
+                    </span>
+                    <div className="recent-app-info">
+                      <strong>{item.applicant_name || "Applicant"}</strong>
+                      <p>{item.job_title || "Job Post"}</p>
+                      <small>{formatDate(item.submitted_at)}</small>
+                    </div>
+                    <a
+                      href="/employer-applicant-management"
+                      className="review-btn"
+                    >
+                      Review
+                    </a>
                   </div>
-                  <a
-                    href="/employer-applicant-management"
-                    className="review-btn"
-                  >
-                    Review
-                  </a>
-                </div>
-              ))
+                );
+              })
             )}
           </article>
-        </section>
 
-        <section className="employer-dual-grid bottom-grid">
           <article className="employer-block status-overview-block">
             <header><h2>Application Status Overview</h2></header>
             <div className="status-line"><span>Pending Review</span><b className="status-count gray">{summary.stats.toReview}</b></div>
@@ -360,6 +415,22 @@ export default function EmployerDashboard() {
           </article>
         </section>
       </main>
+
+      {/* DOUBLE VERIFICATION: LOGOUT CONFIRMATION MODAL */}
+      <ConfirmationModal
+        isOpen={isLogoutModalOpen}
+        type="warning"
+        title="Log Out of EliteCruit"
+        message="Are you sure you want to log out of your employer account?"
+        cancelLabel="Stay Signed In"
+        confirmLabel="Log Out"
+        onCancel={() => setIsLogoutModalOpen(false)}
+        onConfirm={() => {
+          localStorage.removeItem("elitecruit-user");
+          window.location.href = "/";
+        }}
+      />
     </div>
   );
 }
+

@@ -1,7 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronIcon, SideIcon } from "../Applicant/Applicant-Dashboard";
-import { useEmployerCompanyLabel } from "../useEmployerCompanyLabel";
+import { ChevronIcon, SideIcon } from "../../components/Icons";
+import { useEmployerCompanyLabel } from "../../hooks/useEmployerCompanyLabel";
+import { useUnreadNotificationsCount } from "../../hooks/useUnreadNotificationsCount";
+import { useUnreadMessagesCount } from "../../hooks/useUnreadMessagesCount";
 import EmployerChatbotDrawer, { EmployerFAQItem as FAQItem } from "../../components/EmployerChatbotDrawer";
+import CalendarDrawer from "../../components/CalendarDrawer";
+import ConfirmationModal from "../../components/ConfirmationModal";
 import {
   BSIT_BSCS_JOB_TITLES,
   BSIT_BSCS_SKILLS,
@@ -9,9 +13,9 @@ import {
   BSIT_BSCS_CERTIFICATIONS,
   CAVITE_CITIES,
   WORK_ARRANGEMENTS,
-  EXPERIENCE_LEVELS,
   EXP_YEARS_OPTIONS,
   getKeywordsForJobRole,
+  cleanBranchLocation,
 } from "../../utils/filters";
 import "../Applicant/Applicant-Dashboard.css";
 import "./Employer-Dashboard.css";
@@ -59,6 +63,17 @@ function EmployerIcon({ name }: { name: EmployerIconName }) {
 type ItemWithExp = {
   name: string;
   years: string;
+};
+
+type BranchLocationItem = {
+  id: string;
+  branch_name: string;
+  province?: string;
+  city: string;
+  address?: string;
+  contact_number?: string;
+  email?: string;
+  is_main?: boolean;
 };
 
 function parseItemsWithExp(raw?: string | null): ItemWithExp[] {
@@ -405,17 +420,343 @@ function JobPostCategoryEditor({
   );
 }
 
+interface EmployerBranchItem {
+  id: string;
+  branch_name: string;
+  city?: string;
+  province?: string;
+  address?: string;
+  contact_number?: string;
+  email?: string;
+  is_main?: boolean;
+}
+
+interface BranchSelectionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  availableBranches: EmployerBranchItem[];
+  fallbackCities: readonly string[];
+  selectedValues: string[];
+  onConfirm: (selected: string[]) => void;
+  companyName?: string;
+}
+
+function BranchSelectionModal({
+  isOpen,
+  onClose,
+  availableBranches,
+  fallbackCities,
+  selectedValues,
+  onConfirm,
+  companyName,
+}: BranchSelectionModalProps) {
+  const [tempSelected, setTempSelected] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      setTempSelected([...selectedValues]);
+      setSearchTerm("");
+    }
+  }, [isOpen, selectedValues]);
+
+  const getBranchValue = (b: EmployerBranchItem) => {
+    if (b.city && !b.branch_name.toLowerCase().includes(b.city.toLowerCase())) {
+      return `${b.branch_name} (${b.city}${b.province && !b.city.includes(b.province) ? `, ${b.province}` : ""})`;
+    }
+    return b.branch_name;
+  };
+
+  const isBranchChecked = (b: EmployerBranchItem) => {
+    const targetVal = getBranchValue(b).toLowerCase().trim();
+    const rawName = b.branch_name.toLowerCase().trim();
+    const locOnly = cleanBranchLocation(targetVal).toLowerCase().trim();
+    const city = (b.city || "").toLowerCase().trim();
+    return tempSelected.some((s) => {
+      const lower = s.toLowerCase().trim();
+      return (
+        lower === targetVal ||
+        lower === rawName ||
+        lower === locOnly ||
+        (city && (lower === city || lower.includes(city) || city.includes(lower)))
+      );
+    });
+  };
+
+  const toggleBranch = (b: EmployerBranchItem) => {
+    const val = getBranchValue(b);
+    const rawName = b.branch_name.trim();
+    const locOnly = cleanBranchLocation(val);
+    setTempSelected((prev) => {
+      const exists = prev.some((s) => {
+        const lower = s.toLowerCase().trim();
+        return (
+          lower === val.toLowerCase().trim() ||
+          lower === rawName.toLowerCase() ||
+          lower === locOnly.toLowerCase()
+        );
+      });
+      if (exists) {
+        return prev.filter((s) => {
+          const lower = s.toLowerCase().trim();
+          return (
+            lower !== val.toLowerCase().trim() &&
+            lower !== rawName.toLowerCase() &&
+            lower !== locOnly.toLowerCase()
+          );
+        });
+      }
+      return [...prev, val];
+    });
+  };
+
+  const isCityChecked = (city: string) => {
+    return tempSelected.some((s) => s.toLowerCase().trim() === city.toLowerCase().trim());
+  };
+
+  const toggleCity = (city: string) => {
+    setTempSelected((prev) => {
+      const exists = prev.some((s) => s.toLowerCase().trim() === city.toLowerCase().trim());
+      if (exists) {
+        return prev.filter((s) => s.toLowerCase().trim() !== city.toLowerCase().trim());
+      }
+      return [...prev, city];
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (availableBranches.length > 0) {
+      const allVals = availableBranches.map(getBranchValue);
+      setTempSelected(Array.from(new Set([...tempSelected, ...allVals])));
+    } else {
+      const allVals = fallbackCities.slice(0, 10);
+      setTempSelected(Array.from(new Set([...tempSelected, ...allVals])));
+    }
+  };
+
+  const handleDeselectAll = () => {
+    setTempSelected([]);
+  };
+
+  const filteredBranches = useMemo(() => {
+    if (!searchTerm.trim()) return availableBranches;
+    const q = searchTerm.trim().toLowerCase();
+    return availableBranches.filter(
+      (b) =>
+        b.branch_name.toLowerCase().includes(q) ||
+        (b.city && b.city.toLowerCase().includes(q)) ||
+        (b.address && b.address.toLowerCase().includes(q))
+    );
+  }, [availableBranches, searchTerm]);
+
+  const filteredCities = useMemo(() => {
+    if (!searchTerm.trim()) return fallbackCities;
+    const q = searchTerm.trim().toLowerCase();
+    return fallbackCities.filter((c) => c.toLowerCase().includes(q));
+  }, [fallbackCities, searchTerm]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="branch-modal-overlay" onClick={onClose} role="dialog" aria-modal="true">
+      <div className="branch-modal-card" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="branch-modal-head">
+          <div className="branch-modal-title-wrap">
+            <div className="branch-modal-icon-badge">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            </div>
+            <div>
+              <h3>Company Branches</h3>
+              <p>Select all branch locations that apply to this job posting.</p>
+            </div>
+          </div>
+          <button type="button" className="branch-modal-close" onClick={onClose} title="Close">
+            ✕
+          </button>
+        </div>
+
+        {/* Toolbar: Search + Quick Bulk Actions */}
+        <div className="branch-modal-toolbar">
+          <div className="branch-modal-search-field">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#64748b" strokeWidth="2">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search branch name, city, or address..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            {searchTerm && (
+              <button type="button" className="branch-modal-search-clear" onClick={() => setSearchTerm("")}>
+                ✕
+              </button>
+            )}
+          </div>
+          <div className="branch-modal-quick-btns">
+            <button type="button" className="branch-quick-btn" onClick={handleSelectAll}>
+              Select All
+            </button>
+            <button type="button" className="branch-quick-btn danger" onClick={handleDeselectAll}>
+              Clear All
+            </button>
+          </div>
+        </div>
+
+        {/* Modal Scrollable Body */}
+        <div className="branch-modal-scroll">
+          {availableBranches.length > 0 ? (
+            <div className="branch-cards-grid">
+              {filteredBranches.map((b) => {
+                const checked = isBranchChecked(b);
+                return (
+                  <div
+                    key={b.id}
+                    className={`branch-select-card ${checked ? "selected" : ""}`}
+                    onClick={() => toggleBranch(b)}
+                  >
+                    <div className="branch-card-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {}}
+                        tabIndex={-1}
+                      />
+                    </div>
+                    <div className="branch-card-body">
+                      <div className="branch-card-head">
+                        <strong className="branch-card-name">
+                          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#0284c7" strokeWidth="2" style={{ flexShrink: 0 }}>
+                            <path d="M3 21h18M5 21V7l7-4 7 4v14M9 11h2m2 0h2M9 15h2m2 0h2" />
+                          </svg>
+                          {b.branch_name}
+                        </strong>
+                        {b.is_main && <span className="branch-hq-tag">Main HQ</span>}
+                      </div>
+                      <div className="branch-card-meta">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#0284c7" strokeWidth="2" style={{ flexShrink: 0 }}>
+                          <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z" />
+                        </svg>
+                        <span>
+                          {b.address ? `${b.address}, ` : ""}
+                          {b.city || "Cavite"}
+                          {b.province && !b.city?.includes(b.province) ? `, ${b.province}` : ""}
+                        </span>
+                      </div>
+                      {(b.contact_number || b.email) && (
+                        <div className="branch-card-contacts">
+                          {b.contact_number && (
+                            <span>
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#0284c7" strokeWidth="2" style={{ flexShrink: 0 }}>
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                              </svg>
+                              {b.contact_number}
+                            </span>
+                          )}
+                          {b.email && (
+                            <span>
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#0284c7" strokeWidth="2" style={{ flexShrink: 0 }}>
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                                <polyline points="22,6 12,13 2,6" />
+                              </svg>
+                              {b.email}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="branch-modal-no-branches">
+              <div className="no-branches-icon">
+                <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#0284c7" strokeWidth="1.75">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+              <h4>No Company Branches Registered</h4>
+              <p>You haven&apos;t added multiple branch locations to your company profile yet.</p>
+              <a
+                href="/employer-company-profile"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="branch-manage-profile-btn"
+              >
+                Manage Branches in Company Profile ↗
+              </a>
+            </div>
+          )}
+
+          {/* If no custom branches registered, show standard Cavite locations */}
+          {availableBranches.length === 0 && (
+            <div className="branch-fallback-cities-section">
+              <span className="branch-fallback-cities-title">Select standard Cavite branch locations:</span>
+              <div className="branch-fallback-cities-grid">
+                {filteredCities.map((city) => {
+                  const checked = isCityChecked(city);
+                  return (
+                    <button
+                      type="button"
+                      key={city}
+                      className={`branch-city-pill-btn ${checked ? "active" : ""}`}
+                      onClick={() => toggleCity(city)}
+                    >
+                      <span className="pill-check">{checked ? "✓" : "+"}</span>
+                      <span>{city}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="branch-modal-footer">
+          <div className="branch-modal-summary">
+            <strong>{tempSelected.length}</strong> location{tempSelected.length !== 1 ? "s" : ""} selected
+          </div>
+          <div className="branch-modal-footer-actions">
+            <button type="button" className="branch-modal-cancel-btn" onClick={onClose}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="branch-modal-save-btn"
+              onClick={() => {
+                onConfirm(tempSelected);
+                onClose();
+              }}
+            >
+              Confirm Selection ({tempSelected.length})
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function EmployerJobPosts() {
   const [isScreeningOpen, setIsScreeningOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
+  const unreadNotifCount = useUnreadNotificationsCount();
+  const unreadMessagesCount = useUnreadMessagesCount();
   const [profileMessage, setProfileMessage] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
 
   const createJobPostFaqs: FAQItem[] = [
     {
       question: "What details are required to publish a job post?",
-      answer: "Job Title, Location, Application Limit (1-100), Work Arrangement, Experience Level, Auto-Close Date, Salary Range (Min & Max), Description, Qualifications, and Required Skills are required.",
+      answer: "Job Title, Location, Application Limit (1-100), Work Arrangement, Auto-Close Date, Salary Range (Min & Max), Description, Qualifications, and Required Skills are required.",
     },
     {
       question: "How do skills and qualifications impact candidate matching?",
@@ -446,8 +787,89 @@ export default function EmployerJobPosts() {
   const [selectedSkills, setSelectedSkills] = useState<ItemWithExp[]>([]);
   const [selectedQualifications, setSelectedQualifications] = useState<ItemWithExp[]>([]);
   const [selectedCertifications, setSelectedCertifications] = useState<ItemWithExp[]>([]);
+  const [companyBranches, setCompanyBranches] = useState<BranchLocationItem[]>([]);
+  const [employerProfileData, setEmployerProfileData] = useState<any>(null);
   const companyLabel = useEmployerCompanyLabel("Employer");
   const isEditMode = useMemo(() => Number.isInteger(editingJobId) && Number(editingJobId) > 0, [editingJobId]);
+
+  useEffect(() => {
+    const savedUserRaw = localStorage.getItem("elitecruit-user");
+    if (!savedUserRaw) return;
+    try {
+      const savedUser = JSON.parse(savedUserRaw) as { id?: number; role?: string };
+      if (savedUser.role === "employer" && savedUser.id) {
+        fetch(`/api/employers/${savedUser.id}/profile`)
+          .then(async (response) => {
+            if (!response.ok) return;
+            const data = await response.json();
+            const prof = data?.profile;
+            if (!prof) return;
+            setEmployerProfileData(prof);
+            let branchesArr: BranchLocationItem[] = [];
+            if (Array.isArray(prof.branches)) {
+              branchesArr = prof.branches;
+            } else if (typeof prof.branches_json === "string" && prof.branches_json.trim()) {
+              try {
+                const parsed = JSON.parse(prof.branches_json);
+                if (Array.isArray(parsed)) branchesArr = parsed;
+              } catch {}
+            }
+            setCompanyBranches(branchesArr);
+          })
+          .catch(() => {});
+      }
+    } catch {}
+  }, []);
+
+  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+  const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
+
+  const allEmployerBranches = useMemo(() => {
+    const list: EmployerBranchItem[] = [];
+    const seen = new Set<string>();
+
+    if (companyBranches.length > 0) {
+      companyBranches.forEach((b) => {
+        const key = (b.branch_name || "").toLowerCase().trim();
+        if (!seen.has(key)) {
+          seen.add(key);
+          list.push({
+            id: b.id || `branch-${b.branch_name}`,
+            branch_name: b.branch_name,
+            city: b.city,
+            province: b.province || "Cavite",
+            address: b.address,
+            contact_number: b.contact_number,
+            email: b.email,
+            is_main: !!b.is_main,
+          });
+        }
+      });
+    }
+
+    if (employerProfileData) {
+      const mainOfficeName = employerProfileData.business_name
+        ? `${employerProfileData.business_name} (Main Office)`
+        : "Main Headquarters";
+      const mainCity = employerProfileData.city || employerProfileData.company_address || "Indang";
+      const mainKey = mainOfficeName.toLowerCase().trim();
+      if (!seen.has(mainKey) && !list.some((b) => b.is_main)) {
+        seen.add(mainKey);
+        list.unshift({
+          id: "profile-main-hq",
+          branch_name: mainOfficeName,
+          city: mainCity,
+          province: employerProfileData.province || "Cavite",
+          address: employerProfileData.company_address || mainCity,
+          contact_number: employerProfileData.contact_number,
+          email: employerProfileData.business_email,
+          is_main: true,
+        });
+      }
+    }
+
+    return list;
+  }, [companyBranches, employerProfileData]);
 
   const formatSalary = (value: string) => {
     const raw = value.replace(/,/g, "").trim();
@@ -516,22 +938,13 @@ export default function EmployerJobPosts() {
     return `${mm}/${dd}/${yyyy}`;
   };
 
-  const validateApplicationLimit = (value: string) => {
-    const trimmed = value.trim();
-    if (!trimmed) return "Application limit is required.";
-    const parsed = Number(trimmed);
-    if (!Number.isInteger(parsed) || parsed < 1) return "Application limit must be between 1 and 100.";
-    if (parsed > 100) return "Application limit cannot exceed 100.";
-    return "";
-  };
+  const validateApplicationLimit = (_value: string) => "";
 
   const getFieldError = (fieldName: keyof typeof form | "skills" | "qualifications") => {
     const effectiveTitle = form.title.trim();
     if (fieldName === "title" && !effectiveTitle) return "Job title is required.";
-    if (fieldName === "location" && !form.location.trim()) return "Location is required.";
-    if (fieldName === "application_limit") return validateApplicationLimit(form.application_limit);
+    if (fieldName === "location" && (!form.location.trim() || selectedLocations.length === 0)) return "At least one company branch / location is required.";
     if (fieldName === "work_arrangement" && !form.work_arrangement.trim()) return "Work arrangement is required.";
-    if (fieldName === "experience_level" && !form.experience_level.trim()) return "Experience level is required.";
     if (fieldName === "close_date" && !form.close_date.trim()) return "Auto-close date is required.";
     if (fieldName === "salary_min") {
       if (!form.salary_min.trim()) return "Minimum salary is required.";
@@ -557,9 +970,7 @@ export default function EmployerJobPosts() {
   const requiredFieldOrder: Array<keyof typeof form | "skills" | "qualifications"> = [
     "title",
     "location",
-    "application_limit",
     "work_arrangement",
-    "experience_level",
     "close_date",
     "salary_min",
     "salary_max",
@@ -571,10 +982,8 @@ export default function EmployerJobPosts() {
   const completionChecks = useMemo(() => {
     const effectiveTitle = form.title.trim();
     const hasTitle = !!effectiveTitle;
-    const hasLocation = !!form.location.trim();
-    const hasApplicationLimit = !!form.application_limit.trim();
+    const hasLocation = selectedLocations.length > 0 || !!form.location.trim();
     const hasWorkArrangement = !!form.work_arrangement.trim();
-    const hasExperienceLevel = !!form.experience_level.trim();
     const hasCloseDate = !!form.close_date.trim();
     const hasSalaryMin = !!form.salary_min.trim();
     const hasSalaryMax = !!form.salary_max.trim();
@@ -586,9 +995,7 @@ export default function EmployerJobPosts() {
     const allChecks = [
       hasTitle,
       hasLocation,
-      hasApplicationLimit,
       hasWorkArrangement,
-      hasExperienceLevel,
       hasCloseDate,
       hasSalaryMin,
       hasSalaryMax,
@@ -604,9 +1011,7 @@ export default function EmployerJobPosts() {
     return {
       hasTitle,
       hasLocation,
-      hasApplicationLimit,
       hasWorkArrangement,
-      hasExperienceLevel,
       hasCloseDate,
       hasSalaryMin,
       hasSalaryMax,
@@ -617,7 +1022,7 @@ export default function EmployerJobPosts() {
       percent,
       colorBand,
     };
-  }, [form, selectedSkills, selectedQualifications, selectedCertifications]);
+  }, [form, selectedLocations, selectedSkills, selectedQualifications, selectedCertifications]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -642,6 +1047,10 @@ export default function EmployerJobPosts() {
           setSelectedSkills(parsedSkills);
           setSelectedQualifications(parsedQuals);
           setSelectedCertifications(parsedCerts);
+          const parsedLocs = job.location
+            ? job.location.split(",").map((s: string) => s.trim()).filter(Boolean)
+            : [];
+          setSelectedLocations(parsedLocs);
           setForm({
             title: job.title || "",
             customTitle: "",
@@ -762,10 +1171,11 @@ export default function EmployerJobPosts() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             title: effectiveTitle,
-            location: form.location,
+            location: selectedLocations.length > 0 ? Array.from(new Set(selectedLocations.map(cleanBranchLocation))).join(", ") : cleanBranchLocation(form.location),
+            locations: selectedLocations,
             application_limit: form.application_limit,
             work_arrangement: form.work_arrangement,
-            experience_level: form.experience_level,
+            experience_level: form.experience_level || null,
             close_date: form.close_date,
             is_urgent: form.is_urgent,
             salary_min: toSalaryPayload(form.salary_min),
@@ -826,9 +1236,9 @@ export default function EmployerJobPosts() {
               )}
             </li>
             <li><a href="/employer-applicant-finder"><span className="item-icon"><EmployerIcon name="nearby" /></span><span>Applicant Finder</span></a></li>
-            <li><a href="/employer-faq-management"><span className="item-icon"><EmployerIcon name="faq" /></span><span>FAQ Management</span></a></li>
-            <li><a href="/messages"><span className="item-icon"><EmployerIcon name="messages" /></span><span>Messages</span></a></li>
-            <li><a href="/notifications"><span className="item-icon"><EmployerIcon name="notifications" /></span><span>Notifications</span><span className="item-badge">8</span></a></li>
+            <li><a href="/employer-notices-faqs"><span className="item-icon"><EmployerIcon name="faq" /></span><span>Notices & FAQs</span></a></li>
+            <li><a href="/messages"><span className="item-icon"><EmployerIcon name="messages" /></span><span>Messages</span>{unreadMessagesCount > 0 && <span className="item-badge">{unreadMessagesCount}</span>}</a></li>
+            <li><a href="/notifications"><span className="item-icon"><EmployerIcon name="notifications" /></span><span>Notifications</span>{unreadNotifCount > 0 && <span className="item-badge">{unreadNotifCount}</span>}</a></li>
             <li><a href="/feedback"><span className="item-icon"><EmployerIcon name="feedback" /></span><span>Feedback</span></a></li>
           </ul>
         </div>
@@ -839,7 +1249,18 @@ export default function EmployerJobPosts() {
             <span className="profile-user-copy"><strong>{companyLabel}</strong><small>Employer</small></span>
             <ChevronIcon direction={isProfileMenuOpen ? "down" : "up"} />
           </button>
-          {isProfileMenuOpen && <div className="appdash-profile-menu"><a href="/employer-company-profile"><EmployerIcon name="profile" />Company Profile</a><a href="/"><EmployerIcon name="logout" />Logout</a></div>}
+          {isProfileMenuOpen && (
+            <div className="appdash-profile-menu">
+              <a href="/employer-company-profile"><EmployerIcon name="profile" />Company Profile</a>
+              <button
+                type="button"
+                className="appdash-profile-menu-btn"
+                onClick={() => setIsLogoutModalOpen(true)}
+              >
+                <EmployerIcon name="logout" />Logout
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 
@@ -847,7 +1268,6 @@ export default function EmployerJobPosts() {
         <header className="appdash-topbar">
           <div className="appdash-top-left"><div><strong>Job Posts</strong></div></div>
           <div className="appdash-top-right">
-            <a className="cancel-btn" href="/employer-job-posts">All Job Posts</a>
             <div className="chatbot-wrapper">
               <EmployerChatbotDrawer
                 isOpen={isChatbotOpen}
@@ -856,6 +1276,7 @@ export default function EmployerJobPosts() {
                 customFaqs={createJobPostFaqs}
               />
             </div>
+            <CalendarDrawer />
           </div>
         </header>
 
@@ -876,10 +1297,8 @@ export default function EmployerJobPosts() {
           <div className="complete-bar"><i className={completionChecks.colorBand} style={{ width: `${completionChecks.percent}%` }} /></div>
           <div className="complete-checks">
             <span>{completionChecks.hasTitle ? "◉" : "○"} Job Title</span>
-            <span>{completionChecks.hasLocation ? "◉" : "○"} Location</span>
-            <span>{completionChecks.hasApplicationLimit ? "◉" : "○"} Application Limit</span>
+            <span>{completionChecks.hasLocation ? "◉" : "○"} Company Branches{selectedLocations.length > 0 ? ` (${selectedLocations.length})` : ""}</span>
             <span>{completionChecks.hasWorkArrangement ? "◉" : "○"} Work Arrangement</span>
-            <span>{completionChecks.hasExperienceLevel ? "◉" : "○"} Experience Level</span>
             <span>{completionChecks.hasCloseDate ? "◉" : "○"} Close Date</span>
             <span>{completionChecks.hasSalaryMin ? "◉" : "○"} Minimum Salary</span>
             <span>{completionChecks.hasSalaryMax ? "◉" : "○"} Maximum Salary</span>
@@ -894,20 +1313,6 @@ export default function EmployerJobPosts() {
           <article className="jobpost-form">
             <div className="jobpost-form-head">
               <h2>Job Information</h2>
-              <div className="urgent-wrap">
-                <label className="urgent-checkbox" htmlFor="urgent-hiring-input">
-                  <input
-                    id="urgent-hiring-input"
-                    type="checkbox"
-                    checked={form.is_urgent}
-                    onChange={(event) => setUrgent(event.target.checked)}
-                  />
-                  <span className="urgent-checkbox-mark" aria-hidden="true" />
-                </label>
-                <div className={`urgent-indicator ${form.is_urgent ? "active" : ""}`} aria-label="Urgent Hiring status">
-                  <span>Urgent Hiring</span>
-                </div>
-              </div>
             </div>
 
             <label className={shouldShowFieldError("title") ? "field-error" : ""}>
@@ -925,24 +1330,38 @@ export default function EmployerJobPosts() {
             </label>
 
             <div className="row-2">
-              <label className={shouldShowFieldError("location") ? "field-error" : ""}>
-                Location *
-                <select data-field="location" value={form.location} onChange={(event) => setField("location", event.target.value)} onFocus={() => onFieldFocus("location")} onBlur={() => onFieldBlur("location")}>
-                  <option value="">Select location</option>
-                  {CAVITE_CITIES.map((city) => <option key={city} value={city}>{city}</option>)}
-                </select>
+              <div className={`branch-field-col ${shouldShowFieldError("location") ? "field-error" : ""}`}>
+                <label className="branch-col-label">
+                  Company Branch *
+                </label>
+                <div className="branch-button-wrapper" data-field="location">
+                  <button
+                    type="button"
+                    className={`branch-trigger-button ${shouldShowFieldError("location") ? "btn-error" : ""}`}
+                    onClick={() => {
+                      setIsBranchModalOpen(true);
+                      onFieldFocus("location");
+                    }}
+                    aria-label="Select company branches"
+                  >
+                    <span className="branch-btn-label-group">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                      <span className="branch-btn-main-text">
+                        {selectedLocations.length === 0
+                          ? "Select Company Branches"
+                          : `${selectedLocations.length} Branch${selectedLocations.length > 1 ? "es" : ""} Selected`}
+                      </span>
+                    </span>
+                    <span className="branch-btn-action-badge">
+                      {selectedLocations.length > 0 ? "Edit Branches" : "Choose Branches"} ↗
+                    </span>
+                  </button>
+                </div>
                 {shouldShowFieldError("location") && <small className="warning-text">{getFieldError("location")}</small>}
-              </label>
+              </div>
 
-              <label className={shouldShowFieldError("application_limit") ? "field-error" : ""}>
-                Application Limit *
-                <input data-field="application_limit" type="number" min={1} max={100} value={form.application_limit} onChange={(event) => setField("application_limit", event.target.value.replace(/\D/g, ""))} onFocus={() => onFieldFocus("application_limit")} onBlur={() => onFieldBlur("application_limit")} />
-                {shouldShowFieldError("application_limit") && <small className="warning-text">{getFieldError("application_limit")}</small>}
-              </label>
-            </div>
-            {!shouldShowFieldError("application_limit") && applicationLimitNotice && <small className="warning-text">{applicationLimitNotice}</small>}
-
-            <div className="row-2">
               <label className={shouldShowFieldError("work_arrangement") ? "field-error" : ""}>
                 Work Arrangement *
                 <select data-field="work_arrangement" value={form.work_arrangement} onChange={(event) => setField("work_arrangement", event.target.value)} onFocus={() => onFieldFocus("work_arrangement")} onBlur={() => onFieldBlur("work_arrangement")}>
@@ -951,38 +1370,73 @@ export default function EmployerJobPosts() {
                 </select>
                 {shouldShowFieldError("work_arrangement") && <small className="warning-text">{getFieldError("work_arrangement")}</small>}
               </label>
-
-              <label className={shouldShowFieldError("experience_level") ? "field-error" : ""}>
-                Required Experience Level *
-                <select data-field="experience_level" value={form.experience_level} onChange={(event) => setField("experience_level", event.target.value)} onFocus={() => onFieldFocus("experience_level")} onBlur={() => onFieldBlur("experience_level")}>
-                  <option value="">Select experience level</option>
-                  {EXPERIENCE_LEVELS.map((lvl) => <option key={lvl} value={lvl}>{lvl}</option>)}
-                </select>
-                {shouldShowFieldError("experience_level") && <small className="warning-text">{getFieldError("experience_level")}</small>}
-              </label>
             </div>
 
-            <div className="row-2">
-              <label className={shouldShowFieldError("close_date") ? "field-error" : ""}>
-                Auto-Close Date (MM/DD/YYYY) *
-                <input data-field="close_date" type="date" min="2025-01-01" disabled={form.is_urgent} value={mmddyyyyToDateInput(form.close_date)} onChange={(event) => setField("close_date", dateInputToMmddyyyy(event.target.value))} onFocus={() => onFieldFocus("close_date")} onBlur={() => onFieldBlur("close_date")} />
+            <div className="row-2 date-salary-row">
+              <div className={`date-urgent-col ${shouldShowFieldError("close_date") ? "field-error" : ""}`}>
+                <label className="date-urgent-label" htmlFor="close-date-input">
+                  Auto-Close Date (MM/DD/YYYY) *
+                </label>
+                <div className="date-urgent-controls">
+                  <input
+                    id="close-date-input"
+                    data-field="close_date"
+                    type="date"
+                    min="2025-01-01"
+                    disabled={form.is_urgent}
+                    value={mmddyyyyToDateInput(form.close_date)}
+                    onChange={(event) => setField("close_date", dateInputToMmddyyyy(event.target.value))}
+                    onFocus={() => onFieldFocus("close_date")}
+                    onBlur={() => onFieldBlur("close_date")}
+                  />
+                  <div className="urgent-wrap">
+                    <label className="urgent-checkbox" htmlFor="urgent-hiring-input" title="Toggle Urgent Hiring">
+                      <input
+                        id="urgent-hiring-input"
+                        type="checkbox"
+                        checked={form.is_urgent}
+                        onChange={(event) => setUrgent(event.target.checked)}
+                      />
+                      <span className="urgent-checkbox-mark" aria-hidden="true" />
+                    </label>
+                    <button
+                      type="button"
+                      className={`urgent-indicator ${form.is_urgent ? "active" : ""}`}
+                      aria-label="Urgent Hiring status"
+                      onClick={() => setUrgent(!form.is_urgent)}
+                    >
+                      <span>Urgent Hiring</span>
+                    </button>
+                  </div>
+                </div>
                 {form.is_urgent && <small className="info-text">Urgent Hiring is enabled. Auto-Close Date is locked to one week from today.</small>}
                 {shouldShowFieldError("close_date") && <small className="warning-text">{getFieldError("close_date")}</small>}
-              </label>
+              </div>
 
-              <div className="salary-inputs-group">
-                <div className="salary-inputs-subrow">
-                  <label className={shouldShowFieldError("salary_min") ? "field-error" : ""}>
-                    Min Salary (PHP) *
-                    <input data-field="salary_min" value={form.salary_min} onChange={(event) => setField("salary_min", normalizeSalaryInput(event.target.value))} onFocus={() => onFieldFocus("salary_min")} onBlur={() => onFieldBlur("salary_min")} />
-                    {shouldShowFieldError("salary_min") && <small className="warning-text">{getFieldError("salary_min")}</small>}
-                  </label>
-                  <label className={shouldShowFieldError("salary_max") ? "field-error" : ""}>
-                    Max Salary (PHP) *
-                    <input data-field="salary_max" value={form.salary_max} onChange={(event) => setField("salary_max", normalizeSalaryInput(event.target.value))} onFocus={() => onFieldFocus("salary_max")} onBlur={() => onFieldBlur("salary_max")} />
-                    {shouldShowFieldError("salary_max") && <small className="warning-text">{getFieldError("salary_max")}</small>}
-                  </label>
-                </div>
+              <div className="salary-inputs-subrow">
+                <label className={shouldShowFieldError("salary_min") ? "field-error" : ""}>
+                  Min Salary (PHP) *
+                  <input
+                    data-field="salary_min"
+                    value={form.salary_min}
+                    onChange={(event) => setField("salary_min", normalizeSalaryInput(event.target.value))}
+                    onFocus={() => onFieldFocus("salary_min")}
+                    onBlur={() => onFieldBlur("salary_min")}
+                  />
+                  {shouldShowFieldError("salary_min") && <small className="warning-text">{getFieldError("salary_min")}</small>}
+                </label>
+
+                <label className={shouldShowFieldError("salary_max") ? "field-error" : ""}>
+                  Max Salary (PHP) *
+                  <input
+                    data-field="salary_max"
+                    value={form.salary_max}
+                    onChange={(event) => setField("salary_max", normalizeSalaryInput(event.target.value))}
+                    onFocus={() => onFieldFocus("salary_max")}
+                    onBlur={() => onFieldBlur("salary_max")}
+                  />
+                  {shouldShowFieldError("salary_max") && <small className="warning-text">{getFieldError("salary_max")}</small>}
+                </label>
               </div>
             </div>
 
@@ -1024,6 +1478,39 @@ export default function EmployerJobPosts() {
           </article>
         </section>
       </main>
+
+      {/* Branch Selection Popup Modal */}
+      <BranchSelectionModal
+        isOpen={isBranchModalOpen}
+        onClose={() => {
+          setIsBranchModalOpen(false);
+          onFieldBlur("location");
+        }}
+        availableBranches={allEmployerBranches}
+        fallbackCities={CAVITE_CITIES}
+        selectedValues={selectedLocations}
+        onConfirm={(nextSelected) => {
+          setSelectedLocations(nextSelected);
+          setForm((current) => ({ ...current, location: nextSelected.join(", ") }));
+          setTouchedFields((prev) => ({ ...prev, location: true }));
+        }}
+        companyName={employerProfileData?.business_name}
+      />
+      <ConfirmationModal
+        isOpen={isLogoutModalOpen}
+        title="Confirm Logout"
+        message="Are you sure you want to log out of your employer account?"
+        confirmText="Yes, Log Out"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={() => {
+          localStorage.clear();
+          sessionStorage.clear();
+          window.location.href = "/";
+        }}
+        onCancel={() => setIsLogoutModalOpen(false)}
+      />
     </div>
   );
 }
+

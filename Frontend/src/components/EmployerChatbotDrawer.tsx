@@ -28,10 +28,10 @@ const DEFAULT_EMPLOYER_FAQS: EmployerFAQItem[] = [
     actionHref: "/employer-applicant-finder",
   },
   {
-    question: "How do I manage company FAQs for applicants?",
-    answer: "Use FAQ Management to add, edit, or delete custom company questions that candidates can inspect when reviewing your job postings.",
-    actionLabel: "Manage FAQs",
-    actionHref: "/employer-faq-management",
+    question: "How do I manage hiring notices and company FAQs?",
+    answer: "Use Notices & FAQs to customize acceptance and rejection notices, or add, edit, and delete company FAQs for applicants.",
+    actionLabel: "Manage Notices & FAQs",
+    actionHref: "/employer-notices-faqs",
   },
 ];
 

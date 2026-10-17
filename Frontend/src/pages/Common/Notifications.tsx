@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { ChevronIcon, SideIcon } from "../Applicant/Applicant-Dashboard";
-import { useEmployerCompanyLabel } from "../useEmployerCompanyLabel";
+import { ChevronIcon, SideIcon } from "../../components/Icons";
+import { useEmployerCompanyLabel } from "../../hooks/useEmployerCompanyLabel";
+import { useUnreadMessagesCount } from "../../hooks/useUnreadMessagesCount";
 import ApplicantChatbotDrawer from "../../components/ApplicantChatbotDrawer";
 import EmployerChatbotDrawer, { EmployerFAQItem as FAQItem } from "../../components/EmployerChatbotDrawer";
+import CalendarDrawer from "../../components/CalendarDrawer";
+import ConfirmationModal from "../../components/ConfirmationModal";
+import UndoToast from "../../components/UndoToast";
 import "../Applicant/Applicant-Dashboard.css";
 import "../Employer/Employer-Dashboard.css";
 import "./Notifications.css";
@@ -206,6 +210,7 @@ export default function Notifications() {
   const [settings, setSettings] = useState<NotifSettings>(defaultSettings);
   const companyLabel = useEmployerCompanyLabel("Employer");
   const isEmployer = sessionRole === "employer";
+  const unreadMessagesCount = useUnreadMessagesCount();
 
   const fetchUserNotifications = async (userId: number) => {
     setIsLoading(true);
@@ -287,14 +292,29 @@ export default function Notifications() {
 
   const handleMarkAsRead = async (id: number) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: 1 } : n)));
+    window.dispatchEvent(new Event("elitecruit_notif_update"));
     try {
       await fetch(`/api/notifications/${id}/read`, { method: "PUT" });
     } catch {}
   };
 
+  const [isClearHistoryConfirmOpen, setIsClearHistoryConfirmOpen] = useState(false);
+  const [undoToast, setUndoToast] = useState<{ message: string; onUndo: () => void } | null>(null);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
   const handleMarkAllAsRead = async () => {
     const unread = notifications.filter((n) => !n.is_read);
+    if (unread.length === 0) return;
+    const previous = [...notifications];
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: 1 })));
+    window.dispatchEvent(new Event("elitecruit_notif_update"));
+    setUndoToast({
+      message: "All notifications marked as read.",
+      onUndo: () => {
+        setNotifications(previous);
+        window.dispatchEvent(new Event("elitecruit_notif_update"));
+      },
+    });
     for (const n of unread) {
       try {
         await fetch(`/api/notifications/${n.id}/read`, { method: "PUT" });
@@ -303,8 +323,19 @@ export default function Notifications() {
   };
 
   const handleClearHistory = () => {
+    if (notifications.length === 0) return;
+    setIsClearHistoryConfirmOpen(true);
+  };
+
+  const handleConfirmClearHistory = () => {
+    const previous = [...notifications];
     setNotifications([]);
     setCurrentPage(1);
+    setIsClearHistoryConfirmOpen(false);
+    setUndoToast({
+      message: "Notification history cleared.",
+      onUndo: () => setNotifications(previous),
+    });
   };
 
   const handleNotificationClick = async (notice: NotificationItem) => {
@@ -430,8 +461,8 @@ export default function Notifications() {
                 )}
               </li>
               <li><a href="/employer-applicant-finder"><span className="item-icon"><EmployerIcon name="nearby" /></span><span>Applicant Finder</span></a></li>
-              <li><a href="/employer-faq-management"><span className="item-icon"><EmployerIcon name="faq" /></span><span>FAQ Management</span></a></li>
-              <li><a href="/messages"><span className="item-icon"><EmployerIcon name="messages" /></span><span>Messages</span></a></li>
+              <li><a href="/employer-notices-faqs"><span className="item-icon"><EmployerIcon name="faq" /></span><span>Notices & FAQs</span></a></li>
+              <li><a href="/messages"><span className="item-icon"><EmployerIcon name="messages" /></span><span>Messages</span>{unreadMessagesCount > 0 && <span className="item-badge">{unreadMessagesCount}</span>}</a></li>
               <li className={`active ${unreadCount > 0 ? "has-unread" : ""}`}><a href="/notifications"><span className="item-icon"><EmployerIcon name="notifications" /></span><span>Notifications</span>{unreadCount > 0 && <span className="item-badge">{unreadCount}</span>}</a></li>
               <li><a href="/feedback"><span className="item-icon"><EmployerIcon name="feedback" /></span><span>Feedback</span></a></li>
             </ul>
@@ -446,7 +477,13 @@ export default function Notifications() {
             {isProfileMenuOpen && (
               <div className="appdash-profile-menu">
                 <a href="/employer-company-profile"><EmployerIcon name="profile" />Company Profile</a>
-                <a href="/"><EmployerIcon name="logout" />Logout</a>
+                <button
+                  type="button"
+                  className="appdash-profile-menu-btn"
+                  onClick={() => setIsLogoutModalOpen(true)}
+                >
+                  <EmployerIcon name="logout" />Logout
+                </button>
               </div>
             )}
           </div>
@@ -487,11 +524,11 @@ export default function Notifications() {
             </li>
 
             <li><a href="/job-search"><span className="item-icon"><SideIcon name="search" /></span><span>Job Search</span></a></li>
-            <li><a href="/messages"><span className="item-icon"><SideIcon name="messages" /></span><span>Messages</span></a></li>
+            <li><a href="/messages"><span className="item-icon"><SideIcon name="messages" /></span><span>Messages</span>{unreadMessagesCount > 0 && <span className="item-badge">{unreadMessagesCount}</span>}</a></li>
             <li className="active"><a href="/notifications"><span className="item-icon"><SideIcon name="notifications" /></span><span>Notifications</span>{unreadCount > 0 && <span className="item-badge">{unreadCount}</span>}</a></li>
             <li><a href="/feedback"><span className="item-icon"><SideIcon name="feedback" /></span><span>Feedback</span></a></li>
           </ul>
-          <div className="appdash-profile-control"><button type="button" className="appdash-profile-anchor" onClick={() => setIsProfileMenuOpen((value) => !value)}><span className="item-icon"><SideIcon name="profile" /></span><span className="profile-user-copy"><strong>{applicantLabel}</strong><small>Applicant</small></span><ChevronIcon direction={isProfileMenuOpen ? "down" : "up"} /></button>{isProfileMenuOpen && <div className="appdash-profile-menu"><a href="/my-profile"><SideIcon name="profile" />My Profile</a><a href="/"><SideIcon name="logout" />Logout</a></div>}</div>
+          <div className="appdash-profile-control"><button type="button" className="appdash-profile-anchor" onClick={() => setIsProfileMenuOpen((value) => !value)}><span className="item-icon"><SideIcon name="profile" /></span><span className="profile-user-copy"><strong>{applicantLabel}</strong><small>Applicant</small></span><ChevronIcon direction={isProfileMenuOpen ? "down" : "up"} /></button>{isProfileMenuOpen && <div className="appdash-profile-menu"><a href="/my-profile"><SideIcon name="profile" />My Profile</a><button type="button" className="appdash-profile-menu-btn" onClick={() => setIsLogoutModalOpen(true)}><SideIcon name="logout" />Logout</button></div>}</div>
         </aside>
       )}
 
@@ -515,6 +552,7 @@ export default function Notifications() {
                 />
               )}
             </div>
+            <CalendarDrawer />
           </div>
         </header>
 
@@ -705,7 +743,44 @@ export default function Notifications() {
             </div>
           </section>
         </section>
+
+        {/* LOGOUT CONFIRMATION MODAL */}
+        <ConfirmationModal
+          isOpen={isLogoutModalOpen}
+          type="warning"
+          title="Log Out of EliteCruit"
+          message={`Are you sure you want to log out of your ${isEmployer ? "employer" : "applicant"} account?`}
+          cancelLabel="Stay Signed In"
+          confirmLabel="Log Out"
+          onCancel={() => setIsLogoutModalOpen(false)}
+          onConfirm={() => {
+            localStorage.removeItem("elitecruit-user");
+            window.location.href = "/";
+          }}
+        />
+
+        {/* CLEAR NOTIFICATIONS CONFIRMATION MODAL */}
+        <ConfirmationModal
+          isOpen={isClearHistoryConfirmOpen}
+          type="danger"
+          title="Clear Notification History"
+          message="Are you sure you want to clear your notification history? All past activity logs and alerts will be wiped from your view."
+          cancelLabel="Keep History"
+          confirmLabel="Clear All"
+          onCancel={() => setIsClearHistoryConfirmOpen(false)}
+          onConfirm={handleConfirmClearHistory}
+        />
+
+        {/* UNDO TOAST */}
+        {undoToast && (
+          <UndoToast
+            message={undoToast.message}
+            onUndo={undoToast.onUndo}
+            onClose={() => setUndoToast(null)}
+          />
+        )}
       </main>
     </div>
   );
 }
+

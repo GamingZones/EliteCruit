@@ -1,3 +1,8 @@
+﻿/*
+ * UNNECESSARY / DEPRECATED:
+ * Styles from this file needed by the system have been transferred to
+ * Employer-ApplicantManagement.css for modular independence.
+ *
 .screening-main {
   padding-bottom: 20px;
 }
@@ -563,3 +568,5 @@
     grid-template-columns: 1fr;
   }
 }
+*/
+

@@ -1,7 +1,15 @@
+﻿/*
+ * UNNECESSARY / DEPRECATED:
+ * This page has been superseded by Employer-ApplicantManagement.tsx, which
+ * now manages candidate screening, shortlisting, approved, and denied workflows.
+ *
 import React, { useEffect, useState, useCallback } from "react";
 import { ChevronIcon, SideIcon } from "../Applicant/Applicant-Dashboard";
 import { useEmployerCompanyLabel } from "../useEmployerCompanyLabel";
+import { useUnreadNotificationsCount } from "../useUnreadNotificationsCount";
+import { useUnreadMessagesCount } from "../useUnreadMessagesCount";
 import EmployerChatbotDrawer, { EmployerFAQItem as FAQItem } from "../../components/EmployerChatbotDrawer";
+import CalendarDrawer from "../../components/CalendarDrawer";
 import "../Applicant/Applicant-Dashboard.css";
 import "./Employer-Dashboard.css";
 import "./Employer-ApplicantScreening.css";
@@ -54,6 +62,7 @@ type ScreeningApplication = {
   address?: string;
   status: string;
   submitted_at: string;
+  profile_picture_path?: string | null;
 };
 
 type DirectInvitation = {
@@ -77,6 +86,7 @@ type DirectInvitation = {
   qualifications?: string;
   desired_job_title?: string;
   resume_path?: string | null;
+  profile_picture_path?: string | null;
   applicant_email?: string;
 };
 
@@ -88,7 +98,7 @@ function initialsFrom(name?: string) {
 }
 
 function formatDate(iso?: string) {
-  if (!iso) return "—";
+  if (!iso) return "â€”";
   try {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return iso;
@@ -102,6 +112,8 @@ export default function EmployerApplicantScreening() {
   const [isScreeningOpen, setIsScreeningOpen] = useState(true);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
+  const unreadNotifCount = useUnreadNotificationsCount();
+  const unreadMessagesCount = useUnreadMessagesCount();
   const [activeScreeningSection, setActiveScreeningSection] = useState("candidate-discovery");
   const companyLabel = useEmployerCompanyLabel("Employer");
 
@@ -234,9 +246,9 @@ export default function EmployerApplicantScreening() {
               )}
             </li>
             <li><a href="/employer-applicant-finder"><span className="item-icon"><EmployerIcon name="nearby" /></span><span>Applicant Finder</span></a></li>
-            <li><a href="/employer-faq-management"><span className="item-icon"><EmployerIcon name="faq" /></span><span>FAQ Management</span></a></li>
-            <li><a href="/messages"><span className="item-icon"><EmployerIcon name="messages" /></span><span>Messages</span></a></li>
-            <li><a href="/notifications"><span className="item-icon"><EmployerIcon name="notifications" /></span><span>Notifications</span><span className="item-badge">8</span></a></li>
+            <li><a href="/employer-notices-faqs"><span className="item-icon"><EmployerIcon name="faq" /></span><span>Notices & FAQs</span></a></li>
+            <li><a href="/messages"><span className="item-icon"><EmployerIcon name="messages" /></span><span>Messages</span>{unreadMessagesCount > 0 && <span className="item-badge">{unreadMessagesCount}</span>}</a></li>
+            <li><a href="/notifications"><span className="item-icon"><EmployerIcon name="notifications" /></span><span>Notifications</span>{unreadNotifCount > 0 && <span className="item-badge">{unreadNotifCount}</span>}</a></li>
             <li><a href="/feedback"><span className="item-icon"><EmployerIcon name="feedback" /></span><span>Feedback</span></a></li>
           </ul>
         </div>
@@ -263,10 +275,11 @@ export default function EmployerApplicantScreening() {
                 customFaqs={applicantScreeningFaqs}
               />
             </div>
+            <CalendarDrawer />
           </div>
         </header>
 
-        {/* Applicant Shortlist Board */}
+        {/* Applicant Shortlist Board * /}
         <section className="screening-board screening-card">
           <div className="board-head">
             <div>
@@ -392,7 +405,7 @@ export default function EmployerApplicantScreening() {
           </div>
         </section>
 
-        {/* Shortlisted Candidates Section */}
+        {/* Shortlisted Candidates Section * /}
         <section id="shortlisted-candidates" className="shortlisted-section screening-card" style={{ marginTop: "24px" }}>
           <div className="board-head">
             <h2>Shortlisted Candidates</h2>
@@ -405,7 +418,31 @@ export default function EmployerApplicantScreening() {
               {shortlistedList.map((app) => (
                 <article key={app.id} className="applicant-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px", border: "1px solid #e2e8f0", borderRadius: "10px", background: "#fff" }}>
                   <div className="applicant-top" style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                    <span className="app-badge" style={{ width: "40px", height: "40px", borderRadius: "50%", background: "#e0f2fe", color: "#0369a1", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "700" }}>{initialsFrom(app.applicant_name)}</span>
+                    {(() => {
+                      const picUrl = app.profile_picture_path
+                        ? (app.profile_picture_path.startsWith("http") || app.profile_picture_path.startsWith("/api") ? app.profile_picture_path : `/api/applicants/${app.applicant_user_id}/profile-picture`)
+                        : null;
+                      return (
+                        <span className="app-badge" style={{ width: "40px", height: "40px", borderRadius: "50%", background: "#e0f2fe", color: "#0369a1", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "700", overflow: "hidden", position: "relative" }}>
+                          {picUrl && (
+                            <img
+                              src={picUrl}
+                              alt={app.applicant_name}
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                              onError={(e) => {
+                                (e.currentTarget as HTMLElement).style.display = "none";
+                                if (e.currentTarget.nextElementSibling) {
+                                  (e.currentTarget.nextElementSibling as HTMLElement).style.display = "inline";
+                                }
+                              }}
+                            />
+                          )}
+                          <span style={{ display: picUrl ? "none" : "inline" }}>
+                            {initialsFrom(app.applicant_name)}
+                          </span>
+                        </span>
+                      );
+                    })()}
                     <div>
                       <h3 style={{ margin: 0, fontSize: "1.05rem" }}>{app.applicant_name}</h3>
                       <p style={{ margin: "2px 0 0", fontSize: "0.85rem", color: "#475569" }}>{app.job_title}</p>
@@ -423,7 +460,7 @@ export default function EmployerApplicantScreening() {
           )}
         </section>
 
-        {/* Direct Invitations Section */}
+        {/* Direct Invitations Section * /}
         <section id="direct-invitations" className="direct-invitations-section screening-card" style={{ marginTop: "24px" }}>
           <div className="board-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
             <div>
@@ -463,7 +500,7 @@ export default function EmployerApplicantScreening() {
 
           {filteredInvitations.length === 0 ? (
             <p className="nearby-sub" style={{ color: "#64748b", margin: "16px 0 0" }}>
-              No direct invitations found under "{invitationFilter}".
+              {invitationFilter === "all" ? "No direct invitations found." : `No ${invitationFilter} direct invitations found.`}
             </p>
           ) : (
             <div className="all-applicant-list" style={{ display: "grid", gap: "12px", marginTop: "16px" }}>
@@ -487,30 +524,54 @@ export default function EmployerApplicantScreening() {
                     }}
                   >
                     <div style={{ display: "flex", gap: "14px", alignItems: "center", minWidth: "260px" }}>
-                      <span
-                        className="app-badge"
-                        style={{
-                          width: "44px",
-                          height: "44px",
-                          borderRadius: "50%",
-                          background: "#e0f2fe",
-                          color: "#0369a1",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontWeight: "700",
-                          fontSize: "0.92rem",
-                        }}
-                      >
-                        {initialsFrom(candidateName)}
-                      </span>
+                      {(() => {
+                        const picUrl = inv.profile_picture_path
+                          ? (inv.profile_picture_path.startsWith("http") || inv.profile_picture_path.startsWith("/api") ? inv.profile_picture_path : `/api/applicants/${inv.applicant_user_id}/profile-picture`)
+                          : null;
+                        return (
+                          <span
+                            className="app-badge"
+                            style={{
+                              width: "44px",
+                              height: "44px",
+                              borderRadius: "50%",
+                              background: "#e0f2fe",
+                              color: "#0369a1",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontWeight: "700",
+                              fontSize: "0.92rem",
+                              overflow: "hidden",
+                              position: "relative",
+                            }}
+                          >
+                            {picUrl && (
+                              <img
+                                src={picUrl}
+                                alt={candidateName}
+                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLElement).style.display = "none";
+                                  if (e.currentTarget.nextElementSibling) {
+                                    (e.currentTarget.nextElementSibling as HTMLElement).style.display = "inline";
+                                  }
+                                }}
+                              />
+                            )}
+                            <span style={{ display: picUrl ? "none" : "inline" }}>
+                              {initialsFrom(candidateName)}
+                            </span>
+                          </span>
+                        );
+                      })()}
                       <div>
                         <h3 style={{ margin: 0, fontSize: "1.05rem" }}>{candidateName}</h3>
                         <p style={{ margin: "2px 0 0", fontSize: "0.86rem", color: "#0284c7", fontWeight: 600 }}>
                           {inv.job_title}
                         </p>
                         <small style={{ color: "#64748b" }}>
-                          {inv.city || "Cavite"} • Invited: {formatDate(inv.created_at)}
+                          {inv.city || "Cavite"} â€¢ Invited: {formatDate(inv.created_at)}
                         </small>
                       </div>
                     </div>
@@ -568,3 +629,6 @@ export default function EmployerApplicantScreening() {
     </div>
   );
 }
+*/
+export {};
+

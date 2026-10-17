@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { ChevronIcon, SideIcon } from "./Applicant-Dashboard";
-import { useEmployerCompanyLabel } from "../useEmployerCompanyLabel";
+import { ChevronIcon, SideIcon } from "../../components/Icons";
+import { useEmployerCompanyLabel } from "../../hooks/useEmployerCompanyLabel";
+import { useUnreadNotificationsCount } from "../../hooks/useUnreadNotificationsCount";
+import { useUnreadMessagesCount } from "../../hooks/useUnreadMessagesCount";
 import ApplicantChatbotDrawer, { ApplicantFAQItem as FAQItem } from "../../components/ApplicantChatbotDrawer";
+import CalendarDrawer from "../../components/CalendarDrawer";
+import ConfirmationModal from "../../components/ConfirmationModal";
 import {
   formatLocationWithCavite,
   parseCompetencyDisplayTags,
@@ -103,6 +107,9 @@ type TargetOption = {
   applicantCount?: number;
   phone?: string;
   email?: string;
+  companyLogoPath?: string | null;
+  companyCoverPath?: string | null;
+  profilePicturePath?: string | null;
 };
 
 function formatSalaryRange(min?: number | string | null, max?: number | string | null): string {
@@ -133,10 +140,13 @@ function getInitialApplicantName() {
 }
 
 export default function ApplicantFeedback() {
+  const unreadNotifCount = useUnreadNotificationsCount();
+  const unreadMessagesCount = useUnreadMessagesCount();
   const [role, setRole] = useState<"applicant" | "employer">("applicant");
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(true);
   const [isScreeningOpen, setIsScreeningOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   const [applicantLabel, setApplicantLabel] = useState(getInitialApplicantName);
   const companyLabel = useEmployerCompanyLabel("Employer");
@@ -292,6 +302,7 @@ export default function ApplicantFeedback() {
                 requiredSkills: parseCompetencyDisplayTags(a.skills),
                 qualifications: parseCompetencyDisplayTags(a.qualifications),
                 certifications: parseCompetencyDisplayTags(a.certifications),
+                profilePicturePath: a.profile_picture_path || null,
               }));
               setTargetOptions(mapped);
               if (mapped.length > 0) setSelectedTargetId(mapped[0].id);
@@ -330,6 +341,8 @@ export default function ApplicantFeedback() {
                   closeDate: e.close_date || "-",
                   applicationLimit: Number.isFinite(Number(e.application_limit)) ? Number(e.application_limit) : 10,
                   applicantCount: Number.isFinite(Number(e.applicant_count)) ? Number(e.applicant_count) : 0,
+                  companyLogoPath: e.company_logo_path || null,
+                  companyCoverPath: e.company_cover_path || null,
                 };
               });
               setTargetOptions(mapped);
@@ -512,9 +525,9 @@ export default function ApplicantFeedback() {
                 )}
               </li>
               <li><a href="/employer-applicant-finder"><span className="item-icon"><EmployerIcon name="nearby" /></span><span>Applicant Finder</span></a></li>
-              <li><a href="/employer-faq-management"><span className="item-icon"><EmployerIcon name="faq" /></span><span>FAQ Management</span></a></li>
-              <li><a href="/messages"><span className="item-icon"><EmployerIcon name="messages" /></span><span>Messages</span></a></li>
-              <li><a href="/notifications"><span className="item-icon"><EmployerIcon name="notifications" /></span><span>Notifications</span></a></li>
+              <li><a href="/employer-notices-faqs"><span className="item-icon"><EmployerIcon name="faq" /></span><span>Notices & FAQs</span></a></li>
+              <li><a href="/messages"><span className="item-icon"><EmployerIcon name="messages" /></span><span>Messages</span>{unreadMessagesCount > 0 && <span className="item-badge">{unreadMessagesCount}</span>}</a></li>
+              <li><a href="/notifications"><span className="item-icon"><EmployerIcon name="notifications" /></span><span>Notifications</span>{unreadNotifCount > 0 && <span className="item-badge">{unreadNotifCount}</span>}</a></li>
               <li className="active"><a href="/feedback"><span className="item-icon"><EmployerIcon name="feedback" /></span><span>Feedback</span></a></li>
             </ul>
           </div>
@@ -528,7 +541,13 @@ export default function ApplicantFeedback() {
             {isProfileMenuOpen && (
               <div className="appdash-profile-menu">
                 <a href="/employer-company-profile"><EmployerIcon name="profile" />Company Profile</a>
-                <a href="/"><EmployerIcon name="logout" />Logout</a>
+                <button
+                  type="button"
+                  className="appdash-profile-menu-btn"
+                  onClick={() => setIsLogoutModalOpen(true)}
+                >
+                  <EmployerIcon name="logout" />Logout
+                </button>
               </div>
             )}
           </div>
@@ -572,15 +591,24 @@ export default function ApplicantFeedback() {
               )}
             </li>
 
-            {navGeneral.map((item) => (
-              <li key={item.label} className={item.href === "/feedback" ? "active" : ""}>
-                <a href={item.href}>
-                  <span className="item-icon"><SideIcon name={item.icon} /></span>
-                  <span>{item.label}</span>
-                  {item.badge ? <span className="item-badge">{item.badge}</span> : null}
-                </a>
-              </li>
-            ))}
+            {navGeneral.map((item) => {
+              const isNotif = item.label === "Notifications";
+              const isMessages = item.label === "Messages";
+              const badgeCount = isNotif
+                ? (unreadNotifCount > 0 ? unreadNotifCount : null)
+                : isMessages
+                ? (unreadMessagesCount > 0 ? unreadMessagesCount : null)
+                : item.badge;
+              return (
+                <li key={item.label} className={item.href === "/feedback" ? "active" : ""}>
+                  <a href={item.href}>
+                    <span className="item-icon"><SideIcon name={item.icon} /></span>
+                    <span>{item.label}</span>
+                    {badgeCount ? <span className="item-badge">{badgeCount}</span> : null}
+                  </a>
+                </li>
+              );
+            })}
           </ul>
 
           <div className="appdash-profile-control">
@@ -592,7 +620,13 @@ export default function ApplicantFeedback() {
             {isProfileMenuOpen && (
               <div className="appdash-profile-menu">
                 <a href="/my-profile"><SideIcon name="profile" />My Profile</a>
-                <a href="/"><SideIcon name="logout" />Logout</a>
+                <button
+                  type="button"
+                  className="appdash-profile-menu-btn"
+                  onClick={() => setIsLogoutModalOpen(true)}
+                >
+                  <SideIcon name="logout" />Logout
+                </button>
               </div>
             )}
           </div>
@@ -613,6 +647,7 @@ export default function ApplicantFeedback() {
                 customFaqs={applicantFeedbackFaqs}
               />
             </div>
+            <CalendarDrawer />
           </div>
         </header>
 
@@ -846,10 +881,33 @@ export default function ApplicantFeedback() {
             <div className="jd-panel" onClick={(e) => e.stopPropagation()}>
               <div className="jd-employer-strip" style={{ paddingTop: "20px" }}>
                 <div className="jd-employer-logo-info">
-                  <div className="jd-employer-logo" aria-label="Candidate initials">
-                    <span style={{ fontWeight: 700, color: "#ffffff", fontSize: "1.05rem" }}>
-                      {initialsFrom(detailsJob.name)}
-                    </span>
+                  <div className="jd-employer-logo" aria-label="Candidate initials" style={{ overflow: "hidden", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {(() => {
+                      const pic = detailsJob.profilePicturePath;
+                      const picUrl = pic
+                        ? (pic.startsWith("http") || pic.startsWith("/api") ? pic : `/api/applicants/${detailsJob.applicantUserId}/profile-picture`)
+                        : (detailsJob.applicantUserId ? `/api/applicants/${detailsJob.applicantUserId}/profile-picture` : null);
+                      return (
+                        <>
+                          {picUrl && (
+                            <img
+                              src={picUrl}
+                              alt={detailsJob.name}
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                              onError={(e) => {
+                                (e.currentTarget as HTMLElement).style.display = "none";
+                                if (e.currentTarget.nextElementSibling) {
+                                  (e.currentTarget.nextElementSibling as HTMLElement).style.display = "flex";
+                                }
+                              }}
+                            />
+                          )}
+                          <span style={{ fontWeight: 700, color: "#ffffff", fontSize: "1.05rem", display: picUrl ? "none" : "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
+                            {initialsFrom(detailsJob.name)}
+                          </span>
+                        </>
+                      );
+                    })()}
                   </div>
                   <div>
                     <strong className="jd-employer-name">{detailsJob.name}</strong>
@@ -944,9 +1002,6 @@ export default function ApplicantFeedback() {
                     <button type="button" className="jd-faq-back-btn" onClick={() => setIsDocsOpen(false)}>←</button>
                   </div>
                   <div className="jd-faq-body" style={{ padding: "16px", display: "flex", flexDirection: "column", height: "calc(100% - 60px)" }}>
-                    <p style={{ fontSize: "0.82rem", color: "#64748b", margin: "0 0 16px" }}>
-                      System saved documents for <strong>{detailsJob.name}</strong>:
-                    </p>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", border: "1px solid #cbd5e1", borderRadius: "10px", background: "#f8fafc" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                         <div style={{ width: "38px", height: "38px", borderRadius: "8px", background: "#e0f2fe", color: "#0369a1", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -1007,13 +1062,50 @@ export default function ApplicantFeedback() {
             <div className={`jd-panel ${isMatchDrawerOpen ? "drawer-open" : ""}`} onClick={(e) => e.stopPropagation()}>
               {/* Cover banner */}
               <div className="jd-cover-banner">
-                <div className="jd-cover-placeholder">
+                {detailsJob.companyCoverPath ? (
+                  <img
+                    src={detailsJob.companyCoverPath.startsWith("http") || detailsJob.companyCoverPath.startsWith("/api") ? detailsJob.companyCoverPath : `/api/employers/${detailsJob.employerUserId}/cover`}
+                    alt={`${detailsJob.name} cover`}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLElement).style.display = "none";
+                      const placeholder = e.currentTarget.parentElement?.querySelector(".jd-cover-placeholder") as HTMLElement;
+                      if (placeholder) placeholder.style.display = "flex";
+                    }}
+                  />
+                ) : null}
+                <div className="jd-cover-placeholder" style={{ display: detailsJob.companyCoverPath ? "none" : "flex" }}>
                   <span>Cover photo</span>
                 </div>
-                <div className="jd-employer-strip">
+              </div>
+
+              <div className="jd-employer-strip">
                   <div className="jd-employer-logo-info">
-                    <div className="jd-employer-logo" aria-label="Company logo">
-                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 11h2m2 0h2M9 15h2m2 0h2" /></svg>
+                    <div className="jd-employer-logo" aria-label="Company logo" style={{ overflow: "hidden", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {(() => {
+                        const logoSrc = detailsJob.companyLogoPath
+                          ? (detailsJob.companyLogoPath.startsWith("http") || detailsJob.companyLogoPath.startsWith("/api") ? detailsJob.companyLogoPath : `/api/employers/${detailsJob.employerUserId}/logo`)
+                          : (detailsJob.employerUserId ? `/api/employers/${detailsJob.employerUserId}/logo` : null);
+                        return (
+                          <>
+                            {logoSrc && (
+                              <img
+                                src={logoSrc}
+                                alt={detailsJob.name}
+                                style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLElement).style.display = "none";
+                                  if (e.currentTarget.nextElementSibling) {
+                                    (e.currentTarget.nextElementSibling as HTMLElement).style.display = "block";
+                                  }
+                                }}
+                              />
+                            )}
+                            <svg viewBox="0 0 24 24" aria-hidden="true" style={{ display: logoSrc ? "none" : "block" }}>
+                              <path d="M3 21h18M5 21V7l7-4 7 4v14M9 11h2m2 0h2M9 15h2m2 0h2" />
+                            </svg>
+                          </>
+                        );
+                      })()}
                     </div>
                     <div>
                       <strong className="jd-employer-name">{detailsJob.name}</strong>
@@ -1057,7 +1149,6 @@ export default function ApplicantFeedback() {
                     </button>
                   </div>
                 </div>
-              </div>
 
               {/* Scrollable body container */}
               <div className="jd-body-wrapper">
@@ -1499,6 +1590,21 @@ export default function ApplicantFeedback() {
           </div>
         )
       )}
+      <ConfirmationModal
+        isOpen={isLogoutModalOpen}
+        title="Confirm Logout"
+        message={role === "employer" ? "Are you sure you want to log out of your employer account?" : "Are you sure you want to log out of your applicant account?"}
+        confirmText="Yes, Log Out"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={() => {
+          localStorage.clear();
+          sessionStorage.clear();
+          window.location.href = "/";
+        }}
+        onCancel={() => setIsLogoutModalOpen(false)}
+      />
     </div>
   );
 }
+

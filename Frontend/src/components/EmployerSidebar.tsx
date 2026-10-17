@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "./EmployerSidebar.css";
+import { clearAuth } from "../utils/auth";
 
 export type EmployerNavIcon =
   | "dashboard"
@@ -64,7 +65,7 @@ export default function EmployerSidebar({
 
   const secondaryNav: EmployerNavItem[] = [
     { label: "Nearby Applicant Finder", icon: "nearby", href: "/employer-nearby-applicants" },
-    { label: "FAQ Management", icon: "faq", href: "/employer-faq-management" },
+    { label: "Notices & FAQs", icon: "faq", href: "/employer-notices-faqs" },
     { label: "Messages", icon: "messages", href: "/messages" },
     { label: "Notifications", icon: "notifications", href: "/notifications" },
     { label: "Feedback", icon: "feedback", href: "/feedback" },
@@ -153,7 +154,14 @@ export default function EmployerSidebar({
               <EmployerNavIconSvg name="companyProfile" />
               Company Profile
             </a>
-            <a href="/login">
+            <a
+              href="/login"
+              onClick={(e) => {
+                e.preventDefault();
+                clearAuth();
+                window.location.href = "/login";
+              }}
+            >
               <EmployerNavIconSvg name="logout" />
               Logout
             </a>

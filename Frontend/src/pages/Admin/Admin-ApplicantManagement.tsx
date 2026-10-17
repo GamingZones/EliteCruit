@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useMemo } from "react";
 import AdminSidebar from "../../components/AdminSidebar";
+import ConfirmationModal from "../../components/ConfirmationModal";
 import "./Admin-ApplicantManagement.css";
+import { authFetch, getStoredUser } from "../../utils/auth";
 
 interface ApplicantItem {
   user_id: number;
@@ -20,6 +22,7 @@ interface ApplicantItem {
   skills?: string;
   certifications?: string;
   qualifications?: string;
+  profile_picture_path?: string | null;
   total_applications: number;
   rating: string | null;
   total_reviews: number;
@@ -37,12 +40,12 @@ export default function AdminApplicantManagement() {
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("elitecruit-user");
-      if (stored) {
-        setAdminUser(JSON.parse(stored));
-      }
-    } catch {}
+    const stored = getStoredUser();
+    if (!stored || stored.role !== "admin") {
+      window.location.href = "/login";
+      return;
+    }
+    setAdminUser(stored);
 
     loadApplicants();
   }, []);
@@ -50,7 +53,7 @@ export default function AdminApplicantManagement() {
   const loadApplicants = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch("/api/admin/applicants");
+      const res = await authFetch("/api/admin/applicants");
       if (res.ok) {
         const data = await res.json();
         setApplicants(data.applicants || []);
@@ -69,17 +72,23 @@ export default function AdminApplicantManagement() {
     }, 4000);
   };
 
-  const handleToggleStatus = async (applicant: ApplicantItem) => {
-    const nextStatus = !applicant.is_active;
-    const confirmMsg = nextStatus
-      ? `Activate account for ${applicant.email}?`
-      : `Suspend account for ${applicant.email}? They will not be able to log in.`;
+  // DOUBLE VERIFICATION MODAL STATES
+  const [statusApplicantTarget, setStatusApplicantTarget] = useState<ApplicantItem | null>(null);
+  const [resetApplicantTarget, setResetApplicantTarget] = useState<ApplicantItem | null>(null);
 
-    if (!window.confirm(confirmMsg)) return;
+  const handleToggleStatus = (applicant: ApplicantItem) => {
+    setStatusApplicantTarget(applicant);
+  };
+
+  const doConfirmToggleStatus = async () => {
+    if (!statusApplicantTarget) return;
+    const applicant = statusApplicantTarget;
+    const nextStatus = !applicant.is_active;
+    setStatusApplicantTarget(null);
 
     try {
       setIsUpdating(true);
-      const res = await fetch(`/api/admin/users/${applicant.user_id}/status`, {
+      const res = await authFetch(`/api/admin/users/${applicant.user_id}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ is_active: nextStatus }),
@@ -106,12 +115,18 @@ export default function AdminApplicantManagement() {
     }
   };
 
-  const handleResetPassword = async (applicant: ApplicantItem) => {
-    if (!window.confirm(`Reset password for ${applicant.email}?`)) return;
+  const handleResetPassword = (applicant: ApplicantItem) => {
+    setResetApplicantTarget(applicant);
+  };
+
+  const doConfirmResetPassword = async () => {
+    if (!resetApplicantTarget) return;
+    const applicant = resetApplicantTarget;
+    setResetApplicantTarget(null);
 
     try {
       setIsUpdating(true);
-      const res = await fetch(`/api/admin/users/${applicant.user_id}/reset-password`, {
+      const res = await authFetch(`/api/admin/users/${applicant.user_id}/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: "EliteCruit2026!" }),
@@ -193,6 +208,9 @@ export default function AdminApplicantManagement() {
             <strong>Applicant Management</strong>
           </div>
           <div className="appdash-top-right">
+            <a href="/admin-applicant-analytics" style={{ fontSize: "0.82rem", fontWeight: 600, color: "#103f65", textDecoration: "none", backgroundColor: "#e2e8f0", padding: "0.3rem 0.75rem", borderRadius: "0.375rem" }}>
+              View Applicant Analytics
+            </a>
             <span className="admin-role-badge">ADMIN</span>
           </div>
         </header>
@@ -317,12 +335,34 @@ export default function AdminApplicantManagement() {
                       const initials = applicant.first_name
                         ? applicant.first_name.charAt(0).toUpperCase()
                         : applicant.email.charAt(0).toUpperCase();
+                      const picUrl = applicant.profile_picture_path
+                        ? (applicant.profile_picture_path.startsWith("http") || applicant.profile_picture_path.startsWith("/api")
+                            ? applicant.profile_picture_path
+                            : `/api/applicants/${applicant.user_id}/profile-picture`)
+                        : null;
 
                       return (
                         <tr key={applicant.user_id}>
                           <td className="col-candidate">
                             <div className="admin-user-cell">
-                              <div className="admin-user-avatar">{initials}</div>
+                              <div className="admin-user-avatar" style={{ overflow: "hidden", position: "relative" }}>
+                                {picUrl && (
+                                  <img
+                                    src={picUrl}
+                                    alt={fullName}
+                                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                    onError={(e) => {
+                                      (e.currentTarget as HTMLElement).style.display = "none";
+                                      if (e.currentTarget.nextElementSibling) {
+                                        (e.currentTarget.nextElementSibling as HTMLElement).style.display = "inline";
+                                      }
+                                    }}
+                                  />
+                                )}
+                                <span style={{ display: picUrl ? "none" : "inline" }}>
+                                  {initials}
+                                </span>
+                              </div>
                               <div className="admin-user-info">
                                 <div className="admin-user-name">{fullName}</div>
                                 <div className="admin-user-sub">{applicant.email}</div>
@@ -388,28 +428,53 @@ export default function AdminApplicantManagement() {
 
             <div className="admin-drawer-body">
               {/* Profile Card */}
-              <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-                <div className="admin-user-avatar" style={{ width: "52px", height: "52px", fontSize: "1.2rem" }}>
-                  {inspectingApplicant.first_name
-                    ? inspectingApplicant.first_name.charAt(0).toUpperCase()
-                    : inspectingApplicant.email.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <h3 style={{ margin: "0", color: "#01294a", fontSize: "1.15rem" }}>
-                    {inspectingApplicant.first_name
-                      ? `${inspectingApplicant.first_name} ${inspectingApplicant.last_name || ""}`
-                      : "Candidate Profile"}
-                  </h3>
-                  <p style={{ margin: "2px 0 0 0", color: "#64748b", fontSize: "0.85rem" }}>
-                    {inspectingApplicant.email}
-                  </p>
-                  <div style={{ marginTop: "6px" }}>
-                    <span className={`admin-status-badge ${inspectingApplicant.is_active ? "active" : "suspended"}`}>
-                      {inspectingApplicant.is_active ? "Account Active" : "Account Suspended"}
-                    </span>
+              {(() => {
+                const modalPicUrl = inspectingApplicant.profile_picture_path
+                  ? (inspectingApplicant.profile_picture_path.startsWith("http") || inspectingApplicant.profile_picture_path.startsWith("/api")
+                      ? inspectingApplicant.profile_picture_path
+                      : `/api/applicants/${inspectingApplicant.user_id}/profile-picture`)
+                  : null;
+                const modalInitials = inspectingApplicant.first_name
+                  ? inspectingApplicant.first_name.charAt(0).toUpperCase()
+                  : inspectingApplicant.email.charAt(0).toUpperCase();
+                return (
+                  <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+                    <div className="admin-user-avatar" style={{ width: "52px", height: "52px", fontSize: "1.2rem", overflow: "hidden", position: "relative" }}>
+                      {modalPicUrl && (
+                        <img
+                          src={modalPicUrl}
+                          alt={inspectingApplicant.first_name || "Applicant"}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = "none";
+                            if (e.currentTarget.nextElementSibling) {
+                              (e.currentTarget.nextElementSibling as HTMLElement).style.display = "inline";
+                            }
+                          }}
+                        />
+                      )}
+                      <span style={{ display: modalPicUrl ? "none" : "inline" }}>
+                        {modalInitials}
+                      </span>
+                    </div>
+                    <div>
+                      <h3 style={{ margin: "0", color: "#01294a", fontSize: "1.15rem" }}>
+                        {inspectingApplicant.first_name
+                          ? `${inspectingApplicant.first_name} ${inspectingApplicant.last_name || ""}`
+                          : "Candidate Profile"}
+                      </h3>
+                      <p style={{ margin: "2px 0 0 0", color: "#64748b", fontSize: "0.85rem" }}>
+                        {inspectingApplicant.email}
+                      </p>
+                      <div style={{ marginTop: "6px" }}>
+                        <span className={`admin-status-badge ${inspectingApplicant.is_active ? "active" : "suspended"}`}>
+                          {inspectingApplicant.is_active ? "Account Active" : "Account Suspended"}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Contact & Location */}
               <div className="admin-drawer-section">
@@ -496,6 +561,54 @@ export default function AdminApplicantManagement() {
           </div>
         </div>
       )}
+
+      {/* DOUBLE VERIFICATION: STATUS TOGGLE MODAL */}
+      <ConfirmationModal
+        isOpen={!!statusApplicantTarget}
+        type={statusApplicantTarget?.is_active ? "danger" : "success"}
+        title={statusApplicantTarget?.is_active ? "Suspend Applicant Account" : "Activate Applicant Account"}
+        message={
+          <div>
+            <p style={{ margin: "0 0 8px" }}>
+              Are you sure you want to{" "}
+              <strong>{statusApplicantTarget?.is_active ? "suspend" : "activate"}</strong> the account for{" "}
+              <strong>{statusApplicantTarget?.email}</strong>?
+            </p>
+            <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>
+              {statusApplicantTarget?.is_active
+                ? "This applicant will be immediately barred from logging in or applying for jobs."
+                : "This applicant will regain full access to their account and job applications."}
+            </p>
+          </div>
+        }
+        cancelLabel="Cancel"
+        confirmLabel={statusApplicantTarget?.is_active ? "Suspend Account" : "Activate Account"}
+        isConfirming={isUpdating}
+        onCancel={() => setStatusApplicantTarget(null)}
+        onConfirm={doConfirmToggleStatus}
+      />
+
+      {/* DOUBLE VERIFICATION: RESET PASSWORD MODAL */}
+      <ConfirmationModal
+        isOpen={!!resetApplicantTarget}
+        type="warning"
+        title="Reset Applicant Password"
+        message={
+          <div>
+            <p style={{ margin: "0 0 8px" }}>
+              Are you sure you want to reset the password for <strong>{resetApplicantTarget?.email}</strong>?
+            </p>
+            <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>
+              A new temporary password will be generated and assigned to this account.
+            </p>
+          </div>
+        }
+        cancelLabel="Cancel"
+        confirmLabel="Reset Password"
+        isConfirming={isUpdating}
+        onCancel={() => setResetApplicantTarget(null)}
+        onConfirm={doConfirmResetPassword}
+      />
     </div>
   );
 }

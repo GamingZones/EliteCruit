@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useMemo } from "react";
 import AdminSidebar from "../../components/AdminSidebar";
+import ConfirmationModal from "../../components/ConfirmationModal";
 import "./Admin-EmployerManagement.css";
+import { authFetch, getStoredUser } from "../../utils/auth";
 
 interface EmployerItem {
   user_id: number;
@@ -34,12 +36,12 @@ export default function AdminEmployerManagement() {
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("elitecruit-user");
-      if (stored) {
-        setAdminUser(JSON.parse(stored));
-      }
-    } catch {}
+    const stored = getStoredUser();
+    if (!stored || stored.role !== "admin") {
+      window.location.href = "/login";
+      return;
+    }
+    setAdminUser(stored);
 
     loadEmployers();
   }, []);
@@ -47,7 +49,7 @@ export default function AdminEmployerManagement() {
   const loadEmployers = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch("/api/admin/employers");
+      const res = await authFetch("/api/admin/employers");
       if (res.ok) {
         const data = await res.json();
         setEmployers(data.employers || []);
@@ -66,17 +68,23 @@ export default function AdminEmployerManagement() {
     }, 4000);
   };
 
-  const handleToggleStatus = async (employer: EmployerItem) => {
-    const nextStatus = !employer.is_active;
-    const confirmMsg = nextStatus
-      ? `Activate employer account for ${employer.business_name || employer.email}?`
-      : `Suspend employer account for ${employer.business_name || employer.email}? They will not be able to log in or manage job posts.`;
+  // DOUBLE VERIFICATION MODAL STATES
+  const [statusEmployerTarget, setStatusEmployerTarget] = useState<EmployerItem | null>(null);
+  const [resetEmployerTarget, setResetEmployerTarget] = useState<EmployerItem | null>(null);
 
-    if (!window.confirm(confirmMsg)) return;
+  const handleToggleStatus = (employer: EmployerItem) => {
+    setStatusEmployerTarget(employer);
+  };
+
+  const doConfirmToggleStatus = async () => {
+    if (!statusEmployerTarget) return;
+    const employer = statusEmployerTarget;
+    const nextStatus = !employer.is_active;
+    setStatusEmployerTarget(null);
 
     try {
       setIsUpdating(true);
-      const res = await fetch(`/api/admin/users/${employer.user_id}/status`, {
+      const res = await authFetch(`/api/admin/users/${employer.user_id}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ is_active: nextStatus }),
@@ -103,12 +111,18 @@ export default function AdminEmployerManagement() {
     }
   };
 
-  const handleResetPassword = async (employer: EmployerItem) => {
-    if (!window.confirm(`Reset password for ${employer.email}?`)) return;
+  const handleResetPassword = (employer: EmployerItem) => {
+    setResetEmployerTarget(employer);
+  };
+
+  const doConfirmResetPassword = async () => {
+    if (!resetEmployerTarget) return;
+    const employer = resetEmployerTarget;
+    setResetEmployerTarget(null);
 
     try {
       setIsUpdating(true);
-      const res = await fetch(`/api/admin/users/${employer.user_id}/reset-password`, {
+      const res = await authFetch(`/api/admin/users/${employer.user_id}/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: "EliteCruit2026!" }),
@@ -185,6 +199,9 @@ export default function AdminEmployerManagement() {
             <strong>Employer Management</strong>
           </div>
           <div className="appdash-top-right">
+            <a href="/admin-employer-analytics" style={{ fontSize: "0.82rem", fontWeight: 600, color: "#103f65", textDecoration: "none", backgroundColor: "#e2e8f0", padding: "0.3rem 0.75rem", borderRadius: "0.375rem" }}>
+              View Employer Analytics
+            </a>
             <span className="admin-role-badge">ADMIN</span>
           </div>
         </header>
@@ -308,12 +325,34 @@ export default function AdminEmployerManagement() {
                       const initials = emp.business_name
                         ? emp.business_name.charAt(0).toUpperCase()
                         : emp.email.charAt(0).toUpperCase();
+                      const logoUrl = emp.company_logo_path
+                        ? (emp.company_logo_path.startsWith("http") || emp.company_logo_path.startsWith("/api")
+                            ? emp.company_logo_path
+                            : `/api/employers/${emp.user_id}/logo`)
+                        : null;
 
                       return (
                         <tr key={emp.user_id}>
                           <td className="col-company">
                             <div className="admin-user-cell">
-                              <div className="admin-user-avatar">{initials}</div>
+                              <div className="admin-user-avatar" style={{ overflow: "hidden", position: "relative" }}>
+                                {logoUrl && (
+                                  <img
+                                    src={logoUrl}
+                                    alt={businessName}
+                                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                    onError={(e) => {
+                                      (e.currentTarget as HTMLElement).style.display = "none";
+                                      if (e.currentTarget.nextElementSibling) {
+                                        (e.currentTarget.nextElementSibling as HTMLElement).style.display = "inline";
+                                      }
+                                    }}
+                                  />
+                                )}
+                                <span style={{ display: logoUrl ? "none" : "inline" }}>
+                                  {initials}
+                                </span>
+                              </div>
                               <div>
                                 <div className="admin-user-name">{businessName}</div>
                                 <div className="admin-user-sub">{emp.email}</div>
@@ -385,26 +424,51 @@ export default function AdminEmployerManagement() {
 
             <div className="admin-drawer-body">
               {/* Profile Card */}
-              <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-                <div className="admin-user-avatar" style={{ width: "52px", height: "52px", fontSize: "1.2rem" }}>
-                  {inspectingEmployer.business_name
-                    ? inspectingEmployer.business_name.charAt(0).toUpperCase()
-                    : inspectingEmployer.email.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <h3 style={{ margin: "0", color: "#01294a", fontSize: "1.15rem" }}>
-                    {inspectingEmployer.business_name || "Company Profile"}
-                  </h3>
-                  <p style={{ margin: "2px 0 0 0", color: "#64748b", fontSize: "0.85rem" }}>
-                    {inspectingEmployer.email}
-                  </p>
-                  <div style={{ marginTop: "6px" }}>
-                    <span className={`admin-status-badge ${inspectingEmployer.is_active ? "active" : "suspended"}`}>
-                      {inspectingEmployer.is_active ? "Account Active" : "Account Suspended"}
-                    </span>
+              {(() => {
+                const modalLogoUrl = inspectingEmployer.company_logo_path
+                  ? (inspectingEmployer.company_logo_path.startsWith("http") || inspectingEmployer.company_logo_path.startsWith("/api")
+                      ? inspectingEmployer.company_logo_path
+                      : `/api/employers/${inspectingEmployer.user_id}/logo`)
+                  : null;
+                const modalInitials = inspectingEmployer.business_name
+                  ? inspectingEmployer.business_name.charAt(0).toUpperCase()
+                  : inspectingEmployer.email.charAt(0).toUpperCase();
+                return (
+                  <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+                    <div className="admin-user-avatar" style={{ width: "52px", height: "52px", fontSize: "1.2rem", overflow: "hidden", position: "relative" }}>
+                      {modalLogoUrl && (
+                        <img
+                          src={modalLogoUrl}
+                          alt={inspectingEmployer.business_name || "Company"}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = "none";
+                            if (e.currentTarget.nextElementSibling) {
+                              (e.currentTarget.nextElementSibling as HTMLElement).style.display = "inline";
+                            }
+                          }}
+                        />
+                      )}
+                      <span style={{ display: modalLogoUrl ? "none" : "inline" }}>
+                        {modalInitials}
+                      </span>
+                    </div>
+                    <div>
+                      <h3 style={{ margin: "0", color: "#01294a", fontSize: "1.15rem" }}>
+                        {inspectingEmployer.business_name || "Company Profile"}
+                      </h3>
+                      <p style={{ margin: "2px 0 0 0", color: "#64748b", fontSize: "0.85rem" }}>
+                        {inspectingEmployer.email}
+                      </p>
+                      <div style={{ marginTop: "6px" }}>
+                        <span className={`admin-status-badge ${inspectingEmployer.is_active ? "active" : "suspended"}`}>
+                          {inspectingEmployer.is_active ? "Account Active" : "Account Suspended"}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Company Info */}
               <div className="admin-drawer-section">
@@ -471,6 +535,54 @@ export default function AdminEmployerManagement() {
           </div>
         </div>
       )}
+
+      {/* DOUBLE VERIFICATION: EMPLOYER STATUS TOGGLE MODAL */}
+      <ConfirmationModal
+        isOpen={!!statusEmployerTarget}
+        type={statusEmployerTarget?.is_active ? "danger" : "success"}
+        title={statusEmployerTarget?.is_active ? "Suspend Employer Account" : "Activate Employer Account"}
+        message={
+          <div>
+            <p style={{ margin: "0 0 8px" }}>
+              Are you sure you want to{" "}
+              <strong>{statusEmployerTarget?.is_active ? "suspend" : "activate"}</strong> the account for{" "}
+              <strong>{statusEmployerTarget?.business_name || statusEmployerTarget?.email}</strong>?
+            </p>
+            <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>
+              {statusEmployerTarget?.is_active
+                ? "This employer will be immediately barred from logging in, publishing jobs, or contacting applicants."
+                : "This employer will regain full access to their dashboard, active jobs, and applicant messages."}
+            </p>
+          </div>
+        }
+        cancelLabel="Cancel"
+        confirmLabel={statusEmployerTarget?.is_active ? "Suspend Account" : "Activate Account"}
+        isConfirming={isUpdating}
+        onCancel={() => setStatusEmployerTarget(null)}
+        onConfirm={doConfirmToggleStatus}
+      />
+
+      {/* DOUBLE VERIFICATION: RESET PASSWORD MODAL */}
+      <ConfirmationModal
+        isOpen={!!resetEmployerTarget}
+        type="warning"
+        title="Reset Employer Password"
+        message={
+          <div>
+            <p style={{ margin: "0 0 8px" }}>
+              Are you sure you want to reset the password for <strong>{resetEmployerTarget?.business_name || resetEmployerTarget?.email}</strong>?
+            </p>
+            <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>
+              A new temporary password will be generated and assigned to this employer account.
+            </p>
+          </div>
+        }
+        cancelLabel="Cancel"
+        confirmLabel="Reset Password"
+        isConfirming={isUpdating}
+        onCancel={() => setResetEmployerTarget(null)}
+        onConfirm={doConfirmResetPassword}
+      />
     </div>
   );
 }

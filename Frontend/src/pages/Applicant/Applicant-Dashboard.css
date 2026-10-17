@@ -540,6 +540,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .match-chip {
@@ -562,7 +563,14 @@
 .solid-btn {
   border-radius: 10px;
   font-weight: 700;
-  padding: 9px 14px;
+  padding: 9px 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .ghost-btn {
@@ -576,6 +584,33 @@
   background: #123c63;
   color: #ffffff;
 }
+
+.job-empty-card {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  padding: 32px 20px !important;
+  gap: 14px !important;
+}
+
+.job-empty-card h3 {
+  margin: 0 0 6px 0;
+  font-size: 1.1rem;
+}
+
+.job-empty-card p {
+  margin: 0;
+  color: #355172;
+  font-size: 0.9rem;
+}
+
+.job-empty-card .job-actions {
+  justify-content: center !important;
+  width: 100%;
+}
+
 
 .rank-card,
 .dashboard-block {
@@ -702,11 +737,11 @@
   color: #ffffff;
 }
 
-.status-reviewed {
+.status-pill.status-reviewed {
   background: #113a63;
 }
 
-.status-pending {
+.status-pill.status-pending {
   background: #6c7f95;
 }
 
@@ -1129,7 +1164,9 @@
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
 }
 
-.appdash-profile-menu a {
+.appdash-profile-menu a,
+.appdash-profile-menu button,
+.appdash-profile-menu .appdash-profile-menu-btn {
   display: flex;
   align-items: center;
   gap: 9px;
@@ -1138,14 +1175,31 @@
   font-size: 0.75rem;
   font-weight: 600;
   text-decoration: none;
+  background: transparent;
+  border: none;
+  width: 100%;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  box-sizing: border-box;
+  transition: background 0.15s ease, color 0.15s ease;
+  line-height: 1.2;
 }
 
-.appdash-profile-menu a + a {
+.appdash-profile-menu a + a,
+.appdash-profile-menu button + button,
+.appdash-profile-menu a + button,
+.appdash-profile-menu button + a,
+.appdash-profile-menu a + .appdash-profile-menu-btn,
+.appdash-profile-menu .appdash-profile-menu-btn + a {
   border-top: 1px solid rgba(189, 208, 230, 0.14);
 }
 
-.appdash-profile-menu a:hover {
+.appdash-profile-menu a:hover,
+.appdash-profile-menu button:hover,
+.appdash-profile-menu .appdash-profile-menu-btn:hover {
   background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
 }
 
 .appdash-profile-menu svg {
@@ -1156,6 +1210,100 @@
   stroke-width: 1.9;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+/* Location metadata and multi-location overflow tooltip */
+.location-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.location-meta svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
+.overflow-dots-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 1px 7px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: #eaf1f8;
+  color: #173f62;
+  border: 1px solid #c8d8e8;
+  cursor: pointer;
+  line-height: 1;
+  transition: transform 0.18s ease, background-color 0.15s ease, border-color 0.15s ease;
+  vertical-align: middle;
+}
+
+.overflow-dots-badge:hover {
+  background: #d4e5f7;
+  border-color: #a4c6e8;
+  transform: scale(1.08);
+}
+
+.overflow-tooltip {
+  position: absolute;
+  bottom: 130%;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #091f34;
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 400;
+  white-space: normal;
+  max-width: 380px;
+  min-width: 180px;
+  width: max-content;
+  box-shadow: 0 4px 16px rgba(9, 31, 52, 0.35);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 10000;
+  line-height: 1.45;
+}
+
+.overflow-tooltip span {
+  display: inline;
+  color: #ffffff;
+}
+
+.overflow-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: #091f34 transparent transparent transparent;
+}
+
+.overflow-tooltip strong {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #a6d2f7;
+  margin-bottom: 2px;
+}
+
+.overflow-dots-badge:hover .overflow-tooltip,
+.overflow-dots-badge:focus .overflow-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
 }
 
 

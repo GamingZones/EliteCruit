@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./Login.css";
+import { setAuthToken, setStoredUser } from "../../utils/auth";
 
 function EyeIcon({ open }: { open: boolean }) {
   if (open) {
@@ -18,15 +19,49 @@ function EyeIcon({ open }: { open: boolean }) {
 }
 
 export default function Login() {
-  const [role, setRole] = useState<"applicant" | "employer">("applicant");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState("");
+
+  // 2FA Verification States
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [tempToken, setTempToken] = useState("");
+  const [maskedEmail, setMaskedEmail] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [devCode, setDevCode] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  const [submitError, setSubmitError] = useState(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("auth") === "required") {
+        return "Please log in to access this page.";
+      }
+      if (params.get("session") === "expired") {
+        return "Your session has expired. Please log in again.";
+      }
+    }
+    return "";
+  });
   const [submitSuccess, setSubmitSuccess] = useState("");
-  const isApplicant = role === "applicant";
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -52,7 +87,6 @@ export default function Login() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          role,
           email,
           password,
           rememberMe,
@@ -63,6 +97,19 @@ export default function Login() {
 
       if (!response.ok) {
         setSubmitError(data?.message ?? "Login failed.");
+        return;
+      }
+
+      // Check if 2FA code is required
+      if (data?.mfaRequired) {
+        setMfaRequired(true);
+        setTempToken(data.tempToken || "");
+        setMaskedEmail(data.maskedEmail || email);
+        setDevCode(data.devCode || "");
+        setResendCooldown(45);
+        setOtpCode("");
+        setSubmitError("");
+        setSubmitSuccess("Security code sent. Please check your inbox.");
         return;
       }
 
@@ -77,7 +124,10 @@ export default function Login() {
 
       setSubmitSuccess(`Welcome back, ${normalizedUser.email}.`);
       setPassword("");
-      localStorage.setItem("elitecruit-user", JSON.stringify(normalizedUser));
+      setStoredUser(normalizedUser);
+      if (data?.token) {
+        setAuthToken(data.token);
+      }
 
       if (normalizedUser?.role === "applicant") {
         window.location.href = "/applicant-dashboard#applicant-overview";
@@ -91,6 +141,116 @@ export default function Login() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleVerify2FA = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setSubmitError("");
+    setSubmitSuccess("");
+
+    const clean = otpCode.replace(/\D/g, "");
+    if (clean.length !== 6) {
+      setSubmitError("Please enter the complete 6-digit verification code.");
+      return;
+    }
+
+    setIsVerifying(true);
+
+    try {
+      const response = await fetch("/api/auth/verify-2fa", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tempToken,
+          code: clean,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setSubmitError(data?.message ?? "Verification failed.");
+        return;
+      }
+
+      const normalizedUser = {
+        ...data.user,
+        businessName:
+          data?.user?.businessName ||
+          data?.user?.business_name ||
+          data?.user?.companyName ||
+          null,
+      };
+
+      setSubmitSuccess(`Verification successful! Welcome back, ${normalizedUser.email}.`);
+      setPassword("");
+      setStoredUser(normalizedUser);
+      if (data?.token) {
+        setAuthToken(data.token);
+      }
+
+      if (normalizedUser?.role === "applicant") {
+        window.location.href = "/applicant-dashboard#applicant-overview";
+      } else if (normalizedUser?.role === "employer") {
+        window.location.href = "/employer-dashboard";
+      } else if (normalizedUser?.role === "admin") {
+        window.location.href = "/admin-dashboard";
+      }
+    } catch {
+      setSubmitError("Unable to connect to server. Please try again.");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleResend2FA = async () => {
+    if (resendCooldown > 0 || isResending || !tempToken) return;
+
+    setIsResending(true);
+    setSubmitError("");
+    setSubmitSuccess("");
+
+    try {
+      const response = await fetch("/api/auth/resend-2fa", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ tempToken }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setSubmitError(data?.message ?? "Failed to resend verification code.");
+        if (data?.retryAfter) {
+          setResendCooldown(data.retryAfter);
+        }
+        return;
+      }
+
+      setSubmitSuccess(data?.message ?? "A fresh verification code has been sent to your email.");
+      if (data?.devCode) {
+        setDevCode(data.devCode);
+      }
+      setResendCooldown(45);
+    } catch {
+      setSubmitError("Unable to reach the server. Please try again.");
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  const handleBackToLogin = () => {
+    setMfaRequired(false);
+    setTempToken("");
+    setOtpCode("");
+    setDevCode("");
+    setSubmitError("");
+    setSubmitSuccess("");
+    setResendCooldown(0);
   };
 
   return (
@@ -143,104 +303,174 @@ export default function Login() {
       </section>
 
       <section className="login-right" aria-label="Secure Sign In">
-        <form
-          className={`login-card ${isApplicant ? "applicant-card" : "employer-card"}`}
-          onSubmit={handleSubmit}
-          noValidate
-        >
-          <p className="login-kicker">Login As</p>
-          <div className="role-switch" role="tablist" aria-label="Role switch">
-            <button
-              type="button"
-              className={`role-switch-btn ${isApplicant ? "active" : ""}`}
-              onClick={() => setRole("applicant")}
-              aria-pressed={isApplicant}
-            >
-              Applicant
-            </button>
-            <button
-              type="button"
-              className={`role-switch-btn ${!isApplicant ? "active" : ""}`}
-              onClick={() => setRole("employer")}
-              aria-pressed={!isApplicant}
-            >
-              Employer
-            </button>
-          </div>
-          <p className="login-sub">
-            Sign in to continue to the workspace selected from the role page.
-          </p>
+        {mfaRequired ? (
+          <form
+            className="login-card mfa-card"
+            onSubmit={handleVerify2FA}
+            noValidate
+          >
+            <div className="mfa-header">
+              <div className="mfa-icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  <path d="m9 12 2 2 4-4" />
+                </svg>
+              </div>
+              <h2 className="login-title">Two-Factor Security</h2>
+              <p className="login-sub">
+                We sent a 6-digit verification code to{" "}
+                <strong className="mfa-highlight-email">{maskedEmail}</strong>.
+                Enter the code below to complete your sign in.
+              </p>
+            </div>
 
-          <label className="field-label" htmlFor="email">
-            Email
-          </label>
-          <div className="input-row">
-            <span className="input-icon input-icon-badge" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <rect x="4" y="6" width="16" height="12" rx="2" ry="2" />
-                <path d="M5 8l7 5 7-5" />
-              </svg>
-            </span>
-            <input
-              id="email"
-              type="email"
-              placeholder="your.email@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
+            {devCode && (
+              <div className="dev-otp-callout" role="note" aria-label="Development verification code">
+                <div className="dev-otp-header">
+                  <span className="dev-otp-badge">DEV ENVIRONMENT</span>
+                  <span className="dev-otp-note">Code logged to console</span>
+                </div>
+                <div className="dev-otp-code-display">{devCode}</div>
+              </div>
+            )}
 
-          <label className="field-label" htmlFor="password">
-            Password
-          </label>
-          <div className="input-row">
-            <span className="input-icon input-icon-badge" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <rect x="6.5" y="10" width="11" height="9" rx="1.8" ry="1.8" />
-                <path d="M9 10V7.8a3 3 0 1 1 6 0V10" />
-                <circle cx="12" cy="14.5" r="0.9" />
-              </svg>
-            </span>
-            <input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="mfa-code-group">
+              <label className="field-label" htmlFor="otpCode">
+                6-Digit Security Code
+              </label>
+              <div className="mfa-input-container">
+                <input
+                  id="otpCode"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  placeholder="000000"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  className="mfa-digit-input"
+                  autoFocus
+                />
+              </div>
+              <span className="mfa-hint-text">The verification code will expire in 10 minutes.</span>
+            </div>
+
+            {submitError && <p className="login-message login-error">{submitError}</p>}
+            {submitSuccess && <p className="login-message login-success">{submitSuccess}</p>}
+
             <button
-              className="peek-btn"
-              type="button"
-              aria-label="Toggle password visibility"
-              onClick={() => setShowPassword(!showPassword)}
+              className="login-submit mfa-submit-btn"
+              type="submit"
+              disabled={isVerifying || otpCode.replace(/\D/g, "").length !== 6}
             >
-              <EyeIcon open={showPassword} />
+              {isVerifying ? "Verifying..." : "Verify & Sign In"}
             </button>
-          </div>
 
-          <div className="auth-row">
-            <label className="remember-row">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-              />
-              <span>Remember me</span>
+            <div className="mfa-footer-actions">
+              <button
+                type="button"
+                className="mfa-resend-btn"
+                onClick={handleResend2FA}
+                disabled={resendCooldown > 0 || isResending}
+              >
+                {resendCooldown > 0
+                  ? `Resend code in ${resendCooldown}s`
+                  : isResending
+                  ? "Sending new code..."
+                  : "Resend Code"}
+              </button>
+
+              <button
+                type="button"
+                className="mfa-back-link"
+                onClick={handleBackToLogin}
+              >
+                ← Back to Login
+              </button>
+            </div>
+          </form>
+        ) : (
+          <form
+            className="login-card"
+            onSubmit={handleSubmit}
+            noValidate
+          >
+            <h2 className="login-title">Login</h2>
+            <p className="login-sub">
+              Sign in to continue to your EliteCruit account.
+            </p>
+
+            <label className="field-label" htmlFor="email">
+              Email
             </label>
-            <a href="/login">Forgot password?</a>
-          </div>
+            <div className="input-row">
+              <span className="input-icon input-icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <rect x="4" y="6" width="16" height="12" rx="2" ry="2" />
+                  <path d="M5 8l7 5 7-5" />
+                </svg>
+              </span>
+              <input
+                id="email"
+                type="email"
+                placeholder="your.email@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
 
-          {submitError && <p className="login-message login-error">{submitError}</p>}
-          {submitSuccess && <p className="login-message login-success">{submitSuccess}</p>}
+            <label className="field-label" htmlFor="password">
+              Password
+            </label>
+            <div className="input-row">
+              <span className="input-icon input-icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <rect x="6.5" y="10" width="11" height="9" rx="1.8" ry="1.8" />
+                  <path d="M9 10V7.8a3 3 0 1 1 6 0V10" />
+                  <circle cx="12" cy="14.5" r="0.9" />
+                </svg>
+              </span>
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                className="peek-btn"
+                type="button"
+                aria-label="Toggle password visibility"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                <EyeIcon open={showPassword} />
+              </button>
+            </div>
 
-          <button className="login-submit" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Signing In..." : "Login"}
-          </button>
+            <div className="auth-row">
+              <label className="remember-row">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                />
+                <span>Remember me</span>
+              </label>
+              <a href="/login">Forgot password?</a>
+            </div>
 
-          <p className="signup-text">
-            Don&apos;t have an account? <a href="/create-account">Sign up</a>
-          </p>
-        </form>
+            {submitError && <p className="login-message login-error">{submitError}</p>}
+            {submitSuccess && <p className="login-message login-success">{submitSuccess}</p>}
+
+            <button className="login-submit" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Signing In..." : "Login"}
+            </button>
+
+            <p className="signup-text">
+              Don&apos;t have an account? <a href="/create-account">Sign up</a>
+            </p>
+          </form>
+        )}
 
         <p className="region-note">For Cavite Region | Recruitment Platform</p>
       </section>

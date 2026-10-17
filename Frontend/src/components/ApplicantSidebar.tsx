@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "./ApplicantSidebar.css";
+import { clearAuth } from "../utils/auth";
 
 export type ApplicantNavIcon =
   | "overview"
@@ -173,7 +174,14 @@ export default function ApplicantSidebar({
               <ApplicantNavIconSvg name="profile" />
               My Profile
             </a>
-            <a href="/login">
+            <a
+              href="/login"
+              onClick={(e) => {
+                e.preventDefault();
+                clearAuth();
+                window.location.href = "/login";
+              }}
+            >
               <ApplicantNavIconSvg name="logout" />
               Logout
             </a>

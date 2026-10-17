@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { ALL_PHILIPPINES_PROVINCES, getCitiesByProvince } from "../../utils/filters";
 import "./Create-Account.css";
 
 export default function CreateAccount() {
@@ -13,6 +14,9 @@ export default function CreateAccount() {
     firstName: "",
     middleName: "",
     lastName: "",
+    province: "Cavite",
+    city: "Alfonso",
+    phone: "",
     businessName: "",
     email: "",
     password: "",
@@ -41,11 +45,29 @@ export default function CreateAccount() {
     return "#0d652d";
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
+  const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newProv = e.target.value;
+    const cities = getCitiesByProvince(newProv);
+    setFormData((prev) => ({
+      ...prev,
+      province: newProv,
+      city: cities[0] || "",
+    }));
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+    setFormData((prev) => ({
+      ...prev,
+      phone: digits,
+    }));
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData((prev) => ({
+      ...prev,
       [e.target.name]: e.target.value,
-    });
+    }));
   };
 
   const isApplicant = role === "applicant";
@@ -81,7 +103,7 @@ export default function CreateAccount() {
         return;
       }
     } else if (!formData.businessName.trim()) {
-      setSubmitError("Business name is required.");
+      setSubmitError("Company Name is required.");
       return;
     }
 
@@ -100,6 +122,9 @@ export default function CreateAccount() {
           firstName: formData.firstName,
           middleName: formData.middleName,
           lastName: formData.lastName,
+          province: formData.province,
+          city: formData.city,
+          phone: formData.phone,
           businessName: formData.businessName,
           agreeTerms,
         }),
@@ -117,6 +142,9 @@ export default function CreateAccount() {
         firstName: "",
         middleName: "",
         lastName: "",
+        province: "Cavite",
+        city: "Alfonso",
+        phone: "",
         businessName: "",
         email: "",
         password: "",
@@ -228,66 +256,185 @@ export default function CreateAccount() {
 
           {isApplicant ? (
             <>
-            <div className="name-row">
+              <div className="name-row">
+                <div className="form-field">
+                  <label htmlFor="firstName">First Name</label>
+                  <input
+                    id="firstName"
+                    required
+                    name="firstName"
+                    placeholder="First Name"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                  />
+                </div>
 
-  <div>
-    <label>First Name</label>
-    <input
-      required
-      name="firstName"
-      placeholder="First Name"
-      value={formData.firstName}
-      onChange={handleChange}
-    />
-  </div>
+                <div className="form-field">
+                  <label htmlFor="middleName">Middle Name (Optional)</label>
+                  <input
+                    id="middleName"
+                    name="middleName"
+                    placeholder="Middle Name"
+                    value={formData.middleName}
+                    onChange={handleChange}
+                  />
+                </div>
 
-  <div>
-    <label>Middle Name</label>
-    <input
-      name="middleName"
-      placeholder="Middle Name"
-      value={formData.middleName}
-      onChange={handleChange}
-    />
-  </div>
+                <div className="form-field">
+                  <label htmlFor="lastName">Last Name</label>
+                  <input
+                    id="lastName"
+                    required
+                    name="lastName"
+                    placeholder="Last Name"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
 
-  <div>
-    <label>Last Name</label>
-    <input
-      required
-      name="lastName"
-      placeholder="Last Name"
-      value={formData.lastName}
-      onChange={handleChange}
-    />
-  </div>
+              <div className="form-row two-col">
+                <div className="form-field">
+                  <label htmlFor="province">Province</label>
+                  <select
+                    id="province"
+                    name="province"
+                    value={formData.province}
+                    onChange={handleProvinceChange}
+                  >
+                    {ALL_PHILIPPINES_PROVINCES.map((prov) => (
+                      <option key={prov} value={prov}>
+                        {prov}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-</div>
+                <div className="form-field">
+                  <label htmlFor="city">City / Municipality</label>
+                  <select
+                    id="city"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                  >
+                    {getCitiesByProvince(formData.province).map((city) => (
+                      <option key={city} value={city}>
+                        {city}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-row two-col">
+                <div className="form-field">
+                  <label htmlFor="phone">Phone Number</label>
+                  <div className="input-prefix-box">
+                    <span className="prefix-tag">+63</span>
+                    <input
+                      id="phone"
+                      type="tel"
+                      name="phone"
+                      placeholder="09682944632"
+                      value={formData.phone}
+                      onChange={handlePhoneChange}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-field">
+                  <label htmlFor="email">Email Address</label>
+                  <input
+                    id="email"
+                    type="email"
+                    name="email"
+                    placeholder="your@email.com"
+                    required
+                    value={formData.email}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
             </>
           ) : (
             <>
-              <label>Business Name</label>
+              <div className="form-row one-col">
+                <div className="form-field">
+                  <label htmlFor="businessName">Company Name</label>
+                  <input
+                    id="businessName"
+                    required
+                    name="businessName"
+                    placeholder="e.g. CEBUANA"
+                    value={formData.businessName}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
 
-              <input
-                required
-                name="businessName"
-                placeholder="Business Name"
-                value={formData.businessName}
-                onChange={handleChange}
-              />
+              <div className="form-row two-col">
+                <div className="form-field">
+                  <label htmlFor="employerEmail">Primary Business Email</label>
+                  <input
+                    id="employerEmail"
+                    type="email"
+                    name="email"
+                    placeholder="company@example.com"
+                    required
+                    value={formData.email}
+                    onChange={handleChange}
+                  />
+                </div>
+
+                <div className="form-field">
+                  <label htmlFor="employerPhone">Primary Contact Number</label>
+                  <input
+                    id="employerPhone"
+                    type="tel"
+                    name="phone"
+                    placeholder="09682944632"
+                    value={formData.phone}
+                    onChange={handlePhoneChange}
+                  />
+                </div>
+              </div>
+
+              <div className="form-row two-col">
+                <div className="form-field">
+                  <label htmlFor="employerProvince">Province</label>
+                  <select
+                    id="employerProvince"
+                    name="province"
+                    value={formData.province}
+                    onChange={handleProvinceChange}
+                  >
+                    {ALL_PHILIPPINES_PROVINCES.map((prov) => (
+                      <option key={prov} value={prov}>
+                        {prov}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-field">
+                  <label htmlFor="employerCity">City / Municipality</label>
+                  <select
+                    id="employerCity"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                  >
+                    {getCitiesByProvince(formData.province).map((city) => (
+                      <option key={city} value={city}>
+                        {city}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </>
           )}
-
-          <label>Email Address</label>
-
-          <input
-            type="email"
-            name="email"
-            placeholder="your@email.com"
-            required
-            value={formData.email}
-            onChange={handleChange}
-          />
 
           <label>Password</label>
 
@@ -377,7 +524,7 @@ export default function CreateAccount() {
               onChange={(e) => setAgreeTerms(e.target.checked)}
             />
             <span>
-              I agree to the Terms of Service and Privacy Policy for this frontend prototype.
+              I agree to the Terms of Service and Privacy Policy.
             </span>
           </label>
 
