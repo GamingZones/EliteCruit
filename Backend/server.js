@@ -858,6 +858,55 @@ app.post("/api/auth/register", async (req, res) => {
   }
 });
 
+async function resolveUserDisplayNameAndBusiness(user) {
+  let displayName = null;
+  let businessName = null;
+
+  if (!user) return { displayName: "User", businessName: null };
+
+  try {
+    if (user.role === "applicant") {
+      const applicantProfile = await get(
+        "SELECT first_name, last_name FROM applicant_profiles WHERE user_id = ?",
+        [user.id]
+      );
+      if (applicantProfile) {
+        displayName = [applicantProfile.first_name, applicantProfile.last_name]
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+      }
+      if (!displayName && user.email) {
+        displayName = user.email.split("@")[0];
+      }
+    } else if (user.role === "employer") {
+      const employerProfile = await get(
+        "SELECT business_name, company_name FROM employer_profiles WHERE user_id = ?",
+        [user.id]
+      );
+      businessName =
+        employerProfile?.business_name ??
+        employerProfile?.company_name ??
+        null;
+      displayName = businessName || (user.email ? user.email.split("@")[0] : "Employer");
+    } else if (user.role === "admin") {
+      const adminProfile = await get(
+        "SELECT display_name FROM admin_profiles WHERE user_id = ?",
+        [user.id]
+      );
+      displayName = adminProfile?.display_name || "Administrator";
+    }
+  } catch (err) {
+    console.error("Error resolving user display name:", err);
+  }
+
+  if (!displayName) {
+    displayName = user.email ? user.email.split("@")[0] : "User";
+  }
+
+  return { displayName, businessName };
+}
+
 app.post("/api/auth/login", async (req, res) => {
   const { email, password, bypass2fa } = req.body ?? {};
 
@@ -896,25 +945,7 @@ app.post("/api/auth/login", async (req, res) => {
       return;
     }
 
-    let businessName = null;
-    let displayName = "Admin";
-    if (user.role === "employer") {
-      const employerProfile = await get(
-        "SELECT * FROM employer_profiles WHERE user_id = ?",
-        [user.id]
-      );
-      businessName =
-        employerProfile?.business_name ??
-        employerProfile?.company_name ??
-        employerProfile?.businessName ??
-        null;
-    } else if (user.role === "admin") {
-      const adminProfile = await get(
-        "SELECT * FROM admin_profiles WHERE user_id = ?",
-        [user.id]
-      );
-      displayName = adminProfile?.display_name || "System Administrator";
-    }
+    const { displayName, businessName } = await resolveUserDisplayNameAndBusiness(user);
 
     // 2FA is active by default unless explicitly disabled or bypassed via test header
     const isTestBypass = req.headers["x-bypass-2fa"] === "true" || bypass2fa === true;
@@ -1043,25 +1074,7 @@ app.post("/api/auth/verify-2fa", async (req, res) => {
       return res.status(403).json({ message: "Account is inactive." });
     }
 
-    let businessName = null;
-    let displayName = "Admin";
-    if (user.role === "employer") {
-      const employerProfile = await get(
-        "SELECT * FROM employer_profiles WHERE user_id = ?",
-        [user.id]
-      );
-      businessName =
-        employerProfile?.business_name ??
-        employerProfile?.company_name ??
-        employerProfile?.businessName ??
-        null;
-    } else if (user.role === "admin") {
-      const adminProfile = await get(
-        "SELECT * FROM admin_profiles WHERE user_id = ?",
-        [user.id]
-      );
-      displayName = adminProfile?.display_name || "System Administrator";
-    }
+    const { displayName, businessName } = await resolveUserDisplayNameAndBusiness(user);
 
     const token = generateAuthToken({
       id: user.id,
@@ -1138,7 +1151,8 @@ app.post("/api/auth/resend-2fa", async (req, res) => {
       [user.id, user.email, codeHash, tempToken, expiresAt]
     );
 
-    await send2FAEmail(user.email, code, "User");
+    const { displayName, businessName } = await resolveUserDisplayNameAndBusiness(user);
+    await send2FAEmail(user.email, code, displayName || businessName || "User");
 
     res.status(200).json({
       message: "A new 6-digit verification code has been sent to your email.",
