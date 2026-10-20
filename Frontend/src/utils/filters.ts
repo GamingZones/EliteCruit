@@ -1318,7 +1318,7 @@ export const PHILIPPINES_SENIOR_HIGH_SCHOOLS: string[] = Array.from(
 
 export async function fetchPhilippineUniversitiesApi(): Promise<string[]> {
   try {
-    const res = await fetch("http://universities.hipolabs.com/search?country=Philippines");
+    const res = await fetch("https://universities.hipolabs.com/search?country=Philippines");
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data)) {

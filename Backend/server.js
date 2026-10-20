@@ -353,7 +353,7 @@ async function ensureEmployerProfileColumns() {
   await run(`ALTER TABLE employer_profiles ADD COLUMN IF NOT EXISTS company_logo_mimetype TEXT`);
   await run(`ALTER TABLE employer_profiles ADD COLUMN IF NOT EXISTS company_cover_data BYTEA`);
   await run(`ALTER TABLE employer_profiles ADD COLUMN IF NOT EXISTS company_cover_mimetype TEXT`);
-  await run(`ALTER TABLE employer_profiles DROP COLUMN IF EXISTS website`);
+  await run(`ALTER TABLE employer_profiles ADD COLUMN IF NOT EXISTS website TEXT`);
 }
 
 async function ensureExtendedTables() {
@@ -1795,24 +1795,9 @@ app.put("/api/employers/:userId/profile", authenticateToken, requireUserOrAdmin,
     return res.status(400).json({ message: "Invalid employer ID." });
   }
 
-  const { business_name, city, company_address, contact_number, company_description, website, latitude, longitude, branches, branches_json } = req.body ?? {};
+  const { business_name, city, company_address, contact_number, company_description, website, branches, branches_json } = req.body ?? {};
 
   try {
-    let latVal = latitude !== undefined && latitude !== null ? Number(latitude) : null;
-    let lngVal = longitude !== undefined && longitude !== null ? Number(longitude) : null;
-
-    // Auto-resolve coordinates from city or address if not explicitly set
-    const lookupStr = (city || company_address || "").toLowerCase().trim();
-    if ((latVal === null || lngVal === null) && lookupStr) {
-      for (const [k, coords] of Object.entries(CAVITE_CITY_COORDS)) {
-        if (lookupStr.includes(k)) {
-          latVal = coords[0];
-          lngVal = coords[1];
-          break;
-        }
-      }
-    }
-
     const bJson = Array.isArray(branches) ? JSON.stringify(branches) : (typeof branches_json === "string" ? branches_json : null);
 
     await run(
@@ -1822,9 +1807,7 @@ app.put("/api/employers/:userId/profile", authenticateToken, requireUserOrAdmin,
            company_address = COALESCE(?, company_address),
            contact_number = COALESCE(?, contact_number),
            company_description = COALESCE(?, company_description),
-           branches_json = COALESCE(?, branches_json),
-           latitude = COALESCE(?, latitude),
-           longitude = COALESCE(?, longitude)
+           branches_json = COALESCE(?, branches_json)
        WHERE user_id = ?`,
       [
         business_name ?? null,
@@ -1833,8 +1816,6 @@ app.put("/api/employers/:userId/profile", authenticateToken, requireUserOrAdmin,
         contact_number ?? null,
         company_description ?? null,
         bJson,
-        latVal,
-        lngVal,
         userId,
       ]
     );
@@ -1854,30 +1835,6 @@ app.put("/api/applicants/:userId/profile", authenticateToken, requireUserOrAdmin
   const userId = Number(req.params.userId);
   if (!Number.isInteger(userId) || userId < 1) {
     return res.status(400).json({ message: "Invalid applicant ID." });
-  }
-
-  const latVal = req.body?.latitude !== undefined && req.body?.latitude !== null ? Number(req.body.latitude) : null;
-  const lngVal = req.body?.longitude !== undefined && req.body?.longitude !== null ? Number(req.body.longitude) : null;
-
-  const hasLatProp = Object.prototype.hasOwnProperty.call(req.body || {}, "latitude");
-  const hasLngProp = Object.prototype.hasOwnProperty.call(req.body || {}, "longitude");
-
-  // Handle location-only update (e.g. 1-click toggle opt-in / opt-out)
-  if ((hasLatProp || hasLngProp) && !req.body?.first_name && !req.body?.last_name) {
-    try {
-      await run(
-        `UPDATE applicant_profiles 
-         SET latitude = ?,
-             longitude = ?
-         WHERE user_id = ?`,
-        [latVal, lngVal, userId]
-      );
-      const profile = await get(`SELECT p.*, u.email FROM applicant_profiles p INNER JOIN users u ON u.id=p.user_id WHERE p.user_id=?`, [userId]);
-      return res.json({ message: "Location updated successfully.", profile });
-    } catch (err) {
-      console.error("Save location error:", err);
-      return res.status(500).json({ message: "Unable to save location." });
-    }
   }
 
   const currentProf = await get(`SELECT p.*, u.email FROM applicant_profiles p INNER JOIN users u ON u.id = p.user_id WHERE p.user_id = ?`, [userId]);
@@ -1983,9 +1940,6 @@ app.put("/api/applicants/:userId/profile", authenticateToken, requireUserOrAdmin
     ? req.body.preferred_locations.trim()
     : null;
 
-  const finalLat = hasLatProp ? latVal : (currentProf?.latitude ?? null);
-  const finalLng = hasLngProp ? lngVal : (currentProf?.longitude ?? null);
-
   try {
     try {
       await run("ALTER TABLE applicant_profiles ADD COLUMN IF NOT EXISTS expected_salary_min NUMERIC");
@@ -2001,10 +1955,9 @@ app.put("/api/applicants/:userId/profile", authenticateToken, requireUserOrAdmin
        SET first_name=?, middle_name=?, last_name=?, phone=?, province=?, city=?, address=?, summary=?, languages=?, desired_job_title=?, expected_salary=?, work_arrangement=?, years_of_experience=?,
            expected_salary_min = ?, expected_salary_max = ?,
            shs_strand=?, shs_school=?, shs_grad_year=?, college_grad_year=?, vocational_grad_year=?, preferred_cities_json=?, is_non_graduate_cert_holder=?,
-           preferred_locations = COALESCE(?, preferred_locations),
-           latitude = ?, longitude = ?
+           preferred_locations = COALESCE(?, preferred_locations)
        WHERE user_id=?`,
-      [...values, salMin, salMax, shsStrand, shsSchool, shsGradYear, collegeGradYear, vocationalGradYear, prefCitiesJson, isNonGradCert, prefLocStr, finalLat, finalLng, userId]
+      [...values, salMin, salMax, shsStrand, shsSchool, shsGradYear, collegeGradYear, vocationalGradYear, prefCitiesJson, isNonGradCert, prefLocStr, userId]
     );
     if (!updated.changes) throw new Error("PROFILE_NOT_FOUND");
     await run("COMMIT");
@@ -3790,8 +3743,6 @@ app.get("/api/employers/:userId/applications", authenticateToken, requireUserOrA
           ap.certifications,
           ap.resume_path,
           ap.profile_picture_path,
-          ap.latitude,
-          ap.longitude,
           a.applicant_user_id,
           (
             SELECT ROUND(AVG(cr.rating), 1)
@@ -4106,8 +4057,6 @@ app.get("/api/talent-pool", async (req, res) => {
           ap.preferred_cities_json,
           ap.resume_path,
           ap.profile_picture_path,
-          ap.latitude,
-          ap.longitude,
           ap.nearby_location,
           ap.shs_strand,
           ap.shs_school,
@@ -4170,8 +4119,6 @@ app.get("/api/employers/:userId/talent-pool", async (req, res) => {
           ap.preferred_cities_json,
           ap.resume_path,
           ap.profile_picture_path,
-          ap.latitude,
-          ap.longitude,
           ap.nearby_location,
           ap.shs_strand,
           ap.shs_school,

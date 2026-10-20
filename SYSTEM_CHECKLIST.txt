@@ -1,0 +1,113 @@
+LEGEND:
+(-) Checking / In Progress
+(***) Good / Working
+(---) Not Good / Error / Needs Fix
+
+================================================================================
+PART 1: APPLICANT JOURNEY (FROM ACCOUNT CREATION TO INTERVIEW SCHEDULE)
+================================================================================
+
+--- STEP 1: REGISTRATION & SECURITY ---
+- Open registration page (https://elitecruit.onrender.com/register)
+- Select "Applicant" role and fill in name, email, and password
+- Submit registration and verify success message
+- Receive 6-digit 2FA verification code in email inbox (or check Spam folder)
+- Enter 6-digit code on the 2FA verification screen
+- Verify successful login redirect to applicant dashboard
+- Test 45-second resend cooldown timer
+- Accept Terms & Conditions prompt on initial login
+
+--- STEP 2: PROFILE & RESUME SETUP ---
+- Complete Applicant Profile (Contact info, headline, location, bio)
+- Test ATS Converter (Upload resume file to parse and extract data)
+- Test Document to System conversion (Verify parsed text populates profile)
+- Upload certificates and credentials under "Categories ng certification"
+- Test document upload file limits (Ensure files under 10MB upload cleanly)
+- Verify uploaded documents can be viewed, downloaded, or deleted
+
+--- STEP 3: JOB SEARCH & DISCOVERY ---
+- Test standard Job Search with keyword search and filters
+- Test Geographing (Job location mapping and nearby distance filters)
+- Test Swiping Job Search (Interactive card swiping discovery)
+- Test fresh graduate tags filtering (Filter jobs open to fresh grads)
+- View full Job Details page (Responsibilities, qualifications, company info)
+
+--- STEP 4: JOB APPLICATION & TRACKING ---
+- Click "Apply Now" on a selected job post
+- Attach resume/cover letter and submit application
+- Verify confirmation message appears after submission
+- Try applying again to verify duplicate application prevention works
+- Open "My Applications" tab to verify application status displays "Pending"
+- Check in-app notification bell for application submission alert
+
+--- STEP 5: INTERVIEW & STATUS UPDATES ---
+- Check status updates when employer changes status (Under Review / Shortlisted)
+- Receive notification when an employer schedules an interview
+- Open "Interviews" section to view scheduled interview details
+- Verify interview date, start time, end time, and stage display properly
+- Verify meeting link or on-site address is clickable and accurate
+- Test "Accept Interview" or "Decline Interview" response buttons
+- Verify response updates properly in applicant schedule view
+
+================================================================================
+PART 2: EMPLOYER JOURNEY (FROM ACCOUNT CREATION TO CREATING SCHEDULE)
+================================================================================
+
+--- STEP 1: REGISTRATION & COMPANY ONBOARDING ---
+- Open registration page (https://elitecruit.onrender.com/register)
+- Select "Employer" role and fill in company name, recruiter email, and password
+- Submit registration and receive 6-digit 2FA code via email
+- Enter 2FA code and verify successful login to employer dashboard
+- Complete Company Profile (Company name, logo, industry, website, description)
+- Verify company profile displays correctly in public preview
+
+--- STEP 2: JOB POSTING & MANAGEMENT ---
+- Click "Post a Job" to open the job creation form
+- Fill in Job Title, Department, Job Type, Salary, and Description
+- Verify "Location compressed" display works (Clean city/province badge)
+- Add "Fresh graduate tags" to test entry-level badge visibility
+- Publish the job post and verify it appears in the active job listings
+- Test editing an existing job post
+- Test closing and reopening a job post
+
+--- STEP 3: CANDIDATE SOURCING & REVIEW ---
+- Open "Applicant Reviewer" tab for an active job post
+- Test Drop down job applicant reviewer (Compact dropdown candidate view)
+- View applicant details (Resume, parsed skills, uploaded certificates)
+- Move applicant through pipeline stages (Pending -> Under Review -> Shortlisted)
+- Rate applicant using Candidate Ratings (1 to 5 stars + feedback comment)
+- Test Direct Job Invitations (Invite qualified candidates from talent pool)
+
+--- STEP 4: INTERVIEW SCHEDULING ---
+- Click "Schedule Interview" for a shortlisted applicant
+- Enter Interview Title (e.g. "Technical Interview - Round 1")
+- Select Interview Stage (Initial Screening, Technical, Final HR, On-Site)
+- Select Interview Type (Online / Video Call or On-Site)
+- Enter Meeting Link (Zoom/Google Meet) or Physical Address
+- Select Interview Date, Start Time, and End Time
+- Click "Confirm & Schedule Interview"
+- Verify interview appears in employer "Scheduled Interviews" calendar/list
+- Verify automated notification is dispatched to applicant
+
+================================================================================
+PART 3: ADMIN & PLATFORM OVERSIGHT
+================================================================================
+- Admin login with 2FA verification
+- View System Overview Analytics & Dashboard metrics
+- Check User Management (Search, view applicant & employer accounts)
+- Test user account activation and deactivation toggles
+- Review and moderate job postings
+- Inspect Audit Logs for recent login and security events
+
+================================================================================
+PART 4: CORE INFRASTRUCTURE & ERROR DIAGNOSTICS (WHAT TO CHECK)
+================================================================================
+- Verify Backend Health Endpoint: https://elitecruit.onrender.com/api/health
+- Verify UptimeRobot monitor is UP (green 100%, pinging every 5 minutes)
+- Verify Render Web Service status is "Live" (no crash restarts in logs)
+- Verify Supabase PostgreSQL status is "Active" in Singapore region
+- If 2FA email is slow, check Spam folder and inspect Render Live Logs for code
+- If Brevo stops sending, check daily 300 email quota on Brevo dashboard
+- If uploads fail, verify file size is below 10MB and format is PDF/DOCX/Image
+- If UI does not respond, press F12 in browser and check Console for red errors
+================================================================================
