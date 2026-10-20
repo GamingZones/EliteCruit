@@ -255,6 +255,13 @@
   background: #ffffff;
   min-height: 84px;
   box-sizing: border-box;
+  overflow: visible;
+  position: relative;
+}
+
+.job-post-row:hover,
+.job-post-row:focus-within {
+  z-index: 25;
 }
 
 .job-post-row strong,
@@ -293,6 +300,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  overflow: visible;
 }
 
 .job-post-location {
@@ -300,8 +308,8 @@
   display: flex;
   align-items: center;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  position: relative;
 }
 
 .location-meta {
@@ -533,17 +541,20 @@
   line-height: 1;
   transition: transform 0.18s ease, background-color 0.15s ease, border-color 0.15s ease;
   vertical-align: middle;
+  z-index: 5;
 }
 
-.overflow-dots-badge:hover {
+.overflow-dots-badge:hover,
+.overflow-dots-badge:focus {
   background: #d4e5f7;
   border-color: #a4c6e8;
   transform: scale(1.08);
+  z-index: 100;
 }
 
 .overflow-tooltip {
   position: absolute;
-  bottom: 130%;
+  bottom: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%) translateY(4px);
   background: #091f34;
@@ -553,15 +564,15 @@
   font-size: 0.78rem;
   font-weight: 400;
   white-space: normal;
-  max-width: 340px;
-  min-width: 160px;
+  max-width: 360px;
+  min-width: 180px;
   width: max-content;
-  box-shadow: 0 4px 16px rgba(9, 31, 52, 0.35);
+  box-shadow: 0 6px 20px rgba(9, 31, 52, 0.45);
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  z-index: 10000;
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+  z-index: 99999;
   line-height: 1.45;
 }
 
@@ -592,9 +603,10 @@
 
 .overflow-dots-badge:hover .overflow-tooltip,
 .overflow-dots-badge:focus .overflow-tooltip {
-  opacity: 1;
-  visibility: visible;
-  transform: translateX(-50%) translateY(0);
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateX(-50%) translateY(0) !important;
+  pointer-events: auto !important;
 }
 
 @media (max-width: 1020px) {

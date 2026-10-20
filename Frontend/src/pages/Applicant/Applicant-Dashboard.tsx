@@ -781,11 +781,8 @@ export default function ApplicantDashboard() {
               href="/applicant-dashboard"
               className="applicant-workspace-title active"
               onClick={(e) => {
-                const target = e.target as HTMLElement;
-                if (target.closest(".title-caret-btn")) {
-                  e.preventDefault();
-                  setIsWorkspaceOpen((prev) => !prev);
-                }
+                e.preventDefault();
+                setIsWorkspaceOpen((prev) => !prev);
               }}
             >
               <span className="title-main">
@@ -850,13 +847,25 @@ export default function ApplicantDashboard() {
             );
           })}
         </ul>
+
         <div className="appdash-profile-control">
           <button type="button" className="appdash-profile-anchor" onClick={() => setIsProfileMenuOpen((value) => !value)} aria-expanded={isProfileMenuOpen}>
             <span className="item-icon"><SideIcon name="profile" /></span>
             <span className="profile-user-copy"><strong>{applicantLabel}</strong><small>Applicant</small></span>
             <ChevronIcon direction={isProfileMenuOpen ? "down" : "up"} />
           </button>
-          {isProfileMenuOpen && <div className="appdash-profile-menu"><a href="/my-profile"><SideIcon name="profile" />My Profile</a><button type="button" className="appdash-profile-menu-btn" onClick={() => setIsLogoutModalOpen(true)}><SideIcon name="logout" />Logout</button></div>}
+          {isProfileMenuOpen && (
+            <div className="appdash-profile-menu">
+              <a href="/my-profile"><SideIcon name="profile" />My Profile</a>
+            <a href="/settings">
+              <SideIcon name="settings" />
+              Settings
+            </a>
+              <button type="button" className="appdash-profile-menu-btn" onClick={() => setIsLogoutModalOpen(true)}>
+                <SideIcon name="logout" />Logout
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 
@@ -1052,6 +1061,7 @@ export default function ApplicantDashboard() {
                   <button
                     key={key}
                     type="button"
+                    className={`inv-filter-btn ${invitationFilter === key ? "active" : ""}`}
                     onClick={() => setInvitationFilter(key)}
                     style={{
                       padding: "6px 14px",

@@ -1437,7 +1437,7 @@ export function getAreaForCandidate(
 }
 
 export default function EmployerApplicantFinder() {
-  const [isScreeningOpen, setIsScreeningOpen] = useState(true);
+  const [isScreeningOpen, setIsScreeningOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   const unreadNotifCount = useUnreadNotificationsCount();
@@ -3024,6 +3024,9 @@ export default function EmployerApplicantFinder() {
               <a href="/employer-company-profile">
                 <EmployerIcon name="profile" />Company Profile
               </a>
+              <a href="/settings">
+                <SideIcon name="settings" />Settings
+              </a>
               <button
                 type="button"
                 className="appdash-profile-menu-btn"
@@ -3382,7 +3385,7 @@ export default function EmployerApplicantFinder() {
                     >
                       <button
                         type="button"
-                        className="finder-btn"
+                        className="finder-btn finder-pagination-btn"
                         disabled={candidatePage === 1}
                         onClick={() => {
                           setCandidatePage((p) => Math.max(1, p - 1));
@@ -3408,7 +3411,7 @@ export default function EmployerApplicantFinder() {
                       </span>
                       <button
                         type="button"
-                        className="finder-btn"
+                        className="finder-btn finder-pagination-btn"
                         disabled={candidatePage === totalCandidatePages}
                         onClick={() => {
                           setCandidatePage((p) => Math.min(totalCandidatePages, p + 1));
@@ -4144,14 +4147,13 @@ export default function EmployerApplicantFinder() {
                               return (
                                 <div
                                   key={`${doc.id}-${doc.file_name}`}
+                                  className="cand-doc-item-card"
                                   style={{
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "space-between",
                                     padding: "12px 14px",
-                                    border: "1px solid #cbd5e1",
                                     borderRadius: "10px",
-                                    background: "#f8fafc",
                                     transition: "all 0.15s ease",
                                   }}
                                 >
@@ -4246,7 +4248,7 @@ export default function EmployerApplicantFinder() {
                             })}
                           </div>
                         ) : (
-                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 16px", textAlign: "center", background: "#f8fafc", borderRadius: "10px", border: "1px dashed #cbd5e1", color: "#64748b" }}>
+                          <div className="cand-docs-empty-state" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 16px", textAlign: "center", borderRadius: "10px" }}>
                             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.6" style={{ marginBottom: "10px" }}>
                               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                               <polyline points="14 2 14 8 20 8" />
@@ -4360,7 +4362,7 @@ export default function EmployerApplicantFinder() {
               </div>
 
               <form onSubmit={handleInitiateSendInvite} style={{ padding: "20px", display: "grid", gap: "14px", minWidth: 0, width: "100%", boxSizing: "border-box" }}>
-                <div style={{ display: "flex", gap: "12px", alignItems: "center", background: "#f8fafc", padding: "10px 12px", borderRadius: "8px" }}>
+                <div className="cand-invite-summary-card" style={{ display: "flex", gap: "12px", alignItems: "center", padding: "10px 12px", borderRadius: "8px" }}>
                   {(() => {
                     const pic = inviteCandidate.profile_picture_path;
                     const picUrl = pic
@@ -4550,7 +4552,7 @@ export default function EmployerApplicantFinder() {
                     value={customInviteMsg}
                     onChange={(e) => setCustomInviteMsg(e.target.value)}
                     rows={3}
-                    style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", fontFamily: "inherit", boxSizing: "border-box" }}
+                    className="cand-invite-textarea" style={{ width: "100%", padding: "8px", borderRadius: "6px", fontSize: "0.82rem", fontFamily: "inherit", boxSizing: "border-box" }}
                   />
                 </label>
 
@@ -4590,6 +4592,7 @@ export default function EmployerApplicantFinder() {
 
             return (
               <div
+                className="finder-job-details-overlay"
                 style={{
                   position: "fixed",
                   inset: 0,
@@ -4600,7 +4603,7 @@ export default function EmployerApplicantFinder() {
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "20px",
-                  zIndex: 25000,
+                  zIndex: 45000,
                   padding: "24px 36px",
                   overflowX: "hidden",
                   fontFamily: '"Manrope", sans-serif',
@@ -4612,8 +4615,8 @@ export default function EmployerApplicantFinder() {
               >
                 {/* ── 3rd Container: Job Details Card (POSITIONED ON THE LEFT) ── */}
                 <div
+                  className="finder-side-job-details-modal"
                   style={{
-                    background: "#ffffff",
                     borderRadius: "16px",
                     width: "100%",
                     maxWidth: "540px",
@@ -4632,6 +4635,7 @@ export default function EmployerApplicantFinder() {
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div
+                    className="finder-side-modal-header"
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
@@ -4648,6 +4652,7 @@ export default function EmployerApplicantFinder() {
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                       <div
+                        className="jd-side-match-badge"
                         style={{
                           background: matchStyle.track,
                           color: matchStyle.color,
@@ -4701,19 +4706,19 @@ export default function EmployerApplicantFinder() {
                         {viewingJobDetails.title}
                       </h4>
                       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
-                        <span style={{ background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0", padding: "4px 10px", borderRadius: "999px", fontSize: "0.76rem", fontWeight: 700, fontFamily: '"Manrope", sans-serif' }}>
+                        <span className="jd-side-status-pill" style={{ background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0", padding: "4px 10px", borderRadius: "999px", fontSize: "0.76rem", fontWeight: 700, fontFamily: '"Manrope", sans-serif' }}>
                           {viewingJobDetails.status ? viewingJobDetails.status.toUpperCase() : "OPEN"}
                         </span>
                         {(viewingJobDetails.is_urgent === 1 || viewingJobDetails.is_urgent === true || String(viewingJobDetails.is_urgent) === "1") && (
-                          <span style={{ background: "#fef2f2", color: "#b91c1c", border: "1px solid #fca5a5", padding: "4px 10px", borderRadius: "999px", fontSize: "0.76rem", fontWeight: 700, fontFamily: '"Manrope", sans-serif' }}>
+                          <span className="jd-side-urgent-pill" style={{ background: "#fef2f2", color: "#b91c1c", border: "1px solid #fca5a5", padding: "4px 10px", borderRadius: "999px", fontSize: "0.76rem", fontWeight: 700, fontFamily: '"Manrope", sans-serif' }}>
                             Urgent
                           </span>
                         )}
-                        <span style={{ background: "#e0f2fe", color: "#0369a1", padding: "4px 12px", borderRadius: "999px", fontSize: "0.78rem", fontWeight: 700, fontFamily: '"Manrope", sans-serif' }}>
+                        <span className="jd-side-setup-pill" style={{ background: "#e0f2fe", color: "#0369a1", padding: "4px 12px", borderRadius: "999px", fontSize: "0.78rem", fontWeight: 700, fontFamily: '"Manrope", sans-serif' }}>
                           {viewingJobDetails.work_arrangement || "On-Site"}
                         </span>
                         {(jobSalaryMin || jobSalaryMax) ? (
-                          <span style={{ background: "#fef3c7", color: "#b45309", padding: "4px 12px", borderRadius: "999px", fontSize: "0.78rem", fontWeight: 700, fontFamily: '"Manrope", sans-serif' }}>
+                          <span className="jd-side-salary-pill" style={{ background: "#fef3c7", color: "#b45309", padding: "4px 12px", borderRadius: "999px", fontSize: "0.78rem", fontWeight: 700, fontFamily: '"Manrope", sans-serif' }}>
                             PHP {Number(jobSalaryMin).toLocaleString()} - {Number(jobSalaryMax).toLocaleString()}
                           </span>
                         ) : null}
@@ -4745,7 +4750,7 @@ export default function EmployerApplicantFinder() {
                       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                         {parseCompetencyDisplayTags(viewingJobDetails.required_skills || (viewingJobDetails as any).skills || "").length > 0 ? (
                           parseCompetencyDisplayTags(viewingJobDetails.required_skills || (viewingJobDetails as any).skills || "").map((sk, idx) => (
-                            <span key={idx} style={{ background: "#f0f9ff", color: "#0369a1", border: "1px solid #bae6fd", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                            <span key={idx} className="jd-side-tag jd-side-skill-tag" style={{ background: "#f0f9ff", color: "#0369a1", border: "1px solid #bae6fd", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
                               {sk}
                             </span>
                           ))
@@ -4765,7 +4770,7 @@ export default function EmployerApplicantFinder() {
                       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                         {parseCompetencyDisplayTags(viewingJobDetails.qualifications || (viewingJobDetails as any).required_qualifications || "").length > 0 ? (
                           parseCompetencyDisplayTags(viewingJobDetails.qualifications || (viewingJobDetails as any).required_qualifications || "").map((qu, idx) => (
-                            <span key={idx} style={{ background: "#faf5ff", color: "#7e22ce", border: "1px solid #e9d5ff", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                            <span key={idx} className="jd-side-tag jd-side-qual-tag" style={{ background: "#faf5ff", color: "#7e22ce", border: "1px solid #e9d5ff", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
                               {qu}
                             </span>
                           ))
@@ -4785,7 +4790,7 @@ export default function EmployerApplicantFinder() {
                       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                         {parseCompetencyDisplayTags((viewingJobDetails as any).certifications || (viewingJobDetails as any).required_certifications || "").length > 0 ? (
                           parseCompetencyDisplayTags((viewingJobDetails as any).certifications || (viewingJobDetails as any).required_certifications || "").map((cert, idx) => (
-                            <span key={idx} style={{ background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                            <span key={idx} className="jd-side-tag jd-side-cert-tag" style={{ background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
                               {cert}
                             </span>
                           ))
@@ -4800,6 +4805,7 @@ export default function EmployerApplicantFinder() {
 
                   {/* Modal Footer with Application count, Close date, and Recruit Button */}
                   <div
+                    className="finder-side-modal-footer"
                     style={{
                       padding: "14px 24px",
                       borderTop: "1px solid #f1f5f9",
@@ -4909,8 +4915,8 @@ export default function EmployerApplicantFinder() {
 
                     return (
                       <div
+                        className="finder-side-match-breakdown-modal"
                         style={{
-                          background: "#ffffff",
                           borderRadius: "16px",
                           width: "100%",
                           maxWidth: "680px",
@@ -4929,6 +4935,7 @@ export default function EmployerApplicantFinder() {
                       >
                         {/* Header */}
                         <div
+                          className="finder-side-modal-header"
                           style={{
                             display: "flex",
                             justifyContent: "space-between",

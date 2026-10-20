@@ -2,6 +2,44 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./styles/base.css";
+import { initClientSecurity } from "./utils/security";
+
+// Initialize client-side inspection protection (block right-click/F12 + anti-debugger trap)
+initClientSecurity();
+
+// Bootstrap theme preference early to prevent layout/color flickering
+if (typeof window !== "undefined") {
+  try {
+    const applyGlobalTheme = () => {
+      const savedTheme = localStorage.getItem("elitecruit-theme");
+      const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if (savedTheme === "dark" || (savedTheme === "system" && prefersDark)) {
+        document.documentElement.setAttribute("data-theme", "dark");
+      } else {
+        document.documentElement.removeAttribute("data-theme");
+      }
+    };
+
+    applyGlobalTheme();
+
+    if (window.matchMedia) {
+      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+        const currentSaved = localStorage.getItem("elitecruit-theme");
+        if (currentSaved === "system") {
+          applyGlobalTheme();
+        }
+      });
+    }
+
+    window.addEventListener("storage", (e) => {
+      if (e.key === "elitecruit-theme") {
+        applyGlobalTheme();
+      }
+    });
+
+    window.addEventListener("elitecruit-theme-change", applyGlobalTheme);
+  } catch {}
+}
 
 // Install transparent authentication & 401 fallback interceptor for all API requests
 if (typeof window !== "undefined") {

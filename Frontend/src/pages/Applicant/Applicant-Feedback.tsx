@@ -143,7 +143,7 @@ export default function ApplicantFeedback() {
   const unreadNotifCount = useUnreadNotificationsCount();
   const unreadMessagesCount = useUnreadMessagesCount();
   const [role, setRole] = useState<"applicant" | "employer">("applicant");
-  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(true);
+  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const [isScreeningOpen, setIsScreeningOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -541,6 +541,7 @@ export default function ApplicantFeedback() {
             {isProfileMenuOpen && (
               <div className="appdash-profile-menu">
                 <a href="/employer-company-profile"><EmployerIcon name="profile" />Company Profile</a>
+              <a href="/settings"><SideIcon name="settings" />Settings</a>
                 <button
                   type="button"
                   className="appdash-profile-menu-btn"
@@ -565,11 +566,8 @@ export default function ApplicantFeedback() {
                 href="/applicant-dashboard"
                 className="applicant-workspace-title"
                 onClick={(e) => {
-                  const target = e.target as HTMLElement;
-                  if (target.closest(".title-caret-btn")) {
-                    e.preventDefault();
-                    setIsWorkspaceOpen((prev) => !prev);
-                  }
+                  e.preventDefault();
+                  setIsWorkspaceOpen((prev) => !prev);
                 }}
               >
                 <span className="title-main">
@@ -620,6 +618,10 @@ export default function ApplicantFeedback() {
             {isProfileMenuOpen && (
               <div className="appdash-profile-menu">
                 <a href="/my-profile"><SideIcon name="profile" />My Profile</a>
+            <a href="/settings">
+              <SideIcon name="settings" />
+              Settings
+            </a>
                 <button
                   type="button"
                   className="appdash-profile-menu-btn"
@@ -651,13 +653,13 @@ export default function ApplicantFeedback() {
           </div>
         </header>
 
-        <section className="hero-card" style={{ margin: "16px 28px" }}>
+        <section className="hero-card" style={{ margin: "16px 28px", padding: "14px 20px" }}>
           <div>
             <small>{isEmployerRole ? "Employer Workspace" : "Candidate Workspace"}</small>
-            <h1 style={{ margin: "4px 0 0", fontSize: "2rem" }}>
+            <h1 style={{ margin: "4px 0 0", fontSize: "1.3rem", fontWeight: 700 }}>
               {isEmployerRole ? "Recruitment Feedback & Candidate Ratings" : "Company Feedback & Ratings"}
             </h1>
-            <p style={{ margin: "8px 0 0", color: "#365877", fontSize: "0.85rem" }}>
+            <p style={{ margin: "4px 0 0", color: "#365877", fontSize: "0.85rem" }}>
               {isEmployerRole
                 ? "Rate and review candidate interactions for accepted and denied recruitment invitations."
                 : "Share your recruitment and workplace experience to help rate potential employers for accepted and denied applications."}
@@ -707,13 +709,13 @@ export default function ApplicantFeedback() {
               </button>
             </div>
           ) : targetOptions.length === 0 ? (
-            <div style={{ padding: "24px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0", textAlign: "center", marginTop: "16px" }}>
-              <p style={{ color: "#475569", margin: 0, fontSize: "0.92rem", fontWeight: 700 }}>
+            <div className="feedback-empty-card" style={{ padding: "24px", borderRadius: "10px", textAlign: "center", marginTop: "16px" }}>
+              <p className="feedback-empty-card-title" style={{ margin: 0, fontSize: "0.92rem", fontWeight: 700 }}>
                 {isEmployerRole
                   ? "No eligible accepted or denied candidates available for feedback."
                   : "No eligible accepted or denied applications available for feedback."}
               </p>
-              <small style={{ color: "#64748b", display: "block", marginTop: "6px", fontSize: "0.82rem" }}>
+              <small className="feedback-empty-card-sub" style={{ display: "block", marginTop: "6px", fontSize: "0.82rem" }}>
                 Feedback can only be submitted for applications marked as Accepted or Denied by the employer.
               </small>
             </div>
@@ -741,7 +743,7 @@ export default function ApplicantFeedback() {
                 </select>
               </label>
 
-              <label style={{ display: "grid", gap: "6px", fontSize: "0.85rem", color: "#01294a", fontWeight: 600 }}>
+              <label className="feedback-form-label" style={{ display: "grid", gap: "6px", fontSize: "0.85rem", fontWeight: 600 }}>
                 Rating
                 <div style={{ display: "flex", gap: "8px" }}>
                   {[1, 2, 3, 4, 5].map((star) => (
@@ -763,7 +765,7 @@ export default function ApplicantFeedback() {
                 </div>
               </label>
 
-              <label style={{ display: "grid", gap: "6px", fontSize: "0.85rem", color: "#01294a", fontWeight: 600 }}>
+              <label className="feedback-form-label" style={{ display: "grid", gap: "6px", fontSize: "0.85rem", fontWeight: 600 }}>
                 Comments & Review
                 <textarea
                   rows={4}
@@ -805,18 +807,16 @@ export default function ApplicantFeedback() {
               return (
                 <div
                   key={item.id}
+                  className="feedback-history-card"
                   style={{
                     padding: "16px 20px",
-                    border: "1px solid #e2e8f0",
                     borderRadius: "10px",
-                    background: "#ffffff",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
                     <div>
-                      <strong style={{ fontSize: "1rem", color: "#01294a" }}>{item.targetName}</strong>
-                      <span style={{ fontSize: "0.82rem", color: "#64748b", marginLeft: "10px" }}>{item.jobTitle}</span>
+                      <strong className="feedback-history-target" style={{ fontSize: "1rem" }}>{item.targetName}</strong>
+                      <span className="feedback-history-sub" style={{ fontSize: "0.82rem", marginLeft: "10px" }}>{item.jobTitle}</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       <span
@@ -843,7 +843,7 @@ export default function ApplicantFeedback() {
                   </div>
 
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" }}>
-                    <p style={{ margin: 0, fontSize: "0.88rem", color: "#334155", lineHeight: "1.5", flex: 1 }}>
+                    <p className="feedback-history-comment" style={{ margin: 0, fontSize: "0.88rem", lineHeight: "1.5", flex: 1 }}>
                       "{item.comments}"
                     </p>
 

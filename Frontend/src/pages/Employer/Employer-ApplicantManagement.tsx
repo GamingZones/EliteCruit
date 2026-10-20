@@ -2033,6 +2033,7 @@ export default function EmployerApplicantManagement() {
           {isProfileMenuOpen && (
             <div className="appdash-profile-menu">
               <a href="/employer-company-profile"><EmployerIcon name="profile" />Company Profile</a>
+              <a href="/settings"><SideIcon name="settings" />Settings</a>
               <button
                 type="button"
                 className="appdash-profile-menu-btn"
@@ -2773,7 +2774,7 @@ export default function EmployerApplicantManagement() {
                         return (
                           <div
                             key={a.id}
-                            draggable
+                              draggable
                             onDragStart={(e) => handleDragStart(e, a.id)}
                             onDragEnd={handleDragEnd}
                             className={`ticket ${selectedAppId === a.id ? "active-ticket" : ""} ${draggedAppId === a.id ? "dragging" : ""}`}
@@ -2828,7 +2829,7 @@ export default function EmployerApplicantManagement() {
                         return (
                           <div
                             key={a.id}
-                            draggable={isStaged}
+                              draggable={isStaged}
                             onDragStart={(e) => isStaged && handleDragStart(e, a.id)}
                             onDragEnd={handleDragEnd}
                             className={`ticket ${isFinalized ? "ticket-finalized" : "ticket-staged ticket-staged-approved"} ${selectedAppId === a.id ? "active-ticket" : ""} ${draggedAppId === a.id ? "dragging" : ""}`}
@@ -2892,7 +2893,7 @@ export default function EmployerApplicantManagement() {
                         return (
                           <div
                             key={a.id}
-                            draggable={isStaged}
+                              draggable={isStaged}
                             onDragStart={(e) => isStaged && handleDragStart(e, a.id)}
                             onDragEnd={handleDragEnd}
                             className={`ticket ${isFinalized ? "ticket-finalized" : "ticket-staged ticket-staged-denied"} ${selectedAppId === a.id ? "active-ticket" : ""} ${draggedAppId === a.id ? "dragging" : ""}`}
@@ -3171,6 +3172,7 @@ export default function EmployerApplicantManagement() {
                   <button
                     key={filterKey}
                     type="button"
+                    className={`invitation-filter-btn ${invitationFilter === filterKey ? "active" : ""}`}
                     onClick={() => setInvitationFilter(filterKey)}
                     style={{
                       padding: "5px 12px",
@@ -3857,6 +3859,7 @@ export default function EmployerApplicantManagement() {
                                 return (
                                   <div
                                     key={`${doc.id}-${doc.file_name}`}
+                                    className="cand-doc-item-card"
                                     style={{
                                       display: "flex",
                                       alignItems: "center",
@@ -3914,6 +3917,7 @@ export default function EmployerApplicantManagement() {
                                       </div>
                                       <div style={{ minWidth: 0, flex: 1 }}>
                                         <strong
+                                          className="cand-doc-item-title"
                                           style={{
                                             display: "block",
                                             fontSize: "0.9rem",
@@ -3926,7 +3930,7 @@ export default function EmployerApplicantManagement() {
                                         >
                                           {doc.file_name}
                                         </strong>
-                                        <small style={{ color: "#64748b", fontSize: "0.78rem" }}>{subtext}</small>
+                                        <small className="cand-doc-item-subtext" style={{ color: "#64748b", fontSize: "0.78rem" }}>{subtext}</small>
                                       </div>
                                     </div>
                                     <div style={{ display: "flex", gap: "6px", alignItems: "center", flexShrink: 0 }}>
@@ -4544,6 +4548,7 @@ export default function EmployerApplicantManagement() {
                         return (
                           <div
                             key={otherJob.id}
+                            className="jd-other-job-card"
                             style={{
                               background: "#ffffff",
                               border: "1px solid #e2e8f0",
@@ -4590,14 +4595,12 @@ export default function EmployerApplicantManagement() {
 
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px", flexShrink: 0 }}>
                               <div
+                                className={`jd-other-job-match-pill ${percent >= 85 ? "green" : percent >= 70 ? "yellow" : "red"}`}
                                 style={{
-                                  background: matchStyle.track,
-                                  color: matchStyle.color,
                                   fontWeight: 800,
                                   fontSize: "0.82rem",
                                   padding: "4px 10px",
                                   borderRadius: "999px",
-                                  border: `1px solid ${matchStyle.fill}`,
                                   whiteSpace: "nowrap",
                                   fontFamily: '"Manrope", sans-serif',
                                 }}
@@ -4606,6 +4609,7 @@ export default function EmployerApplicantManagement() {
                               </div>
                               <button
                                 type="button"
+                                className="details-btn jd-other-job-details-btn"
                                 style={{
                                   background: "#01294a",
                                   color: "#ffffff",
@@ -4683,7 +4687,7 @@ export default function EmployerApplicantManagement() {
                 }}
               >
                 {/* ── 3rd Container: Job Details Card (POSITIONED ON THE LEFT) ── */}
-                <div
+                <div className="jd-details-side-card"
                   style={{
                     background: "#ffffff",
                     borderRadius: "16px",
@@ -4703,7 +4707,7 @@ export default function EmployerApplicantManagement() {
                   }}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div
+                  <div className="jd-details-side-header"
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
@@ -4720,14 +4724,12 @@ export default function EmployerApplicantManagement() {
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                       <div
+                        className={`jd-match-header-badge ${detailsMatchPct >= 85 ? "green" : detailsMatchPct >= 70 ? "yellow" : "red"}`}
                         style={{
-                          background: matchStyle.track,
-                          color: matchStyle.color,
                           fontWeight: 800,
                           fontSize: "0.82rem",
                           padding: "4px 10px",
                           borderRadius: "999px",
-                          border: `1px solid ${matchStyle.fill}`,
                           whiteSpace: "nowrap",
                           fontFamily: '"Manrope", sans-serif',
                         }}
@@ -4781,19 +4783,19 @@ export default function EmployerApplicantManagement() {
                         {selectedJobDetails.title}
                       </h4>
                       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
-                        <span style={{ background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0", padding: "4px 10px", borderRadius: "999px", fontSize: "0.76rem", fontWeight: 700, fontFamily: '"Manrope", sans-serif' }}>
+                        <span className="jd-side-status-pill" style={{ background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0", padding: "4px 10px", borderRadius: "999px", fontSize: "0.76rem", fontWeight: 700, fontFamily: '"Manrope", sans-serif' }}>
                           {selectedJobDetails.status ? selectedJobDetails.status.toUpperCase() : "OPEN"}
                         </span>
                         {(selectedJobDetails.is_urgent === 1 || selectedJobDetails.is_urgent === true || String(selectedJobDetails.is_urgent) === "1") && (
-                          <span style={{ background: "#fef2f2", color: "#b91c1c", border: "1px solid #fca5a5", padding: "4px 10px", borderRadius: "999px", fontSize: "0.76rem", fontWeight: 700, fontFamily: '"Manrope", sans-serif' }}>
+                          <span className="jd-side-urgent-pill" style={{ background: "#fef2f2", color: "#b91c1c", border: "1px solid #fca5a5", padding: "4px 10px", borderRadius: "999px", fontSize: "0.76rem", fontWeight: 700, fontFamily: '"Manrope", sans-serif' }}>
                             Urgent
                           </span>
                         )}
-                        <span style={{ background: "#e0f2fe", color: "#0369a1", padding: "4px 12px", borderRadius: "999px", fontSize: "0.78rem", fontWeight: 700, fontFamily: '"Manrope", sans-serif' }}>
+                        <span className="jd-side-setup-pill" style={{ background: "#e0f2fe", color: "#0369a1", padding: "4px 12px", borderRadius: "999px", fontSize: "0.78rem", fontWeight: 700, fontFamily: '"Manrope", sans-serif' }}>
                           {selectedJobDetails.work_arrangement || "On-Site"}
                         </span>
                         {(selectedJobDetails.salary_min || selectedJobDetails.salary_max) && (
-                          <span style={{ background: "#fef3c7", color: "#b45309", padding: "4px 12px", borderRadius: "999px", fontSize: "0.78rem", fontWeight: 700, fontFamily: '"Manrope", sans-serif' }}>
+                          <span className="jd-side-salary-pill" style={{ background: "#fef3c7", color: "#b45309", padding: "4px 12px", borderRadius: "999px", fontSize: "0.78rem", fontWeight: 700, fontFamily: '"Manrope", sans-serif' }}>
                             PHP {Number(selectedJobDetails.salary_min || 0).toLocaleString()} - {Number(selectedJobDetails.salary_max || 0).toLocaleString()}
                           </span>
                         )}
@@ -4825,7 +4827,7 @@ export default function EmployerApplicantManagement() {
                       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                         {parseCompetencyDisplayTags(selectedJobDetails.required_skills || selectedJobDetails.skills || "").length > 0 ? (
                           parseCompetencyDisplayTags(selectedJobDetails.required_skills || selectedJobDetails.skills || "").map((sk, idx) => (
-                            <span key={idx} style={{ background: "#f0f9ff", color: "#0369a1", border: "1px solid #bae6fd", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                            <span key={idx} className="jd-side-tag jd-side-skill-tag" style={{ background: "#f0f9ff", color: "#0369a1", border: "1px solid #bae6fd", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
                               {sk}
                             </span>
                           ))
@@ -4845,7 +4847,7 @@ export default function EmployerApplicantManagement() {
                       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                         {parseCompetencyDisplayTags(selectedJobDetails.qualifications || selectedJobDetails.required_qualifications || "").length > 0 ? (
                           parseCompetencyDisplayTags(selectedJobDetails.qualifications || selectedJobDetails.required_qualifications || "").map((qu, idx) => (
-                            <span key={idx} style={{ background: "#faf5ff", color: "#7e22ce", border: "1px solid #e9d5ff", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                            <span key={idx} className="jd-side-tag jd-side-qual-tag" style={{ background: "#faf5ff", color: "#7e22ce", border: "1px solid #e9d5ff", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
                               {qu}
                             </span>
                           ))
@@ -4865,7 +4867,7 @@ export default function EmployerApplicantManagement() {
                       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                         {parseCompetencyDisplayTags(selectedJobDetails.certifications || selectedJobDetails.required_certifications || "").length > 0 ? (
                           parseCompetencyDisplayTags(selectedJobDetails.certifications || selectedJobDetails.required_certifications || "").map((cert, idx) => (
-                            <span key={idx} style={{ background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                            <span key={idx} className="jd-side-tag jd-side-cert-tag" style={{ background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
                               {cert}
                             </span>
                           ))
@@ -4879,7 +4881,7 @@ export default function EmployerApplicantManagement() {
                   </div>
 
                   {/* Modal Footer with Application count, Close date, and Recruit Button */}
-                  <div
+                  <div className="jd-details-side-footer"
                     style={{
                       padding: "14px 24px",
                       borderTop: "1px solid #f1f5f9",
@@ -4986,7 +4988,7 @@ export default function EmployerApplicantManagement() {
                     const bdStyle = getMatchColorClass(matchDetails.score);
 
                     return (
-                      <div
+                      <div className="jd-match-breakdown-card"
                         style={{
                           background: "#ffffff",
                           borderRadius: "16px",
@@ -5006,7 +5008,7 @@ export default function EmployerApplicantManagement() {
                         onClick={(e) => e.stopPropagation()}
                       >
                         {/* Header */}
-                        <div
+                        <div className="jd-match-breakdown-header"
                           style={{
                             display: "flex",
                             justifyContent: "space-between",
@@ -5388,6 +5390,8 @@ export default function EmployerApplicantManagement() {
           <div
             className="cand-details-overlay"
             style={{
+              position: "fixed",
+              inset: 0,
               zIndex: 30000,
               display: "flex",
               alignItems: "center",
@@ -5401,9 +5405,11 @@ export default function EmployerApplicantManagement() {
             onClick={closeRecruitModal}
           >
             <div
-              className="cand-details-panel"
+              className="cand-details-panel recruit-invite-panel cand-invite-panel"
               style={{
                 maxWidth: "520px",
+                height: "auto",
+                minHeight: "unset",
                 width: "90%",
                 borderRadius: "16px",
                 background: "#ffffff",
@@ -5417,7 +5423,7 @@ export default function EmployerApplicantManagement() {
               onClick={(e) => e.stopPropagation()}
             >
               <div
-                className="cand-details-docs-header"
+                className="cand-details-docs-header recruit-invite-header"
                 style={{
                   padding: "16px 20px",
                   background: "#f8fbff",
@@ -5432,7 +5438,7 @@ export default function EmployerApplicantManagement() {
                 </h3>
                 <button
                   type="button"
-                  className="cand-details-docs-back"
+                  className="cand-details-docs-back recruit-invite-close"
                   onClick={closeRecruitModal}
                   style={{
                     background: "none",
@@ -5446,9 +5452,9 @@ export default function EmployerApplicantManagement() {
                 </button>
               </div>
 
-              <form onSubmit={handleSendRecruitmentInvite} style={{ padding: "20px", display: "grid", gap: "16px", fontFamily: '"Manrope", sans-serif' }}>
+              <form onSubmit={handleSendRecruitmentInvite} className="recruit-invite-form" style={{ padding: "20px", display: "grid", gap: "16px", fontFamily: '"Manrope", sans-serif' }}>
                 {/* Applicant Summary */}
-                <div style={{ display: "flex", gap: "12px", alignItems: "center", padding: "12px 14px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                <div className="recruit-applicant-summary" style={{ display: "flex", gap: "12px", alignItems: "center", padding: "12px 14px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
                   {(() => {
                     const pic = (reviewModalApp as any).profile_picture_path || reviewModalProfile?.profile_picture_path;
                     const picUrl = pic
@@ -5484,7 +5490,7 @@ export default function EmployerApplicantManagement() {
                 </div>
 
                 {/* Target Job Info */}
-                <div style={{ padding: "12px 14px", background: "#eff6ff", borderRadius: "10px", border: "1px solid #bfdbfe", display: "flex", flexDirection: "column", gap: "4px" }}>
+                <div className="recruit-target-job-box" style={{ padding: "12px 14px", background: "#eff6ff", borderRadius: "10px", border: "1px solid #bfdbfe", display: "flex", flexDirection: "column", gap: "4px" }}>
                   <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: "0.5px" }}>Target Job Opening</span>
                   <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 800, color: "#01294a" }}>{selectedJobDetails.title}</h4>
                   <span style={{ fontSize: "0.78rem", color: "#475569" }}>{selectedJobDetails.location || "Cavite"} • {selectedJobDetails.work_arrangement || "On-Site"}</span>
@@ -5494,6 +5500,7 @@ export default function EmployerApplicantManagement() {
                 <label style={{ display: "grid", gap: "6px", fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", fontFamily: '"Manrope", sans-serif' }}>
                   Invitation Message:
                   <textarea
+                    className="recruit-msg-textarea"
                     value={recruitCustomMsg}
                     onChange={(e) => setRecruitCustomMsg(e.target.value)}
                     rows={4}
@@ -5616,6 +5623,7 @@ export default function EmployerApplicantManagement() {
                       {decisionModalApps.map((a) => (
                         <span
                           key={a.id}
+                          className="decision-candidate-chip"
                           style={{
                             display: "inline-flex",
                             alignItems: "center",

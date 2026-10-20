@@ -588,10 +588,9 @@ function parseExpectedSalary(raw: string | null | undefined) {
 export default function JobSearch() {
   const unreadNotifCount = useUnreadNotificationsCount();
   const unreadMessagesCount = useUnreadMessagesCount();
-  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(true);
+  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
-  const [mode, setMode] = useState<"standard" | "easy">("standard");
   const [applicantLabel, setApplicantLabel] = useState("Applicant");
   const [jobs, setJobs] = useState<JobCard[]>([]);
   const [jobsMessage, setJobsMessage] = useState("");
@@ -1167,11 +1166,8 @@ export default function JobSearch() {
               href="/applicant-dashboard"
               className="applicant-workspace-title"
               onClick={(e) => {
-                const target = e.target as HTMLElement;
-                if (target.closest(".title-caret-btn")) {
-                  e.preventDefault();
-                  setIsWorkspaceOpen((prev) => !prev);
-                }
+                e.preventDefault();
+                setIsWorkspaceOpen((prev) => !prev);
               }}
             >
               <span className="title-main">
@@ -1208,6 +1204,11 @@ export default function JobSearch() {
           {isProfileMenuOpen && (
             <div className="appdash-profile-menu">
               <a href="/my-profile"><SideIcon name="profile" />My Profile</a>
+            <a href="/settings">
+              <SideIcon name="settings" />
+              Settings
+            </a>
+              
               <button
                 type="button"
                 className="appdash-profile-menu-btn"
@@ -1237,14 +1238,6 @@ export default function JobSearch() {
             <CalendarDrawer />
           </div>
         </header>
-
-        <section className="mode-toggle-card">
-          <p>Choose how you want to browse jobs.</p>
-          <div className="mode-actions">
-            <button type="button" className={mode === "standard" ? "mode-active" : ""} onClick={() => setMode("standard")}>Standard Mode</button>
-            <button type="button" className={mode === "easy" ? "mode-active" : ""} onClick={() => setMode("easy")}>Easy Browsing Mode</button>
-          </div>
-        </section>
 
         <section className="search-bar-card">
           <div className="search-input-row">

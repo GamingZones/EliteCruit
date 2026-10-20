@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ChevronIcon } from "../../components/Icons";
+import { ChevronIcon, SideIcon } from "../../components/Icons";
 import { useEmployerCompanyLabel } from "../../hooks/useEmployerCompanyLabel";
 import { useUnreadNotificationsCount } from "../../hooks/useUnreadNotificationsCount";
 import { useUnreadMessagesCount } from "../../hooks/useUnreadMessagesCount";
@@ -415,6 +415,7 @@ export default function EmployerNoticesFaqs() {
           {isProfileMenuOpen && (
             <div className="appdash-profile-menu">
               <a href="/employer-company-profile"><EmployerIcon name="profile" />Company Profile</a>
+              <a href="/settings"><SideIcon name="settings" />Settings</a>
               <button
                 type="button"
                 className="appdash-profile-menu-btn"

@@ -390,7 +390,7 @@ export default function Messages() {
       answer: "Use the 'Job Opening' filter dropdown at the top of the chat sidebar to view messages associated with a specific job post.",
     },
   ];
-  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(true);
+  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const [isScreeningOpen, setIsScreeningOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [threads, setThreads] = useState<ThreadItem[]>([]);
@@ -1443,11 +1443,8 @@ export default function Messages() {
                   href="/employer-applicant-management"
                   className="employer-screening-title"
                   onClick={(e) => {
-                    const target = e.target as HTMLElement;
-                    if (target.closest(".title-caret-btn")) {
-                      e.preventDefault();
-                      setIsScreeningOpen((prev) => !prev);
-                    }
+                    e.preventDefault();
+                    setIsScreeningOpen((prev) => !prev);
                   }}
                 >
                   <span className="title-main">
@@ -1484,6 +1481,7 @@ export default function Messages() {
             {isProfileMenuOpen && (
               <div className="appdash-profile-menu">
                 <a href="/employer-company-profile"><EmployerIcon name="profile" />Company Profile</a>
+                <a href="/settings"><SideIcon name="settings" />Settings</a>
                 <button
                   type="button"
                   className="appdash-profile-menu-btn"
@@ -1504,11 +1502,8 @@ export default function Messages() {
                 href="/applicant-dashboard"
                 className="applicant-workspace-title"
                 onClick={(e) => {
-                  const target = e.target as HTMLElement;
-                  if (target.closest(".title-caret-btn")) {
-                    e.preventDefault();
-                    setIsWorkspaceOpen((prev) => !prev);
-                  }
+                  e.preventDefault();
+                  setIsWorkspaceOpen((prev) => !prev);
                 }}
               >
                 <span className="title-main">
@@ -1535,7 +1530,27 @@ export default function Messages() {
             <li><a href="/notifications"><span className="item-icon"><SideIcon name="notifications" /></span><span>Notifications</span>{unreadNotifCount > 0 && <span className="item-badge">{unreadNotifCount}</span>}</a></li>
             <li><a href="/feedback"><span className="item-icon"><SideIcon name="feedback" /></span><span>Feedback</span></a></li>
           </ul>
-          <div className="appdash-profile-control"><button type="button" className="appdash-profile-anchor" onClick={() => setIsProfileMenuOpen((value) => !value)}><span className="item-icon"><SideIcon name="profile" /></span><span className="profile-user-copy"><strong>{applicantLabel}</strong><small>Applicant</small></span><ChevronIcon direction={isProfileMenuOpen ? "down" : "up"} /></button>{isProfileMenuOpen && <div className="appdash-profile-menu"><a href="/my-profile"><SideIcon name="profile" />My Profile</a><button type="button" className="appdash-profile-menu-btn" onClick={() => setIsLogoutModalOpen(true)}><SideIcon name="logout" />Logout</button></div>}</div>
+
+          <div className="appdash-profile-control">
+            <button type="button" className="appdash-profile-anchor" onClick={() => setIsProfileMenuOpen((value) => !value)}>
+              <span className="item-icon"><SideIcon name="profile" /></span>
+              <span className="profile-user-copy"><strong>{applicantLabel}</strong><small>Applicant</small></span>
+              <ChevronIcon direction={isProfileMenuOpen ? "down" : "up"} />
+            </button>
+            {isProfileMenuOpen && (
+              <div className="appdash-profile-menu">
+                <a href="/my-profile"><SideIcon name="profile" />My Profile</a>
+            <a href="/settings">
+              <SideIcon name="settings" />
+              Settings
+            </a>
+                
+                <button type="button" className="appdash-profile-menu-btn" onClick={() => setIsLogoutModalOpen(true)}>
+                  <SideIcon name="logout" />Logout
+                </button>
+              </div>
+            )}
+          </div>
         </aside>
       )}
 
@@ -2403,7 +2418,7 @@ export default function Messages() {
                     <h3 style={{ fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b", fontWeight: 700, marginBottom: "8px" }}>
                       About Company
                     </h3>
-                    <p style={{ color: "#334155", fontSize: "0.95rem", lineHeight: 1.6, whiteSpace: "pre-line", margin: 0 }}>
+                    <p className="company-modal-about" style={{ fontSize: "0.95rem", lineHeight: 1.6, whiteSpace: "pre-line", margin: 0 }}>
                       {selectedCompanyDetails.company_description || "No company description provided."}
                     </p>
                   </div>
@@ -2414,23 +2429,23 @@ export default function Messages() {
                       Contact Information
                     </h3>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
-                      <div style={{ padding: "12px 14px", backgroundColor: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-                        <small style={{ color: "#64748b", display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "4px" }}>BUSINESS EMAIL</small>
-                        <span style={{ color: "#0f172a", fontSize: "0.88rem", fontWeight: 600, wordBreak: "break-all" }}>
+                      <div className="company-info-card" style={{ padding: "12px 14px", borderRadius: "10px" }}>
+                        <small className="company-info-card-label" style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "4px" }}>BUSINESS EMAIL</small>
+                        <span className="company-info-card-val" style={{ fontSize: "0.88rem", fontWeight: 600, wordBreak: "break-all" }}>
                           {selectedCompanyDetails.business_email || "Not provided"}
                         </span>
                       </div>
 
-                      <div style={{ padding: "12px 14px", backgroundColor: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-                        <small style={{ color: "#64748b", display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "4px" }}>CONTACT NUMBER</small>
-                        <span style={{ color: "#0f172a", fontSize: "0.88rem", fontWeight: 600 }}>
+                      <div className="company-info-card" style={{ padding: "12px 14px", borderRadius: "10px" }}>
+                        <small className="company-info-card-label" style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "4px" }}>CONTACT NUMBER</small>
+                        <span className="company-info-card-val" style={{ fontSize: "0.88rem", fontWeight: 600 }}>
                           {selectedCompanyDetails.contact_number || "Not provided"}
                         </span>
                       </div>
 
                       {selectedCompanyDetails.website && (
-                        <div style={{ padding: "12px 14px", backgroundColor: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-                          <small style={{ color: "#64748b", display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "4px" }}>WEBSITE</small>
+                        <div className="company-info-card" style={{ padding: "12px 14px", borderRadius: "10px" }}>
+                          <small className="company-info-card-label" style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "4px" }}>WEBSITE</small>
                           <a
                             href={selectedCompanyDetails.website.startsWith("http") ? selectedCompanyDetails.website : `https://${selectedCompanyDetails.website}`}
                             target="_blank"
@@ -2442,9 +2457,9 @@ export default function Messages() {
                         </div>
                       )}
 
-                      <div style={{ padding: "12px 14px", backgroundColor: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-                        <small style={{ color: "#64748b", display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "4px" }}>HEADQUARTERS</small>
-                        <span style={{ color: "#0f172a", fontSize: "0.88rem", fontWeight: 600 }}>
+                      <div className="company-info-card" style={{ padding: "12px 14px", borderRadius: "10px" }}>
+                        <small className="company-info-card-label" style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "4px" }}>HEADQUARTERS</small>
+                        <span className="company-info-card-val" style={{ fontSize: "0.88rem", fontWeight: 600 }}>
                           {selectedCompanyDetails.company_address || selectedCompanyDetails.city || "Cavite"}
                         </span>
                       </div>

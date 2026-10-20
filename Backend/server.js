@@ -1167,6 +1167,53 @@ app.get("/api/auth/me", authenticateToken, async (req, res) => {
   }
 });
 
+app.post("/api/auth/change-password", authenticateToken, async (req, res) => {
+  const userId = req.user?.id;
+  const { currentPassword, newPassword, confirmPassword } = req.body ?? {};
+
+  if (!userId) {
+    return res.status(401).json({ message: "Authentication required." });
+  }
+
+  if (typeof currentPassword !== "string" || !currentPassword) {
+    return res.status(400).json({ message: "Current password is required." });
+  }
+
+  if (typeof newPassword !== "string" || !newPassword) {
+    return res.status(400).json({ message: "New password is required." });
+  }
+
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json({ message: "New password and confirmation do not match." });
+  }
+
+  if (!isValidPassword(newPassword)) {
+    return res.status(400).json({
+      message: "New password must be at least 8 characters and include uppercase, lowercase, and numbers.",
+    });
+  }
+
+  try {
+    const user = await get("SELECT id, email, password_hash FROM users WHERE id = ?", [userId]);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    const matches = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!matches) {
+      return res.status(400).json({ message: "Current password is incorrect." });
+    }
+
+    const newHash = await bcrypt.hash(newPassword, 10);
+    await run("UPDATE users SET password_hash = ? WHERE id = ?", [newHash, userId]);
+
+    res.json({ success: true, message: "Password updated successfully." });
+  } catch (err) {
+    console.error("Change password error:", err);
+    res.status(500).json({ message: "Failed to update password." });
+  }
+});
+
 // Enforce admin authentication and authorization for all /api/admin endpoints
 app.use("/api/admin", authenticateToken, requireAdmin);
 
@@ -5242,6 +5289,31 @@ app.put("/api/notifications/:id/read", authenticateToken, requireNotificationRec
   }
 });
 
+app.delete("/api/users/:userId/notifications", authenticateToken, requireUserOrAdmin, async (req, res) => {
+  const userId = Number(req.params.userId);
+  if (!Number.isInteger(userId) || userId < 1) return res.status(400).json({ message: "Invalid user." });
+  try {
+    const deleted = await run("DELETE FROM notifications WHERE user_id = ?", [userId]);
+    res.json({ success: true, deletedCount: deleted.changes });
+  } catch (err) {
+    console.error("Delete notifications error:", err);
+    res.status(500).json({ message: "Unable to clear notifications." });
+  }
+});
+
+app.delete("/api/notifications/:id", authenticateToken, requireNotificationRecipientOrAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id < 1) return res.status(400).json({ message: "Invalid notification." });
+  try {
+    const deleted = await run("DELETE FROM notifications WHERE id = ?", [id]);
+    if (!deleted.changes) return res.status(404).json({ message: "Notification not found." });
+    res.json({ success: true, id });
+  } catch (err) {
+    console.error("Delete notification error:", err);
+    res.status(500).json({ message: "Unable to delete notification." });
+  }
+});
+
 app.get("/api/applicants/:userId/eligible-feedback-employers", authenticateToken, requireUserOrAdmin, async (req, res) => {
   const userId = Number(req.params.userId);
   if (!Number.isInteger(userId) || userId < 1) return res.status(400).json({ message: "Invalid applicant." });
@@ -5863,11 +5935,22 @@ async function ensureAdminUser() {
 // In production or full-stack deployment, serve built Frontend files if dist exists
 const distPath = path.resolve(__dirname, "../Frontend/dist");
 if (fs.existsSync(distPath)) {
-  app.use(express.static(distPath));
+  app.use(
+    express.static(distPath, {
+      setHeaders: (res) => {
+        res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+        res.setHeader("Pragma", "no-cache");
+        res.setHeader("Expires", "0");
+      },
+    })
+  );
   app.get("*", (req, res, next) => {
     if (req.path.startsWith("/api/")) {
       return res.status(404).json({ message: "API endpoint not found." });
     }
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
     res.sendFile(path.join(distPath, "index.html"), (err) => {
       if (err) next();
     });

@@ -37,7 +37,6 @@
   background: #ffffff;
   padding: 10px 14px;
   box-shadow: 0 1px 3px rgba(12, 42, 71, 0.04);
-  width: 100%;
   box-sizing: border-box;
 }
 
@@ -94,7 +93,6 @@
 
 .search-bar-card {
   display: block;
-  width: 100%;
   box-sizing: border-box;
   border: 1px solid #d7dfeb;
   border-radius: 8px;
@@ -2024,8 +2022,10 @@
 }
 
 .jd-faq-body {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 20px 24px;
   display: flex;
   flex-direction: column;
@@ -2041,6 +2041,7 @@
 }
 
 .jd-faq-item {
+  flex-shrink: 0;
   border: 1px solid #e2ecf5;
   border-radius: 12px;
   background: #fbfdff;

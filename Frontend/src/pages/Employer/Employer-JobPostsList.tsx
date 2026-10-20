@@ -388,6 +388,7 @@ export default function EmployerJobPostsList() {
           {isProfileMenuOpen && (
             <div className="appdash-profile-menu">
               <a href="/employer-company-profile"><EmployerIcon name="profile" />Company Profile</a>
+              <a href="/settings"><SideIcon name="settings" />Settings</a>
               <button
                 type="button"
                 className="appdash-profile-menu-btn"
@@ -489,7 +490,7 @@ export default function EmployerJobPostsList() {
                     </div>
                     <div className="job-card-actions-col">
                       <div className="job-actions">
-                        <button type="button">Review</button>
+                        <button type="button" onClick={() => { window.location.href = `/employer-applicant-management?jobId=${job.id}`; }}>Review</button>
                         <a className="job-action-link" href={`/employer-job-posts/create?edit=${job.id}`}>Edit</a>
                         <button type="button" className="danger" onClick={() => deleteJobPost(job)}>Delete</button>
                       </div>

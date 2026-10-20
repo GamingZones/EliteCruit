@@ -1848,3 +1848,21 @@
 }
 
 
+
+
+.company-modal-about {
+  color: #334155;
+}
+
+.company-info-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.company-info-card-label {
+  color: #64748b;
+}
+
+.company-info-card-val {
+  color: #0f172a;
+}

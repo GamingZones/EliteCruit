@@ -2244,7 +2244,7 @@ async function downloadAtsPdf(data: { name: string }) {
 export default function ApplicantProfile() {
   const unreadNotifCount = useUnreadNotificationsCount();
   const unreadMessagesCount = useUnreadMessagesCount();
-  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(true);
+  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   const [isAtsModalOpen, setIsAtsModalOpen] = useState(false);
@@ -3122,11 +3122,8 @@ export default function ApplicantProfile() {
               href="/applicant-dashboard"
               className="applicant-workspace-title"
               onClick={(e) => {
-                const target = e.target as HTMLElement;
-                if (target.closest(".title-caret-btn")) {
-                  e.preventDefault();
-                  setIsWorkspaceOpen((prev) => !prev);
-                }
+                e.preventDefault();
+                setIsWorkspaceOpen((prev) => !prev);
               }}
             >
               <span className="title-main">
@@ -3163,6 +3160,10 @@ export default function ApplicantProfile() {
           {isProfileMenuOpen && (
             <div className="appdash-profile-menu">
               <a href="/my-profile"><SideIcon name="profile" />My Profile</a>
+            <a href="/settings">
+              <SideIcon name="settings" />
+              Settings
+            </a>
               <button
                 type="button"
                 className="appdash-profile-menu-btn"

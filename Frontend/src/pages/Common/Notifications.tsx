@@ -200,7 +200,7 @@ export default function Notifications() {
     },
   ];
 
-  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(true);
+  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const [isScreeningOpen, setIsScreeningOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -327,15 +327,29 @@ export default function Notifications() {
     setIsClearHistoryConfirmOpen(true);
   };
 
-  const handleConfirmClearHistory = () => {
-    const previous = [...notifications];
+  const handleConfirmClearHistory = async () => {
+    if (!currentUserId) return;
     setNotifications([]);
     setCurrentPage(1);
     setIsClearHistoryConfirmOpen(false);
-    setUndoToast({
-      message: "Notification history cleared.",
-      onUndo: () => setNotifications(previous),
-    });
+    window.dispatchEvent(new Event("elitecruit_notif_update"));
+
+    try {
+      await fetch(`/api/users/${currentUserId}/notifications`, { method: "DELETE" });
+    } catch (err) {
+      console.error("Error clearing notification history:", err);
+    }
+  };
+
+  const handleDeleteNotification = async (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    window.dispatchEvent(new Event("elitecruit_notif_update"));
+    try {
+      await fetch(`/api/notifications/${id}`, { method: "DELETE" });
+    } catch (err) {
+      console.error("Error deleting notification:", err);
+    }
   };
 
   const handleNotificationClick = async (notice: NotificationItem) => {
@@ -436,11 +450,8 @@ export default function Notifications() {
                   href="/employer-applicant-management"
                   className="employer-screening-title"
                   onClick={(e) => {
-                    const target = e.target as HTMLElement;
-                    if (target.closest(".title-caret-btn")) {
-                      e.preventDefault();
-                      setIsScreeningOpen((prev) => !prev);
-                    }
+                    e.preventDefault();
+                    setIsScreeningOpen((prev) => !prev);
                   }}
                 >
                   <span className="title-main">
@@ -477,6 +488,7 @@ export default function Notifications() {
             {isProfileMenuOpen && (
               <div className="appdash-profile-menu">
                 <a href="/employer-company-profile"><EmployerIcon name="profile" />Company Profile</a>
+                <a href="/settings"><SideIcon name="settings" />Settings</a>
                 <button
                   type="button"
                   className="appdash-profile-menu-btn"
@@ -497,11 +509,8 @@ export default function Notifications() {
                 href="/applicant-dashboard"
                 className="applicant-workspace-title"
                 onClick={(e) => {
-                  const target = e.target as HTMLElement;
-                  if (target.closest(".title-caret-btn")) {
-                    e.preventDefault();
-                    setIsWorkspaceOpen((prev) => !prev);
-                  }
+                  e.preventDefault();
+                  setIsWorkspaceOpen((prev) => !prev);
                 }}
               >
                 <span className="title-main">
@@ -528,7 +537,27 @@ export default function Notifications() {
             <li className="active"><a href="/notifications"><span className="item-icon"><SideIcon name="notifications" /></span><span>Notifications</span>{unreadCount > 0 && <span className="item-badge">{unreadCount}</span>}</a></li>
             <li><a href="/feedback"><span className="item-icon"><SideIcon name="feedback" /></span><span>Feedback</span></a></li>
           </ul>
-          <div className="appdash-profile-control"><button type="button" className="appdash-profile-anchor" onClick={() => setIsProfileMenuOpen((value) => !value)}><span className="item-icon"><SideIcon name="profile" /></span><span className="profile-user-copy"><strong>{applicantLabel}</strong><small>Applicant</small></span><ChevronIcon direction={isProfileMenuOpen ? "down" : "up"} /></button>{isProfileMenuOpen && <div className="appdash-profile-menu"><a href="/my-profile"><SideIcon name="profile" />My Profile</a><button type="button" className="appdash-profile-menu-btn" onClick={() => setIsLogoutModalOpen(true)}><SideIcon name="logout" />Logout</button></div>}</div>
+
+          <div className="appdash-profile-control">
+            <button type="button" className="appdash-profile-anchor" onClick={() => setIsProfileMenuOpen((value) => !value)}>
+              <span className="item-icon"><SideIcon name="profile" /></span>
+              <span className="profile-user-copy"><strong>{applicantLabel}</strong><small>Applicant</small></span>
+              <ChevronIcon direction={isProfileMenuOpen ? "down" : "up"} />
+            </button>
+            {isProfileMenuOpen && (
+              <div className="appdash-profile-menu">
+                <a href="/my-profile"><SideIcon name="profile" />My Profile</a>
+            <a href="/settings">
+              <SideIcon name="settings" />
+              Settings
+            </a>
+                
+                <button type="button" className="appdash-profile-menu-btn" onClick={() => setIsLogoutModalOpen(true)}>
+                  <SideIcon name="logout" />Logout
+                </button>
+              </div>
+            )}
+          </div>
         </aside>
       )}
 
@@ -617,17 +646,31 @@ export default function Notifications() {
                   </div>
                   <div className="notice-meta">
                     {!notice.is_read ? <span className="dot" /> : null}
-                    {!notice.is_read && (
+                    <div className="notice-meta-actions">
+                      {!notice.is_read && (
+                        <button
+                          type="button"
+                          className="notice-read-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMarkAsRead(notice.id);
+                          }}
+                        >
+                          Mark as read
+                        </button>
+                      )}
                       <button
                         type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMarkAsRead(notice.id);
-                        }}
+                        className="notice-delete-btn"
+                        title="Delete notification"
+                        onClick={(e) => handleDeleteNotification(notice.id, e)}
                       >
-                        Mark as read
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
                       </button>
-                    )}
+                    </div>
                   </div>
                 </article>
               ))

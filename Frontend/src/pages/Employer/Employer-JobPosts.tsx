@@ -1252,6 +1252,7 @@ export default function EmployerJobPosts() {
           {isProfileMenuOpen && (
             <div className="appdash-profile-menu">
               <a href="/employer-company-profile"><EmployerIcon name="profile" />Company Profile</a>
+              <a href="/settings"><SideIcon name="settings" />Settings</a>
               <button
                 type="button"
                 className="appdash-profile-menu-btn"

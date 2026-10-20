@@ -136,7 +136,7 @@ function RenderLocationMeta({ location }: { location?: string | null }) {
         <path d="M12 22s7-6 7-12a7 7 0 1 0-14 0c0 6 7 12 7 12Zm0-9a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z" />
       </svg>
       <span>{locItems[0]}</span>
-      <span className="overflow-dots-badge" tabIndex={0} aria-label="View all locations">
+      <span className="overflow-dots-badge" tabIndex={0} aria-label="View all locations" title={fullListText}>
         ...
         <span className="overflow-tooltip">
           <strong>Locations:</strong>
@@ -284,6 +284,7 @@ export default function EmployerDashboard() {
           {isProfileMenuOpen && (
             <div className="appdash-profile-menu">
               <a href="/employer-company-profile"><EmployerIcon name="profile" />Company Profile</a>
+              <a href="/settings"><SideIcon name="settings" />Settings</a>
               <button
                 type="button"
                 className="appdash-profile-menu-btn"

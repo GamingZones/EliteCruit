@@ -7,6 +7,7 @@ import ApplicantProfile from "./pages/Applicant/ApplicantProfile";
 import JobSearch from "./pages/Applicant/JobSearch";
 import Messages from "./pages/Common/Messages";
 import Notifications from "./pages/Common/Notifications";
+import Settings from "./pages/Common/Settings";
 import EmployerDashboard from "./pages/Employer/Employer-Dashboard";
 import EmployerJobPosts from "./pages/Employer/Employer-JobPosts";
 import EmployerJobPostsList from "./pages/Employer/Employer-JobPostsList";
@@ -166,6 +167,9 @@ export default function App() {
   }
   if (path === "/notifications") {
     return <ProtectedRoute element={<Notifications />} allowedRoles={["applicant", "employer", "admin"]} />;
+  }
+  if (path === "/settings" || path === "/common/settings" || path === "/employer-settings") {
+    return <ProtectedRoute element={<Settings />} allowedRoles={["applicant", "employer", "admin"]} />;
   }
 
   // Landing page

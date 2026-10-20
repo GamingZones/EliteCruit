@@ -1307,3 +1307,13 @@
 }
 
 
+
+/* Sidebar bottom navigation styling (Settings button directly above Profile) */
+.appdash-bottom-nav {
+  margin-top: auto;
+  margin-bottom: 4px;
+}
+
+.appdash-bottom-nav + .appdash-profile-control {
+  margin-top: 0 !important;
+}

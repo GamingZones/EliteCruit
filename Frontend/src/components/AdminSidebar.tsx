@@ -48,6 +48,7 @@ export default function AdminSidebar({
     { label: "Applicant Analytics", icon: "audit" as AdminNavIcon, href: "/admin-applicant-analytics" },
     { label: "Employer Management", icon: "jobs" as AdminNavIcon, href: "/admin-employers" },
     { label: "Employer Analytics", icon: "settings" as AdminNavIcon, href: "/admin-employer-analytics" },
+    { label: "Settings", icon: "settings" as AdminNavIcon, href: "/settings" },
   ];
 
   const handleLogout = () => {
@@ -104,6 +105,10 @@ export default function AdminSidebar({
 
         {isProfileMenuOpen && (
           <div className="appdash-profile-menu">
+            <a href="/settings" style={{ display: "flex", alignItems: "center", gap: "8px", textDecoration: "none" }}>
+              <AdminNavIconSvg name="settings" />
+              Settings
+            </a>
             <button
               type="button"
               className="appdash-profile-menu-btn"
