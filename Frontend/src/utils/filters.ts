@@ -1317,16 +1317,6 @@ export const PHILIPPINES_SENIOR_HIGH_SCHOOLS: string[] = Array.from(
 ).sort();
 
 export async function fetchPhilippineUniversitiesApi(): Promise<string[]> {
-  try {
-    const res = await fetch("https://universities.hipolabs.com/search?country=Philippines");
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        const fetchedNames = data.map((u: any) => u.name).filter(Boolean);
-        return Array.from(new Set([...PHILIPPINES_UNIVERSITIES_COLLEGES, ...fetchedNames])).sort();
-      }
-    }
-  } catch (err) {}
   return PHILIPPINES_UNIVERSITIES_COLLEGES;
 }
 
