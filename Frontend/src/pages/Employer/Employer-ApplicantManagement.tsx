@@ -5574,14 +5574,158 @@ export default function EmployerApplicantManagement() {
           </div>
         )}
 
-        {/* ── DECISION MODAL (ACCEPT / DENY WITH MESSAGE PREFERENCE) ── */}
+        {/* ── DECISION MODAL (ACCEPT / DENY WITH MESSAGE PREFERENCE & OPTIONAL LEFT INTERVIEW CARD) ── */}
         {decisionModalApps.length > 0 && decisionModalAction && (
           <div className="decision-modal-overlay" onClick={() => { if (!isDecisionSubmitting) { setDecisionModalApps([]); setIsSchedulingImmediate(false); } }}>
-            <div className={`decision-modal-card ${isSchedulingImmediate && decisionModalAction === "approved" ? "with-schedule-slide" : ""}`} onClick={(e) => e.stopPropagation()}>
-              <div className="decision-modal-main-panel">
-                <div className="decision-modal-header">
+            <div className="decision-modal-containers-row" onClick={(e) => e.stopPropagation()}>
+              
+              {/* CONTAINER 1 (LEFT): SCHEDULE INTERVIEW CARD */}
+              {decisionModalAction === "approved" && isSchedulingImmediate && (
+                <aside className="decision-card decision-schedule-card">
+                  <div className="decision-card-header">
+                    <div className="decision-card-title-wrap">
+                      <span className="decision-schedule-icon">📅</span>
+                      <div>
+                        <h3 className="decision-card-title">Schedule Interview</h3>
+                        <span className="decision-card-sub">
+                          {decisionModalApps.length > 1
+                            ? `${decisionModalApps.length} Candidates Selected`
+                            : (decisionModalApps[0]?.applicant_name || "Candidate")}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="decision-card-close-btn"
+                      onClick={() => setIsSchedulingImmediate(false)}
+                      title="Hide Schedule Form"
+                      aria-label="Hide Schedule Form"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="decision-card-body">
+                    <div className="decision-sched-field">
+                      <label>Interview Date *</label>
+                      <input
+                        type="date"
+                        className="decision-sched-input"
+                        value={schedDate}
+                        min={getTodayDateStr()}
+                        onChange={(e) => setSchedDate(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="decision-schedule-row two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                      <div className="decision-sched-field">
+                        <label>Start Time *</label>
+                        <input
+                          type="time"
+                          className="decision-sched-input"
+                          value={schedStartTime}
+                          onChange={(e) => setSchedStartTime(e.target.value)}
+                        />
+                      </div>
+                      <div className="decision-sched-field">
+                        <label>End Time</label>
+                        <input
+                          type="time"
+                          className="decision-sched-input"
+                          value={schedEndTime}
+                          onChange={(e) => setSchedEndTime(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="decision-schedule-row two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                      <div className="decision-sched-field">
+                        <label>Interview Mode</label>
+                        <select
+                          className="decision-sched-input"
+                          value={schedType}
+                          onChange={(e) => {
+                            const newType = e.target.value as "On-Site" | "Virtual";
+                            setSchedType(newType);
+                            if (newType === "Virtual" && (!schedLocation || schedLocation.includes("Office") || schedLocation.includes("Branch"))) {
+                              setSchedLocation("Google Meet / Video Link");
+                            } else if (newType === "On-Site" && (!schedLocation || schedLocation.includes("Meet") || schedLocation.includes("Video"))) {
+                              setSchedLocation(companyLabel ? (companyLabel + " Main Office") : "Company Office");
+                            }
+                          }}
+                        >
+                          <option value="On-Site">On-Site Interview</option>
+                          <option value="Virtual">Virtual / Online Meeting</option>
+                        </select>
+                      </div>
+
+                      <div className="decision-sched-field">
+                        <label>Interview Stage</label>
+                        <select
+                          className="decision-sched-input"
+                          value={schedStage}
+                          onChange={(e) => setSchedStage(e.target.value)}
+                        >
+                          <option value="On-Site Interview">On-Site Interview</option>
+                          <option value="Initial Interview">Initial Interview</option>
+                          <option value="Technical Interview">Technical Interview</option>
+                          <option value="Final Interview">Final Interview</option>
+                          <option value="HR Screening">HR Screening</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="decision-sched-field">
+                      <label>{schedType === "Virtual" ? "Meeting Link / Platform" : "Office Address / Room"}</label>
+                      <input
+                        type="text"
+                        className="decision-sched-input"
+                        value={schedLocation}
+                        onChange={(e) => setSchedLocation(e.target.value)}
+                        placeholder={schedType === "Virtual" ? "e.g., Google Meet or Zoom link" : "e.g., 4th Floor HQ, Room B"}
+                      />
+                    </div>
+
+                    <div className="decision-sched-field">
+                      <label>Preparation Notes / Instructions (Optional)</label>
+                      <textarea
+                        className="decision-sched-input"
+                        rows={3}
+                        style={{ resize: "vertical" }}
+                        value={schedNotes}
+                        onChange={(e) => setSchedNotes(e.target.value)}
+                        placeholder="e.g., Please bring 2 valid IDs and an updated copy of your resume."
+                      />
+                    </div>
+
+                    <div className="decision-schedule-info-pill">
+                      <span>💡</span>
+                      <span>Submitting will finalize applicant acceptance, book this slot in your calendar, and send interview details directly to the candidate.</span>
+                    </div>
+                  </div>
+
+                  <div className="decision-card-footer">
+                    <button
+                      type="button"
+                      className="decision-confirm-btn schedule-action"
+                      disabled={isDecisionSubmitting}
+                      onClick={handleConfirmDecision}
+                    >
+                      {isDecisionSubmitting
+                        ? "Scheduling & Accepting..."
+                        : decisionModalApps.length > 1
+                        ? `📅 Accept & Schedule (${decisionModalApps.length})`
+                        : "📅 Accept & Schedule Interview"}
+                    </button>
+                  </div>
+                </aside>
+              )}
+
+              {/* CONTAINER 2 (RIGHT): ACCEPT CANDIDATE DECISION CARD */}
+              <div className="decision-card decision-main-card">
+                <div className="decision-card-header">
                   <div className="decision-header-left">
-                    <h3 className="decision-modal-title">
+                    <h3 className="decision-card-title">
                       {decisionModalApps.length > 1
                         ? decisionModalAction === "approved"
                           ? `Accept Multiple Candidates (${decisionModalApps.length})`
@@ -5591,387 +5735,229 @@ export default function EmployerApplicantManagement() {
                         : "Deny Candidate"}
                     </h3>
                   </div>
-                <button
-                  type="button"
-                  className="decision-close-btn"
-                  disabled={isDecisionSubmitting}
-                  onClick={() => { setDecisionModalApps([]); setIsSchedulingImmediate(false); }}
-                  aria-label="Close"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div className="decision-modal-body">
-                {/* Multi-candidate chips if multiple */}
-                {decisionModalApps.length > 1 && (
-                  <div
-                    className="decision-multi-candidates-box"
-                    style={{
-                      background: "#f8fafc",
-                      border: "1px solid #e2e8f0",
-                      borderRadius: "8px",
-                      padding: "10px 12px",
-                      marginBottom: "16px",
-                      maxHeight: "110px",
-                      overflowY: "auto",
-                    }}
-                  >
-                    <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", marginBottom: "6px", letterSpacing: "0.03em" }}>
-                      Target Candidates ({decisionModalApps.length}):
-                    </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                      {decisionModalApps.map((a) => (
-                        <span
-                          key={a.id}
-                          className="decision-candidate-chip"
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "5px",
-                            background: "#ffffff",
-                            border: "1px solid #cbd5e1",
-                            borderRadius: "6px",
-                            padding: "3px 8px",
-                            fontSize: "0.76rem",
-                            color: "#1e293b",
-                            fontWeight: 600,
-                          }}
-                        >
-                          <span>{a.applicant_name}</span>
-                          <small style={{ color: "#64748b", fontWeight: 400 }}>({a.job_title || "Job Post"})</small>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Message type selector */}
-                <div className="decision-type-selector">
-                  <label className="decision-field-label">Select Response Type:</label>
-                  <div className="decision-options-grid">
-                    <label
-                      className={`decision-option-card ${decisionMessageType === "automated" ? "selected" : ""}`}
-                    >
-                      <input
-                        type="radio"
-                        name="decisionMessageType"
-                        value="automated"
-                        checked={decisionMessageType === "automated"}
-                        onChange={() => {
-                          setDecisionMessageType("automated");
-                          setDecisionMessageText(
-                            getAutomatedDecisionTemplate(
-                              decisionModalAction,
-                              decisionModalApps.length === 1 ? decisionModalApps[0].applicant_name : "[Candidate Name]",
-                              decisionModalApps[0]?.job_title || "Job Position",
-                              companyLabel || "Employer",
-                              customDecisionTemplates
-                            )
-                          );
-                        }}
-                      />
-                      <div className="decision-option-info">
-                        <strong>
-                          {decisionModalApps.length > 1 ? "Automated Notice (Personalized)" : "Automated Notice"}
-                        </strong>
-                      </div>
-                    </label>
-
-                    <label
-                      className={`decision-option-card ${decisionMessageType === "manual" ? "selected" : ""}`}
-                    >
-                      <input
-                        type="radio"
-                        name="decisionMessageType"
-                        value="manual"
-                        checked={decisionMessageType === "manual"}
-                        onChange={() => {
-                          setDecisionMessageType("manual");
-                        }}
-                      />
-                      <div className="decision-option-info">
-                        <strong>
-                          {decisionModalApps.length > 1 ? "Manual Message (Broadcast)" : "Manual Message"}
-                        </strong>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-
-                {/* Message content textarea / preview */}
-                <div className="decision-message-wrapper">
-                  <div className="decision-message-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <label className="decision-field-label" htmlFor="decision-msg-input" style={{ marginBottom: 0 }}>
-                      {decisionMessageType === "automated"
-                        ? decisionModalApps.length > 1
-                          ? `Standard Notice Template (Sent individually to each candidate):`
-                          : "Standard Notice Preview (Automated):"
-                        : decisionModalApps.length > 1
-                        ? `Custom Message Content (Sent to all ${decisionModalApps.length} candidates):`
-                        : "Custom Message Content:"}
-                    </label>
-                    {decisionMessageType === "manual" && isSchedulingImmediate && (
-                      <button
-                        type="button"
-                        className="decision-insert-sched-btn"
-                        onClick={() => {
-                          const schedSnippet = "\n\n--- INTERVIEW DETAILS ---\nDate: " + schedDate + "\nTime: " + schedStartTime + " - " + schedEndTime + "\nStage: " + schedStage + "\nMode: " + schedType + "\nLocation / Link: " + (schedLocation || "Company Office") + (schedNotes ? ("\nInstructions: " + schedNotes) : "");
-                          setManualMessageText((prev) => prev.trim() + schedSnippet);
-                        }}
-                      >
-                        + Insert Schedule Info
-                      </button>
-                    )}
-                  </div>
-
-                  <textarea
-                    id="decision-msg-input"
-                    className={`decision-textarea ${decisionMessageType === "automated" ? "automated-preview" : ""}`}
-                    rows={7}
-                    readOnly={decisionMessageType === "automated"}
-                    value={decisionMessageType === "automated" ? decisionMessageText : manualMessageText}
-                    onChange={(e) => {
-                      if (decisionMessageType === "manual") {
-                        setManualMessageText(e.target.value);
-                      }
-                    }}
-                    placeholder={
-                      decisionMessageType === "manual"
-                        ? decisionModalApps.length > 1
-                          ? "Enter your message to be sent to all selected candidates..."
-                          : "Enter your personalized message to the applicant..."
-                        : ""
-                    }
-                  />
-                  <div className="decision-message-footnote" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "6px" }}>
-                    {decisionMessageType === "manual" ? (
-                      <span>{manualMessageText.length} characters written.</span>
-                    ) : decisionModalApps.length > 1 ? (
-                      <span style={{ color: "#0284c7", fontWeight: 600 }}>
-                        EliteCruit will automatically substitute each candidate's real name upon sending.
-                      </span>
-                    ) : (
-                      <span />
-                    )}
-                    <a
-                      href="/employer-notices-faqs"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ fontSize: "0.78rem", color: "#0284c7", fontWeight: 600, textDecoration: "none", marginLeft: "auto" }}
-                    >
-                      Configure master templates in Notices &amp; FAQs ↗
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              <div className="decision-modal-footer">
-                <button
-                  type="button"
-                  className="decision-cancel-btn"
-                  disabled={isDecisionSubmitting}
-                  onClick={() => {
-                    setDecisionModalApps([]);
-                    setIsSchedulingImmediate(false);
-                  }}
-                >
-                  Cancel
-                </button>
-
-                <div className="decision-footer-actions" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <button
                     type="button"
-                    className={`decision-confirm-btn ${decisionModalAction}`}
-                    disabled={isDecisionSubmitting || (decisionMessageType === "manual" && !manualMessageText.trim())}
-                    onClick={handleConfirmDecision}
-                  >
-                    {isDecisionSubmitting && !isSchedulingImmediate
-                      ? `Submitting Decision${decisionModalApps.length > 1 ? ` (${decisionModalApps.length})` : ""}...`
-                      : decisionModalAction === "approved"
-                      ? decisionModalApps.length > 1
-                        ? `Confirm Acceptance (${decisionModalApps.length})`
-                        : "Confirm Acceptance"
-                      : decisionModalApps.length > 1
-                      ? `Confirm Denial (${decisionModalApps.length})`
-                      : "Confirm Denial"}
-                  </button>
-
-                  {decisionModalAction === "approved" && (
-                    <button
-                      type="button"
-                      className={`decision-schedule-quick-btn ${isSchedulingImmediate ? "active" : ""}`}
-                      disabled={isDecisionSubmitting}
-                      onClick={() => setIsSchedulingImmediate((prev) => !prev)}
-                      title={isSchedulingImmediate ? "Collapse schedule panel" : "Slide open interview creation panel"}
-                    >
-                      <span>📅</span>
-                      <span>{isSchedulingImmediate ? "Hide Schedule" : "Schedule Interview"}</span>
-                      <span style={{ fontSize: "0.9rem", transition: "transform 0.2s" }}>
-                        {isSchedulingImmediate ? "⇥" : "→"}
-                      </span>
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* SLIDE-TO-RIGHT INTERVIEW CREATION PANEL */}
-            {decisionModalAction === "approved" && isSchedulingImmediate && (
-              <aside className="decision-schedule-slide-panel">
-                <div className="decision-schedule-slide-header">
-                  <div className="decision-schedule-slide-title-wrap">
-                    <span className="decision-schedule-icon">📅</span>
-                    <div>
-                      <h4 className="decision-schedule-slide-title">Schedule Interview</h4>
-                      <span className="decision-schedule-slide-sub">
-                        {decisionModalApps.length > 1
-                          ? `${decisionModalApps.length} Candidates Selected`
-                          : (decisionModalApps[0]?.applicant_name || "Candidate")}
-                      </span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="decision-schedule-slide-close-btn"
-                    onClick={() => setIsSchedulingImmediate(false)}
-                    title="Close Schedule Panel"
-                    aria-label="Close Schedule Panel"
+                    className="decision-card-close-btn"
+                    disabled={isDecisionSubmitting}
+                    onClick={() => { setDecisionModalApps([]); setIsSchedulingImmediate(false); }}
+                    aria-label="Close"
                   >
                     ✕
                   </button>
                 </div>
 
-                <div className="decision-schedule-slide-body">
-                  <div className="decision-sched-field">
-                    <label>Interview Date *</label>
-                    <input
-                      type="date"
-                      className="decision-sched-input"
-                      value={schedDate}
-                      min={getTodayDateStr()}
-                      onChange={(e) => setSchedDate(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="decision-schedule-row two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                    <div className="decision-sched-field">
-                      <label>Start Time *</label>
-                      <input
-                        type="time"
-                        className="decision-sched-input"
-                        value={schedStartTime}
-                        onChange={(e) => setSchedStartTime(e.target.value)}
-                      />
+                <div className="decision-card-body">
+                  {/* Multi-candidate chips if multiple */}
+                  {decisionModalApps.length > 1 && (
+                    <div
+                      className="decision-multi-candidates-box"
+                      style={{
+                        background: "#f8fafc",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "8px",
+                        padding: "10px 12px",
+                        marginBottom: "16px",
+                        maxHeight: "110px",
+                        overflowY: "auto",
+                      }}
+                    >
+                      <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", marginBottom: "6px", letterSpacing: "0.03em" }}>
+                        Target Candidates ({decisionModalApps.length}):
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                        {decisionModalApps.map((a) => (
+                          <span
+                            key={a.id}
+                            className="decision-candidate-chip"
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "5px",
+                              background: "#ffffff",
+                              border: "1px solid #cbd5e1",
+                              borderRadius: "6px",
+                              padding: "3px 8px",
+                              fontSize: "0.76rem",
+                              color: "#1e293b",
+                              fontWeight: 600,
+                            }}
+                          >
+                            <span>{a.applicant_name}</span>
+                            <small style={{ color: "#64748b", fontWeight: 400 }}>({a.job_title || "Job Post"})</small>
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                    <div className="decision-sched-field">
-                      <label>End Time</label>
-                      <input
-                        type="time"
-                        className="decision-sched-input"
-                        value={schedEndTime}
-                        onChange={(e) => setSchedEndTime(e.target.value)}
-                      />
-                    </div>
-                  </div>
+                  )}
 
-                  <div className="decision-schedule-row two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                    <div className="decision-sched-field">
-                      <label>Interview Mode</label>
-                      <select
-                        className="decision-sched-input"
-                        value={schedType}
-                        onChange={(e) => {
-                          const newType = e.target.value as "On-Site" | "Virtual";
-                          setSchedType(newType);
-                          if (newType === "Virtual" && (!schedLocation || schedLocation.includes("Office") || schedLocation.includes("Branch"))) {
-                            setSchedLocation("Google Meet / Video Link");
-                          } else if (newType === "On-Site" && (!schedLocation || schedLocation.includes("Meet") || schedLocation.includes("Video"))) {
-                            setSchedLocation(companyLabel ? (companyLabel + " Main Office") : "Company Office");
-                          }
-                        }}
+                  {/* Message type selector */}
+                  <div className="decision-type-selector">
+                    <label className="decision-field-label">Select Response Type:</label>
+                    <div className="decision-options-grid">
+                      <label
+                        className={`decision-option-card ${decisionMessageType === "automated" ? "selected" : ""}`}
                       >
-                        <option value="On-Site">On-Site Interview</option>
-                        <option value="Virtual">Virtual / Online Meeting</option>
-                      </select>
-                    </div>
+                        <input
+                          type="radio"
+                          name="decisionMessageType"
+                          value="automated"
+                          checked={decisionMessageType === "automated"}
+                          onChange={() => {
+                            setDecisionMessageType("automated");
+                            setDecisionMessageText(
+                              getAutomatedDecisionTemplate(
+                                decisionModalAction,
+                                decisionModalApps.length === 1 ? decisionModalApps[0].applicant_name : "[Candidate Name]",
+                                decisionModalApps[0]?.job_title || "Job Position",
+                                companyLabel || "Employer",
+                                customDecisionTemplates
+                              )
+                            );
+                          }}
+                        />
+                        <div className="decision-option-info">
+                          <strong>
+                            {decisionModalApps.length > 1 ? "Automated Notice (Personalized)" : "Automated Notice"}
+                          </strong>
+                        </div>
+                      </label>
 
-                    <div className="decision-sched-field">
-                      <label>Interview Stage</label>
-                      <select
-                        className="decision-sched-input"
-                        value={schedStage}
-                        onChange={(e) => setSchedStage(e.target.value)}
+                      <label
+                        className={`decision-option-card ${decisionMessageType === "manual" ? "selected" : ""}`}
                       >
-                        <option value="On-Site Interview">On-Site Interview</option>
-                        <option value="Initial Interview">Initial Interview</option>
-                        <option value="Technical Interview">Technical Interview</option>
-                        <option value="Final Interview">Final Interview</option>
-                        <option value="HR Screening">HR Screening</option>
-                      </select>
+                        <input
+                          type="radio"
+                          name="decisionMessageType"
+                          value="manual"
+                          checked={decisionMessageType === "manual"}
+                          onChange={() => {
+                            setDecisionMessageType("manual");
+                          }}
+                        />
+                        <div className="decision-option-info">
+                          <strong>
+                            {decisionModalApps.length > 1 ? "Manual Message (Broadcast)" : "Manual Message"}
+                          </strong>
+                        </div>
+                      </label>
                     </div>
                   </div>
 
-                  <div className="decision-sched-field">
-                    <label>{schedType === "Virtual" ? "Meeting Link / Platform" : "Office Address / Meeting Room"}</label>
-                    <input
-                      type="text"
-                      className="decision-sched-input"
-                      value={schedLocation}
-                      onChange={(e) => setSchedLocation(e.target.value)}
-                      placeholder={schedType === "Virtual" ? "e.g., Google Meet or Zoom link" : "e.g., 4th Floor HQ, Room B"}
-                    />
-                  </div>
+                  {/* Message content textarea / preview */}
+                  <div className="decision-message-wrapper">
+                    <div className="decision-message-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <label className="decision-field-label" htmlFor="decision-msg-input" style={{ marginBottom: 0 }}>
+                        {decisionMessageType === "automated"
+                          ? decisionModalApps.length > 1
+                            ? `Standard Notice Template (Sent individually to each candidate):`
+                            : "Standard Notice Preview (Automated):"
+                          : decisionModalApps.length > 1
+                          ? `Custom Message Content (Sent to all ${decisionModalApps.length} candidates):`
+                          : "Custom Message Content:"}
+                      </label>
+                      {decisionMessageType === "manual" && isSchedulingImmediate && (
+                        <button
+                          type="button"
+                          className="decision-insert-sched-btn"
+                          onClick={() => {
+                            const schedSnippet = "\n\n--- INTERVIEW DETAILS ---\nDate: " + schedDate + "\nTime: " + schedStartTime + " - " + schedEndTime + "\nStage: " + schedStage + "\nMode: " + schedType + "\nLocation / Link: " + (schedLocation || "Company Office") + (schedNotes ? ("\nInstructions: " + schedNotes) : "");
+                            setManualMessageText((prev) => prev.trim() + schedSnippet);
+                          }}
+                        >
+                          + Insert Schedule Info
+                        </button>
+                      )}
+                    </div>
 
-                  <div className="decision-sched-field">
-                    <label>Preparation Notes / Instructions (Optional)</label>
                     <textarea
-                      className="decision-sched-input"
-                      rows={3}
-                      style={{ resize: "vertical" }}
-                      value={schedNotes}
-                      onChange={(e) => setSchedNotes(e.target.value)}
-                      placeholder="e.g., Please bring 2 valid IDs and an updated copy of your resume."
+                      id="decision-msg-input"
+                      className={`decision-textarea ${decisionMessageType === "automated" ? "automated-preview" : ""}`}
+                      rows={7}
+                      readOnly={decisionMessageType === "automated"}
+                      value={decisionMessageType === "automated" ? decisionMessageText : manualMessageText}
+                      onChange={(e) => {
+                        if (decisionMessageType === "manual") {
+                          setManualMessageText(e.target.value);
+                        }
+                      }}
+                      placeholder={
+                        decisionMessageType === "manual"
+                          ? decisionModalApps.length > 1
+                            ? "Enter your message to be sent to all selected candidates..."
+                            : "Enter your personalized message to the applicant..."
+                          : ""
+                      }
                     />
-                  </div>
-
-                  <div
-                    style={{
-                      background: "rgba(2, 132, 199, 0.08)",
-                      border: "1px solid rgba(2, 132, 199, 0.2)",
-                      borderRadius: "8px",
-                      padding: "8px 12px",
-                      fontSize: "0.75rem",
-                      color: "#0369a1",
-                      lineHeight: 1.4,
-                      display: "flex",
-                      alignItems: "flex-start",
-                      gap: "8px",
-                    }}
-                  >
-                    <span>💡</span>
-                    <span>Submitting will finalize applicant acceptance, book this slot in your calendar, and send interview details directly to the candidate.</span>
+                    <div className="decision-message-footnote" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "6px" }}>
+                      {decisionMessageType === "manual" ? (
+                        <span>{manualMessageText.length} characters written.</span>
+                      ) : decisionModalApps.length > 1 ? (
+                        <span style={{ color: "#0284c7", fontWeight: 600 }}>
+                          EliteCruit will automatically substitute each candidate's real name upon sending.
+                        </span>
+                      ) : (
+                        <span />
+                      )}
+                      <a
+                        href="/employer-notices-faqs"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ fontSize: "0.78rem", color: "#0284c7", fontWeight: 600, textDecoration: "none", marginLeft: "auto" }}
+                      >
+                        Configure master templates in Notices &amp; FAQs ↗
+                      </a>
+                    </div>
                   </div>
                 </div>
 
-                <div className="decision-schedule-slide-footer">
+                <div className="decision-card-footer">
                   <button
                     type="button"
-                    className="decision-confirm-btn schedule-action"
+                    className="decision-cancel-btn"
                     disabled={isDecisionSubmitting}
-                    onClick={handleConfirmDecision}
+                    onClick={() => {
+                      setDecisionModalApps([]);
+                      setIsSchedulingImmediate(false);
+                    }}
                   >
-                    {isDecisionSubmitting
-                      ? "Scheduling & Accepting..."
-                      : decisionModalApps.length > 1
-                      ? `📅 Accept & Schedule (${decisionModalApps.length})`
-                      : "📅 Accept & Schedule Interview"}
+                    Cancel
                   </button>
+
+                  <div className="decision-footer-actions" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    {decisionModalAction === "approved" && (
+                      <button
+                        type="button"
+                        className={`decision-schedule-quick-btn ${isSchedulingImmediate ? "active" : ""}`}
+                        disabled={isDecisionSubmitting}
+                        onClick={() => setIsSchedulingImmediate((prev) => !prev)}
+                        title={isSchedulingImmediate ? "Hide interview scheduling card" : "Schedule an interview on the left"}
+                      >
+                        <span>📅</span>
+                        <span>{isSchedulingImmediate ? "Hide Schedule" : "Schedule Interview"}</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      className={`decision-confirm-btn ${decisionModalAction}`}
+                      disabled={isDecisionSubmitting || (decisionMessageType === "manual" && !manualMessageText.trim())}
+                      onClick={handleConfirmDecision}
+                    >
+                      {isDecisionSubmitting && !isSchedulingImmediate
+                        ? `Submitting Decision${decisionModalApps.length > 1 ? ` (${decisionModalApps.length})` : ""}...`
+                        : decisionModalAction === "approved"
+                        ? decisionModalApps.length > 1
+                          ? `Confirm Acceptance (${decisionModalApps.length})`
+                          : "Confirm Acceptance"
+                        : decisionModalApps.length > 1
+                        ? `Confirm Denial (${decisionModalApps.length})`
+                        : "Confirm Denial"}
+                    </button>
+                  </div>
                 </div>
-              </aside>
-            )}
+              </div>
+            </div>
           </div>
-        </div>
         )}
 
         {/* ── RULE 6 COMPLIANT WARNING POPUP MODAL ── */}

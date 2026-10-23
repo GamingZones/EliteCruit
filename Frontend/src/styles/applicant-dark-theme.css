@@ -8517,3 +8517,42 @@
   color: #ffffff !important;
   border-color: #0284c7 !important;
 }
+
+
+/* ── Two-Container Floating Modal Dark Theme (Pic 2 Match) ── */
+[data-theme="dark"] .decision-card {
+  background: #14151B !important;
+  border: 1px solid #2e3244 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
+}
+
+[data-theme="dark"] .decision-card-header {
+  background: #14151B !important;
+  border-bottom: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .decision-card-title {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .decision-card-sub {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .decision-card-close-btn {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .decision-card-close-btn:hover {
+  background: #242735 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .decision-card-body {
+  background: #14151B !important;
+}
+
+[data-theme="dark"] .decision-card-footer {
+  background: #14151B !important;
+  border-top: 1px solid #2e3244 !important;
+}
