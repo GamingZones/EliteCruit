@@ -1984,13 +1984,27 @@
   border-radius: 16px;
   box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
   width: 100%;
-  max-width: 620px;
+  max-width: 580px;
   max-height: 90vh;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   overflow: hidden;
   animation: systemPopupScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   font-family: "Manrope", sans-serif;
+  transition: max-width 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.decision-modal-card.with-schedule-slide {
+  max-width: 1040px;
+}
+
+.decision-modal-main-panel {
+  flex: 1;
+  min-width: 440px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #ffffff;
 }
 
 .decision-modal-header {
@@ -3717,4 +3731,123 @@
 .decision-confirm-btn.schedule-action:hover:not(:disabled) {
   background: #1d4ed8;
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+}
+
+
+/* Slide-to-Right Interview Creation Panel */
+.decision-schedule-slide-panel {
+  width: 460px;
+  flex-shrink: 0;
+  border-left: 1px solid #e2e8f0;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  animation: decisionSlideInRight 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  overflow: hidden;
+}
+
+@keyframes decisionSlideInRight {
+  0% {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.decision-schedule-slide-header {
+  padding: 18px 22px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+}
+
+.decision-schedule-slide-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.decision-schedule-slide-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.decision-schedule-slide-sub {
+  font-size: 0.74rem;
+  color: #64748b;
+  display: block;
+  margin-top: 2px;
+}
+
+.decision-schedule-slide-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.15rem;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.decision-schedule-slide-close-btn:hover {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.decision-schedule-slide-body {
+  padding: 18px 22px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+}
+
+.decision-schedule-slide-footer {
+  padding: 14px 22px;
+  border-top: 1px solid #e2e8f0;
+  background: #ffffff;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.decision-schedule-slide-footer .decision-confirm-btn {
+  width: 100%;
+  justify-content: center;
+  padding: 10px 16px;
+}
+
+.decision-schedule-quick-btn.active {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #0284c7;
+}
+
+.decision-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (max-width: 860px) {
+  .decision-modal-card.with-schedule-slide {
+    max-width: 95vw;
+    flex-direction: column;
+    max-height: 94vh;
+  }
+  .decision-modal-card.with-schedule-slide .decision-modal-main-panel {
+    display: none;
+  }
+  .decision-schedule-slide-panel {
+    width: 100%;
+    border-left: none;
+  }
 }

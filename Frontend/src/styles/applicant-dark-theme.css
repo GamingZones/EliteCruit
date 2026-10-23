@@ -8468,3 +8468,52 @@
 [data-theme="dark"] .decision-confirm-btn.schedule-action:hover:not(:disabled) {
   background: #1d4ed8 !important;
 }
+
+
+/* Slide-to-Right Interview Creation Dark Theme */
+[data-theme="dark"] .decision-modal-card {
+  background: #14151b !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .decision-modal-main-panel {
+  background: #14151b !important;
+}
+
+[data-theme="dark"] .decision-schedule-slide-panel {
+  border-left-color: #2e3244 !important;
+  background: #181a22 !important;
+}
+
+[data-theme="dark"] .decision-schedule-slide-header {
+  border-bottom-color: #2e3244 !important;
+  background: #14151b !important;
+}
+
+[data-theme="dark"] .decision-schedule-slide-title {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .decision-schedule-slide-sub {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .decision-schedule-slide-close-btn {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .decision-schedule-slide-close-btn:hover {
+  background: #242735 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .decision-schedule-slide-footer {
+  border-top-color: #2e3244 !important;
+  background: #14151b !important;
+}
+
+[data-theme="dark"] .decision-schedule-quick-btn.active {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border-color: #0284c7 !important;
+}

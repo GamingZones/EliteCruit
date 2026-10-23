@@ -5577,26 +5577,20 @@ export default function EmployerApplicantManagement() {
         {/* ── DECISION MODAL (ACCEPT / DENY WITH MESSAGE PREFERENCE) ── */}
         {decisionModalApps.length > 0 && decisionModalAction && (
           <div className="decision-modal-overlay" onClick={() => { if (!isDecisionSubmitting) { setDecisionModalApps([]); setIsSchedulingImmediate(false); } }}>
-            <div className="decision-modal-card" onClick={(e) => e.stopPropagation()}>
-              <div className="decision-modal-header">
-                <div className="decision-header-left">
-                  <h3 className="decision-modal-title">
-                    {decisionModalApps.length > 1
-                      ? decisionModalAction === "approved"
-                        ? `Accept Multiple Candidates (${decisionModalApps.length})`
-                        : `Deny Multiple Candidates (${decisionModalApps.length})`
-                      : decisionModalAction === "approved"
-                      ? "Accept Candidate"
-                      : "Deny Candidate"}
-                  </h3>
-                  <p className="decision-modal-sub">
-                    {decisionModalApps.length > 1 ? (
-                      <>Reviewing decision for <strong>{decisionModalApps.length} candidates</strong></>
-                    ) : (
-                      <>Candidate: <strong>{decisionModalApps[0].applicant_name}</strong> &bull; Position: <strong>{decisionModalApps[0].job_title || "Job Post"}</strong></>
-                    )}
-                  </p>
-                </div>
+            <div className={`decision-modal-card ${isSchedulingImmediate && decisionModalAction === "approved" ? "with-schedule-slide" : ""}`} onClick={(e) => e.stopPropagation()}>
+              <div className="decision-modal-main-panel">
+                <div className="decision-modal-header">
+                  <div className="decision-header-left">
+                    <h3 className="decision-modal-title">
+                      {decisionModalApps.length > 1
+                        ? decisionModalAction === "approved"
+                          ? `Accept Multiple Candidates (${decisionModalApps.length})`
+                          : `Deny Multiple Candidates (${decisionModalApps.length})`
+                        : decisionModalAction === "approved"
+                        ? "Accept Candidate"
+                        : "Deny Candidate"}
+                    </h3>
+                  </div>
                 <button
                   type="button"
                   className="decision-close-btn"
@@ -5649,122 +5643,6 @@ export default function EmployerApplicantManagement() {
                         </span>
                       ))}
                     </div>
-                  </div>
-                )}
-
-                {/* Immediate Schedule Option & Fields for Acceptance */}
-                {decisionModalAction === "approved" && (
-                  <div className={`decision-schedule-section ${isSchedulingImmediate ? "expanded" : ""}`}>
-                    <div className="decision-schedule-header">
-                      <div className="decision-schedule-title-area">
-                        <span className="decision-schedule-icon">📅</span>
-                        <div>
-                          <h4 className="decision-schedule-title">Schedule Interview Immediately</h4>
-                          <p className="decision-schedule-desc">
-                            Directly book this meeting on the calendar and dispatch schedule details to the applicant upon acceptance.
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        className={`decision-schedule-toggle-pill ${isSchedulingImmediate ? "active" : ""}`}
-                        onClick={() => setIsSchedulingImmediate((v) => !v)}
-                      >
-                        {isSchedulingImmediate ? "✓ Interview Scheduling Enabled" : "+ Set Interview Schedule"}
-                      </button>
-                    </div>
-
-                    {isSchedulingImmediate && (
-                      <div className="decision-schedule-fields-wrap">
-                        <div className="decision-schedule-row three-col">
-                          <div className="decision-sched-field">
-                            <label>Interview Date *</label>
-                            <input
-                              type="date"
-                              className="decision-sched-input"
-                              value={schedDate}
-                              min={getTodayDateStr()}
-                              onChange={(e) => setSchedDate(e.target.value)}
-                            />
-                          </div>
-                          <div className="decision-sched-field">
-                            <label>Start Time *</label>
-                            <input
-                              type="time"
-                              className="decision-sched-input"
-                              value={schedStartTime}
-                              onChange={(e) => setSchedStartTime(e.target.value)}
-                            />
-                          </div>
-                          <div className="decision-sched-field">
-                            <label>End Time</label>
-                            <input
-                              type="time"
-                              className="decision-sched-input"
-                              value={schedEndTime}
-                              onChange={(e) => setSchedEndTime(e.target.value)}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="decision-schedule-row three-col">
-                          <div className="decision-sched-field">
-                            <label>Interview Mode</label>
-                            <select
-                              className="decision-sched-input"
-                              value={schedType}
-                              onChange={(e) => {
-                                const newType = e.target.value as "On-Site" | "Virtual";
-                                setSchedType(newType);
-                                if (newType === "Virtual" && (!schedLocation || schedLocation.includes("Office") || schedLocation.includes("Branch"))) {
-                                  setSchedLocation("Google Meet / Video Link");
-                                } else if (newType === "On-Site" && (!schedLocation || schedLocation.includes("Meet") || schedLocation.includes("Video"))) {
-                                  setSchedLocation(companyLabel ? (companyLabel + " Main Office") : "Company Office");
-                                }
-                              }}
-                            >
-                              <option value="On-Site">On-Site Interview</option>
-                              <option value="Virtual">Virtual / Online Meeting</option>
-                            </select>
-                          </div>
-                          <div className="decision-sched-field">
-                            <label>Interview Stage</label>
-                            <select
-                              className="decision-sched-input"
-                              value={schedStage}
-                              onChange={(e) => setSchedStage(e.target.value)}
-                            >
-                              <option value="On-Site Interview">On-Site Interview</option>
-                              <option value="Initial Interview">Initial Interview</option>
-                              <option value="Technical Interview">Technical Interview</option>
-                              <option value="Final Interview">Final Interview</option>
-                              <option value="HR Screening">HR Screening</option>
-                            </select>
-                          </div>
-                          <div className="decision-sched-field">
-                            <label>{schedType === "Virtual" ? "Meeting Link / Platform" : "Office Address / Room"}</label>
-                            <input
-                              type="text"
-                              className="decision-sched-input"
-                              value={schedLocation}
-                              onChange={(e) => setSchedLocation(e.target.value)}
-                              placeholder={schedType === "Virtual" ? "e.g., Google Meet or Zoom link" : "e.g., 4th Floor HQ, Room B"}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="decision-sched-field">
-                          <label>Preparation Notes / Instructions (Optional)</label>
-                          <input
-                            type="text"
-                            className="decision-sched-input"
-                            value={schedNotes}
-                            onChange={(e) => setSchedNotes(e.target.value)}
-                            placeholder="e.g., Please bring 2 valid IDs and an updated copy of your resume."
-                          />
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
 
@@ -5850,7 +5728,7 @@ export default function EmployerApplicantManagement() {
                   <textarea
                     id="decision-msg-input"
                     className={`decision-textarea ${decisionMessageType === "automated" ? "automated-preview" : ""}`}
-                    rows={isSchedulingImmediate ? 5 : 8}
+                    rows={7}
                     readOnly={decisionMessageType === "automated"}
                     value={decisionMessageType === "automated" ? decisionMessageText : manualMessageText}
                     onChange={(e) => {
@@ -5901,53 +5779,199 @@ export default function EmployerApplicantManagement() {
                   Cancel
                 </button>
 
-                {decisionModalAction === "approved" && (
-                  isSchedulingImmediate ? (
-                    <button
-                      type="button"
-                      className="decision-schedule-switch-btn"
-                      disabled={isDecisionSubmitting}
-                      onClick={() => setIsSchedulingImmediate(false)}
-                    >
-                      Accept Without Scheduling
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="decision-schedule-quick-btn"
-                      disabled={isDecisionSubmitting}
-                      onClick={() => setIsSchedulingImmediate(true)}
-                    >
-                      📅 Schedule Interview Instead
-                    </button>
-                  )
-                )}
-
-                <button
-                  type="button"
-                  className={`decision-confirm-btn ${decisionModalAction} ${isSchedulingImmediate ? "schedule-action" : ""}`}
-                  disabled={isDecisionSubmitting || (decisionMessageType === "manual" && !manualMessageText.trim())}
-                  onClick={handleConfirmDecision}
-                >
-                  {isDecisionSubmitting
-                    ? isSchedulingImmediate
-                      ? `Scheduling & Accepting...`
-                      : `Submitting Decision${decisionModalApps.length > 1 ? ` (${decisionModalApps.length})` : ""}...`
-                    : decisionModalAction === "approved"
-                    ? isSchedulingImmediate
+                <div className="decision-footer-actions" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <button
+                    type="button"
+                    className={`decision-confirm-btn ${decisionModalAction}`}
+                    disabled={isDecisionSubmitting || (decisionMessageType === "manual" && !manualMessageText.trim())}
+                    onClick={handleConfirmDecision}
+                  >
+                    {isDecisionSubmitting && !isSchedulingImmediate
+                      ? `Submitting Decision${decisionModalApps.length > 1 ? ` (${decisionModalApps.length})` : ""}...`
+                      : decisionModalAction === "approved"
                       ? decisionModalApps.length > 1
-                        ? `📅 Accept & Schedule (${decisionModalApps.length})`
-                        : "📅 Accept & Schedule Interview"
+                        ? `Confirm Acceptance (${decisionModalApps.length})`
+                        : "Confirm Acceptance"
                       : decisionModalApps.length > 1
-                      ? `Confirm Acceptance (${decisionModalApps.length})`
-                      : "Confirm Acceptance"
-                    : decisionModalApps.length > 1
-                    ? `Confirm Denial (${decisionModalApps.length})`
-                    : "Confirm Denial"}
-                </button>
+                      ? `Confirm Denial (${decisionModalApps.length})`
+                      : "Confirm Denial"}
+                  </button>
+
+                  {decisionModalAction === "approved" && (
+                    <button
+                      type="button"
+                      className={`decision-schedule-quick-btn ${isSchedulingImmediate ? "active" : ""}`}
+                      disabled={isDecisionSubmitting}
+                      onClick={() => setIsSchedulingImmediate((prev) => !prev)}
+                      title={isSchedulingImmediate ? "Collapse schedule panel" : "Slide open interview creation panel"}
+                    >
+                      <span>📅</span>
+                      <span>{isSchedulingImmediate ? "Hide Schedule" : "Schedule Interview"}</span>
+                      <span style={{ fontSize: "0.9rem", transition: "transform 0.2s" }}>
+                        {isSchedulingImmediate ? "⇥" : "→"}
+                      </span>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
+
+            {/* SLIDE-TO-RIGHT INTERVIEW CREATION PANEL */}
+            {decisionModalAction === "approved" && isSchedulingImmediate && (
+              <aside className="decision-schedule-slide-panel">
+                <div className="decision-schedule-slide-header">
+                  <div className="decision-schedule-slide-title-wrap">
+                    <span className="decision-schedule-icon">📅</span>
+                    <div>
+                      <h4 className="decision-schedule-slide-title">Schedule Interview</h4>
+                      <span className="decision-schedule-slide-sub">
+                        {decisionModalApps.length > 1
+                          ? `${decisionModalApps.length} Candidates Selected`
+                          : (decisionModalApps[0]?.applicant_name || "Candidate")}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="decision-schedule-slide-close-btn"
+                    onClick={() => setIsSchedulingImmediate(false)}
+                    title="Close Schedule Panel"
+                    aria-label="Close Schedule Panel"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="decision-schedule-slide-body">
+                  <div className="decision-sched-field">
+                    <label>Interview Date *</label>
+                    <input
+                      type="date"
+                      className="decision-sched-input"
+                      value={schedDate}
+                      min={getTodayDateStr()}
+                      onChange={(e) => setSchedDate(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="decision-schedule-row two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                    <div className="decision-sched-field">
+                      <label>Start Time *</label>
+                      <input
+                        type="time"
+                        className="decision-sched-input"
+                        value={schedStartTime}
+                        onChange={(e) => setSchedStartTime(e.target.value)}
+                      />
+                    </div>
+                    <div className="decision-sched-field">
+                      <label>End Time</label>
+                      <input
+                        type="time"
+                        className="decision-sched-input"
+                        value={schedEndTime}
+                        onChange={(e) => setSchedEndTime(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="decision-schedule-row two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                    <div className="decision-sched-field">
+                      <label>Interview Mode</label>
+                      <select
+                        className="decision-sched-input"
+                        value={schedType}
+                        onChange={(e) => {
+                          const newType = e.target.value as "On-Site" | "Virtual";
+                          setSchedType(newType);
+                          if (newType === "Virtual" && (!schedLocation || schedLocation.includes("Office") || schedLocation.includes("Branch"))) {
+                            setSchedLocation("Google Meet / Video Link");
+                          } else if (newType === "On-Site" && (!schedLocation || schedLocation.includes("Meet") || schedLocation.includes("Video"))) {
+                            setSchedLocation(companyLabel ? (companyLabel + " Main Office") : "Company Office");
+                          }
+                        }}
+                      >
+                        <option value="On-Site">On-Site Interview</option>
+                        <option value="Virtual">Virtual / Online Meeting</option>
+                      </select>
+                    </div>
+
+                    <div className="decision-sched-field">
+                      <label>Interview Stage</label>
+                      <select
+                        className="decision-sched-input"
+                        value={schedStage}
+                        onChange={(e) => setSchedStage(e.target.value)}
+                      >
+                        <option value="On-Site Interview">On-Site Interview</option>
+                        <option value="Initial Interview">Initial Interview</option>
+                        <option value="Technical Interview">Technical Interview</option>
+                        <option value="Final Interview">Final Interview</option>
+                        <option value="HR Screening">HR Screening</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="decision-sched-field">
+                    <label>{schedType === "Virtual" ? "Meeting Link / Platform" : "Office Address / Meeting Room"}</label>
+                    <input
+                      type="text"
+                      className="decision-sched-input"
+                      value={schedLocation}
+                      onChange={(e) => setSchedLocation(e.target.value)}
+                      placeholder={schedType === "Virtual" ? "e.g., Google Meet or Zoom link" : "e.g., 4th Floor HQ, Room B"}
+                    />
+                  </div>
+
+                  <div className="decision-sched-field">
+                    <label>Preparation Notes / Instructions (Optional)</label>
+                    <textarea
+                      className="decision-sched-input"
+                      rows={3}
+                      style={{ resize: "vertical" }}
+                      value={schedNotes}
+                      onChange={(e) => setSchedNotes(e.target.value)}
+                      placeholder="e.g., Please bring 2 valid IDs and an updated copy of your resume."
+                    />
+                  </div>
+
+                  <div
+                    style={{
+                      background: "rgba(2, 132, 199, 0.08)",
+                      border: "1px solid rgba(2, 132, 199, 0.2)",
+                      borderRadius: "8px",
+                      padding: "8px 12px",
+                      fontSize: "0.75rem",
+                      color: "#0369a1",
+                      lineHeight: 1.4,
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "8px",
+                    }}
+                  >
+                    <span>💡</span>
+                    <span>Submitting will finalize applicant acceptance, book this slot in your calendar, and send interview details directly to the candidate.</span>
+                  </div>
+                </div>
+
+                <div className="decision-schedule-slide-footer">
+                  <button
+                    type="button"
+                    className="decision-confirm-btn schedule-action"
+                    disabled={isDecisionSubmitting}
+                    onClick={handleConfirmDecision}
+                  >
+                    {isDecisionSubmitting
+                      ? "Scheduling & Accepting..."
+                      : decisionModalApps.length > 1
+                      ? `📅 Accept & Schedule (${decisionModalApps.length})`
+                      : "📅 Accept & Schedule Interview"}
+                  </button>
+                </div>
+              </aside>
+            )}
           </div>
+        </div>
         )}
 
         {/* ── RULE 6 COMPLIANT WARNING POPUP MODAL ── */}
