@@ -72,6 +72,65 @@ type JobCard = {
   rating?: string;
 };
 
+type EmployerJob = {
+  id: number;
+  title: string;
+  location: string;
+  work_arrangement: string;
+  salary_min: number | null;
+  salary_max: number | null;
+  required_skills: string | null;
+  required_qualifications: string | null;
+  required_certifications: string | null;
+  close_date: string | null;
+  created_at: string | null;
+  urgent: boolean;
+};
+
+type EmployerItem = {
+  employer_user_id: number;
+  business_email: string;
+  company_name: string;
+  location: string;
+  city: string;
+  province?: string | null;
+  industry?: string | null;
+  company_size?: string | null;
+  company_logo_path?: string | null;
+  company_cover_path?: string | null;
+  website?: string | null;
+  company_description?: string | null;
+  rating?: string | null;
+  active_jobs_count: number;
+  jobs: EmployerJob[];
+};
+
+const EMPLOYER_INDUSTRIES = [
+  "Information Technology",
+  "Software & Computer Services",
+  "Telecommunications",
+  "BPO & Customer Operations",
+  "Financial Services & Banking",
+  "Healthcare & Pharmaceuticals",
+  "Manufacturing & Production",
+  "Retail & E-Commerce",
+  "Education & Training",
+  "Logistics & Supply Chain",
+  "Construction & Real Estate",
+  "Hospitality & Tourism",
+  "Media & Entertainment",
+  "Other",
+];
+
+const EMPLOYER_SIZES = [
+  "1-10 employees",
+  "11-50 employees",
+  "51-200 employees",
+  "201-500 employees",
+  "501-1000 employees",
+  "1000+ employees",
+];
+
 type FaqItem = {
   id: number;
   question: string;
@@ -592,6 +651,7 @@ export default function JobSearch() {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   const [applicantLabel, setApplicantLabel] = useState("Applicant");
+  const [searchMode, setSearchMode] = useState<"jobs" | "employers">("jobs");
   const [jobs, setJobs] = useState<JobCard[]>([]);
   const [jobsMessage, setJobsMessage] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -602,6 +662,27 @@ export default function JobSearch() {
   const [selectedCity, setSelectedCity] = useState("All cities/municipalities");
   const [selectedWorkArrangement, setSelectedWorkArrangement] = useState("Any arrangement");
   const [selectedMinSalary, setSelectedMinSalary] = useState("Any salary");
+
+  // Employer Search States
+  const [employers, setEmployers] = useState<EmployerItem[]>([]);
+  const [employersLoading, setEmployersLoading] = useState(false);
+  const [employerSearchInput, setEmployerSearchInput] = useState("");
+  const [employerAppliedSearch, setEmployerAppliedSearch] = useState("");
+  const [isEmployerFiltersOpen, setIsEmployerFiltersOpen] = useState(false);
+  const [employerSelectedProvince, setEmployerSelectedProvince] = useState("All provinces");
+  const [employerSelectedCity, setEmployerSelectedCity] = useState("All cities/municipalities");
+  const [employerSelectedIndustry, setEmployerSelectedIndustry] = useState("All industries");
+  const [employerSelectedSize, setEmployerSelectedSize] = useState("All sizes");
+  const [employerSortBy, setEmployerSortBy] = useState<"active_jobs" | "rating" | "name_asc" | "name_desc">("active_jobs");
+  const [employerCurrentPage, setEmployerCurrentPage] = useState(1);
+  const [selectedEmployerModal, setSelectedEmployerModal] = useState<EmployerItem | null>(null);
+
+  const availableEmployerCities = useMemo(() => {
+    if (employerSelectedProvince !== "All provinces") {
+      return getCitiesByProvince(employerSelectedProvince);
+    }
+    return CAVITE_CITIES;
+  }, [employerSelectedProvince]);
 
   const availableCities = useMemo(() => {
     if (selectedProvince !== "All provinces") {
@@ -810,6 +891,23 @@ export default function JobSearch() {
         setJobs(mapped);
       })
       .catch((error) => setJobsMessage(error instanceof Error ? error.message : "Unable to load job postings."));
+  }, []);
+
+  useEffect(() => {
+    setEmployersLoading(true);
+    fetch("/api/employers")
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.message || "Failed to load employers");
+        const list = Array.isArray(data?.employers) ? data.employers : [];
+        setEmployers(list);
+      })
+      .catch((err) => {
+        console.error("Failed to load employers:", err);
+      })
+      .finally(() => {
+        setEmployersLoading(false);
+      });
   }, []);
 
   const activeFilterCount = useMemo(() => {
@@ -1152,6 +1250,197 @@ export default function JobSearch() {
     });
   };
 
+  const applyEmployerSearch = () => {
+    setEmployerAppliedSearch(employerSearchInput);
+  };
+
+  const employerActiveFilterCount = useMemo(() => {
+    let count = 0;
+    if (employerSelectedProvince !== "All provinces") count++;
+    if (employerSelectedCity !== "All cities/municipalities") count++;
+    if (employerSelectedIndustry !== "All industries") count++;
+    if (employerSelectedSize !== "All sizes") count++;
+    if (employerSortBy !== "active_jobs") count++;
+    return count;
+  }, [
+    employerSelectedProvince,
+    employerSelectedCity,
+    employerSelectedIndustry,
+    employerSelectedSize,
+    employerSortBy,
+  ]);
+
+  const resetEmployerFilters = () => {
+    setEmployerSelectedProvince("All provinces");
+    setEmployerSelectedCity("All cities/municipalities");
+    setEmployerSelectedIndustry("All industries");
+    setEmployerSelectedSize("All sizes");
+    setEmployerSortBy("active_jobs");
+    setEmployerSearchInput("");
+    setEmployerAppliedSearch("");
+    setEmployerCurrentPage(1);
+  };
+
+  const visibleEmployers = useMemo(() => {
+    const q = employerAppliedSearch.trim().toLowerCase();
+
+    const filtered = employers.filter((emp) => {
+      if (q) {
+        const nameMatch = emp.company_name?.toLowerCase().includes(q);
+        const industryMatch = emp.industry?.toLowerCase().includes(q);
+        const locMatch =
+          emp.location?.toLowerCase().includes(q) ||
+          emp.city?.toLowerCase().includes(q) ||
+          emp.province?.toLowerCase().includes(q);
+        const descMatch = emp.company_description?.toLowerCase().includes(q);
+        const jobsMatch = emp.jobs?.some(
+          (j) =>
+            j.title?.toLowerCase().includes(q) ||
+            j.required_skills?.toLowerCase().includes(q)
+        );
+        if (!nameMatch && !industryMatch && !locMatch && !descMatch && !jobsMatch) {
+          return false;
+        }
+      }
+
+      if (employerSelectedProvince !== "All provinces") {
+        const provLower = employerSelectedProvince.toLowerCase();
+        const matchProv =
+          emp.province?.toLowerCase().includes(provLower) ||
+          emp.location?.toLowerCase().includes(provLower);
+        if (!matchProv) return false;
+      }
+
+      if (employerSelectedCity !== "All cities/municipalities") {
+        const cityLower = employerSelectedCity.toLowerCase();
+        const matchCity =
+          emp.city?.toLowerCase().includes(cityLower) ||
+          emp.location?.toLowerCase().includes(cityLower);
+        if (!matchCity) return false;
+      }
+
+      if (employerSelectedIndustry !== "All industries") {
+        if (!emp.industry || !emp.industry.toLowerCase().includes(employerSelectedIndustry.toLowerCase())) {
+          return false;
+        }
+      }
+
+      if (employerSelectedSize !== "All sizes") {
+        if (!emp.company_size || emp.company_size !== employerSelectedSize) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    const sorted = [...filtered].sort((a, b) => {
+      if (employerSortBy === "active_jobs") {
+        if (b.active_jobs_count !== a.active_jobs_count) {
+          return b.active_jobs_count - a.active_jobs_count;
+        }
+        const rA = Number(a.rating) || 0;
+        const rB = Number(b.rating) || 0;
+        if (rB !== rA) return rB - rA;
+        return a.company_name.localeCompare(b.company_name);
+      }
+      if (employerSortBy === "rating") {
+        const rA = Number(a.rating) || 0;
+        const rB = Number(b.rating) || 0;
+        if (rB !== rA) return rB - rA;
+        return b.active_jobs_count - a.active_jobs_count;
+      }
+      if (employerSortBy === "name_asc") {
+        return a.company_name.localeCompare(b.company_name);
+      }
+      if (employerSortBy === "name_desc") {
+        return b.company_name.localeCompare(a.company_name);
+      }
+      return 0;
+    });
+
+    return sorted;
+  }, [
+    employers,
+    employerAppliedSearch,
+    employerSelectedProvince,
+    employerSelectedCity,
+    employerSelectedIndustry,
+    employerSelectedSize,
+    employerSortBy,
+  ]);
+
+  const EMPLOYERS_PER_PAGE = 8;
+  const employerTotalPages = Math.max(1, Math.ceil(visibleEmployers.length / EMPLOYERS_PER_PAGE));
+  const paginatedEmployers = useMemo(() => {
+    const start = (employerCurrentPage - 1) * EMPLOYERS_PER_PAGE;
+    return visibleEmployers.slice(start, start + EMPLOYERS_PER_PAGE);
+  }, [visibleEmployers, employerCurrentPage]);
+
+  useEffect(() => {
+    setEmployerCurrentPage(1);
+  }, [
+    employerAppliedSearch,
+    employerSelectedProvince,
+    employerSelectedCity,
+    employerSelectedIndustry,
+    employerSelectedSize,
+    employerSortBy,
+  ]);
+
+  useEffect(() => {
+    if (employerCurrentPage > employerTotalPages) {
+      setEmployerCurrentPage(employerTotalPages);
+    }
+  }, [employerCurrentPage, employerTotalPages]);
+
+  const handleOpenJobDetailsById = (jobId: number) => {
+    const existingJob = jobs.find((j) => j.id === jobId);
+    if (existingJob) {
+      setDetailsJob(existingJob);
+      return;
+    }
+    for (const emp of employers) {
+      const ej = emp.jobs?.find((j) => j.id === jobId);
+      if (ej) {
+        const fallbackJob: JobCard = {
+          id: ej.id,
+          title: ej.title,
+          company: emp.company_name,
+          location: formatLocationWithCavite(ej.location || emp.location),
+          summary: "No job description provided yet.",
+          salary: formatSalary(ej.salary_min, ej.salary_max),
+          salaryMin: Number(ej.salary_min) || 0,
+          setup: ej.work_arrangement || "Flexible",
+          experienceLevel: null,
+          jobType: ej.work_arrangement === "Remote" ? "Remote" : "Full-time",
+          functionGroup: inferFunctionGroup(ej.title, parseCompetencyDisplayTags(ej.required_skills)),
+          distance: "Cavite",
+          badges: parseCompetencyDisplayTags(ej.required_skills),
+          skillTags: parseCompetencyDisplayTags(ej.required_skills),
+          qualTags: parseCompetencyDisplayTags(ej.required_qualifications),
+          certTags: parseCompetencyDisplayTags(ej.required_certifications),
+          urgent: ej.urgent,
+          createdAt: ej.created_at,
+          createdRank: 0,
+          status: "open",
+          closeDate: ej.close_date || "-",
+          applicationLimit: 0,
+          applicantCount: 0,
+          qualifications: ej.required_qualifications || "Not provided",
+          certifications: ej.required_certifications || "Not provided",
+          responsibilities: "Not provided",
+          employerUserId: emp.employer_user_id,
+          companyLogoPath: emp.company_logo_path,
+          companyCoverPath: emp.company_cover_path,
+          rating: emp.rating || "5.0",
+        };
+        setDetailsJob(fallbackJob);
+        return;
+      }
+    }
+  };
+
   return (
     <div className="jobsearch-page appdash-page sidebar-visible">
       <aside className="appdash-sidebar" aria-label="Applicant Navigation">
@@ -1225,7 +1514,7 @@ export default function JobSearch() {
         <header className="appdash-topbar">
           <div className="appdash-top-left">
             <div>
-              <strong>Job Search</strong>
+              <strong>{searchMode === "jobs" ? "Job Search" : "Employer Search"}</strong>
             </div>
           </div>
 
@@ -1233,13 +1522,41 @@ export default function JobSearch() {
             <ApplicantChatbotDrawer
               isOpen={isChatbotOpen}
               onToggle={() => setIsChatbotOpen((prev) => !prev)}
-              pageTitle="Job Search"
+              pageTitle={searchMode === "jobs" ? "Job Search" : "Employer Search"}
             />
             <CalendarDrawer />
           </div>
         </header>
 
-        <section className="search-bar-card">
+        {/* ── MODE NAVIGATION TABS (Picture 2 Design) ── */}
+        <nav className="profile-section-nav search-mode-nav" aria-label="Search Mode">
+          <button
+            type="button"
+            className={`section-nav-btn ${searchMode === "jobs" ? "active" : ""}`}
+            onClick={() => {
+              setSearchMode("jobs");
+              scrollToTop();
+            }}
+          >
+            <span className="nav-num">1</span>
+            <span>Job Search</span>
+          </button>
+          <button
+            type="button"
+            className={`section-nav-btn ${searchMode === "employers" ? "active" : ""}`}
+            onClick={() => {
+              setSearchMode("employers");
+              scrollToTop();
+            }}
+          >
+            <span className="nav-num">2</span>
+            <span>Employer Search</span>
+          </button>
+        </nav>
+
+        {searchMode === "jobs" && (
+          <>
+            <section className="search-bar-card">
           <div className="search-input-row">
             <input
               type="text"
@@ -1540,6 +1857,369 @@ export default function JobSearch() {
             </section>
           </div>
         </section>
+      </>
+    )}
+
+    {searchMode === "employers" && (
+      <>
+        <section className="search-bar-card">
+          <div className="search-input-row">
+            <input
+              type="text"
+              value={employerSearchInput}
+              onChange={(event) => setEmployerSearchInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") applyEmployerSearch();
+              }}
+              placeholder="Search employers by company name, industry, or location..."
+            />
+            <button type="button" className="find-jobs-btn" onClick={applyEmployerSearch}>
+              Search Employers
+            </button>
+            <button
+              type="button"
+              className={`filter-toggle-btn ${isEmployerFiltersOpen ? "active" : ""}`}
+              onClick={() => setIsEmployerFiltersOpen((prev) => !prev)}
+            >
+              <MiniIcon name="filters" />
+              <span>Filters</span>
+              {employerActiveFilterCount > 0 && (
+                <span className="filter-badge-count">{employerActiveFilterCount}</span>
+              )}
+              <ChevronIcon direction={isEmployerFiltersOpen ? "up" : "down"} />
+            </button>
+          </div>
+
+          {isEmployerFiltersOpen && (
+            <div className="search-filters-dropdown">
+              <div className="filters-grid">
+                <div className="filter-field">
+                  <label>Industry</label>
+                  <select
+                    value={employerSelectedIndustry}
+                    onChange={(e) => setEmployerSelectedIndustry(e.target.value)}
+                  >
+                    <option>All industries</option>
+                    {EMPLOYER_INDUSTRIES.map((ind) => (
+                      <option key={ind} value={ind}>
+                        {ind}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="filter-field">
+                  <label>Province</label>
+                  <select
+                    value={employerSelectedProvince}
+                    onChange={(e) => {
+                      setEmployerSelectedProvince(e.target.value);
+                      setEmployerSelectedCity("All cities/municipalities");
+                    }}
+                  >
+                    <option>All provinces</option>
+                    {ALL_PHILIPPINES_PROVINCES.map((prov) => (
+                      <option key={prov} value={prov}>
+                        {prov}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="filter-field">
+                  <label>City / Municipality</label>
+                  <select
+                    value={employerSelectedCity}
+                    onChange={(e) => setEmployerSelectedCity(e.target.value)}
+                  >
+                    <option>All cities/municipalities</option>
+                    {availableEmployerCities.map((city) => (
+                      <option key={city} value={city}>
+                        {city}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="filter-field">
+                  <label>Company Size</label>
+                  <select
+                    value={employerSelectedSize}
+                    onChange={(e) => setEmployerSelectedSize(e.target.value)}
+                  >
+                    <option>All sizes</option>
+                    {EMPLOYER_SIZES.map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="filter-field">
+                  <label>Sort By</label>
+                  <select
+                    value={employerSortBy}
+                    onChange={(e) =>
+                      setEmployerSortBy(
+                        e.target.value as "active_jobs" | "rating" | "name_asc" | "name_desc"
+                      )
+                    }
+                  >
+                    <option value="active_jobs">Most Active Jobs</option>
+                    <option value="rating">Highest Rated</option>
+                    <option value="name_asc">Company Name (A-Z)</option>
+                    <option value="name_desc">Company Name (Z-A)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="filters-footer-row">
+                <div className="active-filters-summary">
+                  {employerActiveFilterCount > 0 ? (
+                    <span>
+                      {employerActiveFilterCount} active filter
+                      {employerActiveFilterCount > 1 ? "s" : ""} applied
+                    </span>
+                  ) : (
+                    <span>Showing all registered employers</span>
+                  )}
+                </div>
+                {employerActiveFilterCount > 0 && (
+                  <button
+                    type="button"
+                    className="reset-filters-btn"
+                    onClick={resetEmployerFilters}
+                  >
+                    Reset Filters
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section className="jobsearch-content-grid">
+          <div className="job-results-col">
+            <section className="results-container">
+              <header className="results-head">
+                <p>
+                  {visibleEmployers.length === 0
+                    ? "0 employers found"
+                    : `Showing ${(employerCurrentPage - 1) * EMPLOYERS_PER_PAGE + 1} - ${Math.min(
+                        employerCurrentPage * EMPLOYERS_PER_PAGE,
+                        visibleEmployers.length
+                      )} of ${visibleEmployers.length} employer${
+                        visibleEmployers.length === 1 ? "" : "s"
+                      } found`}
+                </p>
+              </header>
+
+              {visibleEmployers.length === 0 ? (
+                <article className="result-card empty-state">
+                  <div className="result-top">
+                    <div>
+                      <h3>No employers found matching current criteria.</h3>
+                      <p>Try clearing your search query or adjusting your filters.</p>
+                    </div>
+                  </div>
+                </article>
+              ) : (
+                paginatedEmployers.map((employer) => (
+                  <article key={employer.employer_user_id} className="result-card employer-result-card">
+                    <div className="result-card-main">
+                      <div className="result-left-col">
+                        <div className="result-title-row" style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                          {employer.company_logo_path ? (
+                            <img
+                              src={employer.company_logo_path}
+                              alt={employer.company_name}
+                              className="employer-card-logo"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLElement).style.display = "none";
+                                const nextEl = e.currentTarget.nextElementSibling as HTMLElement;
+                                if (nextEl) nextEl.style.display = "grid";
+                              }}
+                            />
+                          ) : null}
+                          <div
+                            className="employer-avatar-fallback"
+                            style={{ display: employer.company_logo_path ? "none" : "grid" }}
+                          >
+                            {employer.company_name?.charAt(0)?.toUpperCase() || "E"}
+                          </div>
+                          <div>
+                            <h3 title={employer.company_name} style={{ margin: 0, fontSize: "1.1rem" }}>
+                              {employer.company_name}
+                            </h3>
+                            <p className="meta-line" style={{ marginTop: "4px", marginBottom: 0 }}>
+                              <RenderLocationMeta location={employer.location} />
+                              {employer.industry && <span className="emp-industry-tag">{employer.industry}</span>}
+                              {employer.company_size && <span className="emp-size-tag">{employer.company_size}</span>}
+                            </p>
+                          </div>
+                        </div>
+
+                        <p className="result-summary" style={{ marginTop: "10px" }}>
+                          {shortenText(employer.company_description, "A registered employer on EliteCruit.", 160)}
+                        </p>
+
+                        <div className="result-tags employer-tags-row">
+                          {employer.active_jobs_count > 0 ? (
+                            <span className="status-chip open">
+                              {employer.active_jobs_count} Open Position{employer.active_jobs_count > 1 ? "s" : ""}
+                            </span>
+                          ) : (
+                            <span className="status-chip closed">No Active Postings</span>
+                          )}
+                          {employer.website && (
+                            <a
+                              href={employer.website.startsWith("http") ? employer.website : `https://${employer.website}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="employer-website-pill"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              🌐 {employer.website.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
+                            </a>
+                          )}
+                        </div>
+
+                        {/* Preview chips of active jobs */}
+                        {employer.jobs && employer.jobs.length > 0 && (
+                          <div className="employer-jobs-preview-wrap">
+                            <span className="preview-label">Active Openings:</span>
+                            <div className="employer-jobs-chips-list">
+                              {employer.jobs.slice(0, 3).map((j) => (
+                                <button
+                                  key={j.id}
+                                  type="button"
+                                  className="employer-job-chip-btn"
+                                  title={`Click to view details for ${j.title}`}
+                                  onClick={() => handleOpenJobDetailsById(j.id)}
+                                >
+                                  <span className="job-chip-icon">💼</span>
+                                  <span className="job-chip-title">{j.title}</span>
+                                  <span className="job-chip-type">({j.work_arrangement || "Full-time"})</span>
+                                </button>
+                              ))}
+                              {employer.jobs.length > 3 && (
+                                <button
+                                  type="button"
+                                  className="employer-job-chip-more"
+                                  onClick={() => setSelectedEmployerModal(employer)}
+                                >
+                                  +{employer.jobs.length - 3} more
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="result-right-col">
+                        <div className="card-top-actions">
+                          <div className="rating-score-box" title="Employer rating">
+                            <span className="star-icon">★</span>
+                            <span>{employer.rating ? Number(employer.rating).toFixed(1) : "5.0"}</span>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          className="details-btn employer-view-jobs-btn"
+                          onClick={() => setSelectedEmployerModal(employer)}
+                        >
+                          {employer.active_jobs_count > 0
+                            ? `View Jobs (${employer.active_jobs_count})`
+                            : "Company Profile"}
+                        </button>
+
+                        {employer.active_jobs_count > 0 && (
+                          <div className="card-bottom-actions">
+                            <button
+                              type="button"
+                              className="solid-btn apply-right-btn"
+                              onClick={() => setSelectedEmployerModal(employer)}
+                            >
+                              Explore Careers
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                ))
+              )}
+
+              {employerTotalPages > 1 && (
+                <div
+                  className="jobsearch-pagination"
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: "12px",
+                    marginTop: "24px",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="pagination-btn"
+                    disabled={employerCurrentPage === 1}
+                    onClick={() => {
+                      setEmployerCurrentPage((p) => Math.max(1, p - 1));
+                      scrollToTop();
+                    }}
+                    style={{
+                      padding: "8px 18px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      background: employerCurrentPage === 1 ? "#f8fafc" : "#ffffff",
+                      color: employerCurrentPage === 1 ? "#94a3b8" : "#1e293b",
+                      cursor: employerCurrentPage === 1 ? "not-allowed" : "pointer",
+                      fontWeight: 600,
+                      fontSize: "0.88rem",
+                      boxShadow: employerCurrentPage === 1 ? "none" : "0 1px 2px rgba(0,0,0,0.05)",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    &larr; Previous
+                  </button>
+                  <span style={{ fontSize: "0.88rem", color: "#64748b", fontWeight: 600 }}>
+                    Page {employerCurrentPage} of {employerTotalPages}
+                  </span>
+                  <button
+                    type="button"
+                    className="pagination-btn"
+                    disabled={employerCurrentPage === employerTotalPages}
+                    onClick={() => {
+                      setEmployerCurrentPage((p) => Math.min(employerTotalPages, p + 1));
+                      scrollToTop();
+                    }}
+                    style={{
+                      padding: "8px 18px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      background: employerCurrentPage === employerTotalPages ? "#f8fafc" : "#ffffff",
+                      color: employerCurrentPage === employerTotalPages ? "#94a3b8" : "#1e293b",
+                      cursor: employerCurrentPage === employerTotalPages ? "not-allowed" : "pointer",
+                      fontWeight: 600,
+                      fontSize: "0.88rem",
+                      boxShadow: employerCurrentPage === employerTotalPages ? "none" : "0 1px 2px rgba(0,0,0,0.05)",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    Next &rarr;
+                  </button>
+                </div>
+              )}
+            </section>
+          </div>
+        </section>
+      </>
+    )}
       </main>
 
       {/* ── Job Details Modal ── */}
@@ -2135,6 +2815,172 @@ export default function JobSearch() {
                 </aside>
               );
             })()}
+          </div>
+        </div>
+      )}
+
+      {/* ── Employer Details & Open Jobs Modal ── */}
+      {selectedEmployerModal && (
+        <div
+          className="jd-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Employer Profile"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setSelectedEmployerModal(null);
+            }
+          }}
+        >
+          <div className="jd-modal employer-modal">
+            <div className="employer-modal-header-banner">
+              {selectedEmployerModal.company_cover_path ? (
+                <img
+                  src={selectedEmployerModal.company_cover_path}
+                  alt="Company Cover"
+                  className="employer-modal-cover-img"
+                />
+              ) : (
+                <div className="employer-modal-cover-gradient" />
+              )}
+              <button
+                type="button"
+                className="jd-close-btn"
+                onClick={() => setSelectedEmployerModal(null)}
+                aria-label="Close employer modal"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="employer-modal-profile-strip">
+              <div className="employer-modal-avatar-wrap">
+                {selectedEmployerModal.company_logo_path ? (
+                  <img
+                    src={selectedEmployerModal.company_logo_path}
+                    alt={selectedEmployerModal.company_name}
+                    className="employer-modal-logo"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLElement).style.display = "none";
+                      const nextEl = e.currentTarget.nextElementSibling as HTMLElement;
+                      if (nextEl) nextEl.style.display = "grid";
+                    }}
+                  />
+                ) : null}
+                <div
+                  className="employer-modal-avatar-fallback"
+                  style={{ display: selectedEmployerModal.company_logo_path ? "none" : "grid" }}
+                >
+                  {selectedEmployerModal.company_name?.charAt(0)?.toUpperCase() || "E"}
+                </div>
+              </div>
+
+              <div className="employer-modal-meta-info">
+                <h2>{selectedEmployerModal.company_name}</h2>
+                <div className="employer-modal-badges">
+                  <span className="location-meta">
+                    <MiniIcon name="location" />
+                    <span>{selectedEmployerModal.location}</span>
+                  </span>
+                  {selectedEmployerModal.industry && (
+                    <span className="emp-industry-tag">{selectedEmployerModal.industry}</span>
+                  )}
+                  {selectedEmployerModal.company_size && (
+                    <span className="emp-size-tag">{selectedEmployerModal.company_size}</span>
+                  )}
+                  <div className="rating-score-box" title="Employer rating">
+                    <span className="star-icon">★</span>
+                    <span>{selectedEmployerModal.rating ? Number(selectedEmployerModal.rating).toFixed(1) : "5.0"}</span>
+                  </div>
+                  {selectedEmployerModal.website && (
+                    <a
+                      href={selectedEmployerModal.website.startsWith("http") ? selectedEmployerModal.website : `https://${selectedEmployerModal.website}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="employer-website-pill"
+                    >
+                      🌐 {selectedEmployerModal.website.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="employer-modal-body">
+              <section className="employer-modal-section">
+                <h4 className="employer-section-heading">About Company</h4>
+                <p className="employer-about-text">
+                  {selectedEmployerModal.company_description || "No company description has been provided by this employer yet."}
+                </p>
+              </section>
+
+              <section className="employer-modal-section">
+                <div className="employer-section-heading-row">
+                  <h4 className="employer-section-heading">
+                    Open Positions ({selectedEmployerModal.jobs?.length || 0})
+                  </h4>
+                  <span className="employer-openings-count-pill">
+                    {selectedEmployerModal.jobs?.length || 0} active opening{(selectedEmployerModal.jobs?.length || 0) !== 1 ? "s" : ""}
+                  </span>
+                </div>
+
+                {(!selectedEmployerModal.jobs || selectedEmployerModal.jobs.length === 0) ? (
+                  <div className="employer-no-jobs-box">
+                    <p>There are no active job openings listed for this company right now.</p>
+                  </div>
+                ) : (
+                  <div className="employer-modal-jobs-list">
+                    {selectedEmployerModal.jobs.map((j) => (
+                      <div key={j.id} className="employer-modal-job-row">
+                        <div className="emp-job-left">
+                          <h5 className="emp-job-title">{j.title}</h5>
+                          <div className="emp-job-submeta">
+                            <span className="setup-pill">{j.work_arrangement || "Full-time"}</span>
+                            <span className="salary-pill">{formatSalary(j.salary_min, j.salary_max)}</span>
+                            <span className="location-meta"><MiniIcon name="location" /><span>{j.location || selectedEmployerModal.location}</span></span>
+                            {j.close_date && <span className="close-date-meta">Closes: {j.close_date}</span>}
+                          </div>
+                          {j.required_skills && (
+                            <div className="emp-job-skills">
+                              {parseCompetencyDisplayTags(j.required_skills).slice(0, 4).map((s) => (
+                                <span key={s} className="js-tag-chip js-tag-skill">{s}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="emp-job-actions">
+                          <button
+                            type="button"
+                            className="details-btn"
+                            onClick={() => handleOpenJobDetailsById(j.id)}
+                          >
+                            View Details
+                          </button>
+                          <button
+                            type="button"
+                            className={`solid-btn apply-right-btn ${appliedJobIds.includes(j.id) ? "applied-btn" : ""}`}
+                            onClick={() => setApplyJobTarget({ jobId: j.id, title: j.title })}
+                            disabled={appliedJobIds.includes(j.id) || applyingJobId === j.id}
+                          >
+                            {appliedJobIds.includes(j.id) ? "Applied" : applyingJobId === j.id ? "Applying..." : "Apply"}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+
+            <div className="jd-footer">
+              <button
+                type="button"
+                className="jd-cancel-btn"
+                onClick={() => setSelectedEmployerModal(null)}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -3533,6 +3533,83 @@ app.get("/api/job-posts", async (_req, res) => {
   }
 });
 
+app.get("/api/employers", async (_req, res) => {
+  try {
+    const hasRatings = await tableExists("company_ratings");
+    const hasJobPosts = await tableExists("job_posts");
+
+    const rows = await all(
+      `SELECT u.id AS employer_user_id,
+              u.email AS business_email,
+              COALESCE(ep.business_name, u.email, 'Employer') AS company_name,
+              COALESCE(NULLIF(TRIM(ep.company_address), ''), ep.city, 'Cavite') AS location,
+              COALESCE(NULLIF(TRIM(ep.city), ''), 'Cavite') AS city,
+              ep.province,
+              ep.industry,
+              ep.company_size,
+              ep.company_logo_path,
+              ep.company_cover_path,
+              ep.website,
+              ep.company_description,
+              ${hasRatings ? "ROUND(AVG(cr.rating), 1)" : "NULL"} AS rating
+       FROM users u
+       LEFT JOIN employer_profiles ep ON ep.user_id = u.id
+       ${hasRatings ? "LEFT JOIN company_ratings cr ON cr.employer_user_id = u.id" : ""}
+       WHERE u.role = 'employer'
+       GROUP BY u.id, u.email, ep.business_name, ep.company_address, ep.city, ep.province, ep.industry, ep.company_size, ep.company_logo_path, ep.company_cover_path, ep.website, ep.company_description
+       ORDER BY company_name ASC`
+    );
+
+    const activeJobsRows = hasJobPosts
+      ? await all(
+          `SELECT jp.*,
+                  COALESCE(ep.business_name, u.email, 'Employer') AS company_name,
+                  COALESCE(NULLIF(TRIM(jp.location), ''), ep.company_address, ep.city, 'Cavite') AS company_address
+           FROM job_posts jp
+           INNER JOIN users u ON u.id = jp.employer_user_id
+           LEFT JOIN employer_profiles ep ON ep.user_id = jp.employer_user_id
+           ORDER BY jp.created_at DESC`
+        )
+      : [];
+
+    const jobsByEmployer = {};
+    for (const job of activeJobsRows) {
+      if (deriveJobPostStatus(job.close_date) === "open") {
+        if (!jobsByEmployer[job.employer_user_id]) jobsByEmployer[job.employer_user_id] = [];
+        jobsByEmployer[job.employer_user_id].push({
+          id: job.id,
+          title: job.title,
+          location: job.location || job.company_address || "Cavite",
+          work_arrangement: job.work_arrangement || "On-Site",
+          salary_min: job.salary_min,
+          salary_max: job.salary_max,
+          required_skills: job.required_skills,
+          required_qualifications: job.required_qualifications,
+          required_certifications: job.required_certifications,
+          close_date: job.close_date,
+          created_at: job.created_at,
+          urgent: job.urgent || false,
+        });
+      }
+    }
+
+    const employers = rows.map((row) => {
+      const empJobs = jobsByEmployer[row.employer_user_id] || [];
+      return {
+        ...row,
+        rating: row.rating ? Number(row.rating).toFixed(1) : null,
+        active_jobs_count: empJobs.length,
+        jobs: empJobs,
+      };
+    });
+
+    res.json({ employers });
+  } catch (err) {
+    console.error("Load employers error:", err);
+    res.status(500).json({ message: "Unable to load employers." });
+  }
+});
+
 app.get("/api/applicants/:userId/applications", authenticateToken, requireUserOrAdmin, async (req, res) => {
   const userId = Number(req.params.userId);
   if (!Number.isInteger(userId) || userId < 1) return res.status(400).json({ message: "Invalid applicant." });
