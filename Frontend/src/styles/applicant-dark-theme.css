@@ -8608,3 +8608,7 @@
   background: #1e2e4a !important;
   border-color: #38bdf8 !important;
 }
+
+[data-theme="dark"] .cand-msg-empty-title {
+  color: #f1f5f9 !important;
+}

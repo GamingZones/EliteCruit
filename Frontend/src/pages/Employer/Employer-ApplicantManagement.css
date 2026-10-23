@@ -4074,3 +4074,7 @@
   background: #0284c7 !important;
   color: #ffffff !important;
 }
+
+.cand-msg-empty-title {
+  color: #0f172a;
+}

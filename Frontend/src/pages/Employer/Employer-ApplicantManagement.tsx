@@ -3827,7 +3827,7 @@ export default function EmployerApplicantManagement() {
                     className={`jd-floating-breakdown-tab ${isMessagePanelOpen && !isMessagePanelClosing ? "active" : ""}`}
                     onClick={handleToggleMessagePanel}
                   >
-                    <span>{isMessagePanelOpen && !isMessagePanelClosing ? "Hide Messages" : "Messages"}</span>
+                    <span>{isMessagePanelOpen && !isMessagePanelClosing ? "Hide Message" : "Message"}</span>
                   </button>
                 </div>
                 <div className="jd-panel">
@@ -4466,31 +4466,7 @@ export default function EmployerApplicantManagement() {
                     >
                       Close
                     </button>
-                    <button
-                      type="button"
-                      className={`solid-btn cand-modal-message-btn ${isMessagePanelOpen && !isMessagePanelClosing ? "active" : ""}`}
-                      onClick={handleToggleMessagePanel}
-                      style={{
-                        padding: "8px 16px",
-                        fontSize: "0.85rem",
-                        borderRadius: "6px",
-                        background: isMessagePanelOpen && !isMessagePanelClosing ? "#0284c7" : "#01294a",
-                        color: "#ffffff",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        cursor: "pointer",
-                        border: "none",
-                        fontWeight: 700,
-                        fontFamily: '"Manrope", sans-serif',
-                        transition: "all 0.15s ease",
-                      }}
-                    >
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                      </svg>
-                      <span>{isMessagePanelOpen && !isMessagePanelClosing ? "Hide Messages" : "Message"}</span>
-                    </button>
+
                     {!isDirectInvitationModal && (() => {
                       const isShortlisted = reviewModalApp.status?.toLowerCase() === "shortlisted";
                       const isApproved = isApprovedStatus(reviewModalApp.status);
@@ -5024,7 +5000,7 @@ export default function EmployerApplicantManagement() {
                           {reviewModalApp.applicant_name}
                         </h3>
                         <span className="jd-side-subtitle" style={{ fontSize: "0.78rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
-                          Messages • {reviewModalApp.job_title || "Application"}
+                          Message • {reviewModalApp.job_title || "Application"}
                         </span>
                       </div>
                     </div>
@@ -5096,28 +5072,9 @@ export default function EmployerApplicantManagement() {
                           >
                             💬
                           </div>
-                          <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: 800, color: "#0f172a" }}>
+                          <h4 className="cand-msg-empty-title" style={{ margin: 0, fontSize: "1rem", fontWeight: 800 }}>
                             Start a conversation
                           </h4>
-                          <p style={{ margin: 0, fontSize: "0.82rem", color: "#64748b", lineHeight: 1.5 }}>
-                            No messages exchanged with <strong>{reviewModalApp.applicant_name}</strong> yet. You can send an update, interview follow-up, or question directly here.
-                          </p>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", justifyContent: "center", marginTop: "8px" }}>
-                            <button
-                              type="button"
-                              className="cand-msg-quick-pill"
-                              onClick={() => setCandMsgInput(`Hi ${reviewModalApp.applicant_name}, thank you for your application for the ${reviewModalApp.job_title} role!`)}
-                            >
-                              "Thank you for applying"
-                            </button>
-                            <button
-                              type="button"
-                              className="cand-msg-quick-pill"
-                              onClick={() => setCandMsgInput(`Hi ${reviewModalApp.applicant_name}, do you have availability this week for an on-site interview?`)}
-                            >
-                              "Ask availability"
-                            </button>
-                          </div>
                         </div>
                       ) : (
                         <>
