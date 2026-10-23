@@ -949,7 +949,8 @@ app.post("/api/auth/login", async (req, res) => {
 
     // 2FA is active by default unless explicitly disabled or bypassed via test header
     const isTestBypass = req.headers["x-bypass-2fa"] === "true" || bypass2fa === true;
-    const is2FAActive = user.two_factor_enabled !== false && !isTestBypass;
+    // TEMPORARILY DISABLED: User requested to bypass 2FA email verification for direct login
+    const is2FAActive = false;
 
     if (is2FAActive) {
       const code = generateOTP();

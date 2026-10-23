@@ -70,19 +70,15 @@ export function initClientSecurity() {
     true
   );
 
-  // 2. Anti-DevTools Debugger Trap
-  // When DevTools is closed, this statement takes ~0.001ms and has zero performance impact.
-  // The moment DevTools is opened, the JavaScript engine halts on `debugger;` repeatedly,
-  // preventing inspection and freezing the debugger panel.
-  const triggerTrap = () => {
-    try {
-      (function () {
-        return false;
-      }
-        ["constructor"]("debugger")
-        ["call"]());
-    } catch {}
-  };
-
-  setInterval(triggerTrap, 800);
+  // 2. Anti-DevTools Debugger Trap (TEMPORARILY DISABLED by user request)
+  // const triggerTrap = () => {
+  //   try {
+  //     (function () {
+  //       return false;
+  //     }
+  //       ["constructor"]("debugger")
+  //       ["call"]());
+  //   } catch {}
+  // };
+  // setInterval(triggerTrap, 800);
 }
