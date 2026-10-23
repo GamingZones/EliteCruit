@@ -734,12 +734,12 @@ function buildDecisionNotice(
     base +=
       "\n\n--- INTERVIEW SCHEDULE ---\n" +
       "Stage: " + schedInfo.stage + "\n" +
-      "Mode: " + schedInfo.type + "\n" +
+      "Mode: On-Site\n" +
       "Date: " + schedInfo.date + "\n" +
       "Time: " + schedInfo.startTime + (schedInfo.endTime ? " - " + schedInfo.endTime : "") + "\n" +
-      "Location / Link: " + (schedInfo.location || (schedInfo.type === "Virtual" ? "Online Meeting link to be provided" : "Company Office")) +
+      "Office Location: " + (schedInfo.location || "Company Office") +
       (schedInfo.notes && schedInfo.notes.trim() ? "\nInstructions: " + schedInfo.notes.trim() : "") +
-      "\n\nPlease be prepared and arrive or connect on time. If you have any scheduling conflicts, kindly reply directly to this message.";
+      "\n\nPlease arrive on time. If you have any scheduling conflicts, kindly reply directly to this message.";
   }
   return base;
 }
@@ -1094,7 +1094,7 @@ export default function EmployerApplicantManagement() {
   const [schedStartTime, setSchedStartTime] = useState("10:00");
   const [schedEndTime, setSchedEndTime] = useState("10:45");
   const [schedType, setSchedType] = useState<"On-Site" | "Virtual">("On-Site");
-  const [schedStage, setSchedStage] = useState("On-Site Interview");
+  const [schedStage, setSchedStage] = useState("Initial Interview");
   const [schedLocation, setSchedLocation] = useState("");
   const [schedNotes, setSchedNotes] = useState("");
 
@@ -1839,7 +1839,7 @@ export default function EmployerApplicantManagement() {
     setSchedStartTime("10:00");
     setSchedEndTime("10:45");
     setSchedType("On-Site");
-    setSchedStage("On-Site Interview");
+    setSchedStage("Initial Interview");
     setSchedLocation(companyLabel ? (companyLabel + " Main Office") : "Company Office");
     setSchedNotes("");
 
@@ -5584,7 +5584,14 @@ export default function EmployerApplicantManagement() {
                 <aside className="decision-card decision-schedule-card">
                   <div className="decision-card-header">
                     <div className="decision-card-title-wrap">
-                      <span className="decision-schedule-icon">📅</span>
+                      <span className="decision-schedule-icon">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                          <line x1="16" y1="2" x2="16" y2="6" />
+                          <line x1="8" y1="2" x2="8" y2="6" />
+                          <line x1="3" y1="10" x2="21" y2="10" />
+                        </svg>
+                      </span>
                       <div>
                         <h3 className="decision-card-title">Schedule Interview</h3>
                         <span className="decision-card-sub">
@@ -5638,51 +5645,29 @@ export default function EmployerApplicantManagement() {
                       </div>
                     </div>
 
-                    <div className="decision-schedule-row two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                      <div className="decision-sched-field">
-                        <label>Interview Mode</label>
-                        <select
-                          className="decision-sched-input"
-                          value={schedType}
-                          onChange={(e) => {
-                            const newType = e.target.value as "On-Site" | "Virtual";
-                            setSchedType(newType);
-                            if (newType === "Virtual" && (!schedLocation || schedLocation.includes("Office") || schedLocation.includes("Branch"))) {
-                              setSchedLocation("Google Meet / Video Link");
-                            } else if (newType === "On-Site" && (!schedLocation || schedLocation.includes("Meet") || schedLocation.includes("Video"))) {
-                              setSchedLocation(companyLabel ? (companyLabel + " Main Office") : "Company Office");
-                            }
-                          }}
-                        >
-                          <option value="On-Site">On-Site Interview</option>
-                          <option value="Virtual">Virtual / Online Meeting</option>
-                        </select>
-                      </div>
-
-                      <div className="decision-sched-field">
-                        <label>Interview Stage</label>
-                        <select
-                          className="decision-sched-input"
-                          value={schedStage}
-                          onChange={(e) => setSchedStage(e.target.value)}
-                        >
-                          <option value="On-Site Interview">On-Site Interview</option>
-                          <option value="Initial Interview">Initial Interview</option>
-                          <option value="Technical Interview">Technical Interview</option>
-                          <option value="Final Interview">Final Interview</option>
-                          <option value="HR Screening">HR Screening</option>
-                        </select>
-                      </div>
+                    <div className="decision-sched-field">
+                      <label>Interview Stage</label>
+                      <select
+                        className="decision-sched-input"
+                        value={schedStage}
+                        onChange={(e) => setSchedStage(e.target.value)}
+                      >
+                        <option value="Initial Interview">Initial Interview</option>
+                        <option value="Technical Interview">Technical Interview</option>
+                        <option value="Final Interview">Final Interview</option>
+                        <option value="HR Screening">HR Screening</option>
+                        <option value="On-Site Interview">On-Site Interview</option>
+                      </select>
                     </div>
 
                     <div className="decision-sched-field">
-                      <label>{schedType === "Virtual" ? "Meeting Link / Platform" : "Office Address / Room"}</label>
+                      <label>Office Address / Room</label>
                       <input
                         type="text"
                         className="decision-sched-input"
                         value={schedLocation}
                         onChange={(e) => setSchedLocation(e.target.value)}
-                        placeholder={schedType === "Virtual" ? "e.g., Google Meet or Zoom link" : "e.g., 4th Floor HQ, Room B"}
+                        placeholder="e.g., CEBUANA Main Office or 4th Floor HQ, Room B"
                       />
                     </div>
 
@@ -5697,11 +5682,6 @@ export default function EmployerApplicantManagement() {
                         placeholder="e.g., Please bring 2 valid IDs and an updated copy of your resume."
                       />
                     </div>
-
-                    <div className="decision-schedule-info-pill">
-                      <span>💡</span>
-                      <span>Submitting will finalize applicant acceptance, book this slot in your calendar, and send interview details directly to the candidate.</span>
-                    </div>
                   </div>
 
                   <div className="decision-card-footer">
@@ -5714,8 +5694,8 @@ export default function EmployerApplicantManagement() {
                       {isDecisionSubmitting
                         ? "Scheduling & Accepting..."
                         : decisionModalApps.length > 1
-                        ? `📅 Accept & Schedule (${decisionModalApps.length})`
-                        : "📅 Accept & Schedule Interview"}
+                        ? `Accept & Schedule (${decisionModalApps.length})`
+                        : "Accept & Schedule Interview"}
                     </button>
                   </div>
                 </aside>
@@ -5860,7 +5840,7 @@ export default function EmployerApplicantManagement() {
                           type="button"
                           className="decision-insert-sched-btn"
                           onClick={() => {
-                            const schedSnippet = "\n\n--- INTERVIEW DETAILS ---\nDate: " + schedDate + "\nTime: " + schedStartTime + " - " + schedEndTime + "\nStage: " + schedStage + "\nMode: " + schedType + "\nLocation / Link: " + (schedLocation || "Company Office") + (schedNotes ? ("\nInstructions: " + schedNotes) : "");
+                            const schedSnippet = "\n\n--- INTERVIEW DETAILS ---\nDate: " + schedDate + "\nTime: " + schedStartTime + " - " + schedEndTime + "\nStage: " + schedStage + "\nMode: On-Site\nOffice Address / Room: " + (schedLocation || "Company Office") + (schedNotes ? ("\nInstructions: " + schedNotes) : "");
                             setManualMessageText((prev) => prev.trim() + schedSnippet);
                           }}
                         >

@@ -8379,6 +8379,8 @@
 
 [data-theme="dark"] .decision-schedule-icon {
   background: rgba(56, 189, 248, 0.12) !important;
+  border-color: rgba(56, 189, 248, 0.28) !important;
+  color: #38bdf8 !important;
 }
 
 [data-theme="dark"] .decision-schedule-title {
