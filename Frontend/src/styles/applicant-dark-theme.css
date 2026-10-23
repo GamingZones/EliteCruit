@@ -5617,6 +5617,19 @@
   color: #ffffff !important;
 }
 
+[data-theme="dark"] .jd-other-job-card .recruit-btn,
+[data-theme="dark"] .jd-other-job-card .jd-other-job-recruit-btn {
+  background: #16a34a !important;
+  color: #ffffff !important;
+  border: 1px solid #16a34a !important;
+}
+
+[data-theme="dark"] .jd-other-job-card .recruit-btn:hover,
+[data-theme="dark"] .jd-other-job-card .jd-other-job-recruit-btn:hover {
+  background: #15803d !important;
+  border-color: #15803d !important;
+}
+
 
 /* --- 23.7 Side-by-Side Job Details & Match Breakdown Cards --- */
 [data-theme="dark"] .jd-details-side-card {

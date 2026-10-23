@@ -1749,6 +1749,18 @@ export default function EmployerApplicantFinder() {
     }
   };
 
+  const openCandidateRecruit = (cand: Candidate) => {
+    setSelectedCandidate(cand);
+    setIsDocsDrawerOpen(false);
+    setIsPreviewingDoc(false);
+    setIsMessagePanelOpen(false);
+    setIsMessagePanelClosing(false);
+    setIsOtherJobsOpen(true);
+    setIsOtherJobsClosing(false);
+    setCandMessages([]);
+    setCandMsgThread(null);
+  };
+
   const handleSendCandidateMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const text = candMsgInput.trim();
@@ -3586,11 +3598,10 @@ export default function EmployerApplicantFinder() {
 
                               <button
                                 type="button"
-                                className={`finder-card-btn btn-invite ${isInvited ? "invited" : ""}`}
-                                onClick={() => openInviteModal(cand)}
-                                disabled={isInvited}
+                                className="finder-card-btn btn-invite"
+                                onClick={() => openCandidateRecruit(cand)}
                               >
-                                {isInvited ? "Recruited" : "Recruit"}
+                                Recruit
                               </button>
                             </div>
                           </div>
@@ -3915,11 +3926,10 @@ export default function EmployerApplicantFinder() {
 
                             <button
                               type="button"
-                              className={`finder-card-btn btn-invite ${isInvited ? "invited" : ""}`}
-                              onClick={() => openInviteModal(cand)}
-                              disabled={isInvited}
+                              className="finder-card-btn btn-invite"
+                              onClick={() => openCandidateRecruit(cand)}
                             >
-                              {isInvited ? "Recruited" : "Recruit"}
+                              Recruit
                             </button>
                           </div>
                         </div>
@@ -4710,6 +4720,33 @@ export default function EmployerApplicantFinder() {
                           >
                             Details
                           </button>
+                          <button
+                            type="button"
+                            className="recruit-btn jd-other-job-recruit-btn"
+                            style={{
+                              background: "#16a34a",
+                              color: "#ffffff",
+                              fontWeight: 800,
+                              fontSize: "0.82rem",
+                              padding: "4px 12px",
+                              borderRadius: "999px",
+                              border: "1px solid #16a34a",
+                              whiteSpace: "nowrap",
+                              cursor: "pointer",
+                              boxShadow: "0 2px 6px rgba(22, 163, 74, 0.25)",
+                              transition: "all 0.15s ease",
+                              width: "100%",
+                              textAlign: "center",
+                              fontFamily: '"Manrope", sans-serif',
+                            }}
+                            onClick={() => {
+                              if (selectedCandidate) {
+                                openInviteModal(selectedCandidate, otherJob.id);
+                              }
+                            }}
+                          >
+                            Recruit
+                          </button>
                         </div>
                       </div>
                     );
@@ -4948,7 +4985,7 @@ export default function EmployerApplicantFinder() {
 
         {/* INVITE / RECRUIT CONFIRMATION MODAL */}
         {inviteCandidate && (
-          <div className="cand-details-overlay" onClick={() => setInviteCandidate(null)}>
+          <div className="cand-details-overlay" style={{ zIndex: 12000 }} onClick={() => setInviteCandidate(null)}>
             <div className="cand-details-panel cand-invite-panel" style={{ maxWidth: "560px", width: "94%", boxSizing: "border-box" }} onClick={(e) => e.stopPropagation()}>
               <div className="cand-details-docs-header">
                 <h3>Invite Candidate to Apply</h3>
