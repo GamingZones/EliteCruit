@@ -1643,6 +1643,7 @@ export default function EmployerApplicantManagement() {
     if (e) e.preventDefault();
     setActiveScreeningSection("applicant-screening");
     setStatusFilter("all");
+    window.location.hash = "applicant-screening";
     const mainEl = mainRef.current || document.querySelector<HTMLElement>(".appdash-main");
     if (mainEl) {
       mainEl.scrollTo({ top: 0, behavior: "smooth" });
@@ -1652,70 +1653,45 @@ export default function EmployerApplicantManagement() {
   const scrollToShortlistBoard = (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
     setActiveScreeningSection("shortlisted-candidates");
+    window.location.hash = "shortlisted-candidates";
     const mainEl = mainRef.current || document.querySelector<HTMLElement>(".appdash-main");
-    const boardEl = document.getElementById("applicant-shortlist-board");
-    if (boardEl && mainEl) {
-      const targetPos = boardEl.offsetTop - 70;
-      mainEl.scrollTo({ top: Math.max(0, targetPos), behavior: "smooth" });
+    if (mainEl) {
+      mainEl.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
   const scrollToDirectInvitations = (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
     setActiveScreeningSection("direct-invitations");
+    window.location.hash = "direct-invitations";
     const mainEl = mainRef.current || document.querySelector<HTMLElement>(".appdash-main");
-    const invEl = document.getElementById("direct-invitations");
-    if (invEl && mainEl) {
-      const targetPos = invEl.offsetTop - 70;
-      mainEl.scrollTo({ top: Math.max(0, targetPos), behavior: "smooth" });
+    if (mainEl) {
+      mainEl.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
-
-  useEffect(() => {
-    const mainEl = mainRef.current || document.querySelector<HTMLElement>(".appdash-main");
-    if (!mainEl) return;
-
-    const handleScroll = () => {
-      const boardEl = document.getElementById("applicant-shortlist-board");
-      const invEl = document.getElementById("direct-invitations");
-      if (!boardEl || !mainEl) return;
-
-      const boardRect = boardEl.getBoundingClientRect();
-      const mainRect = mainEl.getBoundingClientRect();
-
-      if (invEl && invEl.getBoundingClientRect().top <= mainRect.top + mainRect.height * 0.45) {
-        setActiveScreeningSection("direct-invitations");
-      } else if (boardRect.top <= mainRect.top + mainRect.height * 0.45) {
-        setActiveScreeningSection("shortlisted-candidates");
-      } else {
-        setActiveScreeningSection("applicant-screening");
-      }
-    };
-
-    mainEl.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    return () => mainEl.removeEventListener("scroll", handleScroll);
-  }, []);
 
   useEffect(() => {
     const updateFromHash = () => {
       const hash = window.location.hash.replace("#", "");
       if (hash === "shortlisted-candidates" || hash === "applicant-shortlist-board") {
-        scrollToShortlistBoard();
+        setActiveScreeningSection("shortlisted-candidates");
+        const mainEl = mainRef.current || document.querySelector<HTMLElement>(".appdash-main");
+        if (mainEl) mainEl.scrollTo({ top: 0, behavior: "smooth" });
       } else if (hash === "direct-invitations") {
-        scrollToDirectInvitations();
+        setActiveScreeningSection("direct-invitations");
+        const mainEl = mainRef.current || document.querySelector<HTMLElement>(".appdash-main");
+        if (mainEl) mainEl.scrollTo({ top: 0, behavior: "smooth" });
       } else if (hash === "applicant-screening" || hash === "applicant-screening-section") {
-        scrollToScreening();
-      } else {
         setActiveScreeningSection("applicant-screening");
+        const mainEl = mainRef.current || document.querySelector<HTMLElement>(".appdash-main");
+        if (mainEl) mainEl.scrollTo({ top: 0, behavior: "smooth" });
       }
     };
 
-    const timer = setTimeout(updateFromHash, 100);
+    updateFromHash();
     window.addEventListener("hashchange", updateFromHash);
 
     return () => {
-      clearTimeout(timer);
       window.removeEventListener("hashchange", updateFromHash);
     };
   }, []);
@@ -2062,7 +2038,37 @@ export default function EmployerApplicantManagement() {
           </div>
         </header>
 
-        <section className="applicant-mgmt-stats">
+        {/* 3-STEP PILL TAB NAVIGATION BAR */}
+        <nav className="company-section-nav applicant-mgmt-section-nav" aria-label="Applicant Management Sections">
+          <button
+            type="button"
+            className={`section-nav-btn ${activeScreeningSection === "applicant-screening" ? "active" : ""}`}
+            onClick={scrollToScreening}
+          >
+            <span className="nav-num">1</span>
+            <span>Applicant Screening</span>
+          </button>
+          <button
+            type="button"
+            className={`section-nav-btn ${activeScreeningSection === "shortlisted-candidates" ? "active" : ""}`}
+            onClick={scrollToShortlistBoard}
+          >
+            <span className="nav-num">2</span>
+            <span>Shortlisted Candidates</span>
+          </button>
+          <button
+            type="button"
+            className={`section-nav-btn ${activeScreeningSection === "direct-invitations" ? "active" : ""}`}
+            onClick={scrollToDirectInvitations}
+          >
+            <span className="nav-num">3</span>
+            <span>Recruitment List</span>
+          </button>
+        </nav>
+
+        {activeScreeningSection === "applicant-screening" && (
+          <>
+            <section className="applicant-mgmt-stats">
           <article className="card"><small>Candidates</small><strong>{stats.total}</strong><p>Total applied</p></article>
           <article className="card"><small>Shortlisted</small><strong>{stats.shortlisted}</strong><p>Ready for next step</p></article>
           <article className="card"><small>Pending</small><strong>{stats.pending}</strong><p>Needs review</p></article>
@@ -2705,9 +2711,12 @@ export default function EmployerApplicantManagement() {
             </div>
           )}
         </section>
+          </>
+        )}
 
         {/* APPLICANT SHORTLIST BOARD BELOW TABLE */}
-        <section id="applicant-shortlist-board" className="screening-board screening-card" style={{ marginTop: "24px" }}>
+        {activeScreeningSection === "shortlisted-candidates" && (
+          <section id="applicant-shortlist-board" className="screening-board screening-card" style={{ margin: "0 14px 24px" }}>
           <div className="board-head">
             <div className="board-head-info">
               <h2>Applicant Shortlist Board</h2>
@@ -3152,9 +3161,11 @@ export default function EmployerApplicantManagement() {
             })()}
           </div>
         </section>
+        )}
 
         {/* DIRECT INVITATIONS BOARD */}
-        <section id="direct-invitations" className="applicant-shortlist-board card" style={{ margin: "24px 14px 0", padding: "20px 24px" }}>
+        {activeScreeningSection === "direct-invitations" && (
+          <section id="direct-invitations" className="applicant-shortlist-board card" style={{ margin: "0 14px 24px", padding: "20px 24px" }}>
           <div className="matches-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
             <div>
               <h2 style={{ margin: 0, fontSize: "1.35rem", color: "#01294a" }}>Direct Recruitment Invitations</h2>
@@ -3354,6 +3365,7 @@ export default function EmployerApplicantManagement() {
             </div>
           )}
         </section>
+        )}
 
         {/* CANDIDATE REVIEW MODAL */}
         {reviewModalApp && (

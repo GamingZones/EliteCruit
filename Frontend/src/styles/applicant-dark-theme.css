@@ -7942,34 +7942,40 @@
    ========================================================================== */
 
 /* 26.1 Step Navigation Bar */
-[data-theme="dark"] .company-section-nav {
+[data-theme="dark"] .company-section-nav,
+[data-theme="dark"] .applicant-mgmt-section-nav {
   background: #1c1e27 !important;
   border: 1px solid #2e3244 !important;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important;
 }
 
-[data-theme="dark"] .company-section-nav .section-nav-btn {
+[data-theme="dark"] .company-section-nav .section-nav-btn,
+[data-theme="dark"] .applicant-mgmt-section-nav .section-nav-btn {
   color: #94a3b8 !important;
 }
 
-[data-theme="dark"] .company-section-nav .section-nav-btn:hover {
+[data-theme="dark"] .company-section-nav .section-nav-btn:hover,
+[data-theme="dark"] .applicant-mgmt-section-nav .section-nav-btn:hover {
   background: #242735 !important;
   color: #ffffff !important;
 }
 
-[data-theme="dark"] .company-section-nav .section-nav-btn.active {
+[data-theme="dark"] .company-section-nav .section-nav-btn.active,
+[data-theme="dark"] .applicant-mgmt-section-nav .section-nav-btn.active {
   background: #242735 !important;
   color: #ffffff !important;
   border: 1px solid #38bdf8 !important;
   box-shadow: 0 2px 10px rgba(56, 189, 248, 0.2) !important;
 }
 
-[data-theme="dark"] .company-section-nav .nav-num {
+[data-theme="dark"] .company-section-nav .nav-num,
+[data-theme="dark"] .applicant-mgmt-section-nav .nav-num {
   background: #14151B !important;
   color: #94a3b8 !important;
 }
 
-[data-theme="dark"] .company-section-nav .section-nav-btn.active .nav-num {
+[data-theme="dark"] .company-section-nav .section-nav-btn.active .nav-num,
+[data-theme="dark"] .applicant-mgmt-section-nav .section-nav-btn.active .nav-num {
   background: #f59e0b !important;
   color: #0f172a !important;
 }
