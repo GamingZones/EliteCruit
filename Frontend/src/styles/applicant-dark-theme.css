@@ -530,14 +530,30 @@
   border: 1px solid #2e3244 !important;
 }
 
-[data-theme="dark"] .search-input {
+[data-theme="dark"] .search-input,
+[data-theme="dark"] .search-input-row input,
+[data-theme="dark"] .search-bar-card input {
   background: #242735 !important;
   border: 1px solid #2e3244 !important;
-  color: #ffffff !important;
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  caret-color: #38bdf8 !important;
 }
 
-[data-theme="dark"] .search-input::placeholder {
-  color: #6b7280 !important;
+[data-theme="dark"] .search-input:focus,
+[data-theme="dark"] .search-input-row input:focus,
+[data-theme="dark"] .search-bar-card input:focus {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+[data-theme="dark"] .search-input::placeholder,
+[data-theme="dark"] .search-input-row input::placeholder,
+[data-theme="dark"] .search-bar-card input::placeholder {
+  color: #94a3b8 !important;
+  -webkit-text-fill-color: #94a3b8 !important;
 }
 
 /* Job Search Top Filters (Picture 2) */
@@ -1965,6 +1981,7 @@
 [data-theme="dark"] input[type="date"],
 [data-theme="dark"] textarea {
   background: #242735 !important;
+  color: #f8fafc !important;
 }
 
 [data-theme="dark"] select {

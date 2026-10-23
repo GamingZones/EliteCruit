@@ -3522,6 +3522,116 @@
   pointer-events: none;
 }
 
+/* ==========================================================================
+   Finder Mode Toggle Card & Search Bar Card Uniform Sizing
+   ========================================================================== */
+
+/* Equal card dimensions and padding */
+.mode-toggle-card,
+.search-bar-card {
+  min-height: 64px !important;
+  padding: 12px 18px !important;
+  border-radius: 10px !important;
+  box-sizing: border-box !important;
+}
+
+.mode-toggle-card {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 16px !important;
+}
+
+.mode-toggle-card p {
+  margin: 0 !important;
+  font-size: 0.88rem !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+}
+
+/* Equal size for both mode buttons (Standard Search & Nearby Finder) */
+.mode-actions {
+  display: flex !important;
+  gap: 8px !important;
+  align-items: center !important;
+}
+
+.mode-actions button {
+  min-width: 148px !important;
+  height: 40px !important;
+  padding: 0 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  box-sizing: border-box !important;
+  border-radius: 8px !important;
+  white-space: nowrap !important;
+}
+
+/* Equal height and styling for Search row elements */
+.search-input-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.search-input-row input,
+.search-input-row .search-input {
+  height: 40px !important;
+  padding: 0 14px !important;
+  font-size: 0.85rem !important;
+  border-radius: 8px !important;
+  box-sizing: border-box !important;
+}
+
+.search-input-row .find-jobs-btn,
+.search-input-row .filter-toggle-btn {
+  height: 40px !important;
+  padding: 0 18px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  font-size: 0.84rem !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+  box-sizing: border-box !important;
+  white-space: nowrap !important;
+}
+
+/* Ensure bright, high-contrast text color when typing in search input (Dark Mode) */
+[data-theme="dark"] .search-input-row input,
+[data-theme="dark"] .search-input-row .search-input,
+[data-theme="dark"] .search-bar-card input {
+  background: #242735 !important;
+  border: 1px solid #2e3244 !important;
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  caret-color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .search-input-row input:focus,
+[data-theme="dark"] .search-input-row .search-input:focus,
+[data-theme="dark"] .search-bar-card input:focus {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+[data-theme="dark"] .search-input-row input::placeholder,
+[data-theme="dark"] .search-input-row .search-input::placeholder,
+[data-theme="dark"] .search-bar-card input::placeholder {
+  color: #94a3b8 !important;
+  -webkit-text-fill-color: #94a3b8 !important;
+}
+
+
 
 
 

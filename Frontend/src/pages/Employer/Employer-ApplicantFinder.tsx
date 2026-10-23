@@ -3318,6 +3318,7 @@ export default function EmployerApplicantFinder() {
             <div className="search-input-row">
               <input
                 type="text"
+                className="search-input"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={(e) => {
