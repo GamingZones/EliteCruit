@@ -695,6 +695,55 @@ function getAutomatedDecisionTemplate(
     .replace(/\{company_name\}/g, safeCompany);
 }
 
+function getTodayDateStr(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return y + "-" + m + "-" + day;
+}
+
+function getTomorrowDateStr(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return y + "-" + m + "-" + day;
+}
+
+function buildDecisionNotice(
+  action: "approved" | "denied",
+  applicantName: string,
+  jobTitle: string,
+  companyName: string,
+  customTemplates?: { acceptance_template?: string; rejection_template?: string } | null,
+  withSchedule?: boolean,
+  schedInfo?: {
+    date: string;
+    startTime: string;
+    endTime?: string;
+    type: string;
+    stage: string;
+    location: string;
+    notes?: string;
+  }
+): string {
+  let base = getAutomatedDecisionTemplate(action, applicantName, jobTitle, companyName, customTemplates);
+  if (action === "approved" && withSchedule && schedInfo) {
+    base +=
+      "\n\n--- INTERVIEW SCHEDULE ---\n" +
+      "Stage: " + schedInfo.stage + "\n" +
+      "Mode: " + schedInfo.type + "\n" +
+      "Date: " + schedInfo.date + "\n" +
+      "Time: " + schedInfo.startTime + (schedInfo.endTime ? " - " + schedInfo.endTime : "") + "\n" +
+      "Location / Link: " + (schedInfo.location || (schedInfo.type === "Virtual" ? "Online Meeting link to be provided" : "Company Office")) +
+      (schedInfo.notes && schedInfo.notes.trim() ? "\nInstructions: " + schedInfo.notes.trim() : "") +
+      "\n\nPlease be prepared and arrive or connect on time. If you have any scheduling conflicts, kindly reply directly to this message.";
+  }
+  return base;
+}
+
 function getMatchPercent(app: Application, profileOverride?: any, jobsMap?: Record<number, any>): number {
   if ((app as any).match_percent && typeof (app as any).match_percent === "number") {
     return (app as any).match_percent;
@@ -1038,6 +1087,58 @@ export default function EmployerApplicantManagement() {
     acceptance_template?: string;
     rejection_template?: string;
   } | null>(null);
+
+  // Immediate interview scheduling within decision modal
+  const [isSchedulingImmediate, setIsSchedulingImmediate] = useState(false);
+  const [schedDate, setSchedDate] = useState(getTomorrowDateStr());
+  const [schedStartTime, setSchedStartTime] = useState("10:00");
+  const [schedEndTime, setSchedEndTime] = useState("10:45");
+  const [schedType, setSchedType] = useState<"On-Site" | "Virtual">("On-Site");
+  const [schedStage, setSchedStage] = useState("On-Site Interview");
+  const [schedLocation, setSchedLocation] = useState("");
+  const [schedNotes, setSchedNotes] = useState("");
+
+  // Sync automated decision notice text when immediate scheduling is active
+  useEffect(() => {
+    if (decisionModalAction === "approved" && decisionMessageType === "automated" && decisionModalApps.length > 0) {
+      const candidateName = decisionModalApps.length === 1 ? decisionModalApps[0].applicant_name : "[Candidate Name]";
+      const jobTitle = decisionModalApps[0]?.job_title || "Job Position";
+      const text = buildDecisionNotice(
+        "approved",
+        candidateName,
+        jobTitle,
+        companyLabel || "Employer",
+        customDecisionTemplates,
+        isSchedulingImmediate,
+        isSchedulingImmediate
+          ? {
+              date: schedDate,
+              startTime: schedStartTime,
+              endTime: schedEndTime,
+              type: schedType,
+              stage: schedStage,
+              location: schedLocation || (schedType === "Virtual" ? "Online Meeting (link will be provided)" : (companyLabel ? (companyLabel + " Main Office") : "Company Office")),
+              notes: schedNotes,
+            }
+          : undefined
+      );
+      setDecisionMessageText(text);
+    }
+  }, [
+    isSchedulingImmediate,
+    schedDate,
+    schedStartTime,
+    schedEndTime,
+    schedType,
+    schedStage,
+    schedLocation,
+    schedNotes,
+    decisionModalAction,
+    decisionMessageType,
+    decisionModalApps,
+    companyLabel,
+    customDecisionTemplates,
+  ]);
 
   const handleCloseMatchDrawer = () => {
     setIsMatchDrawerClosing(true);
@@ -1733,6 +1834,15 @@ export default function EmployerApplicantManagement() {
     }
 
     const firstApp = unfinalized[0];
+    setIsSchedulingImmediate(false);
+    setSchedDate(getTomorrowDateStr());
+    setSchedStartTime("10:00");
+    setSchedEndTime("10:45");
+    setSchedType("On-Site");
+    setSchedStage("On-Site Interview");
+    setSchedLocation(companyLabel ? (companyLabel + " Main Office") : "Company Office");
+    setSchedNotes("");
+
     const initialTemplate = getAutomatedDecisionTemplate(
       action,
       unfinalized.length === 1 ? firstApp.applicant_name : "[Candidate Name]",
@@ -1767,21 +1877,46 @@ export default function EmployerApplicantManagement() {
   const handleConfirmDecision = async () => {
     if (decisionModalApps.length === 0 || !decisionModalAction) return;
 
+    if (isSchedulingImmediate && decisionModalAction === "approved") {
+      if (!schedDate || !schedDate.trim()) {
+        setWarningPopup("Please select a date for the interview.");
+        return;
+      }
+      if (!schedStartTime || !schedStartTime.trim()) {
+        setWarningPopup("Please select a start time for the interview.");
+        return;
+      }
+    }
+
     setIsDecisionSubmitting(true);
 
     try {
       const results = await Promise.all(
         decisionModalApps.map(async (app) => {
-          const finalMessageText =
-            decisionMessageType === "automated"
-              ? getAutomatedDecisionTemplate(
-                  decisionModalAction,
-                  app.applicant_name,
-                  app.job_title || "Job Position",
-                  companyLabel || "Employer",
-                  customDecisionTemplates
-                )
-              : manualMessageText.trim();
+          let finalMessageText = "";
+          if (decisionMessageType === "automated") {
+            finalMessageText = buildDecisionNotice(
+              decisionModalAction,
+              app.applicant_name,
+              app.job_title || "Job Position",
+              companyLabel || "Employer",
+              customDecisionTemplates,
+              isSchedulingImmediate,
+              isSchedulingImmediate
+                ? {
+                    date: schedDate,
+                    startTime: schedStartTime,
+                    endTime: schedEndTime,
+                    type: schedType,
+                    stage: schedStage,
+                    location: schedLocation.trim() || (schedType === "Virtual" ? "Online Meeting (link will be provided)" : (companyLabel ? (companyLabel + " Main Office") : "Company Office")),
+                    notes: schedNotes,
+                  }
+                : undefined
+            );
+          } else {
+            finalMessageText = manualMessageText.trim();
+          }
 
           const res = await fetch(`/api/applications/${app.id}/status`, {
             method: "PUT",
@@ -1793,7 +1928,7 @@ export default function EmployerApplicantManagement() {
             }),
           });
           const data = await res.json().catch(() => ({}));
-          return { ok: res.ok, appId: app.id, data };
+          return { ok: res.ok, appId: app.id, app, data };
         })
       );
 
@@ -1805,6 +1940,90 @@ export default function EmployerApplicantManagement() {
         setWarningPopup(firstError);
         setIsDecisionSubmitting(false);
         return;
+      }
+
+      // If employer requested to immediately schedule the interview(s) upon approval
+      if (isSchedulingImmediate && decisionModalAction === "approved") {
+        const rawUser = localStorage.getItem("elitecruit-user");
+        let employerUserId = 5;
+        try {
+          if (rawUser) {
+            const parsed = JSON.parse(rawUser);
+            if (parsed?.id) employerUserId = parsed.id;
+          }
+        } catch {}
+
+        const newInterviewsToStore: any[] = [];
+
+        for (const item of succeeded) {
+          const app = item.app;
+          const targetApplicantUserId = app.applicant_user_id || (app as any).user_id || 0;
+          const meetingTitle = schedStage + " - " + app.applicant_name;
+
+          try {
+            const schedRes = await fetch("/api/interviews", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                employer_user_id: employerUserId,
+                applicant_user_id: targetApplicantUserId,
+                candidate_user_ids: [targetApplicantUserId],
+                job_post_id: app.job_post_id,
+                interview_title: meetingTitle,
+                interview_stage: schedStage,
+                interview_type: schedType,
+                meeting_link_or_address: schedLocation.trim() || (schedType === "Virtual" ? "Online Meeting" : (companyLabel ? (companyLabel + " Main Office") : "Company Office")),
+                interview_date: schedDate,
+                start_time: schedStartTime,
+                end_time: schedEndTime || schedStartTime,
+                notes: schedNotes.trim(),
+                job_title: app.job_title || "Job Position",
+                applicant_name: app.applicant_name,
+                applicant_phone: (app as any).phone || "",
+                applicant_city: app.city || "",
+                applicant_email: (app as any).applicant_email || (app as any).email || "",
+              }),
+            });
+            const schedData = await schedRes.json().catch(() => ({}));
+            if (schedData?.interview) {
+              newInterviewsToStore.push(schedData.interview);
+            } else {
+              newInterviewsToStore.push({
+                id: Date.now() + Math.floor(Math.random() * 1000),
+                employer_user_id: employerUserId,
+                applicant_user_id: targetApplicantUserId,
+                candidate_user_ids: [targetApplicantUserId],
+                job_post_id: app.job_post_id,
+                interview_title: meetingTitle,
+                interview_stage: schedStage,
+                interview_type: schedType,
+                meeting_link_or_address: schedLocation.trim() || "Company Office",
+                interview_date: schedDate,
+                start_time: schedStartTime,
+                end_time: schedEndTime || schedStartTime,
+                notes: schedNotes.trim(),
+                status: "pending",
+                job_title: app.job_title || "Job Position",
+                applicant_name: app.applicant_name,
+                created_at: new Date().toISOString(),
+              });
+            }
+          } catch (schedErr) {
+            console.error("Interview scheduling request failed:", schedErr);
+          }
+        }
+
+        if (newInterviewsToStore.length > 0) {
+          try {
+            const rawExisting = localStorage.getItem("elitecruit_scheduled_interviews");
+            const existing = rawExisting ? JSON.parse(rawExisting) : [];
+            const merged = [...newInterviewsToStore, ...(Array.isArray(existing) ? existing : [])];
+            localStorage.setItem("elitecruit_scheduled_interviews", JSON.stringify(merged));
+          } catch {}
+          try {
+            window.dispatchEvent(new Event("elitecruit-interviews-updated"));
+          } catch {}
+        }
       }
 
       setApplications((prev) =>
@@ -1825,6 +2044,7 @@ export default function EmployerApplicantManagement() {
 
       setDecisionModalApps([]);
       setDecisionModalAction(null);
+      setIsSchedulingImmediate(false);
       fetchApplications();
     } catch (err) {
       console.error("Decision error:", err);
@@ -5356,7 +5576,7 @@ export default function EmployerApplicantManagement() {
 
         {/* ── DECISION MODAL (ACCEPT / DENY WITH MESSAGE PREFERENCE) ── */}
         {decisionModalApps.length > 0 && decisionModalAction && (
-          <div className="decision-modal-overlay" onClick={() => !isDecisionSubmitting && setDecisionModalApps([])}>
+          <div className="decision-modal-overlay" onClick={() => { if (!isDecisionSubmitting) { setDecisionModalApps([]); setIsSchedulingImmediate(false); } }}>
             <div className="decision-modal-card" onClick={(e) => e.stopPropagation()}>
               <div className="decision-modal-header">
                 <div className="decision-header-left">
@@ -5381,7 +5601,7 @@ export default function EmployerApplicantManagement() {
                   type="button"
                   className="decision-close-btn"
                   disabled={isDecisionSubmitting}
-                  onClick={() => setDecisionModalApps([])}
+                  onClick={() => { setDecisionModalApps([]); setIsSchedulingImmediate(false); }}
                   aria-label="Close"
                 >
                   ✕
@@ -5429,6 +5649,122 @@ export default function EmployerApplicantManagement() {
                         </span>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {/* Immediate Schedule Option & Fields for Acceptance */}
+                {decisionModalAction === "approved" && (
+                  <div className={`decision-schedule-section ${isSchedulingImmediate ? "expanded" : ""}`}>
+                    <div className="decision-schedule-header">
+                      <div className="decision-schedule-title-area">
+                        <span className="decision-schedule-icon">📅</span>
+                        <div>
+                          <h4 className="decision-schedule-title">Schedule Interview Immediately</h4>
+                          <p className="decision-schedule-desc">
+                            Directly book this meeting on the calendar and dispatch schedule details to the applicant upon acceptance.
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className={`decision-schedule-toggle-pill ${isSchedulingImmediate ? "active" : ""}`}
+                        onClick={() => setIsSchedulingImmediate((v) => !v)}
+                      >
+                        {isSchedulingImmediate ? "✓ Interview Scheduling Enabled" : "+ Set Interview Schedule"}
+                      </button>
+                    </div>
+
+                    {isSchedulingImmediate && (
+                      <div className="decision-schedule-fields-wrap">
+                        <div className="decision-schedule-row three-col">
+                          <div className="decision-sched-field">
+                            <label>Interview Date *</label>
+                            <input
+                              type="date"
+                              className="decision-sched-input"
+                              value={schedDate}
+                              min={getTodayDateStr()}
+                              onChange={(e) => setSchedDate(e.target.value)}
+                            />
+                          </div>
+                          <div className="decision-sched-field">
+                            <label>Start Time *</label>
+                            <input
+                              type="time"
+                              className="decision-sched-input"
+                              value={schedStartTime}
+                              onChange={(e) => setSchedStartTime(e.target.value)}
+                            />
+                          </div>
+                          <div className="decision-sched-field">
+                            <label>End Time</label>
+                            <input
+                              type="time"
+                              className="decision-sched-input"
+                              value={schedEndTime}
+                              onChange={(e) => setSchedEndTime(e.target.value)}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="decision-schedule-row three-col">
+                          <div className="decision-sched-field">
+                            <label>Interview Mode</label>
+                            <select
+                              className="decision-sched-input"
+                              value={schedType}
+                              onChange={(e) => {
+                                const newType = e.target.value as "On-Site" | "Virtual";
+                                setSchedType(newType);
+                                if (newType === "Virtual" && (!schedLocation || schedLocation.includes("Office") || schedLocation.includes("Branch"))) {
+                                  setSchedLocation("Google Meet / Video Link");
+                                } else if (newType === "On-Site" && (!schedLocation || schedLocation.includes("Meet") || schedLocation.includes("Video"))) {
+                                  setSchedLocation(companyLabel ? (companyLabel + " Main Office") : "Company Office");
+                                }
+                              }}
+                            >
+                              <option value="On-Site">On-Site Interview</option>
+                              <option value="Virtual">Virtual / Online Meeting</option>
+                            </select>
+                          </div>
+                          <div className="decision-sched-field">
+                            <label>Interview Stage</label>
+                            <select
+                              className="decision-sched-input"
+                              value={schedStage}
+                              onChange={(e) => setSchedStage(e.target.value)}
+                            >
+                              <option value="On-Site Interview">On-Site Interview</option>
+                              <option value="Initial Interview">Initial Interview</option>
+                              <option value="Technical Interview">Technical Interview</option>
+                              <option value="Final Interview">Final Interview</option>
+                              <option value="HR Screening">HR Screening</option>
+                            </select>
+                          </div>
+                          <div className="decision-sched-field">
+                            <label>{schedType === "Virtual" ? "Meeting Link / Platform" : "Office Address / Room"}</label>
+                            <input
+                              type="text"
+                              className="decision-sched-input"
+                              value={schedLocation}
+                              onChange={(e) => setSchedLocation(e.target.value)}
+                              placeholder={schedType === "Virtual" ? "e.g., Google Meet or Zoom link" : "e.g., 4th Floor HQ, Room B"}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="decision-sched-field">
+                          <label>Preparation Notes / Instructions (Optional)</label>
+                          <input
+                            type="text"
+                            className="decision-sched-input"
+                            value={schedNotes}
+                            onChange={(e) => setSchedNotes(e.target.value)}
+                            placeholder="e.g., Please bring 2 valid IDs and an updated copy of your resume."
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -5487,8 +5823,8 @@ export default function EmployerApplicantManagement() {
 
                 {/* Message content textarea / preview */}
                 <div className="decision-message-wrapper">
-                  <div className="decision-message-header">
-                    <label className="decision-field-label" htmlFor="decision-msg-input">
+                  <div className="decision-message-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <label className="decision-field-label" htmlFor="decision-msg-input" style={{ marginBottom: 0 }}>
                       {decisionMessageType === "automated"
                         ? decisionModalApps.length > 1
                           ? `Standard Notice Template (Sent individually to each candidate):`
@@ -5497,12 +5833,24 @@ export default function EmployerApplicantManagement() {
                         ? `Custom Message Content (Sent to all ${decisionModalApps.length} candidates):`
                         : "Custom Message Content:"}
                     </label>
+                    {decisionMessageType === "manual" && isSchedulingImmediate && (
+                      <button
+                        type="button"
+                        className="decision-insert-sched-btn"
+                        onClick={() => {
+                          const schedSnippet = "\n\n--- INTERVIEW DETAILS ---\nDate: " + schedDate + "\nTime: " + schedStartTime + " - " + schedEndTime + "\nStage: " + schedStage + "\nMode: " + schedType + "\nLocation / Link: " + (schedLocation || "Company Office") + (schedNotes ? ("\nInstructions: " + schedNotes) : "");
+                          setManualMessageText((prev) => prev.trim() + schedSnippet);
+                        }}
+                      >
+                        + Insert Schedule Info
+                      </button>
+                    )}
                   </div>
 
                   <textarea
                     id="decision-msg-input"
                     className={`decision-textarea ${decisionMessageType === "automated" ? "automated-preview" : ""}`}
-                    rows={8}
+                    rows={isSchedulingImmediate ? 5 : 8}
                     readOnly={decisionMessageType === "automated"}
                     value={decisionMessageType === "automated" ? decisionMessageText : manualMessageText}
                     onChange={(e) => {
@@ -5545,20 +5893,52 @@ export default function EmployerApplicantManagement() {
                   type="button"
                   className="decision-cancel-btn"
                   disabled={isDecisionSubmitting}
-                  onClick={() => setDecisionModalApps([])}
+                  onClick={() => {
+                    setDecisionModalApps([]);
+                    setIsSchedulingImmediate(false);
+                  }}
                 >
                   Cancel
                 </button>
+
+                {decisionModalAction === "approved" && (
+                  isSchedulingImmediate ? (
+                    <button
+                      type="button"
+                      className="decision-schedule-switch-btn"
+                      disabled={isDecisionSubmitting}
+                      onClick={() => setIsSchedulingImmediate(false)}
+                    >
+                      Accept Without Scheduling
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="decision-schedule-quick-btn"
+                      disabled={isDecisionSubmitting}
+                      onClick={() => setIsSchedulingImmediate(true)}
+                    >
+                      📅 Schedule Interview Instead
+                    </button>
+                  )
+                )}
+
                 <button
                   type="button"
-                  className={`decision-confirm-btn ${decisionModalAction}`}
+                  className={`decision-confirm-btn ${decisionModalAction} ${isSchedulingImmediate ? "schedule-action" : ""}`}
                   disabled={isDecisionSubmitting || (decisionMessageType === "manual" && !manualMessageText.trim())}
                   onClick={handleConfirmDecision}
                 >
                   {isDecisionSubmitting
-                    ? `Submitting Decision${decisionModalApps.length > 1 ? ` (${decisionModalApps.length})` : ""}...`
+                    ? isSchedulingImmediate
+                      ? `Scheduling & Accepting...`
+                      : `Submitting Decision${decisionModalApps.length > 1 ? ` (${decisionModalApps.length})` : ""}...`
                     : decisionModalAction === "approved"
-                    ? decisionModalApps.length > 1
+                    ? isSchedulingImmediate
+                      ? decisionModalApps.length > 1
+                        ? `📅 Accept & Schedule (${decisionModalApps.length})`
+                        : "📅 Accept & Schedule Interview"
+                      : decisionModalApps.length > 1
                       ? `Confirm Acceptance (${decisionModalApps.length})`
                       : "Confirm Acceptance"
                     : decisionModalApps.length > 1

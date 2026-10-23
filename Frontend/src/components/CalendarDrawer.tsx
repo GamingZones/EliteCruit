@@ -360,6 +360,15 @@ export default function CalendarDrawer({
 
   useEffect(() => {
     loadInterviewsFromApi();
+
+    const handleSync = () => {
+      loadInterviewsFromApi();
+    };
+
+    window.addEventListener("elitecruit-interviews-updated", handleSync);
+    return () => {
+      window.removeEventListener("elitecruit-interviews-updated", handleSync);
+    };
   }, [currentUserId, currentRole]);
 
   // Selected date for day agenda view (defaults to today 'YYYY-MM-DD')

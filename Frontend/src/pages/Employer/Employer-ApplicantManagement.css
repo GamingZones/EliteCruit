@@ -3509,3 +3509,212 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Immediate Interview Scheduling in Decision Modal */
+.decision-schedule-section {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  transition: all 0.2s ease;
+}
+
+.decision-schedule-section.expanded {
+  background: #f8fafc;
+  border-color: #38bdf8;
+  box-shadow: 0 2px 10px rgba(56, 189, 248, 0.08);
+}
+
+.decision-schedule-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.decision-schedule-title-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.decision-schedule-icon {
+  font-size: 1.35rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: rgba(14, 165, 233, 0.1);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.decision-schedule-title {
+  margin: 0 0 2px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.decision-schedule-desc {
+  margin: 0;
+  font-size: 0.76rem;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.decision-schedule-toggle-pill {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid #0284c7;
+  background: #ffffff;
+  color: #0284c7;
+}
+
+.decision-schedule-toggle-pill:hover {
+  background: #f0f9ff;
+  border-color: #0369a1;
+}
+
+.decision-schedule-toggle-pill.active {
+  background: #059669;
+  border-color: #059669;
+  color: #ffffff;
+}
+
+.decision-schedule-toggle-pill.active:hover {
+  background: #047857;
+}
+
+.decision-schedule-fields-wrap {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed #cbd5e1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: fadeIn 0.18s ease-in-out;
+}
+
+.decision-schedule-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.decision-schedule-row.three-col {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.decision-sched-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.decision-sched-field label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.decision-sched-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 7px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #1e293b;
+  font-size: 0.82rem;
+  font-weight: 500;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.decision-sched-input:focus {
+  outline: none;
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+.decision-insert-sched-btn {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  color: #0284c7;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.decision-insert-sched-btn:hover {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.decision-schedule-quick-btn {
+  padding: 9px 18px;
+  border-radius: 8px;
+  border: 1px solid #0284c7;
+  background: #f0f9ff;
+  color: #0284c7;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.decision-schedule-quick-btn:hover:not(:disabled) {
+  background: #e0f2fe;
+  border-color: #0369a1;
+  color: #0369a1;
+  transform: translateY(-1px);
+}
+
+.decision-schedule-switch-btn {
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.decision-schedule-switch-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.decision-confirm-btn.schedule-action {
+  background: #2563eb;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+}
+
+.decision-confirm-btn.schedule-action:hover:not(:disabled) {
+  background: #1d4ed8;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+}
