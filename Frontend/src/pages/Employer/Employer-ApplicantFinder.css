@@ -3454,6 +3454,75 @@
   color: #f8fafc !important;
 }
 
+/* ── Side-Docked Panels (Other Employer Jobs, Live Messages, Match Breakdown) ── */
+.jd-modal-container {
+  display: flex !important;
+  align-items: stretch !important;
+  justify-content: center !important;
+  gap: 16px !important;
+  width: 100% !important;
+  max-width: min(940px, calc(100vw - 48px)) !important;
+  margin-top: 18px !important;
+  transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+}
+
+.jd-modal-container.with-side-panel {
+  max-width: min(1320px, calc(100vw - 48px)) !important;
+}
+
+.jd-modal-container.with-side-panel .jd-panel-outer-wrap {
+  width: min(720px, 54vw) !important;
+  max-width: min(720px, 54vw) !important;
+}
+
+.jd-panel-outer-wrap {
+  position: relative !important;
+  overflow: visible !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 920px !important;
+  max-width: min(920px, 94vw) !important;
+  flex-shrink: 0 !important;
+  margin-top: 0 !important;
+  align-self: center !important;
+}
+
+.jd-panel-outer-wrap .cand-details-panel {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 630px !important;
+  max-height: calc(85vh - 46px) !important;
+  min-height: 480px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.jd-side-comparison-panel {
+  width: min(480px, 38vw) !important;
+  margin-top: 0 !important;
+  align-self: center !important;
+  height: 630px !important;
+  max-height: calc(85vh - 46px) !important;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(10, 30, 60, 0.22);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: jdSlideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.jd-side-comparison-panel.closing {
+  animation: jdSlideOutRight 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: none;
+}
+
+
 
 
 

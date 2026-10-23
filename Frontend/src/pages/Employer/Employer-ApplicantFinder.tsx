@@ -1596,6 +1596,258 @@ export default function EmployerApplicantFinder() {
     }
   };
 
+  // Candidate Review Side Panels (Other Jobs, Live Message, Candidate Match Breakdown)
+  const [isOtherJobsOpen, setIsOtherJobsOpen] = useState(false);
+  const [isOtherJobsClosing, setIsOtherJobsClosing] = useState(false);
+  const [isMessagePanelOpen, setIsMessagePanelOpen] = useState(false);
+  const [isMessagePanelClosing, setIsMessagePanelClosing] = useState(false);
+  const [isCandMatchDrawerOpen, setIsCandMatchDrawerOpen] = useState(false);
+  const [isCandMatchDrawerClosing, setIsCandMatchDrawerClosing] = useState(false);
+
+  // Message chat state
+  const [candMsgThread, setCandMsgThread] = useState<any | null>(null);
+  const [candMessages, setCandMessages] = useState<any[]>([]);
+  const [isCandMsgLoading, setIsCandMsgLoading] = useState(false);
+  const [candMsgInput, setCandMsgInput] = useState("");
+  const [isCandMsgSending, setIsCandMsgSending] = useState(false);
+  const candMsgEndRef = useRef<HTMLDivElement>(null);
+
+  const fetchCandidateThreadMessages = async (applicantUserId: number) => {
+    setIsCandMsgLoading(true);
+    try {
+      const rawUser = localStorage.getItem("elitecruit-user");
+      if (!rawUser) {
+        setIsCandMsgLoading(false);
+        return;
+      }
+      const currentUid = JSON.parse(rawUser)?.id;
+      if (!currentUid) {
+        setIsCandMsgLoading(false);
+        return;
+      }
+
+      const threadsRes = await fetch(`/api/users/${currentUid}/messages`);
+      if (!threadsRes.ok) {
+        setIsCandMsgLoading(false);
+        return;
+      }
+
+      const threadsData = await threadsRes.json();
+      const allThreads = threadsData?.threads || [];
+      const existing = allThreads.find((t: any) => Number(t.other_user_id) === Number(applicantUserId));
+
+      if (existing) {
+        setCandMsgThread(existing);
+        const msgRes = await fetch(`/api/messages/threads/${existing.id}`);
+        if (msgRes.ok) {
+          const msgData = await msgRes.json();
+          setCandMessages(msgData?.messages || []);
+        }
+        try {
+          await fetch(`/api/messages/threads/${existing.id}/read`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: currentUid }),
+          });
+          window.dispatchEvent(new Event("elitecruit_messages_update"));
+        } catch {}
+      } else {
+        setCandMsgThread(null);
+        setCandMessages([]);
+      }
+    } catch (err) {
+      console.error("Error loading candidate messages:", err);
+    } finally {
+      setIsCandMsgLoading(false);
+    }
+  };
+
+  const handleCloseMessagePanel = () => {
+    setIsMessagePanelClosing(true);
+    setTimeout(() => {
+      setIsMessagePanelOpen(false);
+      setIsMessagePanelClosing(false);
+    }, 220);
+  };
+
+  const handleToggleMessagePanel = () => {
+    if (isMessagePanelOpen) {
+      handleCloseMessagePanel();
+    } else {
+      setIsCandMatchDrawerOpen(false);
+      setIsCandMatchDrawerClosing(false);
+      setIsOtherJobsOpen(false);
+      setIsOtherJobsClosing(false);
+      setIsMessagePanelOpen(true);
+      setIsMessagePanelClosing(false);
+      if (selectedCandidate?.user_id) {
+        fetchCandidateThreadMessages(selectedCandidate.user_id);
+      }
+    }
+  };
+
+  const handleCloseOtherJobs = () => {
+    setIsOtherJobsClosing(true);
+    setTimeout(() => {
+      setIsOtherJobsOpen(false);
+      setIsOtherJobsClosing(false);
+    }, 220);
+  };
+
+  const handleToggleOtherJobs = () => {
+    if (isOtherJobsOpen) {
+      handleCloseOtherJobs();
+    } else {
+      setIsCandMatchDrawerOpen(false);
+      setIsCandMatchDrawerClosing(false);
+      setIsMessagePanelOpen(false);
+      setIsMessagePanelClosing(false);
+      setIsOtherJobsOpen(true);
+      setIsOtherJobsClosing(false);
+    }
+  };
+
+  const handleCloseCandMatchDrawer = () => {
+    setIsCandMatchDrawerClosing(true);
+    setTimeout(() => {
+      setIsCandMatchDrawerOpen(false);
+      setIsCandMatchDrawerClosing(false);
+    }, 220);
+  };
+
+  const handleToggleCandMatchDrawer = () => {
+    if (isCandMatchDrawerOpen) {
+      handleCloseCandMatchDrawer();
+    } else {
+      setIsOtherJobsOpen(false);
+      setIsOtherJobsClosing(false);
+      setIsMessagePanelOpen(false);
+      setIsMessagePanelClosing(false);
+      setIsCandMatchDrawerOpen(true);
+      setIsCandMatchDrawerClosing(false);
+    }
+  };
+
+  const handleCloseCandidateModal = () => {
+    setSelectedCandidate(null);
+    setIsDocsDrawerOpen(false);
+    setIsPreviewingDoc(false);
+    setCandidateDocuments([]);
+    setPreviewDoc(null);
+    setIsOtherJobsOpen(false);
+    setIsOtherJobsClosing(false);
+    setIsMessagePanelOpen(false);
+    setIsMessagePanelClosing(false);
+    setIsCandMatchDrawerOpen(false);
+    setIsCandMatchDrawerClosing(false);
+    setCandMessages([]);
+    setCandMsgThread(null);
+  };
+
+  const openCandidateModal = (cand: Candidate) => {
+    setSelectedCandidate(cand);
+    setIsDocsDrawerOpen(false);
+    setIsPreviewingDoc(false);
+    setIsOtherJobsOpen(false);
+    setIsOtherJobsClosing(false);
+    setIsMessagePanelOpen(false);
+    setIsMessagePanelClosing(false);
+    setIsCandMatchDrawerOpen(false);
+    setIsCandMatchDrawerClosing(false);
+    setCandMessages([]);
+    setCandMsgThread(null);
+  };
+
+  const openCandidateMessage = (cand: Candidate) => {
+    setSelectedCandidate(cand);
+    setIsDocsDrawerOpen(false);
+    setIsPreviewingDoc(false);
+    setIsCandMatchDrawerOpen(false);
+    setIsCandMatchDrawerClosing(false);
+    setIsOtherJobsOpen(false);
+    setIsOtherJobsClosing(false);
+    setIsMessagePanelOpen(true);
+    setIsMessagePanelClosing(false);
+    if (cand.user_id) {
+      fetchCandidateThreadMessages(cand.user_id);
+    }
+  };
+
+  const handleSendCandidateMessage = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const text = candMsgInput.trim();
+    if (!text || isCandMsgSending || !selectedCandidate?.user_id) return;
+
+    const rawUser = localStorage.getItem("elitecruit-user");
+    if (!rawUser) return;
+    const currentUid = JSON.parse(rawUser)?.id;
+    if (!currentUid) return;
+
+    setIsCandMsgSending(true);
+    try {
+      if (candMsgThread?.id) {
+        const res = await fetch(`/api/messages/threads/${candMsgThread.id}/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sender_user_id: currentUid,
+            message_text: text,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setCandMessages((prev) => [...prev, data.message]);
+          setCandMsgInput("");
+          window.dispatchEvent(new Event("elitecruit_messages_update"));
+        }
+      } else {
+        const res = await fetch("/api/messages/threads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            created_by_user_id: currentUid,
+            participant_user_ids: [selectedCandidate.user_id],
+            title: `Applicant: ${selectedCandidate.applicant_name}`,
+            message_text: text,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setCandMsgThread(data.thread);
+          setCandMessages([data.message]);
+          setCandMsgInput("");
+          window.dispatchEvent(new Event("elitecruit_messages_update"));
+        }
+      }
+    } catch (err) {
+      console.error("Failed to send candidate message:", err);
+    } finally {
+      setIsCandMsgSending(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isMessagePanelOpen && candMsgEndRef.current) {
+      candMsgEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [candMessages, isMessagePanelOpen]);
+
+  useEffect(() => {
+    if (!isMessagePanelOpen || !selectedCandidate?.user_id || !candMsgThread?.id) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/messages/threads/${candMsgThread.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data?.messages)) {
+            setCandMessages(data.messages);
+          }
+        }
+      } catch {}
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [isMessagePanelOpen, selectedCandidate?.user_id, candMsgThread?.id]);
+
   // Selected Area Cluster for Side Drawer / Detailed List
   const [selectedAreaGroup, setSelectedAreaGroup] = useState<AreaApplicantGroup | null>(null);
   const [isAreaDrawerClosing, setIsAreaDrawerClosing] = useState(false);
@@ -3339,18 +3591,18 @@ export default function EmployerApplicantFinder() {
                           {/* Right Column: Vertical Actions Stack */}
                           <div className="finder-card-right">
                             <div className="finder-actions-stack">
-                              <a href="/messages" className="finder-card-btn btn-message">
+                              <button
+                                type="button"
+                                className="finder-card-btn btn-message"
+                                onClick={() => openCandidateMessage(cand)}
+                              >
                                 Message
-                              </a>
+                              </button>
 
                               <button
                                 type="button"
                                 className="finder-card-btn btn-details"
-                                onClick={() => {
-                                  setSelectedCandidate(cand);
-                                  setIsDocsDrawerOpen(false);
-                                  setIsPreviewingDoc(false);
-                                }}
+                                onClick={() => openCandidateModal(cand)}
                               >
                                 Details
                               </button>
@@ -3668,18 +3920,18 @@ export default function EmployerApplicantFinder() {
                         {/* Right Column: Vertical Actions Stack */}
                         <div className="finder-card-right">
                           <div className="finder-actions-stack">
-                            <a href="/messages" className="finder-card-btn btn-message">
+                            <button
+                              type="button"
+                              className="finder-card-btn btn-message"
+                              onClick={() => openCandidateMessage(cand)}
+                            >
                               Message
-                            </a>
+                            </button>
 
                             <button
                               type="button"
                               className="finder-card-btn btn-details"
-                              onClick={() => {
-                                setSelectedCandidate(cand);
-                                setIsDocsDrawerOpen(false);
-                                setIsPreviewingDoc(false);
-                              }}
+                              onClick={() => openCandidateModal(cand)}
                             >
                               Details
                             </button>
@@ -3707,16 +3959,40 @@ export default function EmployerApplicantFinder() {
         {selectedCandidate && (
           <div
             className="cand-details-overlay"
-            onClick={() => {
-              setSelectedCandidate(null);
-              setIsDocsDrawerOpen(false);
-              setIsPreviewingDoc(false);
-              setCandidateDocuments([]);
-              setPreviewDoc(null);
-            }}
+            onClick={handleCloseCandidateModal}
           >
-            <div className="cand-details-panel" onClick={(e) => e.stopPropagation()}>
-              <div className="cand-details-strip" style={{ paddingTop: "20px" }}>
+            <div
+              className={`jd-modal-container ${
+                isCandMatchDrawerOpen || isCandMatchDrawerClosing || isOtherJobsOpen || isOtherJobsClosing || isMessagePanelOpen || isMessagePanelClosing ? "with-side-panel" : ""
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="jd-panel-outer-wrap">
+                <div className="jd-floating-tabs-container">
+                  <button
+                    type="button"
+                    className={`jd-floating-breakdown-tab ${isCandMatchDrawerOpen && !isCandMatchDrawerClosing ? "active" : ""}`}
+                    onClick={handleToggleCandMatchDrawer}
+                  >
+                    <span>{isCandMatchDrawerOpen && !isCandMatchDrawerClosing ? "Hide Breakdown" : "Match Breakdown"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`jd-floating-breakdown-tab ${isOtherJobsOpen && !isOtherJobsClosing ? "active" : ""}`}
+                    onClick={handleToggleOtherJobs}
+                  >
+                    <span>{isOtherJobsOpen && !isOtherJobsClosing ? "Hide Other Jobs" : "Other Jobs"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`jd-floating-breakdown-tab ${isMessagePanelOpen && !isMessagePanelClosing ? "active" : ""}`}
+                    onClick={handleToggleMessagePanel}
+                  >
+                    <span>{isMessagePanelOpen && !isMessagePanelClosing ? "Hide Message" : "Message"}</span>
+                  </button>
+                </div>
+                <div className="cand-details-panel jd-panel">
+                  <div className="cand-details-strip" style={{ paddingTop: "20px" }}>
                 <div className="cand-details-logo-info">
                   <div className="cand-details-logo" aria-label="Candidate initials">
                     {selectedCandidate.profile_picture_path ? (
@@ -4313,42 +4589,713 @@ export default function EmployerApplicantFinder() {
                   <button
                     type="button"
                     className="cand-details-cancel-btn"
-                    onClick={() => {
-                      setSelectedCandidate(null);
-                      setIsDocsDrawerOpen(false);
-                      setIsPreviewingDoc(false);
-                      setCandidateDocuments([]);
-                      setPreviewDoc(null);
-                    }}
+                    onClick={handleCloseCandidateModal}
                   >
                     Close
                   </button>
-                  <a href="/messages" className="finder-btn finder-btn-outline">
+                  <button
+                    type="button"
+                    className={`finder-btn finder-btn-outline ${isMessagePanelOpen && !isMessagePanelClosing ? "active" : ""}`}
+                    onClick={handleToggleMessagePanel}
+                  >
                     Message
-                  </a>
-                  {(() => {
-                    const isInvited = invitedCandidateIds.includes(selectedCandidate.user_id);
-                    return (
-                      <button
-                        type="button"
-                        className={`finder-btn finder-btn-green ${isInvited ? "invited" : ""}`}
-                        disabled={isInvited}
-                        onClick={() => {
-                          setInviteCandidate(selectedCandidate);
-                          setCustomInviteMsg(
-                            `Hello ${selectedCandidate.applicant_name}! We reviewed your profile and would love to invite you to apply for our open position.`
-                          );
-                        }}
-                      >
-                        {isInvited ? "Recruited" : "Recruit"}
-                      </button>
-                    );
-                  })()}
+                  </button>
+                  <button
+                    type="button"
+                    className={`finder-btn finder-btn-green ${isOtherJobsOpen && !isOtherJobsClosing ? "active" : ""}`}
+                    onClick={handleToggleOtherJobs}
+                  >
+                    Recruit
+                  </button>
                 </div>
               </div>
             </div>
           </div>
-        )}
+
+          {/* ── Other Employer Jobs Panel (Container 2) ── */}
+          {(isOtherJobsOpen || isOtherJobsClosing) && (
+            <aside className={`jd-side-comparison-panel ${isOtherJobsClosing ? "closing" : "opening"}`} style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}>
+              <div className="jd-side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
+                <div className="jd-side-title-row">
+                  <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>Other Employer Jobs</h3>
+                  <span className="jd-side-subtitle" style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>Candidate compatibility across your active job postings</span>
+                </div>
+                <div className="jd-side-header-actions">
+                  <button
+                    type="button"
+                    className="jd-side-close-btn"
+                    aria-label="Close panel"
+                    onClick={handleCloseOtherJobs}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              <div className="jd-side-panel-body" style={{ display: "flex", flexDirection: "column", gap: "14px", padding: "18px", fontFamily: '"Manrope", sans-serif', overflowY: "auto", flex: 1 }}>
+                {(() => {
+                  if (activeJobs.length === 0) {
+                    return (
+                      <div style={{ textAlign: "center", color: "#64748b", padding: "30px 10px", fontSize: "0.9rem", fontFamily: '"Manrope", sans-serif' }}>
+                        No active job postings found for this employer.
+                      </div>
+                    );
+                  }
+
+                  return activeJobs.map((otherJob: any) => {
+                    const percent = calculateCandidateMatch(
+                      {
+                        desired_job_title: selectedCandidate.desired_job_title || "",
+                        work_arrangement: selectedCandidate.work_arrangement || "",
+                        expected_salary: selectedCandidate.expected_salary || 0,
+                        skills: selectedCandidate.skills || "",
+                        qualifications: selectedCandidate.qualifications || "",
+                        certifications: selectedCandidate.certifications || "",
+                        city: selectedCandidate.city || selectedCandidate.address || "",
+                      },
+                      {
+                        title: otherJob.title || "",
+                        work_arrangement: otherJob.work_arrangement || "",
+                        required_skills: otherJob.required_skills || "",
+                        required_qualifications: otherJob.qualifications || otherJob.required_qualifications || "",
+                        required_certifications: otherJob.certifications || otherJob.required_certifications || "",
+                        location: otherJob.location || "",
+                        salary_min: Number(otherJob.salary_min) || 0,
+                        salary_max: Number(otherJob.salary_max) || 0,
+                      }
+                    );
+                    const matchStyle = getMatchPercentStyle(percent);
+
+                    return (
+                      <div
+                        key={otherJob.id}
+                        className="jd-other-job-card"
+                        style={{
+                          background: "#ffffff",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: "12px",
+                          padding: "16px",
+                          boxShadow: "0 4px 12px rgba(10, 30, 60, 0.05)",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          gap: "12px",
+                          fontFamily: '"Manrope", sans-serif',
+                        }}
+                      >
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
+                            {otherJob.title}
+                          </h4>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginTop: "2px", fontSize: "0.8rem", color: "#64748b", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Manrope", sans-serif' }}>
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" />
+                                <circle cx="12" cy="10" r="2.5" />
+                              </svg>
+                              {otherJob.location || "Cavite"}
+                            </span>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Manrope", sans-serif' }}>
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                              </svg>
+                              {otherJob.work_arrangement || "On-Site"}
+                            </span>
+                            {otherJob.salary_min ? (
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Manrope", sans-serif' }}>
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <line x1="12" y1="1" x2="12" y2="23" />
+                                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                </svg>
+                                PHP {Number(otherJob.salary_min).toLocaleString()} - {Number(otherJob.salary_max).toLocaleString()}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px", flexShrink: 0 }}>
+                          <div
+                            className={`jd-other-job-match-pill ${percent >= 85 ? "green" : percent >= 70 ? "yellow" : "red"}`}
+                            style={{
+                              fontWeight: 800,
+                              fontSize: "0.82rem",
+                              padding: "4px 10px",
+                              borderRadius: "999px",
+                              whiteSpace: "nowrap",
+                              fontFamily: '"Manrope", sans-serif',
+                              background: matchStyle.track,
+                              color: matchStyle.color,
+                            }}
+                          >
+                            {percent}% Match
+                          </div>
+                          <button
+                            type="button"
+                            className="details-btn jd-other-job-details-btn"
+                            style={{
+                              background: "#01294a",
+                              color: "#ffffff",
+                              fontWeight: 800,
+                              fontSize: "0.82rem",
+                              padding: "4px 12px",
+                              borderRadius: "999px",
+                              border: "1px solid #01294a",
+                              whiteSpace: "nowrap",
+                              cursor: "pointer",
+                              boxShadow: "0 2px 6px rgba(1, 41, 74, 0.2)",
+                              transition: "all 0.15s ease",
+                              width: "100%",
+                              textAlign: "center",
+                              fontFamily: '"Manrope", sans-serif',
+                            }}
+                            onClick={() => {
+                              setViewingJobDetails(otherJob);
+                              setIsMatchDrawerOpen(false);
+                            }}
+                          >
+                            Details
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </aside>
+          )}
+
+          {/* ── Candidate Side-Docked Message Panel ── */}
+          {(isMessagePanelOpen || isMessagePanelClosing) && selectedCandidate && (
+            <aside
+              className={`jd-side-comparison-panel cand-message-side-panel ${isMessagePanelClosing ? "closing" : "opening"}`}
+              style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}
+            >
+              <div className="jd-side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
+                <div className="jd-side-title-row" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <div
+                    className="cand-msg-header-avatar"
+                    style={{
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "50%",
+                      background: "#0284c7",
+                      color: "#ffffff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 800,
+                      fontSize: "0.88rem",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {initialsFrom(selectedCandidate.applicant_name)}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
+                      {selectedCandidate.applicant_name}
+                    </h3>
+                    <span className="jd-side-subtitle" style={{ fontSize: "0.78rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                      Message • {selectedCandidate.desired_job_title || "Candidate"}
+                    </span>
+                  </div>
+                </div>
+                <div className="jd-side-header-actions">
+                  <button
+                    type="button"
+                    className="jd-side-close-btn"
+                    aria-label="Close message panel"
+                    onClick={handleCloseMessagePanel}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              <div
+                className="cand-msg-chat-body"
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  minHeight: 0,
+                  overflow: "hidden",
+                  background: "#f8fafc",
+                }}
+              >
+                {/* Chat Messages List */}
+                <div
+                  className="cand-msg-messages-scroll"
+                  style={{
+                    flex: 1,
+                    overflowY: "auto",
+                    padding: "16px 18px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "12px",
+                  }}
+                >
+                  {isCandMsgLoading ? (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#64748b", fontSize: "0.88rem", gap: "8px" }}>
+                      <span className="spinner-mini" style={{ width: "16px", height: "16px", border: "2px solid #cbd5e1", borderTopColor: "#0284c7", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
+                      <span>Loading messages...</span>
+                    </div>
+                  ) : candMessages.length === 0 ? (
+                    <div
+                      style={{
+                        margin: "auto",
+                        textAlign: "center",
+                        padding: "24px 16px",
+                        maxWidth: "340px",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: "10px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "48px",
+                          height: "48px",
+                          borderRadius: "14px",
+                          background: "rgba(2, 132, 199, 0.12)",
+                          color: "#0284c7",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "1.4rem",
+                        }}
+                      >
+                        💬
+                      </div>
+                      <h4 className="cand-msg-empty-title" style={{ margin: 0, fontSize: "1rem", fontWeight: 800 }}>
+                        Start a conversation
+                      </h4>
+                    </div>
+                  ) : (
+                    <>
+                      {candMessages.map((msg: any) => {
+                        const isMe = Number(msg.sender_user_id) === Number(currentEmployerId);
+                        const timeStr = msg.created_at
+                          ? new Date(msg.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+                          : "";
+                        return (
+                          <div
+                            key={msg.id}
+                            className={`cand-msg-row ${isMe ? "outgoing" : "incoming"}`}
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: isMe ? "flex-end" : "flex-start",
+                              gap: "3px",
+                            }}
+                          >
+                            {!isMe && (
+                              <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 700, paddingLeft: "4px" }}>
+                                {selectedCandidate.applicant_name}
+                              </span>
+                            )}
+                            <div
+                              className={`cand-msg-bubble ${isMe ? "outgoing" : "incoming"}`}
+                              style={{
+                                maxWidth: "82%",
+                                padding: "10px 14px",
+                                borderRadius: isMe ? "14px 14px 2px 14px" : "14px 14px 14px 2px",
+                                background: isMe ? "#0284c7" : "#ffffff",
+                                color: isMe ? "#ffffff" : "#1e293b",
+                                border: isMe ? "none" : "1px solid #e2e8f0",
+                                boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
+                                fontSize: "0.86rem",
+                                lineHeight: 1.5,
+                                whiteSpace: "pre-wrap",
+                                wordBreak: "break-word",
+                              }}
+                            >
+                              {msg.message_text}
+                            </div>
+                            <span style={{ fontSize: "0.68rem", color: "#94a3b8", padding: "0 4px" }}>
+                              {timeStr}
+                            </span>
+                          </div>
+                        );
+                      })}
+                      <div ref={candMsgEndRef} />
+                    </>
+                  )}
+                </div>
+
+                {/* Compose Bar */}
+                <form
+                  onSubmit={handleSendCandidateMessage}
+                  className="cand-msg-compose-bar"
+                  style={{
+                    padding: "12px 16px",
+                    borderTop: "1px solid #e2e8f0",
+                    background: "#ffffff",
+                    display: "flex",
+                    gap: "10px",
+                    alignItems: "center",
+                  }}
+                >
+                  <input
+                    type="text"
+                    className="cand-msg-input"
+                    placeholder={`Message ${selectedCandidate.applicant_name}...`}
+                    value={candMsgInput}
+                    onChange={(e) => setCandMsgInput(e.target.value)}
+                    disabled={isCandMsgSending}
+                    style={{
+                      flex: 1,
+                      padding: "10px 14px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: "0.85rem",
+                      fontFamily: "inherit",
+                      outline: "none",
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    className="cand-msg-send-btn"
+                    disabled={!candMsgInput.trim() || isCandMsgSending}
+                    style={{
+                      padding: "10px 18px",
+                      borderRadius: "8px",
+                      border: "none",
+                      background: "#0284c7",
+                      color: "#ffffff",
+                      fontWeight: 700,
+                      fontSize: "0.85rem",
+                      cursor: !candMsgInput.trim() || isCandMsgSending ? "not-allowed" : "pointer",
+                      opacity: !candMsgInput.trim() || isCandMsgSending ? 0.6 : 1,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    {isCandMsgSending ? "..." : (
+                      <>
+                        <span>Send</span>
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="22" y1="2" x2="11" y2="13" />
+                          <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                        </svg>
+                      </>
+                    )}
+                  </button>
+                </form>
+              </div>
+            </aside>
+          )}
+
+          {/* ── Candidate Match Breakdown Panel ── */}
+          {(isCandMatchDrawerOpen || isCandMatchDrawerClosing) && selectedCandidate && (() => {
+            const compareJob = activeJobs[jobCarouselIndex] || activeJobs[0];
+            if (!compareJob) {
+              return (
+                <aside className={`jd-side-comparison-panel ${isCandMatchDrawerClosing ? "closing" : "opening"}`} style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}>
+                  <div className="jd-side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
+                    <div className="jd-side-title-row">
+                      <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>Match Breakdown</h3>
+                      <span className="jd-side-subtitle" style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>Side-by-side candidate profile vs job requirements</span>
+                    </div>
+                    <div className="jd-side-header-actions">
+                      <button
+                        type="button"
+                        className="jd-side-close-btn"
+                        aria-label="Close comparison panel"
+                        onClick={handleCloseCandMatchDrawer}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "center", color: "#64748b", padding: "40px 20px", fontSize: "0.95rem", fontFamily: '"Manrope", sans-serif' }}>
+                    No active job postings found to compare against. Please post a job to view match breakdown.
+                  </div>
+                </aside>
+              );
+            }
+
+            const candSkills = parseCompetencyDisplayTags(selectedCandidate.skills || "");
+            const candQuals = parseCompetencyDisplayTags(selectedCandidate.qualifications || "");
+            const candCerts = parseCompetencyDisplayTags(selectedCandidate.certifications || "");
+            const candCity = formatLocationWithCavite(selectedCandidate.city || selectedCandidate.address || "Cavite");
+            const candSetup = selectedCandidate.work_arrangement || "On-Site";
+            const candSalary = selectedCandidate.expected_salary || "";
+
+            const jobSkills = parseCompetencyDisplayTags(compareJob.required_skills || (compareJob as any).skills || "");
+            const jobQuals = parseCompetencyDisplayTags(compareJob.qualifications || (compareJob as any).required_qualifications || "");
+            const jobCerts = parseCompetencyDisplayTags((compareJob as any).certifications || (compareJob as any).required_certifications || "");
+            const jobSalaryMin = Number(compareJob.salary_min) || 0;
+            const jobSalaryMax = Number(compareJob.salary_max) || 0;
+            const jobLocation = formatLocationWithCavite(compareJob.location || compareJob.city || "Cavite");
+
+            const matchDetails = calculateJobMatchDetails(
+              {
+                id: compareJob.id,
+                title: compareJob.title,
+                location: jobLocation,
+                salaryMin: jobSalaryMin,
+                setup: compareJob.work_arrangement || "On-Site",
+                skillTags: jobSkills,
+                qualTags: jobQuals,
+                certTags: jobCerts,
+              },
+              {
+                desiredJobTitle: selectedCandidate.desired_job_title || "",
+                workArrangement: candSetup,
+                expectedSalary: parseExpectedSalary(candSalary),
+                city: candCity,
+                skills: candSkills,
+                qualifications: candQuals,
+                certifications: candCerts,
+              }
+            );
+
+            const checkMatch = (jobItem: string, appItems: string[]) => {
+              if (!appItems || appItems.length === 0) return false;
+              return appItems.some((appItem) => isSkillMatch(jobItem, appItem));
+            };
+
+            const isCandRelevant = (appItem: string, jItems: string[]) => {
+              if (!jItems || jItems.length === 0) return false;
+              return jItems.some((jobItem) => isSkillMatch(jobItem, appItem));
+            };
+
+            return (
+              <aside className={`jd-side-comparison-panel ${isCandMatchDrawerClosing ? "closing" : "opening"}`} style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}>
+                <div className="jd-side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
+                  <div className="jd-side-title-row">
+                    <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>Match Breakdown</h3>
+                    <span className="jd-side-subtitle" style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>Compared against: {compareJob.title}</span>
+                  </div>
+                  <div className="jd-side-header-actions">
+                    <span className={`match-badge-pill ${getMatchColorClass(matchDetails.score)}`}>
+                      {matchDetails.score}% Match
+                    </span>
+                    <button
+                      type="button"
+                      className="jd-side-close-btn"
+                      aria-label="Close comparison panel"
+                      onClick={handleCloseCandMatchDrawer}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+
+                <div className="jd-side-panel-body" style={{ overflowY: "auto", flex: 1, padding: "16px" }}>
+                  {/* Legend strip */}
+                  <div className="jd-compare-legend" style={{ marginBottom: "12px" }}>
+                    <div className="legend-item">
+                      <span className="legend-dot green"></span>
+                      <span><strong>Green Tag:</strong> Matched candidate competency</span>
+                    </div>
+                    <div className="legend-item">
+                      <span className="legend-dot red"></span>
+                      <span><strong>Red Tag:</strong> Required by job, missing from candidate</span>
+                    </div>
+                  </div>
+
+                  {/* Master 2-Column Unified Container */}
+                  <div className="jd-unified-compare-container">
+                    {/* ── Column 1: Candidate Profile ── */}
+                    <div className="jd-master-col applicant-col">
+                      <div className="jd-master-col-header">
+                        <span>Candidate Profile</span>
+                      </div>
+                      <div className="jd-master-col-content">
+                        <div className="jd-master-row">
+                          <div className="jd-row-label-wrap">
+                            <span className="jd-row-label">Skills</span>
+                            <span className="col-count-text">{candSkills.length} listed</span>
+                          </div>
+                          <div className="jd-col-tags-container">
+                            {candSkills.length > 0 ? (
+                              candSkills.map((item) => {
+                                const isRel = isCandRelevant(item, jobSkills);
+                                const isSource = hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.item === item;
+                                const isLinked = Boolean(hoveredCompareTag?.side === "employer" && hoveredCompareTag?.category === "skills" && isSkillMatch(item, hoveredCompareTag.item));
+                                return (
+                                  <span
+                                    key={item}
+                                    className={`jd-comp-tag ${isRel ? "app-matched" : "app-neutral"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
+                                    onMouseEnter={() => setHoveredCompareTag({ item, side: "applicant", category: "skills" })}
+                                    onMouseLeave={() => setHoveredCompareTag(null)}
+                                  >
+                                    <span className="tag-text">{item}</span>
+                                  </span>
+                                );
+                              })
+                            ) : (
+                              <span className="jd-no-data-text">No skills in candidate profile</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Qualifications */}
+                        <div className="jd-master-row">
+                          <div className="jd-row-label-wrap">
+                            <span className="jd-row-label">Qualifications</span>
+                            <span className="col-count-text">{candQuals.length} listed</span>
+                          </div>
+                          <div className="jd-col-tags-container">
+                            {candQuals.length > 0 ? (
+                              candQuals.map((item) => {
+                                const isRel = isCandRelevant(item, jobQuals);
+                                const isSource = hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.item === item;
+                                const isLinked = Boolean(hoveredCompareTag?.side === "employer" && hoveredCompareTag?.category === "qualifications" && isSkillMatch(item, hoveredCompareTag.item));
+                                return (
+                                  <span
+                                    key={item}
+                                    className={`jd-comp-tag ${isRel ? "app-matched" : "app-neutral"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
+                                    onMouseEnter={() => setHoveredCompareTag({ item, side: "applicant", category: "qualifications" })}
+                                    onMouseLeave={() => setHoveredCompareTag(null)}
+                                  >
+                                    <span className="tag-text">{item}</span>
+                                  </span>
+                                );
+                              })
+                            ) : (
+                              <span className="jd-no-data-text">No qualifications in candidate profile</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Certifications */}
+                        <div className="jd-master-row">
+                          <div className="jd-row-label-wrap">
+                            <span className="jd-row-label">Certifications</span>
+                            <span className="col-count-text">{candCerts.length} listed</span>
+                          </div>
+                          <div className="jd-col-tags-container">
+                            {candCerts.length > 0 ? (
+                              candCerts.map((item) => {
+                                const isRel = isCandRelevant(item, jobCerts);
+                                const isSource = hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.item === item;
+                                const isLinked = Boolean(hoveredCompareTag?.side === "employer" && hoveredCompareTag?.category === "certifications" && isSkillMatch(item, hoveredCompareTag.item));
+                                return (
+                                  <span
+                                    key={item}
+                                    className={`jd-comp-tag ${isRel ? "app-matched" : "app-neutral"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
+                                    onMouseEnter={() => setHoveredCompareTag({ item, side: "applicant", category: "certifications" })}
+                                    onMouseLeave={() => setHoveredCompareTag(null)}
+                                  >
+                                    <span className="tag-text">{item}</span>
+                                  </span>
+                                );
+                              })
+                            ) : (
+                              <span className="jd-no-data-text">No certifications in candidate profile</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ── Column 2: Employer Requirements ── */}
+                    <div className="jd-master-col employer-col">
+                      <div className="jd-master-col-header employer">
+                        <span>Employer's Requirements</span>
+                      </div>
+                      <div className="jd-master-col-content">
+                        <div className="jd-master-row">
+                          <div className="jd-row-label-wrap">
+                            <span className="jd-row-label">Skills</span>
+                            <span className="col-count-text">{jobSkills.length} required</span>
+                          </div>
+                          <div className="jd-col-tags-container">
+                            {jobSkills.length > 0 ? (
+                              jobSkills.map((item) => {
+                                const matched = checkMatch(item, candSkills);
+                                const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
+                                const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "skills" && isSkillMatch(item, hoveredCompareTag.item));
+                                return (
+                                  <span
+                                    key={item}
+                                    className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
+                                    onMouseEnter={() => setHoveredCompareTag({ item, side: "employer", category: "skills" })}
+                                    onMouseLeave={() => setHoveredCompareTag(null)}
+                                  >
+                                    <span className="tag-text">{item}</span>
+                                  </span>
+                                );
+                              })
+                            ) : (
+                              <span className="jd-no-data-text">No specific skills required</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Qualifications */}
+                        <div className="jd-master-row">
+                          <div className="jd-row-label-wrap">
+                            <span className="jd-row-label">Qualifications</span>
+                            <span className="col-count-text">{jobQuals.length} required</span>
+                          </div>
+                          <div className="jd-col-tags-container">
+                            {jobQuals.length > 0 ? (
+                              jobQuals.map((item) => {
+                                const matched = checkMatch(item, candQuals);
+                                const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
+                                const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "qualifications" && isSkillMatch(item, hoveredCompareTag.item));
+                                return (
+                                  <span
+                                    key={item}
+                                    className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
+                                    onMouseEnter={() => setHoveredCompareTag({ item, side: "employer", category: "qualifications" })}
+                                    onMouseLeave={() => setHoveredCompareTag(null)}
+                                  >
+                                    <span className="tag-text">{item}</span>
+                                  </span>
+                                );
+                              })
+                            ) : (
+                              <span className="jd-no-data-text">No specific qualifications required</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Certifications */}
+                        <div className="jd-master-row">
+                          <div className="jd-row-label-wrap">
+                            <span className="jd-row-label">Certifications</span>
+                            <span className="col-count-text">{jobCerts.length} required</span>
+                          </div>
+                          <div className="jd-col-tags-container">
+                            {jobCerts.length > 0 ? (
+                              jobCerts.map((item) => {
+                                const matched = checkMatch(item, candCerts);
+                                const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
+                                const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "certifications" && isSkillMatch(item, hoveredCompareTag.item));
+                                return (
+                                  <span
+                                    key={item}
+                                    className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
+                                    onMouseEnter={() => setHoveredCompareTag({ item, side: "employer", category: "certifications" })}
+                                    onMouseLeave={() => setHoveredCompareTag(null)}
+                                  >
+                                    <span className="tag-text">{item}</span>
+                                  </span>
+                                );
+                              })
+                            ) : (
+                              <span className="jd-no-data-text">No specific certifications required</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </aside>
+            );
+          })()}
+        </div>
+      </div>
+    )}
 
         {/* INVITE / RECRUIT CONFIRMATION MODAL */}
         {inviteCandidate && (
