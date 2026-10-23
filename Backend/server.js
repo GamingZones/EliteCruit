@@ -881,13 +881,10 @@ async function resolveUserDisplayNameAndBusiness(user) {
       }
     } else if (user.role === "employer") {
       const employerProfile = await get(
-        "SELECT business_name, company_name FROM employer_profiles WHERE user_id = ?",
+        "SELECT business_name FROM employer_profiles WHERE user_id = ?",
         [user.id]
       );
-      businessName =
-        employerProfile?.business_name ??
-        employerProfile?.company_name ??
-        null;
+      businessName = employerProfile?.business_name ?? null;
       displayName = businessName || (user.email ? user.email.split("@")[0] : "Employer");
     } else if (user.role === "admin") {
       const adminProfile = await get(
@@ -3402,24 +3399,48 @@ app.get("/api/employers/:userId/unapplied-matches/:jobPostId", async (req, res) 
     );
 
     const unappliedMatches = applicants.map((app) => {
-      let score = 30; // base potential match
       const appSkills = typeof app.skills === "string" ? app.skills.toLowerCase() : "";
+      const appQuals = typeof app.qualifications === "string" ? app.qualifications.toLowerCase() : "";
+      const appCerts = typeof app.certifications === "string" ? app.certifications.toLowerCase() : "";
+
       const jobSkills = typeof job.required_skills === "string" ? job.required_skills.toLowerCase() : "";
-      if (jobSkills && appSkills) {
-        const reqTags = jobSkills.split(",").map((s) => s.trim()).filter(Boolean);
-        let matched = 0;
-        reqTags.forEach((t) => { if (appSkills.includes(t)) matched++; });
-        if (reqTags.length > 0) score += Math.round((matched / reqTags.length) * 40);
-      }
+      const jobQuals = typeof job.qualifications === "string" ? job.qualifications.toLowerCase() : "";
+      const jobCerts = typeof job.certifications === "string" ? job.certifications.toLowerCase() : "";
 
-      if (app.city && job.location && app.city.toLowerCase().includes(job.location.toLowerCase())) {
-        score += 15;
-      }
-      if (app.work_arrangement && job.work_arrangement && app.work_arrangement.toLowerCase() === job.work_arrangement.toLowerCase()) {
-        score += 15;
-      }
+      const reqSkills = jobSkills.split(",").map((s) => s.trim()).filter(Boolean);
+      const reqQuals = jobQuals.split(",").map((s) => s.trim()).filter(Boolean);
+      const reqCerts = jobCerts.split(",").map((s) => s.trim()).filter(Boolean);
 
-      const finalScore = Math.min(score, 98);
+      let matchedSkills = 0;
+      reqSkills.forEach((t) => { if (appSkills.includes(t) || appCerts.includes(t)) matchedSkills++; });
+
+      let matchedQuals = 0;
+      reqQuals.forEach((t) => { if (appQuals.includes(t) || appSkills.includes(t)) matchedQuals++; });
+
+      let matchedCerts = 0;
+      reqCerts.forEach((t) => { if (appCerts.includes(t) || appSkills.includes(t)) matchedCerts++; });
+
+      const hasSkills = reqSkills.length > 0;
+      const hasQuals = reqQuals.length > 0;
+      const hasCerts = reqCerts.length > 0;
+
+      const baseSkills = hasSkills ? 50 : 0;
+      const baseQuals = hasQuals ? 30 : 0;
+      const baseCerts = hasCerts ? 20 : 0;
+      const totalBase = baseSkills + baseQuals + baseCerts;
+
+      let finalScore = 100;
+      if (totalBase > 0) {
+        const maxSkills = hasSkills ? Math.round((baseSkills / totalBase) * 100) : 0;
+        const maxQuals = hasQuals ? Math.round((baseQuals / totalBase) * 100) : 0;
+        const maxCerts = hasCerts ? (100 - maxSkills - maxQuals) : 0;
+
+        const skillsRatio = hasSkills ? (matchedSkills / reqSkills.length) : 0;
+        const qualsRatio = hasQuals ? (matchedQuals / reqQuals.length) : 0;
+        const certsRatio = hasCerts ? (matchedCerts / reqCerts.length) : 0;
+
+        finalScore = Math.min(100, Math.max(0, Math.round(skillsRatio * maxSkills + qualsRatio * maxQuals + certsRatio * maxCerts)));
+      }
       return {
         applicantUserId: app.user_id,
         name: [app.first_name, app.middle_name, app.last_name].filter(Boolean).join(" "),

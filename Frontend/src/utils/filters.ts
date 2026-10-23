@@ -2089,6 +2089,10 @@ export type JobMatchDetailsResult = {
   breakdown: string;
   skillsPts: number;
   qualPts: number;
+  certPts?: number;
+  maxSkillsPts?: number;
+  maxQualPts?: number;
+  maxCertPts?: number;
   setupPts: number;
   salaryPts: number;
   locationPts: number;
@@ -2097,6 +2101,8 @@ export type JobMatchDetailsResult = {
   missingSkills: string[];
   matchedQuals: string[];
   missingQuals: string[];
+  matchedCerts?: string[];
+  missingCerts?: string[];
   setupSummary: string;
   salarySummary: string;
   locationSummary: string;
@@ -2383,16 +2389,22 @@ export function calculateJobMatchDetails(
     return {
       score,
       breakdown: "Sign in to view personalized match breakdown",
-      skillsPts: 15,
-      qualPts: 10,
-      setupPts: 10,
-      salaryPts: 0,
-      locationPts: 0,
-      titleBonus: 0,
+      skillsPts: 0,
+      qualPts: 0,
+      certPts: 0,
+      maxSkillsPts: 50,
+      maxQualPts: 30,
+      maxCertPts: 20,
       matchedSkills: [],
       missingSkills: job.skillTags || [],
       matchedQuals: [],
       missingQuals: job.qualTags || [],
+      matchedCerts: [],
+      missingCerts: job.certTags || [],
+      setupPts: 0,
+      salaryPts: 0,
+      locationPts: 0,
+      titleBonus: 0,
       setupSummary: job.setup || "Standard",
       salarySummary: "Sign in to compare with your expected salary",
       locationSummary: job.location || "Cavite",
@@ -2400,18 +2412,19 @@ export function calculateJobMatchDetails(
     };
   }
 
-  let skillsPts = 0;
-  const rawJobSkills = [...(job.skillTags || []), ...(job.certTags || [])];
-  const profileSkills = [
-    ...(profile.skills || []),
-    ...(profile.certifications || []),
-  ];
+  // 1. Skills
+  const rawJobSkills = job.skillTags || [];
+  const profileSkills = profile.skills || [];
+  const profileCerts = profile.certifications || [];
+  const profileQuals = profile.qualifications || [];
 
   const matchedSkills: string[] = [];
   const missingSkills: string[] = [];
 
   rawJobSkills.forEach((item) => {
-    const matchingProfileSkill = profileSkills.find((ps) => isSkillMatch(item, ps));
+    const matchingProfileSkill =
+      profileSkills.find((ps) => isSkillMatch(item, ps)) ||
+      profileCerts.find((pc) => isSkillMatch(item, pc));
     if (matchingProfileSkill) {
       const expYears = calculateSkillExperienceYears(matchingProfileSkill);
       const displayLabel = expYears > 1 ? `${item} (${expYears} yrs exp)` : item;
@@ -2421,20 +2434,15 @@ export function calculateJobMatchDetails(
     }
   });
 
-  if (rawJobSkills.length > 0) {
-    skillsPts = Math.round((matchedSkills.length / rawJobSkills.length) * 25);
-  } else {
-    skillsPts = 25;
-  }
-
-  let qualPts = 0;
+  // 2. Qualifications
   const rawJobQuals = job.qualTags || [];
-  const profileQuals = profile.qualifications || [];
   const matchedQuals: string[] = [];
   const missingQuals: string[] = [];
 
   rawJobQuals.forEach((item) => {
-    const matchingQual = profileQuals.find((pq) => isSkillMatch(item, pq)) || profileSkills.find((ps) => isSkillMatch(item, ps));
+    const matchingQual =
+      profileQuals.find((pq) => isSkillMatch(item, pq)) ||
+      profileSkills.find((ps) => isSkillMatch(item, ps));
     if (matchingQual) {
       const expYears = calculateSkillExperienceYears(matchingQual);
       const displayLabel = expYears > 1 ? `${item} (${expYears} yrs exp)` : item;
@@ -2444,93 +2452,74 @@ export function calculateJobMatchDetails(
     }
   });
 
-  if (rawJobQuals.length > 0) {
-    qualPts = Math.round((matchedQuals.length / rawJobQuals.length) * 25);
-  } else {
-    qualPts = 25;
-  }
+  // 3. Certifications
+  const rawJobCerts = job.certTags || [];
+  const matchedCerts: string[] = [];
+  const missingCerts: string[] = [];
 
-  let setupPts = 0;
-  let setupSummary = "";
-  const pSetup = (profile.workArrangement || "").toLowerCase().trim();
-  const jSetup = (job.setup || "").toLowerCase().trim();
-  if (!pSetup || pSetup === "any" || jSetup === "flexible" || pSetup === jSetup) {
-    setupPts = 20;
-    setupSummary = `Matches your preferred ${job.setup || "setup"}`;
-  } else if (
-    (pSetup.includes("remote") && jSetup.includes("hybrid")) ||
-    (pSetup.includes("hybrid") && jSetup.includes("on-site"))
-  ) {
-    setupPts = 10;
-    setupSummary = `Partial match (${job.setup || "Setup"})`;
-  } else {
-    setupPts = 5;
-    setupSummary = `Job requires ${job.setup || "On-Site"}`;
-  }
-
-  let salaryPts = 0;
-  let salarySummary = "";
-  const expectedSalary = profile.expectedSalary || 0;
-  if (expectedSalary > 0 && job.salaryMin > 0) {
-    if (job.salaryMin >= expectedSalary * 0.8) {
-      salaryPts = 15;
-      salarySummary = `Meets or exceeds your expected PHP ${expectedSalary.toLocaleString()}`;
-    } else if (job.salaryMin >= expectedSalary * 0.5) {
-      salaryPts = 10;
-      salarySummary = `Within 50%–79% of expected PHP ${expectedSalary.toLocaleString()}`;
+  rawJobCerts.forEach((item) => {
+    const matchingCert =
+      profileCerts.find((pc) => isSkillMatch(item, pc)) ||
+      profileSkills.find((ps) => isSkillMatch(item, ps)) ||
+      profileQuals.find((pq) => isSkillMatch(item, pq));
+    if (matchingCert) {
+      const expYears = calculateSkillExperienceYears(matchingCert);
+      const displayLabel = expYears > 1 ? `${item} (${expYears} yrs exp)` : item;
+      matchedCerts.push(displayLabel);
     } else {
-      salaryPts = 5;
-      salarySummary = `Below expected PHP ${expectedSalary.toLocaleString()}`;
+      missingCerts.push(item);
     }
+  });
+
+  // Dynamic point weighting based ONLY on skills, qualifications, and certifications
+  const hasSkills = rawJobSkills.length > 0;
+  const hasQuals = rawJobQuals.length > 0;
+  const hasCerts = rawJobCerts.length > 0;
+
+  const baseSkills = hasSkills ? 50 : 0;
+  const baseQuals = hasQuals ? 30 : 0;
+  const baseCerts = hasCerts ? 20 : 0;
+  const totalBase = baseSkills + baseQuals + baseCerts;
+
+  let maxSkillsPts = 0;
+  let maxQualsPts = 0;
+  let maxCertPts = 0;
+  let skillsPts = 0;
+  let qualPts = 0;
+  let certPts = 0;
+  let score = 0;
+
+  if (totalBase === 0) {
+    score = 100;
   } else {
-    salaryPts = 15;
-    salarySummary = "Competitive compensation aligned with market rates";
+    maxSkillsPts = hasSkills ? Math.round((baseSkills / totalBase) * 100) : 0;
+    maxQualsPts = hasQuals ? Math.round((baseQuals / totalBase) * 100) : 0;
+    maxCertPts = hasCerts ? (100 - maxSkillsPts - maxQualsPts) : 0;
+
+    const skillsRatio = hasSkills ? matchedSkills.length / rawJobSkills.length : 0;
+    const qualsRatio = hasQuals ? matchedQuals.length / rawJobQuals.length : 0;
+    const certsRatio = hasCerts ? matchedCerts.length / rawJobCerts.length : 0;
+
+    skillsPts = Math.round(skillsRatio * maxSkillsPts);
+    qualPts = Math.round(qualsRatio * maxQualsPts);
+    certPts = Math.round(certsRatio * maxCertPts);
+
+    score = Math.max(0, Math.min(100, skillsPts + qualPts + certPts));
   }
 
-  let locationPts = 0;
-  let locationSummary = "";
-  const pCity = (profile.city || "").toLowerCase().trim();
-  const jLoc = (job.location || "").toLowerCase().trim();
-  const prefLocs = (profile.preferred_locations || profile.preferredCities || []).map((l) => l.toLowerCase().trim());
-  const matchesPref = prefLocs.some((pl) => pl && (jLoc.includes(pl) || pl.includes(jLoc) || pl.includes("cavite") || pl.includes("remote")));
+  // Location, salary, and setup are explicitly 0 pts
+  const setupSummary = job.setup || "Standard";
+  const salarySummary = "Standard";
+  const locationSummary = formatLocationWithCavite(job.location);
 
-  if (!pCity || !jLoc || pCity.includes(jLoc) || jLoc.includes(pCity) || jSetup.includes("remote") || matchesPref) {
-    locationPts = 15;
-    locationSummary = jSetup.includes("remote")
-      ? "Remote Opportunity"
-      : matchesPref
-      ? `Matches Preferred Location: ${formatLocationWithCavite(job.location)}`
-      : `Nearby in ${formatLocationWithCavite(job.location)}`;
-  } else {
-    locationPts = 8;
-    locationSummary = `${formatLocationWithCavite(job.location)}`;
-  }
-
-  let titleBonus = 0;
-  const pTitle = (profile.desiredJobTitle || "").toLowerCase();
-  const jTitle = (job.title || "").toLowerCase();
-  if (pTitle && (jTitle.includes(pTitle) || pTitle.includes(jTitle))) {
-    titleBonus = 10;
-  }
-
-  const score = Math.max(
-    35,
-    Math.min(
-      100,
-      skillsPts + qualPts + setupPts + salaryPts + locationPts + titleBonus
-    )
-  );
-
-  const missing: string[] = [];
-  if (skillsPts < 25) missing.push(`Skills (${skillsPts}/25)`);
-  if (qualPts < 25) missing.push(`Qualifications (${qualPts}/25)`);
-  if (setupPts < 20) missing.push(`Work Setup (${setupPts}/20)`);
-  if (salaryPts < 15) missing.push(`Salary (${salaryPts}/15)`);
-  if (locationPts < 15) missing.push(`Location (${locationPts}/15)`);
+  const breakdownParts: string[] = [];
+  if (hasSkills) breakdownParts.push(`• Skills: ${skillsPts}/${maxSkillsPts}%`);
+  if (hasQuals) breakdownParts.push(`• Qualifications: ${qualPts}/${maxQualsPts}%`);
+  if (hasCerts) breakdownParts.push(`• Certifications: ${certPts}/${maxCertPts}%`);
 
   const breakdown =
-    missing.length > 0
-      ? `Match Score: ${score}%\n• Skills: ${skillsPts}/25\n• Qualifications: ${qualPts}/25\n• Work Setup: ${setupPts}/20\n• Salary: ${salaryPts}/15\n• Location: ${locationPts}/15`
+    breakdownParts.length > 0
+      ? `Match Score: ${score}%\n` + breakdownParts.join("\n")
       : `100% Match on all criteria!`;
 
   const recommendations: string[] = [];
@@ -2544,13 +2533,18 @@ export function calculateJobMatchDetails(
       `Highlight "${missingQuals.slice(0, 2).join('", "')}" under your qualifications.`
     );
   }
+  if (missingCerts.length > 0) {
+    recommendations.push(
+      `Add "${missingCerts.slice(0, 2).join('", "')}" to your profile certifications.`
+    );
+  }
   if (score >= 80) {
     recommendations.push(
       "You are a top candidate for this role! We recommend submitting your application immediately."
     );
   } else if (recommendations.length === 0) {
     recommendations.push(
-      "Ensure your resume and documents are up-to-date before applying."
+      "Ensure your competencies and profile credentials are up-to-date before applying."
     );
   }
 
@@ -2559,14 +2553,20 @@ export function calculateJobMatchDetails(
     breakdown,
     skillsPts,
     qualPts,
-    setupPts,
-    salaryPts,
-    locationPts,
-    titleBonus,
+    certPts,
+    maxSkillsPts,
+    maxQualsPts,
+    maxCertPts,
     matchedSkills,
     missingSkills,
     matchedQuals,
     missingQuals,
+    matchedCerts,
+    missingCerts,
+    setupPts: 0,
+    salaryPts: 0,
+    locationPts: 0,
+    titleBonus: 0,
     setupSummary,
     salarySummary,
     locationSummary,

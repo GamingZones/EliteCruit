@@ -4212,39 +4212,6 @@ export default function EmployerApplicantManagement() {
                             <span>Candidate Profile</span>
                           </div>
                           <div className="jd-master-col-content">
-                            {/* 1. Location */}
-                            <div className="jd-master-row">
-                              <span className="jd-row-label">Location</span>
-                              <div className="jd-col-tags-container">
-                                <span className="jd-comp-tag app-neutral">
-                                  <span className="tag-text">{candCity}</span>
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* 2. Work Arrangement */}
-                            <div className="jd-master-row">
-                              <span className="jd-row-label">Work Arrangement</span>
-                              <div className="jd-col-tags-container">
-                                <span className="jd-comp-tag app-neutral">
-                                  <span className="tag-text">{candSetup}</span>
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* 3. Salary Expectation */}
-                            <div className="jd-master-row">
-                              <span className="jd-row-label">Salary Range</span>
-                              <div className="jd-col-tags-container">
-                                <span className="jd-comp-tag app-neutral">
-                                  <span className="tag-text">
-                                    {candSalary ? (String(candSalary).toUpperCase().includes("PHP") ? String(candSalary) : `PHP ${Number(parseExpectedSalary(candSalary)).toLocaleString()}`) : "Not set"}
-                                  </span>
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* 4. Skills */}
                             <div className="jd-master-row">
                               <div className="jd-row-label-wrap">
                                 <span className="jd-row-label">Skills</span>
@@ -4339,61 +4306,6 @@ export default function EmployerApplicantManagement() {
                             <span>Employer's Requirements</span>
                           </div>
                           <div className="jd-master-col-content">
-                            {/* 1. Location */}
-                            <div className="jd-master-row">
-                              <span className="jd-row-label">Location</span>
-                              <div className="jd-col-tags-container">
-                                {(() => {
-                                  const matched = matchDetails.locationPts >= 12;
-                                  return (
-                                    <span
-                                      className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"}`}
-                                      title={matched ? "Matched candidate location" : "Different location"}
-                                    >
-                                      <span className="tag-text">{jobLocation}</span>
-                                    </span>
-                                  );
-                                })()}
-                              </div>
-                            </div>
-
-                            {/* 2. Work Arrangement */}
-                            <div className="jd-master-row">
-                              <span className="jd-row-label">Work Arrangement</span>
-                              <div className="jd-col-tags-container">
-                                {(() => {
-                                  const matched = matchDetails.setupPts >= 15;
-                                  return (
-                                    <span
-                                      className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"}`}
-                                      title={matched ? "Matched candidate arrangement" : "Different work arrangement"}
-                                    >
-                                      <span className="tag-text">{jobSetup}</span>
-                                    </span>
-                                  );
-                                })()}
-                              </div>
-                            </div>
-
-                            {/* 3. Salary Range */}
-                            <div className="jd-master-row">
-                              <span className="jd-row-label">Salary Range</span>
-                              <div className="jd-col-tags-container">
-                                {(() => {
-                                  const matched = matchDetails.salaryPts >= 12;
-                                  return (
-                                    <span
-                                      className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"}`}
-                                      title={matched ? "Matches candidate salary" : "Different salary range"}
-                                    >
-                                      <span className="tag-text">{jobSalaryDisplay}</span>
-                                    </span>
-                                  );
-                                })()}
-                              </div>
-                            </div>
-
-                            {/* 4. Skills */}
                             <div className="jd-master-row">
                               <div className="jd-row-label-wrap">
                                 <span className="jd-row-label">Skills</span>
@@ -5068,53 +4980,6 @@ export default function EmployerApplicantManagement() {
                                 <span>Candidate Profile</span>
                               </div>
                               <div className="jd-master-col-content">
-                                {/* 1. Location */}
-                                <div className="jd-master-row">
-                                  <span className="jd-row-label">Location</span>
-                                  <div className="jd-col-tags-container">
-                                    <span className="jd-comp-tag app-neutral">
-                                      <span className="tag-text">{candCity}</span>
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {/* 2. Work Arrangement */}
-                                <div className="jd-master-row">
-                                  <span className="jd-row-label">Work Arrangement</span>
-                                  <div className="jd-col-tags-container">
-                                    <span className="jd-comp-tag app-neutral">
-                                      <span className="tag-text">{candSetup}</span>
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {/* 3. Experience Level */}
-                                <div className="jd-master-row">
-                                  <span className="jd-row-label">Experience Level</span>
-                                  <div className="jd-col-tags-container">
-                                    <span className="jd-comp-tag app-neutral">
-                                      <span className="tag-text">
-                                        {(reviewModalProfile?.years_of_experience || (reviewModalApp as any).years_of_experience)
-                                          ? `${reviewModalProfile?.years_of_experience || (reviewModalApp as any).years_of_experience} yrs experience`
-                                          : "Fresh Graduate / Entry-level"}
-                                      </span>
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {/* 4. Salary Expectation */}
-                                <div className="jd-master-row">
-                                  <span className="jd-row-label">Salary Range</span>
-                                  <div className="jd-col-tags-container">
-                                    <span className="jd-comp-tag app-neutral">
-                                      <span className="tag-text">
-                                        {candSalary ? (String(candSalary).toUpperCase().includes("PHP") ? String(candSalary) : `PHP ${Number(parseExpectedSalary(candSalary)).toLocaleString()}`) : "Not set"}
-                                      </span>
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {/* 4. Skills */}
                                 <div className="jd-master-row">
                                   <div className="jd-row-label-wrap">
                                     <span className="jd-row-label">Skills</span>
@@ -5209,90 +5074,6 @@ export default function EmployerApplicantManagement() {
                                 <span>Employer's Requirements</span>
                               </div>
                               <div className="jd-master-col-content">
-                                {/* 1. Location */}
-                                <div className="jd-master-row">
-                                  <span className="jd-row-label">Location</span>
-                                  <div className="jd-col-tags-container">
-                                    {(() => {
-                                      const matched = matchDetails.locationPts >= 12;
-                                      return (
-                                        <span
-                                          className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"}`}
-                                          title={matched ? "Matched candidate location" : "Different location"}
-                                        >
-                                          <span className="tag-text">{jobLocation}</span>
-                                        </span>
-                                      );
-                                    })()}
-                                  </div>
-                                </div>
-
-                                {/* 2. Work Arrangement */}
-                                <div className="jd-master-row">
-                                  <span className="jd-row-label">Work Arrangement</span>
-                                  <div className="jd-col-tags-container">
-                                    {(() => {
-                                      const matched = matchDetails.setupPts >= 15;
-                                      return (
-                                        <span
-                                          className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"}`}
-                                          title={matched ? "Matched candidate arrangement" : "Different work arrangement"}
-                                        >
-                                          <span className="tag-text">{jobSetup}</span>
-                                        </span>
-                                      );
-                                    })()}
-                                  </div>
-                                </div>
-
-                                {/* 3. Experience Level */}
-                                <div className="jd-master-row">
-                                  <span className="jd-row-label">Experience Level</span>
-                                  <div className="jd-col-tags-container">
-                                    {(() => {
-                                      const candExpNum = parseFloat(String(reviewModalProfile?.years_of_experience || (reviewModalApp as any).years_of_experience || "0")) || 0;
-                                      const jobExp = (selectedJobDetails.experience_level || "").toLowerCase();
-                                      let isExpMatched = true;
-                                      if (jobExp.includes("senior") || jobExp.includes("lead")) {
-                                        isExpMatched = candExpNum >= 5;
-                                      } else if (jobExp.includes("mid")) {
-                                        isExpMatched = candExpNum >= 2;
-                                      } else if (jobExp.includes("entry") || jobExp.includes("fresh")) {
-                                        isExpMatched = true;
-                                      }
-                                      return (
-                                        <span
-                                          className={`jd-comp-tag ${isExpMatched ? "tag-matched-green" : "tag-missing-red"}`}
-                                          title={isExpMatched ? "Meets experience requirements" : "Requires more experience"}
-                                        >
-                                          <span className="tag-text">
-                                            {formatExperienceLevel(selectedJobDetails.experience_level || "") || selectedJobDetails.experience_level || "Any Experience"}
-                                          </span>
-                                        </span>
-                                      );
-                                    })()}
-                                  </div>
-                                </div>
-
-                                {/* 4. Salary Range */}
-                                <div className="jd-master-row">
-                                  <span className="jd-row-label">Salary Range</span>
-                                  <div className="jd-col-tags-container">
-                                    {(() => {
-                                      const matched = matchDetails.salaryPts >= 12;
-                                      return (
-                                        <span
-                                          className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"}`}
-                                          title={matched ? "Matches candidate salary" : "Different salary range"}
-                                        >
-                                          <span className="tag-text">{jobSalaryDisplay}</span>
-                                        </span>
-                                      );
-                                    })()}
-                                  </div>
-                                </div>
-
-                                {/* 4. Skills */}
                                 <div className="jd-master-row">
                                   <div className="jd-row-label-wrap">
                                     <span className="jd-row-label">Skills</span>
