@@ -3074,16 +3074,16 @@ export default function EmployerApplicantFinder() {
       if (foundIdx !== -1) targetIndex = foundIdx;
     }
     setJobCarouselIndex(targetIndex);
-    const targetJob = activeJobs[targetIndex];
+    const targetJob = (initialJobId && activeJobs.find((j) => j.id === initialJobId)) || activeJobs[targetIndex] || activeJobs[0];
     if (targetJob) {
       setSelectedJobId(targetJob.id);
       setCustomInviteMsg(
-        `Hello ${cand.applicant_name}! We reviewed your profile and would love to invite you to apply for our open position: ${targetJob.title}.`
+        `Hello ${cand.applicant_name}! We reviewed your profile and would like to invite you to apply for our open position: ${targetJob.title}.`
       );
     } else {
       setSelectedJobId("");
       setCustomInviteMsg(
-        `Hello ${cand.applicant_name}! We reviewed your profile and would love to invite you to apply for our open position.`
+        `Hello ${cand.applicant_name}! We reviewed your profile and would like to invite you to apply for our open position.`
       );
     }
   };
@@ -4995,7 +4995,7 @@ export default function EmployerApplicantFinder() {
               </div>
 
               <form onSubmit={handleInitiateSendInvite} style={{ padding: "20px", display: "grid", gap: "14px", minWidth: 0, width: "100%", boxSizing: "border-box" }}>
-                <div className="cand-invite-summary-card" style={{ display: "flex", gap: "12px", alignItems: "center", padding: "10px 12px", borderRadius: "8px" }}>
+                <div className="cand-invite-summary-card recruit-applicant-summary" style={{ display: "flex", gap: "12px", alignItems: "center", padding: "10px 12px", borderRadius: "8px" }}>
                   {(() => {
                     const pic = inviteCandidate.profile_picture_path;
                     const picUrl = pic
@@ -5003,7 +5003,7 @@ export default function EmployerApplicantFinder() {
                       : null;
                     const initials = initialsFrom(inviteCandidate.applicant_name);
                     return (
-                      <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#01294a", color: "#fff", display: "grid", placeItems: "center", fontWeight: 700, fontSize: "0.8rem", flexShrink: 0, overflow: "hidden", position: "relative" }}>
+                      <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "#01294a", color: "#fff", display: "grid", placeItems: "center", fontWeight: 700, fontSize: "0.85rem", flexShrink: 0, overflow: "hidden", position: "relative" }}>
                         {picUrl && (
                           <img
                             src={picUrl}
@@ -5024,182 +5024,93 @@ export default function EmployerApplicantFinder() {
                     );
                   })()}
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <strong style={{ fontSize: "0.92rem", color: "#0f172a", display: "block" }}>{inviteCandidate.applicant_name}</strong>
-                    <small style={{ display: "block", color: "#64748b", fontSize: "0.75rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <strong style={{ fontSize: "0.95rem", color: "#0f172a", display: "block" }}>{inviteCandidate.applicant_name}</strong>
+                    <small style={{ display: "block", color: "#64748b", fontSize: "0.78rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {inviteCandidate.email || "No email"} {inviteCandidate.phone ? `· ${inviteCandidate.phone}` : ""}
                     </small>
                   </div>
                 </div>
 
-                {/* JOB OPENING SELECTION (WITH LEFT/RIGHT ARROWS, MATCH %, DETAILS BUTTON) */}
-                <div style={{ display: "grid", gap: "6px", minWidth: 0, width: "100%" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1e293b" }}>
-                      Select Job Opening:
-                    </span>
-                    {activeJobs.length > 1 && (
-                      <span style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 600 }}>
-                        {jobCarouselIndex + 1} of {activeJobs.length}
-                      </span>
-                    )}
-                  </div>
+                {/* Target Job Info (Matching Picture 2) */}
+                {(() => {
+                  const effectiveJobId = selectedJobId || (activeJobs.length > 0 ? activeJobs[jobCarouselIndex]?.id || activeJobs[0]?.id : null);
+                  const targetJob = (effectiveJobId && activeJobs.find((j) => j.id === effectiveJobId)) || activeJobs[jobCarouselIndex] || activeJobs[0];
+                  const jobTitle = targetJob?.title || "Job Opening";
+                  const jobLocation = targetJob?.location || targetJob?.city || "Cavite";
+                  const jobArrangement = targetJob?.work_arrangement || "On-Site";
 
-                  {activeJobs.length === 0 ? (
-                    (() => {
-                      const generalJob = {
-                        id: 101,
-                        title: "Software Developer (General Opening)",
-                        work_arrangement: "On-Site",
-                        city: "Cavite",
-                        location: "Cavite",
-                        description: "General opening for proactive software developers with solid background in software engineering.",
-                        required_skills: "React, JavaScript, Node.js",
-                        required_qualifications: "BS Information Technology or Computer Science"
-                      };
-                      const generalMatch = calculateCandidateMatch(inviteCandidate, generalJob);
+                  return (
+                    <div className="recruit-target-job-box" style={{ padding: "12px 14px", background: "#eff6ff", borderRadius: "10px", border: "1px solid #bfdbfe", display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: "0.5px" }}>Target Job Opening</span>
+                      <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 800, color: "#01294a" }}>{jobTitle}</h4>
+                      <span style={{ fontSize: "0.78rem", color: "#475569" }}>{jobLocation} • {jobArrangement}</span>
+                    </div>
+                  );
+                })()}
 
-                      return (
-                        <div className="job-select-card selected">
-                          <div className="job-select-card-left">
-                            <h4 className="job-select-title" title={generalJob.title}>{generalJob.title}</h4>
-                            <span className="job-select-apps">Applications: 0</span>
-                          </div>
-                          <div className="job-select-card-right">
-                            <div className={`job-select-match-box ${getMatchColorClass(generalMatch)}`}>
-                              <span className="match-label">MATCH</span>
-                              <span className="match-value">{generalMatch}%</span>
-                            </div>
-                            <button
-                              type="button"
-                              className="job-details-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setViewingJobDetails(generalJob);
-                                setIsMatchDrawerOpen(false);
-                              }}
-                            >
-                              Details
-                            </button>
-                            <button
-                              type="button"
-                              className="job-details-btn job-breakdown-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setViewingJobDetails(generalJob);
-                                setIsMatchDrawerOpen(true);
-                              }}
-                            >
-                              Breakdown
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })()
-                  ) : (
-                    (() => {
-                      const currentJob = activeJobs[jobCarouselIndex] || activeJobs[0];
-                      const matchPct = calculateCandidateMatch(inviteCandidate, currentJob);
-                      const appsCount = currentJob.applicants_count !== undefined && currentJob.applicants_count !== null ? Number(currentJob.applicants_count) : 0;
-
-                      return (
-                        <div className="job-carousel-container">
-                          {/* Left Arrow Button */}
-                          {activeJobs.length > 1 && (
-                            <button
-                              type="button"
-                              className="job-carousel-arrow-btn left"
-                              onClick={() => {
-                                const prevIdx = (jobCarouselIndex - 1 + activeJobs.length) % activeJobs.length;
-                                handleSelectJobIndex(prevIdx);
-                              }}
-                              title="Previous Job Opening"
-                            >
-                              ‹
-                            </button>
-                          )}
-
-                          {/* Selected Job Card */}
-                          <div
-                            className="job-select-card selected"
-                            onClick={() => handleSelectJobIndex(jobCarouselIndex)}
-                          >
-                            <div className="job-select-card-left">
-                              <h4 className="job-select-title" title={currentJob.title}>{currentJob.title}</h4>
-                              <span className="job-select-apps">Applications: {appsCount}</span>
-                            </div>
-
-                            <div className="job-select-card-right">
-                              <div className={`job-select-match-box ${getMatchColorClass(matchPct)}`}>
-                                <span className="match-label">MATCH</span>
-                                <span className="match-value">{matchPct}%</span>
-                              </div>
-
-                              <button
-                                type="button"
-                                className="job-details-btn"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setViewingJobDetails(currentJob);
-                                  setIsMatchDrawerOpen(false);
-                                }}
-                              >
-                                Details
-                              </button>
-                              <button
-                                type="button"
-                                className="job-details-btn job-breakdown-btn"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setViewingJobDetails(currentJob);
-                                  setIsMatchDrawerOpen(true);
-                                }}
-                              >
-                                Breakdown
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Right Arrow Button */}
-                          {activeJobs.length > 1 && (
-                            <button
-                              type="button"
-                              className="job-carousel-arrow-btn right"
-                              onClick={() => {
-                                const nextIdx = (jobCarouselIndex + 1) % activeJobs.length;
-                                handleSelectJobIndex(nextIdx);
-                              }}
-                              title="Next Job Opening"
-                            >
-                              ›
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })()
-                  )}
-                </div>
-
-                <label style={{ display: "grid", gap: "4px", fontSize: "0.82rem", fontWeight: 700, color: "#1e293b" }}>
+                {/* Invitation Message Field */}
+                <label style={{ display: "grid", gap: "6px", fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", fontFamily: '"Manrope", sans-serif' }}>
                   Invitation Message:
                   <textarea
+                    className="recruit-msg-textarea"
                     value={customInviteMsg}
                     onChange={(e) => setCustomInviteMsg(e.target.value)}
-                    rows={3}
-                    className="cand-invite-textarea" style={{ width: "100%", padding: "8px", borderRadius: "6px", fontSize: "0.82rem", fontFamily: "inherit", boxSizing: "border-box" }}
+                    rows={4}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: "0.85rem",
+                      fontFamily: '"Manrope", sans-serif',
+                      boxSizing: "border-box",
+                      resize: "vertical",
+                    }}
                   />
                 </label>
 
+                {/* Success Banner */}
                 {inviteSuccessMsg && (
-                  <div style={{ background: "#dcfce7", color: "#15803d", border: "1px solid #86efac", padding: "10px", borderRadius: "6px", fontSize: "0.82rem", fontWeight: 600 }}>
+                  <div style={{ background: "#dcfce7", color: "#15803d", border: "1px solid #86efac", padding: "12px", borderRadius: "8px", fontSize: "0.85rem", fontWeight: 700 }}>
                     ✓ {inviteSuccessMsg}
                   </div>
                 )}
 
-                <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "8px" }}>
-                  <button type="button" className="modal-action-btn btn-cancel" onClick={() => setInviteCandidate(null)}>
+                {/* Action Buttons */}
+                <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "4px" }}>
+                  <button
+                    type="button"
+                    style={{
+                      padding: "9px 20px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      background: "#ffffff",
+                      color: "#1e293b",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      fontSize: "0.85rem",
+                      fontFamily: '"Manrope", sans-serif',
+                    }}
+                    onClick={() => setInviteCandidate(null)}
+                  >
                     Cancel
                   </button>
-                  <button type="submit" className="modal-action-btn btn-submit" disabled={isSendingInvite}>
+                  <button
+                    type="submit"
+                    disabled={isSendingInvite}
+                    style={{
+                      padding: "9px 20px",
+                      borderRadius: "8px",
+                      border: "none",
+                      background: "#01294a",
+                      color: "#ffffff",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      fontSize: "0.85rem",
+                      fontFamily: '"Manrope", sans-serif',
+                      opacity: isSendingInvite ? 0.7 : 1,
+                    }}
+                  >
                     {isSendingInvite ? "Sending..." : "Send Invitation"}
                   </button>
                 </div>
