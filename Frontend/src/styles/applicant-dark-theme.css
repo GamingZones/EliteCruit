@@ -8558,3 +8558,53 @@
   background: #14151B !important;
   border-top: 1px solid #2e3244 !important;
 }
+
+/* ── Candidate Side-Docked Message Panel Dark Theme ── */
+[data-theme="dark"] .cand-message-side-panel {
+  background: #1c1e27 !important;
+  border: 1px solid #2e3244 !important;
+  color: #f1f5f9 !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6) !important;
+}
+
+[data-theme="dark"] .cand-msg-chat-body {
+  background: #14151B !important;
+}
+
+[data-theme="dark"] .cand-msg-bubble.incoming {
+  background: #242735 !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .cand-msg-bubble.outgoing {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+[data-theme="dark"] .cand-msg-compose-bar {
+  background: #1c1e27 !important;
+  border-top: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .cand-msg-input {
+  background: #14151B !important;
+  border: 1px solid #2e3244 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .cand-msg-input:focus {
+  border-color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .cand-msg-quick-pill {
+  background: #242735 !important;
+  border: 1px solid #2e3244 !important;
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .cand-msg-quick-pill:hover {
+  background: #1e2e4a !important;
+  border-color: #38bdf8 !important;
+}

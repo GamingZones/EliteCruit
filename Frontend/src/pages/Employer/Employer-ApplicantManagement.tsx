@@ -1053,9 +1053,177 @@ export default function EmployerApplicantManagement() {
   const [isJobDetailsOpen, setIsJobDetailsOpen] = useState(false);
   const [isJobDetailsClosing, setIsJobDetailsClosing] = useState(false);
   const [isJobBreakdownModalOpen, setIsJobBreakdownModalOpen] = useState(false);
+  const [isMessagePanelOpen, setIsMessagePanelOpen] = useState(false);
+  const [isMessagePanelClosing, setIsMessagePanelClosing] = useState(false);
+  const [candMsgThread, setCandMsgThread] = useState<any | null>(null);
+  const [candMessages, setCandMessages] = useState<any[]>([]);
+  const [isCandMsgLoading, setIsCandMsgLoading] = useState(false);
+  const [candMsgInput, setCandMsgInput] = useState("");
+  const [isCandMsgSending, setIsCandMsgSending] = useState(false);
+  const candMsgEndRef = useRef<HTMLDivElement>(null);
+
+  const currentEmployerUserId = useMemo(() => {
+    try {
+      const raw = localStorage.getItem("elitecruit-user");
+      return raw ? JSON.parse(raw)?.id : null;
+    } catch {
+      return null;
+    }
+  }, []);
   const [isRecruitModalOpen, setIsRecruitModalOpen] = useState(false);
   const [isRecruitModalClosing, setIsRecruitModalClosing] = useState(false);
   const [recruitJobTarget, setRecruitJobTarget] = useState<any | null>(null);
+
+  const fetchCandidateThreadMessages = async (applicantUserId: number) => {
+    setIsCandMsgLoading(true);
+    try {
+      const rawUser = localStorage.getItem("elitecruit-user");
+      if (!rawUser) {
+        setIsCandMsgLoading(false);
+        return;
+      }
+      const currentUid = JSON.parse(rawUser)?.id;
+      if (!currentUid) {
+        setIsCandMsgLoading(false);
+        return;
+      }
+
+      const threadsRes = await fetch(`/api/users/${currentUid}/messages`);
+      if (!threadsRes.ok) {
+        setIsCandMsgLoading(false);
+        return;
+      }
+
+      const threadsData = await threadsRes.json();
+      const allThreads = threadsData?.threads || [];
+      const existing = allThreads.find((t: any) => Number(t.other_user_id) === Number(applicantUserId));
+
+      if (existing) {
+        setCandMsgThread(existing);
+        const msgRes = await fetch(`/api/messages/threads/${existing.id}`);
+        if (msgRes.ok) {
+          const msgData = await msgRes.json();
+          setCandMessages(msgData?.messages || []);
+        }
+        try {
+          await fetch(`/api/messages/threads/${existing.id}/read`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: currentUid }),
+          });
+          window.dispatchEvent(new Event("elitecruit_messages_update"));
+        } catch {}
+      } else {
+        setCandMsgThread(null);
+        setCandMessages([]);
+      }
+    } catch (err) {
+      console.error("Error loading candidate messages:", err);
+    } finally {
+      setIsCandMsgLoading(false);
+    }
+  };
+
+  const handleCloseMessagePanel = () => {
+    setIsMessagePanelClosing(true);
+    setTimeout(() => {
+      setIsMessagePanelOpen(false);
+      setIsMessagePanelClosing(false);
+    }, 220);
+  };
+
+  const handleToggleMessagePanel = () => {
+    if (isMessagePanelOpen) {
+      handleCloseMessagePanel();
+    } else {
+      setIsMatchDrawerOpen(false);
+      setIsMatchDrawerClosing(false);
+      setIsOtherJobsOpen(false);
+      setIsOtherJobsClosing(false);
+      setIsJobDetailsOpen(false);
+      setIsJobDetailsClosing(false);
+      setIsMessagePanelOpen(true);
+      setIsMessagePanelClosing(false);
+      if (reviewModalApp?.applicant_user_id) {
+        fetchCandidateThreadMessages(reviewModalApp.applicant_user_id);
+      }
+    }
+  };
+
+  const handleSendCandidateMessage = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const text = candMsgInput.trim();
+    if (!text || isCandMsgSending || !reviewModalApp?.applicant_user_id) return;
+
+    const rawUser = localStorage.getItem("elitecruit-user");
+    if (!rawUser) return;
+    const currentUid = JSON.parse(rawUser)?.id;
+    if (!currentUid) return;
+
+    setIsCandMsgSending(true);
+    try {
+      if (candMsgThread?.id) {
+        const res = await fetch(`/api/messages/threads/${candMsgThread.id}/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sender_user_id: currentUid,
+            message_text: text,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setCandMessages((prev) => [...prev, data.message]);
+          setCandMsgInput("");
+          window.dispatchEvent(new Event("elitecruit_messages_update"));
+        }
+      } else {
+        const res = await fetch("/api/messages/threads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            created_by_user_id: currentUid,
+            participant_user_ids: [reviewModalApp.applicant_user_id],
+            title: `Application: ${reviewModalApp.job_title || "Job Application"}`,
+            message_text: text,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setCandMsgThread(data.thread);
+          setCandMessages([data.message]);
+          setCandMsgInput("");
+          window.dispatchEvent(new Event("elitecruit_messages_update"));
+        }
+      }
+    } catch (err) {
+      console.error("Failed to send candidate message:", err);
+    } finally {
+      setIsCandMsgSending(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isMessagePanelOpen && candMsgEndRef.current) {
+      candMsgEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [candMessages, isMessagePanelOpen]);
+
+  useEffect(() => {
+    if (!isMessagePanelOpen || !reviewModalApp?.applicant_user_id || !candMsgThread?.id) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/messages/threads/${candMsgThread.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data?.messages)) {
+            setCandMessages(data.messages);
+          }
+        }
+      } catch {}
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [isMessagePanelOpen, reviewModalApp?.applicant_user_id, candMsgThread?.id]);
 
   const closeRecruitModal = () => {
     setIsRecruitModalClosing(true);
@@ -1241,7 +1409,8 @@ export default function EmployerApplicantManagement() {
     app: Application,
     openDocs: boolean = false,
     isDirectInv: boolean = false,
-    openBreakdown: boolean = false
+    openBreakdown: boolean = false,
+    openMessages: boolean = false
   ) => {
     setReviewModalApp(app);
     setReviewModalProfile(null);
@@ -1260,6 +1429,11 @@ export default function EmployerApplicantManagement() {
     setIsDirectInvitationModal(isDirectInv);
     setIsMatchDrawerOpen(openBreakdown);
     setIsMatchDrawerClosing(false);
+    setIsMessagePanelOpen(openMessages);
+    setIsMessagePanelClosing(false);
+    if (openMessages && app.applicant_user_id) {
+      fetchCandidateThreadMessages(app.applicant_user_id);
+    }
     try {
       const res = await fetch(`/api/applicants/${app.applicant_user_id}/profile`);
       const data = await res.json();
@@ -2839,10 +3013,10 @@ export default function EmployerApplicantManagement() {
                                     <div className="actions">
                                       <button
                                         type="button"
-                                        title="Message Applicant"
+                                        title="Direct Message"
                                         aria-label="Message"
                                         className="action-btn message-btn-icon"
-                                        onClick={() => { window.location.href = "/messages"; }}
+                                        onClick={() => { handleOpenReview(app, false, false, false, true); }}
                                       >
                                         <RowActionIcon name="message" />
                                       </button>
@@ -3295,7 +3469,7 @@ export default function EmployerApplicantManagement() {
                     <button
                       type="button"
                       className="solid-btn preview-message-btn view-docs-btn"
-                      onClick={() => { window.location.href = "/messages"; }}
+                      onClick={() => { handleOpenReview(app, false, false, false, true); }}
                       title="Message Candidate"
                     >
                       Message
@@ -3599,11 +3773,15 @@ export default function EmployerApplicantManagement() {
               setApplicantDocuments([]);
               setPreviewDoc(null);
               setCandDetailTab("personal");
+                        setIsMessagePanelOpen(false);
+                        setIsMessagePanelClosing(false);
+                        setCandMessages([]);
+                        setCandMsgThread(null);
             }}
           >
             <div
               className={`jd-modal-container ${
-                isMatchDrawerOpen || isMatchDrawerClosing || isOtherJobsOpen || isOtherJobsClosing || isJobDetailsOpen || isJobDetailsClosing ? "with-side-panel" : ""
+                isMatchDrawerOpen || isMatchDrawerClosing || isOtherJobsOpen || isOtherJobsClosing || isJobDetailsOpen || isJobDetailsClosing || isMessagePanelOpen || isMessagePanelClosing ? "with-side-panel" : ""
               }`}
               onClick={(e) => e.stopPropagation()}
             >
@@ -3636,12 +3814,20 @@ export default function EmployerApplicantManagement() {
                         }, 220);
                       } else {
                         setIsMatchDrawerOpen(false);
+                        setIsMessagePanelOpen(false);
                         setIsOtherJobsOpen(true);
                         setIsOtherJobsClosing(false);
                       }
                     }}
                   >
                     <span>{isOtherJobsOpen && !isOtherJobsClosing ? "Hide Other Jobs" : "Other Jobs"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`jd-floating-breakdown-tab ${isMessagePanelOpen && !isMessagePanelClosing ? "active" : ""}`}
+                    onClick={handleToggleMessagePanel}
+                  >
+                    <span>{isMessagePanelOpen && !isMessagePanelClosing ? "Hide Messages" : "Messages"}</span>
                   </button>
                 </div>
                 <div className="jd-panel">
@@ -4272,13 +4458,39 @@ export default function EmployerApplicantManagement() {
                         setApplicantDocuments([]);
                         setPreviewDoc(null);
                         setCandDetailTab("personal");
+                        setIsMessagePanelOpen(false);
+                        setIsMessagePanelClosing(false);
+                        setCandMessages([]);
+                        setCandMsgThread(null);
                       }}
                     >
                       Close
                     </button>
-                    <a href="/messages" className="solid-btn" style={{ padding: "8px 16px", textDecoration: "none", fontSize: "0.85rem", borderRadius: "6px", background: "#01294a", color: "#ffffff", display: "inline-flex", alignItems: "center" }}>
-                      Message
-                    </a>
+                    <button
+                      type="button"
+                      className={`solid-btn cand-modal-message-btn ${isMessagePanelOpen && !isMessagePanelClosing ? "active" : ""}`}
+                      onClick={handleToggleMessagePanel}
+                      style={{
+                        padding: "8px 16px",
+                        fontSize: "0.85rem",
+                        borderRadius: "6px",
+                        background: isMessagePanelOpen && !isMessagePanelClosing ? "#0284c7" : "#01294a",
+                        color: "#ffffff",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        cursor: "pointer",
+                        border: "none",
+                        fontWeight: 700,
+                        fontFamily: '"Manrope", sans-serif',
+                        transition: "all 0.15s ease",
+                      }}
+                    >
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                      </svg>
+                      <span>{isMessagePanelOpen && !isMessagePanelClosing ? "Hide Messages" : "Message"}</span>
+                    </button>
                     {!isDirectInvitationModal && (() => {
                       const isShortlisted = reviewModalApp.status?.toLowerCase() === "shortlisted";
                       const isApproved = isApprovedStatus(reviewModalApp.status);
@@ -4777,6 +4989,249 @@ export default function EmployerApplicantManagement() {
                         );
                       });
                     })()}
+                  </div>
+                </aside>
+              )}
+
+              {/* ── Candidate Side-Docked Message Panel ── */}
+              {(isMessagePanelOpen || isMessagePanelClosing) && reviewModalApp && (
+                <aside
+                  className={`jd-side-comparison-panel cand-message-side-panel ${isMessagePanelClosing ? "closing" : "opening"}`}
+                  style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}
+                >
+                  <div className="jd-side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
+                    <div className="jd-side-title-row" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <div
+                        className="cand-msg-header-avatar"
+                        style={{
+                          width: "36px",
+                          height: "36px",
+                          borderRadius: "50%",
+                          background: "#0284c7",
+                          color: "#ffffff",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontWeight: 800,
+                          fontSize: "0.88rem",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {initialsFrom(reviewModalApp.applicant_name)}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
+                          {reviewModalApp.applicant_name}
+                        </h3>
+                        <span className="jd-side-subtitle" style={{ fontSize: "0.78rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                          Messages • {reviewModalApp.job_title || "Application"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="jd-side-header-actions">
+                      <button
+                        type="button"
+                        className="jd-side-close-btn"
+                        aria-label="Close message panel"
+                        onClick={handleCloseMessagePanel}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+
+                  <div
+                    className="cand-msg-chat-body"
+                    style={{
+                      flex: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      minHeight: 0,
+                      overflow: "hidden",
+                      background: "#f8fafc",
+                    }}
+                  >
+                    {/* Chat Messages List */}
+                    <div
+                      className="cand-msg-messages-scroll"
+                      style={{
+                        flex: 1,
+                        overflowY: "auto",
+                        padding: "16px 18px",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "12px",
+                      }}
+                    >
+                      {isCandMsgLoading ? (
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#64748b", fontSize: "0.88rem", gap: "8px" }}>
+                          <span className="spinner-mini" style={{ width: "16px", height: "16px", border: "2px solid #cbd5e1", borderTopColor: "#0284c7", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
+                          <span>Loading messages...</span>
+                        </div>
+                      ) : candMessages.length === 0 ? (
+                        <div
+                          style={{
+                            margin: "auto",
+                            textAlign: "center",
+                            padding: "24px 16px",
+                            maxWidth: "340px",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: "10px",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: "48px",
+                              height: "48px",
+                              borderRadius: "14px",
+                              background: "rgba(2, 132, 199, 0.12)",
+                              color: "#0284c7",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "1.4rem",
+                            }}
+                          >
+                            💬
+                          </div>
+                          <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: 800, color: "#0f172a" }}>
+                            Start a conversation
+                          </h4>
+                          <p style={{ margin: 0, fontSize: "0.82rem", color: "#64748b", lineHeight: 1.5 }}>
+                            No messages exchanged with <strong>{reviewModalApp.applicant_name}</strong> yet. You can send an update, interview follow-up, or question directly here.
+                          </p>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", justifyContent: "center", marginTop: "8px" }}>
+                            <button
+                              type="button"
+                              className="cand-msg-quick-pill"
+                              onClick={() => setCandMsgInput(`Hi ${reviewModalApp.applicant_name}, thank you for your application for the ${reviewModalApp.job_title} role!`)}
+                            >
+                              "Thank you for applying"
+                            </button>
+                            <button
+                              type="button"
+                              className="cand-msg-quick-pill"
+                              onClick={() => setCandMsgInput(`Hi ${reviewModalApp.applicant_name}, do you have availability this week for an on-site interview?`)}
+                            >
+                              "Ask availability"
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {candMessages.map((msg: any) => {
+                            const isMe = Number(msg.sender_user_id) === Number(currentEmployerUserId);
+                            const timeStr = msg.created_at
+                              ? new Date(msg.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+                              : "";
+                            return (
+                              <div
+                                key={msg.id}
+                                className={`cand-msg-row ${isMe ? "outgoing" : "incoming"}`}
+                                style={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  alignItems: isMe ? "flex-end" : "flex-start",
+                                  gap: "3px",
+                                }}
+                              >
+                                {!isMe && (
+                                  <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 700, paddingLeft: "4px" }}>
+                                    {reviewModalApp.applicant_name}
+                                  </span>
+                                )}
+                                <div
+                                  className={`cand-msg-bubble ${isMe ? "outgoing" : "incoming"}`}
+                                  style={{
+                                    maxWidth: "82%",
+                                    padding: "10px 14px",
+                                    borderRadius: isMe ? "14px 14px 2px 14px" : "14px 14px 14px 2px",
+                                    background: isMe ? "#0284c7" : "#ffffff",
+                                    color: isMe ? "#ffffff" : "#1e293b",
+                                    border: isMe ? "none" : "1px solid #e2e8f0",
+                                    boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
+                                    fontSize: "0.86rem",
+                                    lineHeight: 1.5,
+                                    whiteSpace: "pre-wrap",
+                                    wordBreak: "break-word",
+                                  }}
+                                >
+                                  {msg.message_text}
+                                </div>
+                                <span style={{ fontSize: "0.68rem", color: "#94a3b8", padding: "0 4px" }}>
+                                  {timeStr}
+                                </span>
+                              </div>
+                            );
+                          })}
+                          <div ref={candMsgEndRef} />
+                        </>
+                      )}
+                    </div>
+
+                    {/* Compose Bar */}
+                    <form
+                      onSubmit={handleSendCandidateMessage}
+                      className="cand-msg-compose-bar"
+                      style={{
+                        padding: "12px 16px",
+                        borderTop: "1px solid #e2e8f0",
+                        background: "#ffffff",
+                        display: "flex",
+                        gap: "10px",
+                        alignItems: "center",
+                      }}
+                    >
+                      <input
+                        type="text"
+                        className="cand-msg-input"
+                        placeholder={`Message ${reviewModalApp.applicant_name}...`}
+                        value={candMsgInput}
+                        onChange={(e) => setCandMsgInput(e.target.value)}
+                        disabled={isCandMsgSending}
+                        style={{
+                          flex: 1,
+                          padding: "10px 14px",
+                          borderRadius: "8px",
+                          border: "1px solid #cbd5e1",
+                          fontSize: "0.85rem",
+                          fontFamily: "inherit",
+                          outline: "none",
+                        }}
+                      />
+                      <button
+                        type="submit"
+                        className="cand-msg-send-btn"
+                        disabled={!candMsgInput.trim() || isCandMsgSending}
+                        style={{
+                          padding: "10px 18px",
+                          borderRadius: "8px",
+                          border: "none",
+                          background: "#0284c7",
+                          color: "#ffffff",
+                          fontWeight: 700,
+                          fontSize: "0.85rem",
+                          cursor: !candMsgInput.trim() || isCandMsgSending ? "not-allowed" : "pointer",
+                          opacity: !candMsgInput.trim() || isCandMsgSending ? 0.6 : 1,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          fontFamily: "inherit",
+                        }}
+                      >
+                        {isCandMsgSending ? "..." : (
+                          <>
+                            <span>Send</span>
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="22" y1="2" x2="11" y2="13" />
+                              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                            </svg>
+                          </>
+                        )}
+                      </button>
+                    </form>
                   </div>
                 </aside>
               )}
