@@ -1596,13 +1596,11 @@ export default function EmployerApplicantFinder() {
     }
   };
 
-  // Candidate Review Side Panels (Other Jobs, Live Message, Candidate Match Breakdown)
+  // Candidate Review Side Panels (Other Jobs, Live Message)
   const [isOtherJobsOpen, setIsOtherJobsOpen] = useState(false);
   const [isOtherJobsClosing, setIsOtherJobsClosing] = useState(false);
   const [isMessagePanelOpen, setIsMessagePanelOpen] = useState(false);
   const [isMessagePanelClosing, setIsMessagePanelClosing] = useState(false);
-  const [isCandMatchDrawerOpen, setIsCandMatchDrawerOpen] = useState(false);
-  const [isCandMatchDrawerClosing, setIsCandMatchDrawerClosing] = useState(false);
 
   // Message chat state
   const [candMsgThread, setCandMsgThread] = useState<any | null>(null);
@@ -1674,8 +1672,6 @@ export default function EmployerApplicantFinder() {
     if (isMessagePanelOpen) {
       handleCloseMessagePanel();
     } else {
-      setIsCandMatchDrawerOpen(false);
-      setIsCandMatchDrawerClosing(false);
       setIsOtherJobsOpen(false);
       setIsOtherJobsClosing(false);
       setIsMessagePanelOpen(true);
@@ -1698,33 +1694,19 @@ export default function EmployerApplicantFinder() {
     if (isOtherJobsOpen) {
       handleCloseOtherJobs();
     } else {
-      setIsCandMatchDrawerOpen(false);
-      setIsCandMatchDrawerClosing(false);
       setIsMessagePanelOpen(false);
       setIsMessagePanelClosing(false);
       setIsOtherJobsOpen(true);
       setIsOtherJobsClosing(false);
-    }
-  };
-
-  const handleCloseCandMatchDrawer = () => {
-    setIsCandMatchDrawerClosing(true);
-    setTimeout(() => {
-      setIsCandMatchDrawerOpen(false);
-      setIsCandMatchDrawerClosing(false);
-    }, 220);
-  };
-
-  const handleToggleCandMatchDrawer = () => {
-    if (isCandMatchDrawerOpen) {
-      handleCloseCandMatchDrawer();
-    } else {
-      setIsOtherJobsOpen(false);
-      setIsOtherJobsClosing(false);
-      setIsMessagePanelOpen(false);
-      setIsMessagePanelClosing(false);
-      setIsCandMatchDrawerOpen(true);
-      setIsCandMatchDrawerClosing(false);
+      if (activeJobs.length === 0 && currentEmployerId) {
+        fetch(`/api/employers/${currentEmployerId}/job-posts`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((d) => {
+            if (Array.isArray(d?.jobPosts)) setActiveJobs(d.jobPosts);
+            else if (Array.isArray(d?.jobs)) setActiveJobs(d.jobs);
+          })
+          .catch(() => {});
+      }
     }
   };
 
@@ -1738,8 +1720,6 @@ export default function EmployerApplicantFinder() {
     setIsOtherJobsClosing(false);
     setIsMessagePanelOpen(false);
     setIsMessagePanelClosing(false);
-    setIsCandMatchDrawerOpen(false);
-    setIsCandMatchDrawerClosing(false);
     setCandMessages([]);
     setCandMsgThread(null);
   };
@@ -1752,8 +1732,6 @@ export default function EmployerApplicantFinder() {
     setIsOtherJobsClosing(false);
     setIsMessagePanelOpen(false);
     setIsMessagePanelClosing(false);
-    setIsCandMatchDrawerOpen(false);
-    setIsCandMatchDrawerClosing(false);
     setCandMessages([]);
     setCandMsgThread(null);
   };
@@ -1762,8 +1740,6 @@ export default function EmployerApplicantFinder() {
     setSelectedCandidate(cand);
     setIsDocsDrawerOpen(false);
     setIsPreviewingDoc(false);
-    setIsCandMatchDrawerOpen(false);
-    setIsCandMatchDrawerClosing(false);
     setIsOtherJobsOpen(false);
     setIsOtherJobsClosing(false);
     setIsMessagePanelOpen(true);
@@ -3963,34 +3939,11 @@ export default function EmployerApplicantFinder() {
           >
             <div
               className={`jd-modal-container ${
-                isCandMatchDrawerOpen || isCandMatchDrawerClosing || isOtherJobsOpen || isOtherJobsClosing || isMessagePanelOpen || isMessagePanelClosing ? "with-side-panel" : ""
+                isOtherJobsOpen || isOtherJobsClosing || isMessagePanelOpen || isMessagePanelClosing ? "with-side-panel" : ""
               }`}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="jd-panel-outer-wrap">
-                <div className="jd-floating-tabs-container">
-                  <button
-                    type="button"
-                    className={`jd-floating-breakdown-tab ${isCandMatchDrawerOpen && !isCandMatchDrawerClosing ? "active" : ""}`}
-                    onClick={handleToggleCandMatchDrawer}
-                  >
-                    <span>{isCandMatchDrawerOpen && !isCandMatchDrawerClosing ? "Hide Breakdown" : "Match Breakdown"}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`jd-floating-breakdown-tab ${isOtherJobsOpen && !isOtherJobsClosing ? "active" : ""}`}
-                    onClick={handleToggleOtherJobs}
-                  >
-                    <span>{isOtherJobsOpen && !isOtherJobsClosing ? "Hide Other Jobs" : "Other Jobs"}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`jd-floating-breakdown-tab ${isMessagePanelOpen && !isMessagePanelClosing ? "active" : ""}`}
-                    onClick={handleToggleMessagePanel}
-                  >
-                    <span>{isMessagePanelOpen && !isMessagePanelClosing ? "Hide Message" : "Message"}</span>
-                  </button>
-                </div>
                 <div className="cand-details-panel jd-panel">
                   <div className="cand-details-strip" style={{ paddingTop: "20px" }}>
                 <div className="cand-details-logo-info">
@@ -4614,10 +4567,10 @@ export default function EmployerApplicantFinder() {
 
           {/* ── Other Employer Jobs Panel (Container 2) ── */}
           {(isOtherJobsOpen || isOtherJobsClosing) && (
-            <aside className={`jd-side-comparison-panel ${isOtherJobsClosing ? "closing" : "opening"}`} style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}>
+            <aside className={`jd-side-comparison-panel ${isOtherJobsClosing ? "closing" : "opening"}`} style={{ fontFamily: '"Manrope", sans-serif' }}>
               <div className="jd-side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
                 <div className="jd-side-title-row">
-                  <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>Other Employer Jobs</h3>
+                  <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>Employer Jobs</h3>
                   <span className="jd-side-subtitle" style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>Candidate compatibility across your active job postings</span>
                 </div>
                 <div className="jd-side-header-actions">
@@ -4769,7 +4722,7 @@ export default function EmployerApplicantFinder() {
           {(isMessagePanelOpen || isMessagePanelClosing) && selectedCandidate && (
             <aside
               className={`jd-side-comparison-panel cand-message-side-panel ${isMessagePanelClosing ? "closing" : "opening"}`}
-              style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}
+              style={{ fontFamily: '"Manrope", sans-serif' }}
             >
               <div className="jd-side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
                 <div className="jd-side-title-row" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -4988,311 +4941,6 @@ export default function EmployerApplicantFinder() {
               </div>
             </aside>
           )}
-
-          {/* ── Candidate Match Breakdown Panel ── */}
-          {(isCandMatchDrawerOpen || isCandMatchDrawerClosing) && selectedCandidate && (() => {
-            const compareJob = activeJobs[jobCarouselIndex] || activeJobs[0];
-            if (!compareJob) {
-              return (
-                <aside className={`jd-side-comparison-panel ${isCandMatchDrawerClosing ? "closing" : "opening"}`} style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}>
-                  <div className="jd-side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
-                    <div className="jd-side-title-row">
-                      <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>Match Breakdown</h3>
-                      <span className="jd-side-subtitle" style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>Side-by-side candidate profile vs job requirements</span>
-                    </div>
-                    <div className="jd-side-header-actions">
-                      <button
-                        type="button"
-                        className="jd-side-close-btn"
-                        aria-label="Close comparison panel"
-                        onClick={handleCloseCandMatchDrawer}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "center", color: "#64748b", padding: "40px 20px", fontSize: "0.95rem", fontFamily: '"Manrope", sans-serif' }}>
-                    No active job postings found to compare against. Please post a job to view match breakdown.
-                  </div>
-                </aside>
-              );
-            }
-
-            const candSkills = parseCompetencyDisplayTags(selectedCandidate.skills || "");
-            const candQuals = parseCompetencyDisplayTags(selectedCandidate.qualifications || "");
-            const candCerts = parseCompetencyDisplayTags(selectedCandidate.certifications || "");
-            const candCity = formatLocationWithCavite(selectedCandidate.city || selectedCandidate.address || "Cavite");
-            const candSetup = selectedCandidate.work_arrangement || "On-Site";
-            const candSalary = selectedCandidate.expected_salary || "";
-
-            const jobSkills = parseCompetencyDisplayTags(compareJob.required_skills || (compareJob as any).skills || "");
-            const jobQuals = parseCompetencyDisplayTags(compareJob.qualifications || (compareJob as any).required_qualifications || "");
-            const jobCerts = parseCompetencyDisplayTags((compareJob as any).certifications || (compareJob as any).required_certifications || "");
-            const jobSalaryMin = Number(compareJob.salary_min) || 0;
-            const jobSalaryMax = Number(compareJob.salary_max) || 0;
-            const jobLocation = formatLocationWithCavite(compareJob.location || compareJob.city || "Cavite");
-
-            const matchDetails = calculateJobMatchDetails(
-              {
-                id: compareJob.id,
-                title: compareJob.title,
-                location: jobLocation,
-                salaryMin: jobSalaryMin,
-                setup: compareJob.work_arrangement || "On-Site",
-                skillTags: jobSkills,
-                qualTags: jobQuals,
-                certTags: jobCerts,
-              },
-              {
-                desiredJobTitle: selectedCandidate.desired_job_title || "",
-                workArrangement: candSetup,
-                expectedSalary: parseExpectedSalary(candSalary),
-                city: candCity,
-                skills: candSkills,
-                qualifications: candQuals,
-                certifications: candCerts,
-              }
-            );
-
-            const checkMatch = (jobItem: string, appItems: string[]) => {
-              if (!appItems || appItems.length === 0) return false;
-              return appItems.some((appItem) => isSkillMatch(jobItem, appItem));
-            };
-
-            const isCandRelevant = (appItem: string, jItems: string[]) => {
-              if (!jItems || jItems.length === 0) return false;
-              return jItems.some((jobItem) => isSkillMatch(jobItem, appItem));
-            };
-
-            return (
-              <aside className={`jd-side-comparison-panel ${isCandMatchDrawerClosing ? "closing" : "opening"}`} style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}>
-                <div className="jd-side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
-                  <div className="jd-side-title-row">
-                    <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>Match Breakdown</h3>
-                    <span className="jd-side-subtitle" style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>Compared against: {compareJob.title}</span>
-                  </div>
-                  <div className="jd-side-header-actions">
-                    <span className={`match-badge-pill ${getMatchColorClass(matchDetails.score)}`}>
-                      {matchDetails.score}% Match
-                    </span>
-                    <button
-                      type="button"
-                      className="jd-side-close-btn"
-                      aria-label="Close comparison panel"
-                      onClick={handleCloseCandMatchDrawer}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </div>
-
-                <div className="jd-side-panel-body" style={{ overflowY: "auto", flex: 1, padding: "16px" }}>
-                  {/* Legend strip */}
-                  <div className="jd-compare-legend" style={{ marginBottom: "12px" }}>
-                    <div className="legend-item">
-                      <span className="legend-dot green"></span>
-                      <span><strong>Green Tag:</strong> Matched candidate competency</span>
-                    </div>
-                    <div className="legend-item">
-                      <span className="legend-dot red"></span>
-                      <span><strong>Red Tag:</strong> Required by job, missing from candidate</span>
-                    </div>
-                  </div>
-
-                  {/* Master 2-Column Unified Container */}
-                  <div className="jd-unified-compare-container">
-                    {/* ── Column 1: Candidate Profile ── */}
-                    <div className="jd-master-col applicant-col">
-                      <div className="jd-master-col-header">
-                        <span>Candidate Profile</span>
-                      </div>
-                      <div className="jd-master-col-content">
-                        <div className="jd-master-row">
-                          <div className="jd-row-label-wrap">
-                            <span className="jd-row-label">Skills</span>
-                            <span className="col-count-text">{candSkills.length} listed</span>
-                          </div>
-                          <div className="jd-col-tags-container">
-                            {candSkills.length > 0 ? (
-                              candSkills.map((item) => {
-                                const isRel = isCandRelevant(item, jobSkills);
-                                const isSource = hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.item === item;
-                                const isLinked = Boolean(hoveredCompareTag?.side === "employer" && hoveredCompareTag?.category === "skills" && isSkillMatch(item, hoveredCompareTag.item));
-                                return (
-                                  <span
-                                    key={item}
-                                    className={`jd-comp-tag ${isRel ? "app-matched" : "app-neutral"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
-                                    onMouseEnter={() => setHoveredCompareTag({ item, side: "applicant", category: "skills" })}
-                                    onMouseLeave={() => setHoveredCompareTag(null)}
-                                  >
-                                    <span className="tag-text">{item}</span>
-                                  </span>
-                                );
-                              })
-                            ) : (
-                              <span className="jd-no-data-text">No skills in candidate profile</span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Qualifications */}
-                        <div className="jd-master-row">
-                          <div className="jd-row-label-wrap">
-                            <span className="jd-row-label">Qualifications</span>
-                            <span className="col-count-text">{candQuals.length} listed</span>
-                          </div>
-                          <div className="jd-col-tags-container">
-                            {candQuals.length > 0 ? (
-                              candQuals.map((item) => {
-                                const isRel = isCandRelevant(item, jobQuals);
-                                const isSource = hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.item === item;
-                                const isLinked = Boolean(hoveredCompareTag?.side === "employer" && hoveredCompareTag?.category === "qualifications" && isSkillMatch(item, hoveredCompareTag.item));
-                                return (
-                                  <span
-                                    key={item}
-                                    className={`jd-comp-tag ${isRel ? "app-matched" : "app-neutral"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
-                                    onMouseEnter={() => setHoveredCompareTag({ item, side: "applicant", category: "qualifications" })}
-                                    onMouseLeave={() => setHoveredCompareTag(null)}
-                                  >
-                                    <span className="tag-text">{item}</span>
-                                  </span>
-                                );
-                              })
-                            ) : (
-                              <span className="jd-no-data-text">No qualifications in candidate profile</span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Certifications */}
-                        <div className="jd-master-row">
-                          <div className="jd-row-label-wrap">
-                            <span className="jd-row-label">Certifications</span>
-                            <span className="col-count-text">{candCerts.length} listed</span>
-                          </div>
-                          <div className="jd-col-tags-container">
-                            {candCerts.length > 0 ? (
-                              candCerts.map((item) => {
-                                const isRel = isCandRelevant(item, jobCerts);
-                                const isSource = hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.item === item;
-                                const isLinked = Boolean(hoveredCompareTag?.side === "employer" && hoveredCompareTag?.category === "certifications" && isSkillMatch(item, hoveredCompareTag.item));
-                                return (
-                                  <span
-                                    key={item}
-                                    className={`jd-comp-tag ${isRel ? "app-matched" : "app-neutral"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
-                                    onMouseEnter={() => setHoveredCompareTag({ item, side: "applicant", category: "certifications" })}
-                                    onMouseLeave={() => setHoveredCompareTag(null)}
-                                  >
-                                    <span className="tag-text">{item}</span>
-                                  </span>
-                                );
-                              })
-                            ) : (
-                              <span className="jd-no-data-text">No certifications in candidate profile</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* ── Column 2: Employer Requirements ── */}
-                    <div className="jd-master-col employer-col">
-                      <div className="jd-master-col-header employer">
-                        <span>Employer's Requirements</span>
-                      </div>
-                      <div className="jd-master-col-content">
-                        <div className="jd-master-row">
-                          <div className="jd-row-label-wrap">
-                            <span className="jd-row-label">Skills</span>
-                            <span className="col-count-text">{jobSkills.length} required</span>
-                          </div>
-                          <div className="jd-col-tags-container">
-                            {jobSkills.length > 0 ? (
-                              jobSkills.map((item) => {
-                                const matched = checkMatch(item, candSkills);
-                                const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
-                                const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "skills" && isSkillMatch(item, hoveredCompareTag.item));
-                                return (
-                                  <span
-                                    key={item}
-                                    className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
-                                    onMouseEnter={() => setHoveredCompareTag({ item, side: "employer", category: "skills" })}
-                                    onMouseLeave={() => setHoveredCompareTag(null)}
-                                  >
-                                    <span className="tag-text">{item}</span>
-                                  </span>
-                                );
-                              })
-                            ) : (
-                              <span className="jd-no-data-text">No specific skills required</span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Qualifications */}
-                        <div className="jd-master-row">
-                          <div className="jd-row-label-wrap">
-                            <span className="jd-row-label">Qualifications</span>
-                            <span className="col-count-text">{jobQuals.length} required</span>
-                          </div>
-                          <div className="jd-col-tags-container">
-                            {jobQuals.length > 0 ? (
-                              jobQuals.map((item) => {
-                                const matched = checkMatch(item, candQuals);
-                                const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
-                                const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "qualifications" && isSkillMatch(item, hoveredCompareTag.item));
-                                return (
-                                  <span
-                                    key={item}
-                                    className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
-                                    onMouseEnter={() => setHoveredCompareTag({ item, side: "employer", category: "qualifications" })}
-                                    onMouseLeave={() => setHoveredCompareTag(null)}
-                                  >
-                                    <span className="tag-text">{item}</span>
-                                  </span>
-                                );
-                              })
-                            ) : (
-                              <span className="jd-no-data-text">No specific qualifications required</span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Certifications */}
-                        <div className="jd-master-row">
-                          <div className="jd-row-label-wrap">
-                            <span className="jd-row-label">Certifications</span>
-                            <span className="col-count-text">{jobCerts.length} required</span>
-                          </div>
-                          <div className="jd-col-tags-container">
-                            {jobCerts.length > 0 ? (
-                              jobCerts.map((item) => {
-                                const matched = checkMatch(item, candCerts);
-                                const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
-                                const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "certifications" && isSkillMatch(item, hoveredCompareTag.item));
-                                return (
-                                  <span
-                                    key={item}
-                                    className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
-                                    onMouseEnter={() => setHoveredCompareTag({ item, side: "employer", category: "certifications" })}
-                                    onMouseLeave={() => setHoveredCompareTag(null)}
-                                  >
-                                    <span className="tag-text">{item}</span>
-                                  </span>
-                                );
-                              })
-                            ) : (
-                              <span className="jd-no-data-text">No specific certifications required</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </aside>
-            );
-          })()}
         </div>
       </div>
     )}
