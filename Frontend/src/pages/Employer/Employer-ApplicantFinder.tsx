@@ -3314,7 +3314,7 @@ export default function EmployerApplicantFinder() {
           </section>
 
           {/* SEARCH BAR CARD - MATCHES JOB SEARCH ON APPLICANT SIDE */}
-          <section className="search-bar-card">
+          <section className="search-bar-card finder-search-bar-card">
             <div className="search-input-row">
               <input
                 type="text"

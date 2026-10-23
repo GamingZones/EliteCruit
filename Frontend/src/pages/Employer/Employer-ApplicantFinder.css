@@ -3526,9 +3526,17 @@
    Finder Mode Toggle Card & Search Bar Card Uniform Sizing
    ========================================================================== */
 
-/* Equal card dimensions and padding */
+/* Equal card dimensions, full width, zero margin offset, and matching padding */
+.applicant-finder-main .mode-toggle-card,
+.applicant-finder-main .search-bar-card,
+.applicant-mgmt-main.applicant-finder-main .search-bar-card,
+.finder-main-content .mode-toggle-card,
+.finder-main-content .search-bar-card,
 .mode-toggle-card,
 .search-bar-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
   min-height: 64px !important;
   padding: 12px 18px !important;
   border-radius: 10px !important;
@@ -3557,7 +3565,9 @@
 }
 
 .mode-actions button {
-  min-width: 148px !important;
+  width: 160px !important;
+  min-width: 160px !important;
+  max-width: 160px !important;
   height: 40px !important;
   padding: 0 16px !important;
   display: inline-flex !important;
