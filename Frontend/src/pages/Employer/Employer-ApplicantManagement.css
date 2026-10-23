@@ -3860,7 +3860,7 @@
   justify-content: center;
   gap: 16px;
   max-width: min(1160px, calc(100vw - 32px));
-  max-height: 88vh;
+  max-height: 90vh;
   width: auto;
   animation: systemPopupScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   font-family: "Manrope", sans-serif;
@@ -3874,7 +3874,9 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  max-height: 88vh;
+  height: 640px;
+  min-height: 580px;
+  max-height: 90vh;
 }
 
 .decision-card.decision-schedule-card {
@@ -3895,8 +3897,21 @@
 }
 
 .decision-card.decision-main-card {
-  width: 550px;
+  width: 620px;
   flex-shrink: 0;
+}
+
+.decision-card.decision-main-card .decision-message-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.decision-card.decision-main-card .decision-textarea {
+  flex: 1;
+  min-height: 240px;
+  resize: vertical;
 }
 
 .decision-card-header {
@@ -3979,6 +3994,11 @@
     max-height: 94vh;
     overflow-y: auto;
     width: 95vw;
+  }
+  .decision-card {
+    height: auto;
+    min-height: 0;
+    max-height: none;
   }
   .decision-card.decision-schedule-card,
   .decision-card.decision-main-card {

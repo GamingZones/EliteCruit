@@ -5872,7 +5872,7 @@ export default function EmployerApplicantManagement() {
                     <textarea
                       id="decision-msg-input"
                       className={`decision-textarea ${decisionMessageType === "automated" ? "automated-preview" : ""}`}
-                      rows={7}
+                      rows={10}
                       readOnly={decisionMessageType === "automated"}
                       value={decisionMessageType === "automated" ? decisionMessageText : manualMessageText}
                       onChange={(e) => {
@@ -5911,31 +5911,32 @@ export default function EmployerApplicantManagement() {
                 </div>
 
                 <div className="decision-card-footer">
-                  <button
-                    type="button"
-                    className="decision-cancel-btn"
-                    disabled={isDecisionSubmitting}
-                    onClick={() => {
-                      setDecisionModalApps([]);
-                      setIsSchedulingImmediate(false);
-                    }}
-                  >
-                    Cancel
-                  </button>
+                  {decisionModalAction === "approved" ? (
+                    <button
+                      type="button"
+                      className={`decision-schedule-quick-btn ${isSchedulingImmediate ? "active" : ""}`}
+                      disabled={isDecisionSubmitting}
+                      onClick={() => setIsSchedulingImmediate((prev) => !prev)}
+                      title={isSchedulingImmediate ? "Hide interview scheduling card" : "Schedule an interview on the left"}
+                    >
+                      {isSchedulingImmediate ? "Hide Schedule" : "Schedule Interview"}
+                    </button>
+                  ) : (
+                    <div />
+                  )}
 
                   <div className="decision-footer-actions" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    {decisionModalAction === "approved" && (
-                      <button
-                        type="button"
-                        className={`decision-schedule-quick-btn ${isSchedulingImmediate ? "active" : ""}`}
-                        disabled={isDecisionSubmitting}
-                        onClick={() => setIsSchedulingImmediate((prev) => !prev)}
-                        title={isSchedulingImmediate ? "Hide interview scheduling card" : "Schedule an interview on the left"}
-                      >
-                        <span>📅</span>
-                        <span>{isSchedulingImmediate ? "Hide Schedule" : "Schedule Interview"}</span>
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      className="decision-cancel-btn"
+                      disabled={isDecisionSubmitting}
+                      onClick={() => {
+                        setDecisionModalApps([]);
+                        setIsSchedulingImmediate(false);
+                      }}
+                    >
+                      Cancel
+                    </button>
 
                     <button
                       type="button"
