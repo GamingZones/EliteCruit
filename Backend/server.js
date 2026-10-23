@@ -3545,6 +3545,8 @@ app.get("/api/employers", async (_req, res) => {
               COALESCE(NULLIF(TRIM(ep.company_address), ''), ep.city, 'Cavite') AS location,
               COALESCE(NULLIF(TRIM(ep.city), ''), 'Cavite') AS city,
               ep.province,
+              ep.company_address,
+              ep.contact_number,
               ep.industry,
               ep.company_size,
               ep.company_logo_path,
@@ -3556,7 +3558,7 @@ app.get("/api/employers", async (_req, res) => {
        LEFT JOIN employer_profiles ep ON ep.user_id = u.id
        ${hasRatings ? "LEFT JOIN company_ratings cr ON cr.employer_user_id = u.id" : ""}
        WHERE u.role = 'employer'
-       GROUP BY u.id, u.email, ep.business_name, ep.company_address, ep.city, ep.province, ep.industry, ep.company_size, ep.company_logo_path, ep.company_cover_path, ep.website, ep.company_description
+       GROUP BY u.id, u.email, ep.business_name, ep.company_address, ep.city, ep.province, ep.industry, ep.company_size, ep.company_logo_path, ep.company_cover_path, ep.website, ep.company_description, ep.contact_number
        ORDER BY company_name ASC`
     );
 

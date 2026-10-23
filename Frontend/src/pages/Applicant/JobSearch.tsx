@@ -94,6 +94,8 @@ type EmployerItem = {
   location: string;
   city: string;
   province?: string | null;
+  company_address?: string | null;
+  contact_number?: string | null;
   industry?: string | null;
   company_size?: string | null;
   company_logo_path?: string | null;
@@ -675,7 +677,7 @@ export default function JobSearch() {
   const [employerSelectedSize, setEmployerSelectedSize] = useState("All sizes");
   const [employerSortBy, setEmployerSortBy] = useState<"active_jobs" | "rating" | "name_asc" | "name_desc">("active_jobs");
   const [employerCurrentPage, setEmployerCurrentPage] = useState(1);
-  const [selectedEmployerModal, setSelectedEmployerModal] = useState<EmployerItem | null>(null);
+  const [selectedEmployerDetails, setSelectedEmployerDetails] = useState<EmployerItem | null>(null);
 
   const availableEmployerCities = useMemo(() => {
     if (employerSelectedProvince !== "All provinces") {
@@ -1441,6 +1443,37 @@ export default function JobSearch() {
     }
   };
 
+  const handleOpenEmployerDetails = (employer: EmployerItem) => {
+    setSelectedEmployerDetails(employer);
+    setIsFaqDrawerOpen(false);
+  };
+
+  const handleOpenEmployerFaqs = (employerUserId: number) => {
+    setIsFaqDrawerOpen(true);
+    setFaqLoading(true);
+    setExpandedFaqIds([]);
+
+    if (employerUserId) {
+      fetch(`/api/employers/${employerUserId}/faqs`)
+        .then((res) => res.json())
+        .then((data) => {
+          const rows = Array.isArray(data?.faqs)
+            ? data.faqs.filter((f: any) => f.is_active !== 0)
+            : [];
+          if (rows.length > 0) {
+            setCompanyFaqs(rows);
+          } else {
+            setCompanyFaqs(DEFAULT_FAQS);
+          }
+        })
+        .catch(() => setCompanyFaqs(DEFAULT_FAQS))
+        .finally(() => setFaqLoading(false));
+    } else {
+      setCompanyFaqs(DEFAULT_FAQS);
+      setFaqLoading(false);
+    }
+  };
+
   return (
     <div className="jobsearch-page appdash-page sidebar-visible">
       <aside className="appdash-sidebar" aria-label="Applicant Navigation">
@@ -2032,7 +2065,11 @@ export default function JobSearch() {
                         <div className="result-title-row" style={{ display: "flex", alignItems: "center", gap: "14px" }}>
                           {employer.company_logo_path ? (
                             <img
-                              src={employer.company_logo_path}
+                              src={
+                                employer.company_logo_path.startsWith("http") || employer.company_logo_path.startsWith("/api")
+                                  ? employer.company_logo_path
+                                  : `/api/employers/${employer.employer_user_id}/logo`
+                              }
                               alt={employer.company_name}
                               className="employer-card-logo"
                               onError={(e) => {
@@ -2053,15 +2090,19 @@ export default function JobSearch() {
                               {employer.company_name}
                             </h3>
                             <p className="meta-line" style={{ marginTop: "4px", marginBottom: 0 }}>
-                              <RenderLocationMeta location={employer.location} />
-                              {employer.industry && <span className="emp-industry-tag">{employer.industry}</span>}
+                              <RenderLocationMeta location={formatLocationWithCavite(employer.location || employer.city)} />
+                              {employer.industry && (
+                                <span className="emp-industry-tag">
+                                  {employer.industry.toUpperCase()}
+                                </span>
+                              )}
                               {employer.company_size && <span className="emp-size-tag">{employer.company_size}</span>}
                             </p>
                           </div>
                         </div>
 
                         <p className="result-summary" style={{ marginTop: "10px" }}>
-                          {shortenText(employer.company_description, "A registered employer on EliteCruit.", 160)}
+                          {shortenText(employer.company_description, "No company description provided yet.", 160)}
                         </p>
 
                         <div className="result-tags employer-tags-row">
@@ -2072,23 +2113,12 @@ export default function JobSearch() {
                           ) : (
                             <span className="status-chip closed">No Active Postings</span>
                           )}
-                          {employer.website && (
-                            <a
-                              href={employer.website.startsWith("http") ? employer.website : `https://${employer.website}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="employer-website-pill"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              🌐 {employer.website.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
-                            </a>
-                          )}
                         </div>
 
                         {/* Preview chips of active jobs */}
                         {employer.jobs && employer.jobs.length > 0 && (
                           <div className="employer-jobs-preview-wrap">
-                            <span className="preview-label">Active Openings:</span>
+                            <span className="preview-label">ACTIVE OPENINGS:</span>
                             <div className="employer-jobs-chips-list">
                               {employer.jobs.slice(0, 3).map((j) => (
                                 <button
@@ -2100,14 +2130,15 @@ export default function JobSearch() {
                                 >
                                   <span className="job-chip-icon">💼</span>
                                   <span className="job-chip-title">{j.title}</span>
-                                  <span className="job-chip-type">({j.work_arrangement || "Full-time"})</span>
+                                  <span className="job-chip-type">({j.work_arrangement || "On-Site"})</span>
                                 </button>
                               ))}
                               {employer.jobs.length > 3 && (
                                 <button
                                   type="button"
                                   className="employer-job-chip-more"
-                                  onClick={() => setSelectedEmployerModal(employer)}
+                                  title="View more openings"
+                                  onClick={() => handleOpenJobDetailsById(employer.jobs[3].id)}
                                 >
                                   +{employer.jobs.length - 3} more
                                 </button>
@@ -2121,31 +2152,17 @@ export default function JobSearch() {
                         <div className="card-top-actions">
                           <div className="rating-score-box" title="Employer rating">
                             <span className="star-icon">★</span>
-                            <span>{employer.rating ? Number(employer.rating).toFixed(1) : "5.0"}</span>
+                            <span>{employer.rating ? Number(employer.rating).toFixed(1) : "0.0"}</span>
                           </div>
                         </div>
 
                         <button
                           type="button"
-                          className="details-btn employer-view-jobs-btn"
-                          onClick={() => setSelectedEmployerModal(employer)}
+                          className="details-btn"
+                          onClick={() => handleOpenEmployerDetails(employer)}
                         >
-                          {employer.active_jobs_count > 0
-                            ? `View Jobs (${employer.active_jobs_count})`
-                            : "Company Profile"}
+                          Details
                         </button>
-
-                        {employer.active_jobs_count > 0 && (
-                          <div className="card-bottom-actions">
-                            <button
-                              type="button"
-                              className="solid-btn apply-right-btn"
-                              onClick={() => setSelectedEmployerModal(employer)}
-                            >
-                              Explore Careers
-                            </button>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </article>
@@ -2819,167 +2836,227 @@ export default function JobSearch() {
         </div>
       )}
 
-      {/* ── Employer Details & Open Jobs Modal ── */}
-      {selectedEmployerModal && (
+      {/* ── COMPANY DETAILS MODAL (Picture 2) ── */}
+      {selectedEmployerDetails && (
         <div
           className="jd-overlay"
           role="dialog"
           aria-modal="true"
-          aria-label="Employer Profile"
+          aria-label="Company Details"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
-              setSelectedEmployerModal(null);
+              setSelectedEmployerDetails(null);
+              setIsFaqDrawerOpen(false);
             }
           }}
         >
-          <div className="jd-modal employer-modal">
-            <div className="employer-modal-header-banner">
-              {selectedEmployerModal.company_cover_path ? (
-                <img
-                  src={selectedEmployerModal.company_cover_path}
-                  alt="Company Cover"
-                  className="employer-modal-cover-img"
-                />
-              ) : (
-                <div className="employer-modal-cover-gradient" />
-              )}
-              <button
-                type="button"
-                className="jd-close-btn"
-                onClick={() => setSelectedEmployerModal(null)}
-                aria-label="Close employer modal"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="employer-modal-profile-strip">
-              <div className="employer-modal-avatar-wrap">
-                {selectedEmployerModal.company_logo_path ? (
+          <div className="jd-modal-container" style={{ maxWidth: "700px" }}>
+            <div className="jd-panel">
+              {/* Cover banner */}
+              <div className="jd-cover-banner">
+                {selectedEmployerDetails.company_cover_path ? (
                   <img
-                    src={selectedEmployerModal.company_logo_path}
-                    alt={selectedEmployerModal.company_name}
-                    className="employer-modal-logo"
+                    src={
+                      selectedEmployerDetails.company_cover_path.startsWith("http") || selectedEmployerDetails.company_cover_path.startsWith("/api")
+                        ? selectedEmployerDetails.company_cover_path
+                        : `/api/employers/${selectedEmployerDetails.employer_user_id}/cover`
+                    }
+                    alt={`${selectedEmployerDetails.company_name} cover`}
                     onError={(e) => {
                       (e.currentTarget as HTMLElement).style.display = "none";
-                      const nextEl = e.currentTarget.nextElementSibling as HTMLElement;
-                      if (nextEl) nextEl.style.display = "grid";
+                      const placeholder = e.currentTarget.parentElement?.querySelector(".jd-cover-placeholder") as HTMLElement;
+                      if (placeholder) placeholder.style.display = "flex";
                     }}
                   />
                 ) : null}
-                <div
-                  className="employer-modal-avatar-fallback"
-                  style={{ display: selectedEmployerModal.company_logo_path ? "none" : "grid" }}
-                >
-                  {selectedEmployerModal.company_name?.charAt(0)?.toUpperCase() || "E"}
+                <div className="jd-cover-placeholder" style={{ display: selectedEmployerDetails.company_cover_path ? "none" : "flex" }}>
+                  <span>Company Cover</span>
                 </div>
               </div>
 
-              <div className="employer-modal-meta-info">
-                <h2>{selectedEmployerModal.company_name}</h2>
-                <div className="employer-modal-badges">
-                  <span className="location-meta">
-                    <MiniIcon name="location" />
-                    <span>{selectedEmployerModal.location}</span>
-                  </span>
-                  {selectedEmployerModal.industry && (
-                    <span className="emp-industry-tag">{selectedEmployerModal.industry}</span>
-                  )}
-                  {selectedEmployerModal.company_size && (
-                    <span className="emp-size-tag">{selectedEmployerModal.company_size}</span>
-                  )}
-                  <div className="rating-score-box" title="Employer rating">
+              {/* Employer strip underneath banner */}
+              <div className="jd-employer-strip">
+                <div className="jd-employer-logo-info">
+                  <div
+                    className="jd-employer-logo"
+                    aria-label="Company logo"
+                    style={{ overflow: "hidden", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}
+                  >
+                    {(() => {
+                      const logoSrc = selectedEmployerDetails.company_logo_path
+                        ? selectedEmployerDetails.company_logo_path.startsWith("http") || selectedEmployerDetails.company_logo_path.startsWith("/api")
+                          ? selectedEmployerDetails.company_logo_path
+                          : `/api/employers/${selectedEmployerDetails.employer_user_id}/logo`
+                        : `/api/employers/${selectedEmployerDetails.employer_user_id}/logo`;
+                      return (
+                        <>
+                          <img
+                            src={logoSrc}
+                            alt={selectedEmployerDetails.company_name}
+                            style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                            onError={(e) => {
+                              (e.currentTarget as HTMLElement).style.display = "none";
+                              if (e.currentTarget.nextElementSibling) {
+                                (e.currentTarget.nextElementSibling as HTMLElement).style.display = "block";
+                              }
+                            }}
+                          />
+                          <svg viewBox="0 0 24 24" aria-hidden="true" style={{ display: "none", width: "32px", height: "32px", stroke: "#0284c7" }}>
+                            <path d="M3 21h18M5 21V7l7-4 7 4v14M9 11h2m2 0h2M9 15h2m2 0h2" />
+                          </svg>
+                        </>
+                      );
+                    })()}
+                  </div>
+                  <div>
+                    <strong className="jd-employer-name">{selectedEmployerDetails.company_name}</strong>
+                    <span className="jd-employer-location">
+                      <svg viewBox="0 0 24 24" aria-hidden="true" width="13" height="13" fill="none" stroke="#5b8ab0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                      </svg>
+                      {selectedEmployerDetails.industry ? selectedEmployerDetails.industry.toUpperCase() : "GENERAL INDUSTRY"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="jd-header-right-actions">
+                  <div className="rating-score-box" title="Company rating">
                     <span className="star-icon">★</span>
-                    <span>{selectedEmployerModal.rating ? Number(selectedEmployerModal.rating).toFixed(1) : "5.0"}</span>
+                    <span>{selectedEmployerDetails.rating ? Number(selectedEmployerDetails.rating).toFixed(1) : "0.0"}</span>
                   </div>
-                  {selectedEmployerModal.website && (
-                    <a
-                      href={selectedEmployerModal.website.startsWith("http") ? selectedEmployerModal.website : `https://${selectedEmployerModal.website}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="employer-website-pill"
-                    >
-                      🌐 {selectedEmployerModal.website.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
-                    </a>
-                  )}
+                  <button
+                    type="button"
+                    className={`jd-faq-btn ${isFaqDrawerOpen ? "active" : ""}`}
+                    onClick={() => {
+                      if (isFaqDrawerOpen) {
+                        setIsFaqDrawerOpen(false);
+                      } else {
+                        handleOpenEmployerFaqs(selectedEmployerDetails.employer_user_id);
+                      }
+                    }}
+                  >
+                    FAQ's
+                  </button>
                 </div>
               </div>
-            </div>
 
-            <div className="employer-modal-body">
-              <section className="employer-modal-section">
-                <h4 className="employer-section-heading">About Company</h4>
-                <p className="employer-about-text">
-                  {selectedEmployerModal.company_description || "No company description has been provided by this employer yet."}
-                </p>
-              </section>
+              {/* Scrollable body & drawer container */}
+              <div className="jd-body-wrapper" style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+                <div className="jd-body" style={{ maxHeight: "calc(88vh - 280px)", overflowY: "auto", padding: "20px 24px" }}>
+                  {/* Section: Company Overview */}
+                  <div style={{ marginBottom: "24px" }}>
+                    <h3 style={{ fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b", fontWeight: 700, marginBottom: "8px" }}>
+                      About Company
+                    </h3>
+                    <p className="company-modal-about" style={{ fontSize: "0.95rem", lineHeight: 1.6, whiteSpace: "pre-line", margin: 0 }}>
+                      {selectedEmployerDetails.company_description || "No company description provided."}
+                    </p>
+                  </div>
 
-              <section className="employer-modal-section">
-                <div className="employer-section-heading-row">
-                  <h4 className="employer-section-heading">
-                    Open Positions ({selectedEmployerModal.jobs?.length || 0})
-                  </h4>
-                  <span className="employer-openings-count-pill">
-                    {selectedEmployerModal.jobs?.length || 0} active opening{(selectedEmployerModal.jobs?.length || 0) !== 1 ? "s" : ""}
-                  </span>
+                  {/* Section: Contact & Company Information Cards */}
+                  <div style={{ marginBottom: "24px" }}>
+                    <h3 style={{ fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b", fontWeight: 700, marginBottom: "12px" }}>
+                      Contact Information
+                    </h3>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
+                      <div className="company-info-card" style={{ padding: "12px 14px", borderRadius: "10px" }}>
+                        <small className="company-info-card-label" style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "4px" }}>BUSINESS EMAIL</small>
+                        <span className="company-info-card-val" style={{ fontSize: "0.88rem", fontWeight: 600, wordBreak: "break-all" }}>
+                          {selectedEmployerDetails.business_email || "Not provided"}
+                        </span>
+                      </div>
+
+                      <div className="company-info-card" style={{ padding: "12px 14px", borderRadius: "10px" }}>
+                        <small className="company-info-card-label" style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "4px" }}>CONTACT NUMBER</small>
+                        <span className="company-info-card-val" style={{ fontSize: "0.88rem", fontWeight: 600 }}>
+                          {selectedEmployerDetails.contact_number || "Not provided"}
+                        </span>
+                      </div>
+
+                      {selectedEmployerDetails.website && (
+                        <div className="company-info-card" style={{ padding: "12px 14px", borderRadius: "10px" }}>
+                          <small className="company-info-card-label" style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "4px" }}>WEBSITE</small>
+                          <a
+                            href={selectedEmployerDetails.website.startsWith("http") ? selectedEmployerDetails.website : `https://${selectedEmployerDetails.website}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: "#0284c7", fontSize: "0.88rem", fontWeight: 600, textDecoration: "underline", wordBreak: "break-all" }}
+                          >
+                            {selectedEmployerDetails.website}
+                          </a>
+                        </div>
+                      )}
+
+                      <div className="company-info-card" style={{ padding: "12px 14px", borderRadius: "10px" }}>
+                        <small className="company-info-card-label" style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "4px" }}>HEADQUARTERS</small>
+                        <span className="company-info-card-val" style={{ fontSize: "0.88rem", fontWeight: 600 }}>
+                          {selectedEmployerDetails.company_address || selectedEmployerDetails.city || selectedEmployerDetails.location || "Cavite"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                {(!selectedEmployerModal.jobs || selectedEmployerModal.jobs.length === 0) ? (
-                  <div className="employer-no-jobs-box">
-                    <p>There are no active job openings listed for this company right now.</p>
+                {/* Slide-in FAQ Drawer */}
+                <div className={`jd-faq-drawer ${isFaqDrawerOpen ? "open" : ""}`}>
+                  <div className="jd-faq-header">
+                    <h3>Company FAQ's</h3>
+                    <button type="button" className="jd-faq-back-btn" aria-label="Back to company details" onClick={() => setIsFaqDrawerOpen(false)}>
+                      ←
+                    </button>
                   </div>
-                ) : (
-                  <div className="employer-modal-jobs-list">
-                    {selectedEmployerModal.jobs.map((j) => (
-                      <div key={j.id} className="employer-modal-job-row">
-                        <div className="emp-job-left">
-                          <h5 className="emp-job-title">{j.title}</h5>
-                          <div className="emp-job-submeta">
-                            <span className="setup-pill">{j.work_arrangement || "Full-time"}</span>
-                            <span className="salary-pill">{formatSalary(j.salary_min, j.salary_max)}</span>
-                            <span className="location-meta"><MiniIcon name="location" /><span>{j.location || selectedEmployerModal.location}</span></span>
-                            {j.close_date && <span className="close-date-meta">Closes: {j.close_date}</span>}
+                  <div className="jd-faq-body">
+                    {faqLoading ? (
+                      <p className="jd-faq-loading">Loading FAQ's...</p>
+                    ) : companyFaqs.length === 0 ? (
+                      <p className="jd-faq-empty">No FAQ's created by this company yet.</p>
+                    ) : (
+                      companyFaqs.map((faq) => {
+                        const isExpanded = expandedFaqIds.includes(faq.id);
+                        return (
+                          <div key={faq.id} className={`jd-faq-item ${isExpanded ? "expanded" : ""}`}>
+                            <button
+                              type="button"
+                              className="jd-faq-question-btn"
+                              onClick={() => {
+                                setExpandedFaqIds((prev) =>
+                                  prev.includes(faq.id) ? prev.filter((id) => id !== faq.id) : [...prev, faq.id]
+                                );
+                              }}
+                            >
+                              <div className="jd-faq-q-left">
+                                {faq.question_type && <span className="jd-faq-type-badge">{faq.question_type}</span>}
+                                <span className="jd-faq-question-text">{faq.question}</span>
+                              </div>
+                              <span className="jd-faq-toggle-icon">{isExpanded ? "−" : "+"}</span>
+                            </button>
+                            {isExpanded && (
+                              <div className="jd-faq-answer">
+                                <p>{faq.answer}</p>
+                              </div>
+                            )}
                           </div>
-                          {j.required_skills && (
-                            <div className="emp-job-skills">
-                              {parseCompetencyDisplayTags(j.required_skills).slice(0, 4).map((s) => (
-                                <span key={s} className="js-tag-chip js-tag-skill">{s}</span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <div className="emp-job-actions">
-                          <button
-                            type="button"
-                            className="details-btn"
-                            onClick={() => handleOpenJobDetailsById(j.id)}
-                          >
-                            View Details
-                          </button>
-                          <button
-                            type="button"
-                            className={`solid-btn apply-right-btn ${appliedJobIds.includes(j.id) ? "applied-btn" : ""}`}
-                            onClick={() => setApplyJobTarget({ jobId: j.id, title: j.title })}
-                            disabled={appliedJobIds.includes(j.id) || applyingJobId === j.id}
-                          >
-                            {appliedJobIds.includes(j.id) ? "Applied" : applyingJobId === j.id ? "Applying..." : "Apply"}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                        );
+                      })
+                    )}
                   </div>
-                )}
-              </section>
-            </div>
+                </div>
+              </div>
 
-            <div className="jd-footer">
-              <button
-                type="button"
-                className="jd-cancel-btn"
-                onClick={() => setSelectedEmployerModal(null)}
-              >
-                Close
-              </button>
+              {/* Modal Footer */}
+              <div className="jd-footer" style={{ padding: "16px 24px", borderTop: "1px solid #2e3244", display: "flex", justifyContent: "flex-end" }}>
+                <button
+                  type="button"
+                  className="cand-details-cancel-btn"
+                  onClick={() => {
+                    setSelectedEmployerDetails(null);
+                    setIsFaqDrawerOpen(false);
+                  }}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
