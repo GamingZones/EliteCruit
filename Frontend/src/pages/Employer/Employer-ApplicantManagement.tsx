@@ -2068,14 +2068,8 @@ export default function EmployerApplicantManagement() {
 
         {activeScreeningSection === "applicant-screening" && (
           <>
-            <section className="applicant-mgmt-stats">
-          <article className="card"><small>Candidates</small><strong>{stats.total}</strong><p>Total applied</p></article>
-          <article className="card"><small>Shortlisted</small><strong>{stats.shortlisted}</strong><p>Ready for next step</p></article>
-          <article className="card"><small>Pending</small><strong>{stats.pending}</strong><p>Needs review</p></article>
-        </section>
-
         {/* SEARCH BAR CARD - MATCHES APPLICANT FINDER */}
-        <section className="applicant-mgmt-filters search-bar-card card" style={{ width: "auto", margin: "14px 14px 0", padding: "12px 16px", boxSizing: "border-box", overflow: "hidden" }}>
+        <section className="applicant-mgmt-filters search-bar-card card" style={{ width: "auto", margin: "0 14px 0", padding: "12px 16px", boxSizing: "border-box", overflow: "hidden" }}>
           <div className="search-input-row" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px", width: "100%", boxSizing: "border-box" }}>
             <input
               type="text"
