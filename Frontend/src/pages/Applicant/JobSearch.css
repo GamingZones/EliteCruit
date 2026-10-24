@@ -1416,11 +1416,11 @@
 
 .jd-modal-container {
   display: flex;
-  align-items: stretch;
+  align-items: flex-start;
   justify-content: center;
   gap: 16px;
   width: 100%;
-  max-width: min(840px, calc(100vw - 40px));
+  max-width: min(720px, calc(100vw - 40px));
   max-height: calc(90vh - 20px);
   transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
@@ -1477,7 +1477,7 @@
 }
 
 .jd-modal-container.with-side-panel {
-  max-width: min(1280px, calc(100vw - 40px));
+  max-width: min(1200px, calc(100vw - 40px));
 }
 
 .jd-panel-outer-wrap {
@@ -1485,23 +1485,24 @@
   overflow: visible !important;
   display: flex !important;
   flex-direction: column !important;
-  width: min(840px, calc(100vw - 48px)) !important;
-  max-width: min(840px, calc(100vw - 48px)) !important;
+  width: min(680px, calc(100vw - 48px)) !important;
+  max-width: min(680px, calc(100vw - 48px)) !important;
   min-width: min(520px, calc(100vw - 48px)) !important;
   flex-shrink: 0 !important;
   flex-grow: 0 !important;
   margin-top: 0 !important;
-  align-self: center !important;
+  align-self: flex-start !important;
   box-sizing: border-box !important;
   transition: width 0.28s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .jd-modal-container.with-side-panel .jd-panel-outer-wrap {
-  width: min(680px, 54vw) !important;
-  max-width: min(680px, 54vw) !important;
+  width: min(680px, calc(100vw - 48px)) !important;
+  max-width: min(680px, calc(100vw - 48px)) !important;
   min-width: min(520px, calc(100vw - 48px)) !important;
   flex-shrink: 0 !important;
   flex-grow: 0 !important;
+  align-self: flex-start !important;
 }
 
 .jd-modal-container.with-side-panel .jd-panel {
@@ -1519,11 +1520,13 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  max-height: calc(90vh - 44px);
+  max-height: calc(88vh - 46px);
   animation: jdSlideLeftToRight 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   flex-shrink: 0;
   box-sizing: border-box;
   transform-origin: left center;
+  margin-top: 0 !important;
+  align-self: flex-start !important;
 }
 
 .jd-side-comparison-panel.opening {

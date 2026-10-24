@@ -6398,21 +6398,24 @@
 
 .jd-modal-container.with-side-panel,
 [data-theme="dark"] .jd-modal-container.with-side-panel {
-  max-width: min(1280px, calc(100vw - 32px)) !important;
+  max-width: min(1200px, calc(100vw - 32px)) !important;
 }
 
 .jd-modal-container.with-side-panel .jd-panel-outer-wrap,
 [data-theme="dark"] .jd-modal-container.with-side-panel .jd-panel-outer-wrap {
-  width: min(680px, 54vw) !important;
-  max-width: min(680px, 54vw) !important;
+  width: min(680px, calc(100vw - 48px)) !important;
+  max-width: min(680px, calc(100vw - 48px)) !important;
   min-width: min(520px, calc(100vw - 48px)) !important;
   flex-shrink: 0 !important;
   flex-grow: 0 !important;
+  align-self: flex-start !important;
 }
 
 .jd-side-comparison-panel,
 [data-theme="dark"] .jd-side-comparison-panel {
   transform-origin: left center !important;
+  margin-top: 0 !important;
+  align-self: flex-start !important;
 }
 
 /* 4. Direct Recruitment Modal - Tight Height with No Extra Space (Pic 3) */

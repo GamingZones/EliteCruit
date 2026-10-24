@@ -2744,7 +2744,7 @@ export default function JobSearch() {
             };
 
             return (
-              <aside className={`jd-side-comparison-panel ${isMatchDrawerClosing ? "closing" : "opening"}`} style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}>
+              <aside className={`jd-side-comparison-panel ${isMatchDrawerClosing ? "closing" : "opening"}`} style={{ fontFamily: '"Manrope", sans-serif' }}>
                   <div className="jd-side-panel-header">
                     <div className="jd-side-title-row">
                       <h3>Competencies & Requirements</h3>
@@ -3076,7 +3076,7 @@ export default function JobSearch() {
             {(isJobMsgOpen || isJobMsgClosing) && !isMatchDrawerOpen && detailsJob && (
               <aside
                 className={`jd-side-comparison-panel cand-message-side-panel ${isJobMsgClosing ? "closing" : "opening"}`}
-                style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}
+                style={{ fontFamily: '"Manrope", sans-serif' }}
               >
                 <div className="jd-side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
                   <div className="jd-side-title-row" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -3553,7 +3553,7 @@ export default function JobSearch() {
           {(isEmployerJobsOpen || isEmployerJobsClosing) && !isEmployerMsgOpen && selectedEmployerDetails && (
             <aside
               className={`jd-side-comparison-panel ${isEmployerJobsClosing ? "closing" : "opening"}`}
-              style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}
+              style={{ fontFamily: '"Manrope", sans-serif' }}
             >
               <div className="jd-side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
                 <div className="jd-side-title-row">
@@ -3685,7 +3685,7 @@ export default function JobSearch() {
           {(isEmployerMsgOpen || isEmployerMsgClosing) && !isEmployerJobsOpen && selectedEmployerDetails && (
             <aside
               className={`jd-side-comparison-panel cand-message-side-panel ${isEmployerMsgClosing ? "closing" : "opening"}`}
-              style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}
+              style={{ fontFamily: '"Manrope", sans-serif' }}
             >
               <div className="jd-side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
                 <div className="jd-side-title-row" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
