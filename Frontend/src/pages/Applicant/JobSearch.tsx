@@ -688,7 +688,9 @@ export default function JobSearch() {
   const [selectedEmployerDetails, setSelectedEmployerDetails] = useState<EmployerItem | null>(null);
   const [returnToEmployerDetails, setReturnToEmployerDetails] = useState<EmployerItem | null>(null);
 
-  // Employer Message Panel state in Company Details Modal
+  // Employer Side Panels state in Company Details Modal (Jobs & Messages)
+  const [isEmployerJobsOpen, setIsEmployerJobsOpen] = useState(false);
+  const [isEmployerJobsClosing, setIsEmployerJobsClosing] = useState(false);
   const [isEmployerMsgOpen, setIsEmployerMsgOpen] = useState(false);
   const [isEmployerMsgClosing, setIsEmployerMsgClosing] = useState(false);
   const [employerMsgThread, setEmployerMsgThread] = useState<any | null>(null);
@@ -1462,7 +1464,7 @@ export default function JobSearch() {
     }
   };
 
-  const handleOpenEmployerDetails = (employer: EmployerItem) => {
+  const handleOpenEmployerDetails = (employer: EmployerItem, openJobs = false) => {
     setSelectedEmployerDetails(employer);
     setIsFaqDrawerOpen(false);
     setIsEmployerMsgOpen(false);
@@ -1470,6 +1472,13 @@ export default function JobSearch() {
     setEmployerMsgThread(null);
     setEmployerMessages([]);
     setEmployerMsgInput("");
+    if (openJobs) {
+      setIsEmployerJobsOpen(true);
+      setIsEmployerJobsClosing(false);
+    } else {
+      setIsEmployerJobsOpen(false);
+      setIsEmployerJobsClosing(false);
+    }
   };
 
   const handleOpenJobFromEmployerModal = (jobId: number) => {
@@ -1478,6 +1487,8 @@ export default function JobSearch() {
     setIsFaqDrawerOpen(false);
     setIsEmployerMsgOpen(false);
     setIsEmployerMsgClosing(false);
+    setIsEmployerJobsOpen(false);
+    setIsEmployerJobsClosing(false);
     handleOpenJobDetailsById(jobId);
   };
 
@@ -1542,6 +1553,25 @@ export default function JobSearch() {
     }
   };
 
+  const handleCloseEmployerJobs = () => {
+    setIsEmployerJobsClosing(true);
+    setTimeout(() => {
+      setIsEmployerJobsOpen(false);
+      setIsEmployerJobsClosing(false);
+    }, 220);
+  };
+
+  const handleToggleEmployerJobs = () => {
+    if (isEmployerJobsOpen) {
+      handleCloseEmployerJobs();
+    } else {
+      setIsFaqDrawerOpen(false);
+      if (isEmployerMsgOpen) handleCloseEmployerMsg();
+      setIsEmployerJobsOpen(true);
+      setIsEmployerJobsClosing(false);
+    }
+  };
+
   const handleCloseEmployerMsg = () => {
     setIsEmployerMsgClosing(true);
     setTimeout(() => {
@@ -1555,6 +1585,7 @@ export default function JobSearch() {
       handleCloseEmployerMsg();
     } else {
       setIsFaqDrawerOpen(false);
+      if (isEmployerJobsOpen) handleCloseEmployerJobs();
       setIsEmployerMsgOpen(true);
       setIsEmployerMsgClosing(false);
       if (selectedEmployerDetails?.employer_user_id) {
@@ -3013,15 +3044,33 @@ export default function JobSearch() {
               setIsFaqDrawerOpen(false);
               setIsEmployerMsgOpen(false);
               setIsEmployerMsgClosing(false);
+              setIsEmployerJobsOpen(false);
+              setIsEmployerJobsClosing(false);
             }
           }}
         >
           <div
-            className={`jd-modal-container ${isEmployerMsgOpen || isEmployerMsgClosing ? "with-side-panel" : ""}`}
-            style={{ maxWidth: isEmployerMsgOpen || isEmployerMsgClosing ? "1150px" : "700px" }}
+            className={`jd-modal-container ${
+              isEmployerMsgOpen || isEmployerMsgClosing || isEmployerJobsOpen || isEmployerJobsClosing
+                ? "with-side-panel"
+                : ""
+            }`}
+            style={{
+              maxWidth:
+                isEmployerMsgOpen || isEmployerMsgClosing || isEmployerJobsOpen || isEmployerJobsClosing
+                  ? "1150px"
+                  : "700px",
+            }}
           >
             <div className="jd-panel-outer-wrap">
               <div className="jd-floating-tabs-container">
+                <button
+                  type="button"
+                  className={`jd-floating-breakdown-tab ${isEmployerJobsOpen && !isEmployerJobsClosing ? "active" : ""}`}
+                  onClick={handleToggleEmployerJobs}
+                >
+                  <span>{isEmployerJobsOpen && !isEmployerJobsClosing ? "Hide Job List" : "Job List"}</span>
+                </button>
                 <button
                   type="button"
                   className={`jd-floating-breakdown-tab ${isEmployerMsgOpen && !isEmployerMsgClosing ? "active" : ""}`}
@@ -3106,6 +3155,13 @@ export default function JobSearch() {
                   </div>
                   <button
                     type="button"
+                    className={`jd-faq-btn ${isEmployerJobsOpen && !isEmployerJobsClosing ? "active" : ""}`}
+                    onClick={handleToggleEmployerJobs}
+                  >
+                    Job List
+                  </button>
+                  <button
+                    type="button"
                     className={`jd-faq-btn ${isEmployerMsgOpen && !isEmployerMsgClosing ? "active" : ""}`}
                     onClick={handleToggleEmployerMsg}
                   >
@@ -3119,6 +3175,7 @@ export default function JobSearch() {
                         setIsFaqDrawerOpen(false);
                       } else {
                         if (isEmployerMsgOpen) handleCloseEmployerMsg();
+                        if (isEmployerJobsOpen) handleCloseEmployerJobs();
                         handleOpenEmployerFaqs(selectedEmployerDetails.employer_user_id);
                       }
                     }}
@@ -3131,142 +3188,66 @@ export default function JobSearch() {
               {/* Scrollable body & drawer container */}
               <div className="jd-body-wrapper" style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
                 <div className="jd-body" style={{ maxHeight: "calc(88vh - 280px)", overflowY: "auto", padding: "20px 24px" }}>
-                  {/* Section: Active Job Openings */}
-                  <div className="company-modal-jobs-section">
-                    <div className="company-modal-jobs-header">
-                      <h3 className="company-modal-jobs-title">
-                        Job Openings ({selectedEmployerDetails.jobs?.length || 0})
-                      </h3>
-                      {selectedEmployerDetails.jobs && selectedEmployerDetails.jobs.length > 0 && (
-                        <span className="status-chip open" style={{ fontSize: "0.75rem", padding: "2px 8px" }}>
-                          {selectedEmployerDetails.jobs.length} Active
+                  {/* Section: Active Job Openings Summary Bar */}
+                  <div
+                    className="company-modal-jobs-summary-bar"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "14px 18px",
+                      borderRadius: "12px",
+                      background: "rgba(2, 132, 199, 0.08)",
+                      border: "1px solid rgba(2, 132, 199, 0.2)",
+                      marginBottom: "24px",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <div
+                        style={{
+                          width: "38px",
+                          height: "38px",
+                          borderRadius: "10px",
+                          background: "#0284c7",
+                          color: "#ffffff",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 800 }}>
+                          {selectedEmployerDetails.jobs?.length || selectedEmployerDetails.active_jobs_count || 0} Open Position{(selectedEmployerDetails.jobs?.length || selectedEmployerDetails.active_jobs_count || 0) === 1 ? "" : "s"} Available
+                        </h4>
+                        <span style={{ fontSize: "0.78rem", color: "#64748b", fontWeight: 600 }}>
+                          Browse positions and submit your job application
                         </span>
-                      )}
+                      </div>
                     </div>
-
-                    {(!selectedEmployerDetails.jobs || selectedEmployerDetails.jobs.length === 0) ? (
-                      <div className="company-modal-jobs-empty">
-                        No active job openings posted by this employer at the moment.
-                      </div>
-                    ) : (
-                      <div className="company-modal-jobs-list" style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                        {selectedEmployerDetails.jobs.map((j) => {
-                          const foundJob = jobs.find((x) => x.id === j.id);
-                          const matchPct = foundJob
-                            ? calculateJobMatchDetails(foundJob, applicantMatchProfile).score
-                            : 85;
-                          const isApplied = appliedJobIds.includes(j.id);
-                          const isApplying = applyingJobId === j.id;
-
-                          return (
-                            <div
-                              key={j.id}
-                              className="jd-other-job-card"
-                              style={{
-                                background: "#ffffff",
-                                border: "1px solid #e2e8f0",
-                                borderRadius: "12px",
-                                padding: "16px",
-                                boxShadow: "0 4px 12px rgba(10, 30, 60, 0.05)",
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                gap: "12px",
-                                fontFamily: '"Manrope", sans-serif',
-                              }}
-                            >
-                              <div style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1, minWidth: 0 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                  <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
-                                    {j.title}
-                                  </h4>
-                                  {j.urgent && <span className="urgent-pill" style={{ fontSize: "0.7rem", padding: "2px 6px" }}>URGENT</span>}
-                                </div>
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginTop: "2px", fontSize: "0.8rem", color: "#64748b", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
-                                  <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Manrope", sans-serif' }}>
-                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                      <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" />
-                                      <circle cx="12" cy="10" r="2.5" />
-                                    </svg>
-                                    {j.location || selectedEmployerDetails.location || "Cavite"}
-                                  </span>
-                                  <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Manrope", sans-serif' }}>
-                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                      <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-                                      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-                                    </svg>
-                                    {j.work_arrangement || "On-Site"}
-                                  </span>
-                                  {j.salary_min ? (
-                                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Manrope", sans-serif' }}>
-                                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                        <line x1="12" y1="1" x2="12" y2="23" />
-                                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                                      </svg>
-                                      {formatSalary(j.salary_min, j.salary_max)}
-                                    </span>
-                                  ) : null}
-                                </div>
-                              </div>
-
-                              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px", flexShrink: 0 }}>
-                                <span
-                                  style={{
-                                    fontWeight: 800,
-                                    fontSize: "0.85rem",
-                                    color: "#01294a",
-                                    whiteSpace: "nowrap",
-                                    fontFamily: '"Manrope", sans-serif',
-                                  }}
-                                >
-                                  {matchPct}% Match
-                                </span>
-                                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                                  <button
-                                    type="button"
-                                    className="details-btn jd-other-job-details-btn"
-                                    style={{
-                                      background: "#01294a",
-                                      color: "#ffffff",
-                                      fontWeight: 800,
-                                      fontSize: "0.82rem",
-                                      padding: "4px 16px",
-                                      borderRadius: "999px",
-                                      border: "1px solid #01294a",
-                                      whiteSpace: "nowrap",
-                                      cursor: "pointer",
-                                      boxShadow: "0 2px 6px rgba(1, 41, 74, 0.2)",
-                                      transition: "all 0.15s ease",
-                                      minWidth: "70px",
-                                      textAlign: "center",
-                                      fontFamily: '"Manrope", sans-serif',
-                                    }}
-                                    onClick={() => handleOpenJobFromEmployerModal(j.id)}
-                                  >
-                                    Details
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className={`solid-btn ${isApplied ? "applied-btn" : ""}`}
-                                    style={{
-                                      padding: "4px 16px",
-                                      fontSize: "0.82rem",
-                                      fontWeight: 800,
-                                      borderRadius: "999px",
-                                      whiteSpace: "nowrap",
-                                    }}
-                                    onClick={() => setApplyJobTarget({ jobId: j.id, title: j.title })}
-                                    disabled={isApplied || isApplying}
-                                  >
-                                    {isApplied ? "Applied" : isApplying ? "Applying..." : "Apply"}
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                    <button
+                      type="button"
+                      className="solid-btn"
+                      style={{
+                        padding: "6px 18px",
+                        fontSize: "0.82rem",
+                        fontWeight: 800,
+                        borderRadius: "999px",
+                        whiteSpace: "nowrap",
+                        cursor: "pointer",
+                        background: "#0284c7",
+                        color: "#ffffff",
+                        border: "none",
+                      }}
+                      onClick={handleToggleEmployerJobs}
+                    >
+                      {isEmployerJobsOpen && !isEmployerJobsClosing ? "Hide Job List" : "View Job List →"}
+                    </button>
                   </div>
 
                   {/* Section: Company Overview */}
@@ -3380,6 +3361,8 @@ export default function JobSearch() {
                     setIsFaqDrawerOpen(false);
                     setIsEmployerMsgOpen(false);
                     setIsEmployerMsgClosing(false);
+                    setIsEmployerJobsOpen(false);
+                    setIsEmployerJobsClosing(false);
                   }}
                 >
                   Close
@@ -3387,6 +3370,170 @@ export default function JobSearch() {
               </div>
             </div>
           </div>
+
+          {/* ── Employer Side-Docked Jobs Panel ── */}
+          {(isEmployerJobsOpen || isEmployerJobsClosing) && selectedEmployerDetails && (
+            <aside
+              className={`jd-side-comparison-panel ${isEmployerJobsClosing ? "closing" : "opening"}`}
+              style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}
+            >
+              <div className="jd-side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
+                <div className="jd-side-title-row">
+                  <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
+                    Available Job Openings
+                  </h3>
+                  <span className="jd-side-subtitle" style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                    {selectedEmployerDetails.company_name} • {selectedEmployerDetails.jobs?.length || 0} Openings
+                  </span>
+                </div>
+                <div className="jd-side-header-actions">
+                  <button
+                    type="button"
+                    className="jd-side-close-btn"
+                    aria-label="Close jobs panel"
+                    onClick={handleCloseEmployerJobs}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              <div
+                className="jd-side-panel-body"
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "14px",
+                  padding: "18px",
+                  fontFamily: '"Manrope", sans-serif',
+                  overflowY: "auto",
+                  flex: 1,
+                }}
+              >
+                {(!selectedEmployerDetails.jobs || selectedEmployerDetails.jobs.length === 0) ? (
+                  <div style={{ textAlign: "center", color: "#64748b", padding: "30px 10px", fontSize: "0.9rem", fontFamily: '"Manrope", sans-serif' }}>
+                    No active job openings posted by this employer at the moment.
+                  </div>
+                ) : (
+                  selectedEmployerDetails.jobs.map((j) => {
+                    const foundJob = jobs.find((x) => x.id === j.id);
+                    const matchPct = foundJob
+                      ? calculateJobMatchDetails(foundJob, applicantMatchProfile).score
+                      : 85;
+                    const isApplied = appliedJobIds.includes(j.id);
+                    const isApplying = applyingJobId === j.id;
+
+                    return (
+                      <div
+                        key={j.id}
+                        className="jd-other-job-card"
+                        style={{
+                          background: "#ffffff",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: "12px",
+                          padding: "16px",
+                          boxShadow: "0 4px 12px rgba(10, 30, 60, 0.05)",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          gap: "12px",
+                          fontFamily: '"Manrope", sans-serif',
+                        }}
+                      >
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
+                              {j.title}
+                            </h4>
+                            {j.urgent && <span className="urgent-pill" style={{ fontSize: "0.7rem", padding: "2px 6px" }}>URGENT</span>}
+                          </div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginTop: "2px", fontSize: "0.8rem", color: "#64748b", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Manrope", sans-serif' }}>
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" />
+                                <circle cx="12" cy="10" r="2.5" />
+                              </svg>
+                              {j.location || selectedEmployerDetails.location || "Cavite"}
+                            </span>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Manrope", sans-serif' }}>
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                              </svg>
+                              {j.work_arrangement || "On-Site"}
+                            </span>
+                            {j.salary_min ? (
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Manrope", sans-serif' }}>
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <line x1="12" y1="1" x2="12" y2="23" />
+                                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                </svg>
+                                {formatSalary(j.salary_min, j.salary_max)}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px", flexShrink: 0 }}>
+                          <span
+                            style={{
+                              fontWeight: 800,
+                              fontSize: "0.85rem",
+                              color: "#01294a",
+                              whiteSpace: "nowrap",
+                              fontFamily: '"Manrope", sans-serif',
+                            }}
+                          >
+                            {matchPct}% Match
+                          </span>
+                          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                            <button
+                              type="button"
+                              className="details-btn jd-other-job-details-btn"
+                              style={{
+                                background: "#01294a",
+                                color: "#ffffff",
+                                fontWeight: 800,
+                                fontSize: "0.82rem",
+                                padding: "4px 16px",
+                                borderRadius: "999px",
+                                border: "1px solid #01294a",
+                                whiteSpace: "nowrap",
+                                cursor: "pointer",
+                                boxShadow: "0 2px 6px rgba(1, 41, 74, 0.2)",
+                                transition: "all 0.15s ease",
+                                minWidth: "70px",
+                                textAlign: "center",
+                                fontFamily: '"Manrope", sans-serif',
+                              }}
+                              onClick={() => handleOpenJobFromEmployerModal(j.id)}
+                            >
+                              Details
+                            </button>
+                            <button
+                              type="button"
+                              className={`solid-btn ${isApplied ? "applied-btn" : ""}`}
+                              style={{
+                                padding: "4px 16px",
+                                fontSize: "0.82rem",
+                                fontWeight: 800,
+                                borderRadius: "999px",
+                                whiteSpace: "nowrap",
+                              }}
+                              onClick={() => setApplyJobTarget({ jobId: j.id, title: j.title })}
+                              disabled={isApplied || isApplying}
+                            >
+                              {isApplied ? "Applied" : isApplying ? "Applying..." : "Apply"}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </aside>
+          )}
 
           {/* ── Employer Side-Docked Message Panel ── */}
           {(isEmployerMsgOpen || isEmployerMsgClosing) && selectedEmployerDetails && (
