@@ -36,8 +36,16 @@ import {
 } from "../../utils/filters";
 import "./Applicant-Dashboard.css";
 import "./JobSearch.css";
+import "../Employer/Employer-ApplicantManagement.css";
 import { useUnreadNotificationsCount } from "../../hooks/useUnreadNotificationsCount";
 import { useUnreadMessagesCount } from "../../hooks/useUnreadMessagesCount";
+
+function initialsFrom(name?: string | null): string {
+  if (!name || !name.trim()) return "E";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 
 type JobCard = {
   id: number;
@@ -679,6 +687,16 @@ export default function JobSearch() {
   const [employerCurrentPage, setEmployerCurrentPage] = useState(1);
   const [selectedEmployerDetails, setSelectedEmployerDetails] = useState<EmployerItem | null>(null);
   const [returnToEmployerDetails, setReturnToEmployerDetails] = useState<EmployerItem | null>(null);
+
+  // Employer Message Panel state in Company Details Modal
+  const [isEmployerMsgOpen, setIsEmployerMsgOpen] = useState(false);
+  const [isEmployerMsgClosing, setIsEmployerMsgClosing] = useState(false);
+  const [employerMsgThread, setEmployerMsgThread] = useState<any | null>(null);
+  const [employerMessages, setEmployerMessages] = useState<any[]>([]);
+  const [employerMsgInput, setEmployerMsgInput] = useState("");
+  const [isEmployerMsgLoading, setIsEmployerMsgLoading] = useState(false);
+  const [isEmployerMsgSending, setIsEmployerMsgSending] = useState(false);
+  const employerMsgEndRef = useRef<HTMLDivElement>(null);
 
   const availableEmployerCities = useMemo(() => {
     if (employerSelectedProvince !== "All provinces") {
@@ -1447,12 +1465,19 @@ export default function JobSearch() {
   const handleOpenEmployerDetails = (employer: EmployerItem) => {
     setSelectedEmployerDetails(employer);
     setIsFaqDrawerOpen(false);
+    setIsEmployerMsgOpen(false);
+    setIsEmployerMsgClosing(false);
+    setEmployerMsgThread(null);
+    setEmployerMessages([]);
+    setEmployerMsgInput("");
   };
 
   const handleOpenJobFromEmployerModal = (jobId: number) => {
     setReturnToEmployerDetails(selectedEmployerDetails);
     setSelectedEmployerDetails(null);
     setIsFaqDrawerOpen(false);
+    setIsEmployerMsgOpen(false);
+    setIsEmployerMsgClosing(false);
     handleOpenJobDetailsById(jobId);
   };
 
@@ -1466,6 +1491,164 @@ export default function JobSearch() {
       setReturnToEmployerDetails(null);
     }
   };
+
+  const fetchEmployerThreadMessages = async (employerUserId: number) => {
+    setIsEmployerMsgLoading(true);
+    try {
+      const rawUser = localStorage.getItem("elitecruit-user");
+      if (!rawUser) {
+        setIsEmployerMsgLoading(false);
+        return;
+      }
+      const currentUid = JSON.parse(rawUser)?.id;
+      if (!currentUid) {
+        setIsEmployerMsgLoading(false);
+        return;
+      }
+
+      const threadsRes = await fetch(`/api/users/${currentUid}/messages`);
+      if (!threadsRes.ok) {
+        setIsEmployerMsgLoading(false);
+        return;
+      }
+
+      const threadsData = await threadsRes.json();
+      const allThreads = threadsData?.threads || [];
+      const existing = allThreads.find((t: any) => Number(t.other_user_id) === Number(employerUserId));
+
+      if (existing) {
+        setEmployerMsgThread(existing);
+        const msgRes = await fetch(`/api/messages/threads/${existing.id}`);
+        if (msgRes.ok) {
+          const msgData = await msgRes.json();
+          setEmployerMessages(msgData?.messages || []);
+        }
+        try {
+          await fetch(`/api/messages/threads/${existing.id}/read`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: currentUid }),
+          });
+          window.dispatchEvent(new Event("elitecruit_messages_update"));
+        } catch {}
+      } else {
+        setEmployerMsgThread(null);
+        setEmployerMessages([]);
+      }
+    } catch (err) {
+      console.error("Error loading employer messages:", err);
+    } finally {
+      setIsEmployerMsgLoading(false);
+    }
+  };
+
+  const handleCloseEmployerMsg = () => {
+    setIsEmployerMsgClosing(true);
+    setTimeout(() => {
+      setIsEmployerMsgOpen(false);
+      setIsEmployerMsgClosing(false);
+    }, 220);
+  };
+
+  const handleToggleEmployerMsg = () => {
+    if (isEmployerMsgOpen) {
+      handleCloseEmployerMsg();
+    } else {
+      setIsFaqDrawerOpen(false);
+      setIsEmployerMsgOpen(true);
+      setIsEmployerMsgClosing(false);
+      if (selectedEmployerDetails?.employer_user_id) {
+        fetchEmployerThreadMessages(selectedEmployerDetails.employer_user_id);
+      }
+    }
+  };
+
+  const handleSendEmployerMessage = async () => {
+    const text = employerMsgInput.trim();
+    if (!text || isEmployerMsgSending || !selectedEmployerDetails?.employer_user_id) return;
+
+    const rawUser = localStorage.getItem("elitecruit-user");
+    if (!rawUser) return;
+    const currentUid = JSON.parse(rawUser)?.id;
+    if (!currentUid) return;
+
+    setIsEmployerMsgSending(true);
+    try {
+      if (employerMsgThread?.id) {
+        const res = await fetch(`/api/messages/threads/${employerMsgThread.id}/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sender_user_id: currentUid,
+            message_text: text,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setEmployerMessages((prev) => [...prev, data.message]);
+          setEmployerMsgInput("");
+          window.dispatchEvent(new Event("elitecruit_messages_update"));
+        }
+      } else {
+        const res = await fetch("/api/messages/threads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            created_by_user_id: currentUid,
+            participant_user_ids: [selectedEmployerDetails.employer_user_id],
+            title: `Employer: ${selectedEmployerDetails.company_name}`,
+            message_text: text,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setEmployerMsgThread(data.thread);
+          setEmployerMessages([data.message]);
+          setEmployerMsgInput("");
+          window.dispatchEvent(new Event("elitecruit_messages_update"));
+        }
+      }
+    } catch (err) {
+      console.error("Failed to send message to employer:", err);
+    } finally {
+      setIsEmployerMsgSending(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isEmployerMsgOpen && employerMsgEndRef.current) {
+      employerMsgEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [employerMessages, isEmployerMsgOpen]);
+
+  useEffect(() => {
+    if (!isEmployerMsgOpen || !selectedEmployerDetails?.employer_user_id || !employerMsgThread?.id) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/messages/threads/${employerMsgThread.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          const msgs = data?.messages || [];
+          if (msgs.length !== employerMessages.length) {
+            setEmployerMessages(msgs);
+            try {
+              const rawUser = localStorage.getItem("elitecruit-user");
+              const currentUid = rawUser ? JSON.parse(rawUser)?.id : null;
+              if (currentUid) {
+                await fetch(`/api/messages/threads/${employerMsgThread.id}/read`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ user_id: currentUid }),
+                });
+                window.dispatchEvent(new Event("elitecruit_messages_update"));
+              }
+            } catch {}
+          }
+        }
+      } catch {}
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [isEmployerMsgOpen, selectedEmployerDetails?.employer_user_id, employerMsgThread?.id, employerMessages.length]);
 
   const handleOpenEmployerFaqs = (employerUserId: number) => {
     setIsFaqDrawerOpen(true);
@@ -2828,11 +3011,26 @@ export default function JobSearch() {
               setSelectedEmployerDetails(null);
               setReturnToEmployerDetails(null);
               setIsFaqDrawerOpen(false);
+              setIsEmployerMsgOpen(false);
+              setIsEmployerMsgClosing(false);
             }
           }}
         >
-          <div className="jd-modal-container" style={{ maxWidth: "700px" }}>
-            <div className="jd-panel">
+          <div
+            className={`jd-modal-container ${isEmployerMsgOpen || isEmployerMsgClosing ? "with-side-panel" : ""}`}
+            style={{ maxWidth: isEmployerMsgOpen || isEmployerMsgClosing ? "1150px" : "700px" }}
+          >
+            <div className="jd-panel-outer-wrap">
+              <div className="jd-floating-tabs-container">
+                <button
+                  type="button"
+                  className={`jd-floating-breakdown-tab ${isEmployerMsgOpen && !isEmployerMsgClosing ? "active" : ""}`}
+                  onClick={handleToggleEmployerMsg}
+                >
+                  <span>{isEmployerMsgOpen && !isEmployerMsgClosing ? "Hide Message" : "Message"}</span>
+                </button>
+              </div>
+              <div className="jd-panel">
               {/* Cover banner */}
               <div className="jd-cover-banner">
                 {selectedEmployerDetails.company_cover_path ? (
@@ -2908,11 +3106,19 @@ export default function JobSearch() {
                   </div>
                   <button
                     type="button"
+                    className={`jd-faq-btn ${isEmployerMsgOpen && !isEmployerMsgClosing ? "active" : ""}`}
+                    onClick={handleToggleEmployerMsg}
+                  >
+                    Message
+                  </button>
+                  <button
+                    type="button"
                     className={`jd-faq-btn ${isFaqDrawerOpen ? "active" : ""}`}
                     onClick={() => {
                       if (isFaqDrawerOpen) {
                         setIsFaqDrawerOpen(false);
                       } else {
+                        if (isEmployerMsgOpen) handleCloseEmployerMsg();
                         handleOpenEmployerFaqs(selectedEmployerDetails.employer_user_id);
                       }
                     }}
@@ -2943,58 +3149,118 @@ export default function JobSearch() {
                         No active job openings posted by this employer at the moment.
                       </div>
                     ) : (
-                      <div className="company-modal-jobs-list">
+                      <div className="company-modal-jobs-list" style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
                         {selectedEmployerDetails.jobs.map((j) => {
-                          const skills = parseCompetencyDisplayTags(j.required_skills);
+                          const foundJob = jobs.find((x) => x.id === j.id);
+                          const matchPct = foundJob
+                            ? calculateJobMatchDetails(foundJob, applicantMatchProfile).score
+                            : 85;
                           const isApplied = appliedJobIds.includes(j.id);
                           const isApplying = applyingJobId === j.id;
 
                           return (
-                            <div key={j.id} className="company-modal-job-item">
-                              <div className="company-modal-job-info">
-                                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "4px" }}>
-                                  <span className="company-modal-job-title">{j.title}</span>
+                            <div
+                              key={j.id}
+                              className="jd-other-job-card"
+                              style={{
+                                background: "#ffffff",
+                                border: "1px solid #e2e8f0",
+                                borderRadius: "12px",
+                                padding: "16px",
+                                boxShadow: "0 4px 12px rgba(10, 30, 60, 0.05)",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                gap: "12px",
+                                fontFamily: '"Manrope", sans-serif',
+                              }}
+                            >
+                              <div style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1, minWidth: 0 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                  <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
+                                    {j.title}
+                                  </h4>
                                   {j.urgent && <span className="urgent-pill" style={{ fontSize: "0.7rem", padding: "2px 6px" }}>URGENT</span>}
                                 </div>
-                                <div className="company-modal-job-meta">
-                                  <span className="setup-pill">{j.work_arrangement || "On-Site"}</span>
-                                  <span className="salary-pill">{formatSalary(j.salary_min, j.salary_max)}</span>
-                                  <span className="company-modal-job-loc">📍 {j.location || selectedEmployerDetails.location || "Cavite"}</span>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginTop: "2px", fontSize: "0.8rem", color: "#64748b", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                                  <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Manrope", sans-serif' }}>
+                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" />
+                                      <circle cx="12" cy="10" r="2.5" />
+                                    </svg>
+                                    {j.location || selectedEmployerDetails.location || "Cavite"}
+                                  </span>
+                                  <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Manrope", sans-serif' }}>
+                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                      <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                                      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                                    </svg>
+                                    {j.work_arrangement || "On-Site"}
+                                  </span>
+                                  {j.salary_min ? (
+                                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Manrope", sans-serif' }}>
+                                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="12" y1="1" x2="12" y2="23" />
+                                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                      </svg>
+                                      {formatSalary(j.salary_min, j.salary_max)}
+                                    </span>
+                                  ) : null}
                                 </div>
-                                {skills.length > 0 && (
-                                  <div className="company-modal-job-skills">
-                                    {skills.slice(0, 3).map((s, idx) => (
-                                      <span key={idx} className="js-tag-skill" style={{ fontSize: "0.72rem", padding: "2px 7px", borderRadius: "999px" }}>
-                                        {s}
-                                      </span>
-                                    ))}
-                                    {skills.length > 3 && (
-                                      <span style={{ fontSize: "0.72rem", color: "#94a3b8", alignSelf: "center" }}>
-                                        +{skills.length - 3}
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
                               </div>
 
-                              <div className="company-modal-job-actions">
-                                <button
-                                  type="button"
-                                  className="details-btn"
-                                  style={{ padding: "6px 14px", fontSize: "0.82rem" }}
-                                  onClick={() => handleOpenJobFromEmployerModal(j.id)}
+                              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px", flexShrink: 0 }}>
+                                <span
+                                  style={{
+                                    fontWeight: 800,
+                                    fontSize: "0.85rem",
+                                    color: "#01294a",
+                                    whiteSpace: "nowrap",
+                                    fontFamily: '"Manrope", sans-serif',
+                                  }}
                                 >
-                                  Details
-                                </button>
-                                <button
-                                  type="button"
-                                  className={`solid-btn ${isApplied ? "applied-btn" : ""}`}
-                                  style={{ padding: "6px 14px", fontSize: "0.82rem" }}
-                                  onClick={() => setApplyJobTarget({ jobId: j.id, title: j.title })}
-                                  disabled={isApplied || isApplying}
-                                >
-                                  {isApplied ? "Applied" : isApplying ? "Applying..." : "Apply"}
-                                </button>
+                                  {matchPct}% Match
+                                </span>
+                                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                                  <button
+                                    type="button"
+                                    className="details-btn jd-other-job-details-btn"
+                                    style={{
+                                      background: "#01294a",
+                                      color: "#ffffff",
+                                      fontWeight: 800,
+                                      fontSize: "0.82rem",
+                                      padding: "4px 16px",
+                                      borderRadius: "999px",
+                                      border: "1px solid #01294a",
+                                      whiteSpace: "nowrap",
+                                      cursor: "pointer",
+                                      boxShadow: "0 2px 6px rgba(1, 41, 74, 0.2)",
+                                      transition: "all 0.15s ease",
+                                      minWidth: "70px",
+                                      textAlign: "center",
+                                      fontFamily: '"Manrope", sans-serif',
+                                    }}
+                                    onClick={() => handleOpenJobFromEmployerModal(j.id)}
+                                  >
+                                    Details
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className={`solid-btn ${isApplied ? "applied-btn" : ""}`}
+                                    style={{
+                                      padding: "4px 16px",
+                                      fontSize: "0.82rem",
+                                      fontWeight: 800,
+                                      borderRadius: "999px",
+                                      whiteSpace: "nowrap",
+                                    }}
+                                    onClick={() => setApplyJobTarget({ jobId: j.id, title: j.title })}
+                                    disabled={isApplied || isApplying}
+                                  >
+                                    {isApplied ? "Applied" : isApplying ? "Applying..." : "Apply"}
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           );
@@ -3112,6 +3378,8 @@ export default function JobSearch() {
                     setSelectedEmployerDetails(null);
                     setReturnToEmployerDetails(null);
                     setIsFaqDrawerOpen(false);
+                    setIsEmployerMsgOpen(false);
+                    setIsEmployerMsgClosing(false);
                   }}
                 >
                   Close
@@ -3119,8 +3387,239 @@ export default function JobSearch() {
               </div>
             </div>
           </div>
+
+          {/* ── Employer Side-Docked Message Panel ── */}
+          {(isEmployerMsgOpen || isEmployerMsgClosing) && selectedEmployerDetails && (
+            <aside
+              className={`jd-side-comparison-panel cand-message-side-panel ${isEmployerMsgClosing ? "closing" : "opening"}`}
+              style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}
+            >
+              <div className="jd-side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
+                <div className="jd-side-title-row" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <div
+                    className="cand-msg-header-avatar"
+                    style={{
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "50%",
+                      background: "#0284c7",
+                      color: "#ffffff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 800,
+                      fontSize: "0.88rem",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {initialsFrom(selectedEmployerDetails.company_name)}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
+                      {selectedEmployerDetails.company_name}
+                    </h3>
+                    <span className="jd-side-subtitle" style={{ fontSize: "0.78rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                      Message • {selectedEmployerDetails.industry || "Employer"}
+                    </span>
+                  </div>
+                </div>
+                <div className="jd-side-header-actions">
+                  <button
+                    type="button"
+                    className="jd-side-close-btn"
+                    aria-label="Close message panel"
+                    onClick={handleCloseEmployerMsg}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              <div
+                className="cand-msg-chat-body"
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  minHeight: 0,
+                  overflow: "hidden",
+                  background: "#f8fafc",
+                }}
+              >
+                {/* Chat Messages List */}
+                <div
+                  className="cand-msg-messages-scroll"
+                  style={{
+                    flex: 1,
+                    overflowY: "auto",
+                    padding: "16px 18px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "12px",
+                  }}
+                >
+                  {isEmployerMsgLoading ? (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#64748b", fontSize: "0.88rem", gap: "8px" }}>
+                      <span className="spinner-mini" style={{ width: "16px", height: "16px", border: "2px solid #cbd5e1", borderTopColor: "#0284c7", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
+                      <span>Loading messages...</span>
+                    </div>
+                  ) : employerMessages.length === 0 ? (
+                    <div
+                      style={{
+                        margin: "auto",
+                        textAlign: "center",
+                        padding: "24px 16px",
+                        maxWidth: "340px",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: "10px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "48px",
+                          height: "48px",
+                          borderRadius: "14px",
+                          background: "rgba(2, 132, 199, 0.12)",
+                          color: "#0284c7",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "1.4rem",
+                        }}
+                      >
+                        💬
+                      </div>
+                      <h4 className="cand-msg-empty-title" style={{ margin: 0, fontSize: "1rem", fontWeight: 800 }}>
+                        Start a conversation
+                      </h4>
+                      <p style={{ margin: 0, fontSize: "0.82rem", color: "#64748b", lineHeight: 1.5, textAlign: "center" }}>
+                        Send a direct message to {selectedEmployerDetails.company_name} to inquire about job openings or company culture.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {employerMessages.map((msg: any) => {
+                        const isMe = Number(msg.sender_user_id) === Number(applicantUserId);
+                        const timeStr = msg.created_at
+                          ? new Date(msg.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+                          : "";
+                        return (
+                          <div
+                            key={msg.id}
+                            className={`cand-msg-row ${isMe ? "outgoing" : "incoming"}`}
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: isMe ? "flex-end" : "flex-start",
+                              gap: "3px",
+                            }}
+                          >
+                            {!isMe && (
+                              <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 700, paddingLeft: "4px" }}>
+                                {selectedEmployerDetails.company_name}
+                              </span>
+                            )}
+                            <div
+                              className={`cand-msg-bubble ${isMe ? "outgoing" : "incoming"}`}
+                              style={{
+                                maxWidth: "82%",
+                                padding: "10px 14px",
+                                borderRadius: isMe ? "14px 14px 2px 14px" : "14px 14px 14px 2px",
+                                background: isMe ? "#0284c7" : "#ffffff",
+                                color: isMe ? "#ffffff" : "#1e293b",
+                                border: isMe ? "none" : "1px solid #e2e8f0",
+                                boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
+                                fontSize: "0.86rem",
+                                lineHeight: 1.5,
+                                whiteSpace: "pre-wrap",
+                                wordBreak: "break-word",
+                              }}
+                            >
+                              {msg.message_text}
+                            </div>
+                            <span style={{ fontSize: "0.68rem", color: "#94a3b8", padding: "0 4px" }}>
+                              {timeStr}
+                            </span>
+                          </div>
+                        );
+                      })}
+                      <div ref={employerMsgEndRef} />
+                    </>
+                  )}
+                </div>
+
+                {/* Compose Bar */}
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSendEmployerMessage();
+                  }}
+                  className="cand-msg-compose-bar"
+                  style={{
+                    padding: "12px 16px",
+                    borderTop: "1px solid #e2e8f0",
+                    background: "#ffffff",
+                    display: "flex",
+                    gap: "10px",
+                    alignItems: "center",
+                  }}
+                >
+                  <input
+                    type="text"
+                    className="cand-msg-input"
+                    placeholder={`Message ${selectedEmployerDetails.company_name}...`}
+                    value={employerMsgInput}
+                    onChange={(e) => setEmployerMsgInput(e.target.value)}
+                    disabled={isEmployerMsgSending}
+                    style={{
+                      flex: 1,
+                      padding: "10px 14px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: "0.85rem",
+                      fontFamily: "inherit",
+                      outline: "none",
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    className="cand-msg-send-btn"
+                    disabled={!employerMsgInput.trim() || isEmployerMsgSending}
+                    style={{
+                      padding: "10px 18px",
+                      borderRadius: "8px",
+                      border: "none",
+                      background: "#0284c7",
+                      color: "#ffffff",
+                      fontWeight: 700,
+                      fontSize: "0.85rem",
+                      cursor: !employerMsgInput.trim() || isEmployerMsgSending ? "not-allowed" : "pointer",
+                      opacity: !employerMsgInput.trim() || isEmployerMsgSending ? 0.6 : 1,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    {isEmployerMsgSending ? "..." : (
+                      <>
+                        <span>Send</span>
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="22" y1="2" x2="11" y2="13" />
+                          <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                        </svg>
+                      </>
+                    )}
+                  </button>
+                </form>
+              </div>
+            </aside>
+          )}
         </div>
-      )}
+      </div>
+    )}
 
       {/* DOUBLE VERIFICATION: LOGOUT CONFIRMATION MODAL */}
       <ConfirmationModal
