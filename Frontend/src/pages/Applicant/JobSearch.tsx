@@ -3155,20 +3155,6 @@ export default function JobSearch() {
                   </div>
                   <button
                     type="button"
-                    className={`jd-faq-btn ${isEmployerJobsOpen && !isEmployerJobsClosing ? "active" : ""}`}
-                    onClick={handleToggleEmployerJobs}
-                  >
-                    Job List
-                  </button>
-                  <button
-                    type="button"
-                    className={`jd-faq-btn ${isEmployerMsgOpen && !isEmployerMsgClosing ? "active" : ""}`}
-                    onClick={handleToggleEmployerMsg}
-                  >
-                    Message
-                  </button>
-                  <button
-                    type="button"
                     className={`jd-faq-btn ${isFaqDrawerOpen ? "active" : ""}`}
                     onClick={() => {
                       if (isFaqDrawerOpen) {
@@ -3188,68 +3174,6 @@ export default function JobSearch() {
               {/* Scrollable body & drawer container */}
               <div className="jd-body-wrapper" style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
                 <div className="jd-body" style={{ maxHeight: "calc(88vh - 280px)", overflowY: "auto", padding: "20px 24px" }}>
-                  {/* Section: Active Job Openings Summary Bar */}
-                  <div
-                    className="company-modal-jobs-summary-bar"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "14px 18px",
-                      borderRadius: "12px",
-                      background: "rgba(2, 132, 199, 0.08)",
-                      border: "1px solid rgba(2, 132, 199, 0.2)",
-                      marginBottom: "24px",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      <div
-                        style={{
-                          width: "38px",
-                          height: "38px",
-                          borderRadius: "10px",
-                          background: "#0284c7",
-                          color: "#ffffff",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0,
-                        }}
-                      >
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-                          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-                        </svg>
-                      </div>
-                      <div>
-                        <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 800 }}>
-                          {selectedEmployerDetails.jobs?.length || selectedEmployerDetails.active_jobs_count || 0} Open Position{(selectedEmployerDetails.jobs?.length || selectedEmployerDetails.active_jobs_count || 0) === 1 ? "" : "s"} Available
-                        </h4>
-                        <span style={{ fontSize: "0.78rem", color: "#64748b", fontWeight: 600 }}>
-                          Browse positions and submit your job application
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      className="solid-btn"
-                      style={{
-                        padding: "6px 18px",
-                        fontSize: "0.82rem",
-                        fontWeight: 800,
-                        borderRadius: "999px",
-                        whiteSpace: "nowrap",
-                        cursor: "pointer",
-                        background: "#0284c7",
-                        color: "#ffffff",
-                        border: "none",
-                      }}
-                      onClick={handleToggleEmployerJobs}
-                    >
-                      {isEmployerJobsOpen && !isEmployerJobsClosing ? "Hide Job List" : "View Job List →"}
-                    </button>
-                  </div>
-
                   {/* Section: Company Overview */}
                   <div style={{ marginBottom: "24px" }}>
                     <h3 style={{ fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b", fontWeight: 700, marginBottom: "8px" }}>
