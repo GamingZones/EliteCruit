@@ -2486,12 +2486,6 @@ export default function JobSearch() {
                 ? "with-side-panel"
                 : ""
             }`}
-            style={{
-              maxWidth:
-                isMatchDrawerOpen || isMatchDrawerClosing || isJobMsgOpen || isJobMsgClosing
-                  ? "1260px"
-                  : "820px",
-            }}
           >
             <div className="jd-panel-outer-wrap">
               <div className="jd-floating-tabs-container">
@@ -3319,12 +3313,6 @@ export default function JobSearch() {
                 ? "with-side-panel"
                 : ""
             }`}
-            style={{
-              maxWidth:
-                isEmployerMsgOpen || isEmployerMsgClosing || isEmployerJobsOpen || isEmployerJobsClosing
-                  ? "1150px"
-                  : "700px",
-            }}
           >
             <div className="jd-panel-outer-wrap">
               <div className="jd-floating-tabs-container">
@@ -3570,7 +3558,7 @@ export default function JobSearch() {
                     Other Employer Jobs
                   </h3>
                   <span className="jd-side-subtitle" style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
-                    Candidate compatibility across your active job postings
+                    Open job positions available to apply
                   </span>
                 </div>
                 <div className="jd-side-header-actions">

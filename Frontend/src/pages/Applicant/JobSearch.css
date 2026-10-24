@@ -1376,9 +1376,10 @@
   justify-content: center;
   z-index: 1000;
   animation: jdFadeIn 0.2s ease;
-  padding: 24px 36px;
+  padding: 24px 20px;
   box-sizing: border-box;
-  overflow-x: hidden;
+  overflow-y: auto;
+  overflow-x: auto;
 }
 
 @keyframes jdFadeIn {
@@ -1419,23 +1420,44 @@
   justify-content: center;
   gap: 16px;
   width: 100%;
-  max-width: min(840px, calc(100vw - 72px));
+  max-width: min(840px, calc(100vw - 40px));
   max-height: 90vh;
   transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
+  margin: auto;
 }
 
 .jd-modal-container.with-side-panel {
-  max-width: min(1260px, calc(100vw - 72px));
+  max-width: min(1280px, calc(100vw - 40px));
+}
+
+.jd-panel-outer-wrap {
+  position: relative !important;
+  overflow: visible !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: min(840px, calc(100vw - 48px)) !important;
+  max-width: min(840px, calc(100vw - 48px)) !important;
+  flex-shrink: 1 !important;
+  margin-top: 0 !important;
+  align-self: center !important;
+  box-sizing: border-box !important;
+}
+
+.jd-modal-container.with-side-panel .jd-panel-outer-wrap {
+  width: min(720px, 54vw) !important;
+  max-width: min(720px, 54vw) !important;
+  flex-shrink: 1 !important;
 }
 
 .jd-modal-container.with-side-panel .jd-panel {
-  width: min(720px, 54vw);
+  width: 100% !important;
 }
 
 /* ── Right Side Comparison Panel (Outside Main Modal) ── */
 .jd-side-comparison-panel {
   width: min(480px, 38vw);
+  max-width: min(480px, 38vw);
   background: #ffffff;
   border-radius: 16px;
   box-shadow: 0 24px 60px rgba(10, 30, 60, 0.22);
@@ -1443,9 +1465,10 @@
   flex-direction: column;
   overflow: hidden;
   max-height: 90vh;
-  animation: jdSlideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: jdSlideInRight 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   flex-shrink: 0;
   box-sizing: border-box;
+  transform-origin: left center;
 }
 
 .jd-side-comparison-panel.closing {
@@ -1456,7 +1479,7 @@
 @keyframes jdSlideInRight {
   from {
     opacity: 0;
-    transform: translateX(35px) scale(0.97);
+    transform: translateX(-40px) scale(0.97);
   }
   to {
     opacity: 1;
@@ -1471,7 +1494,7 @@
   }
   to {
     opacity: 0;
-    transform: translateX(35px) scale(0.97);
+    transform: translateX(-40px) scale(0.97);
   }
 }
 
