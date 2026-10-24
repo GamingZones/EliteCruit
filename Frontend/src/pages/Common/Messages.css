@@ -1490,7 +1490,7 @@
 @keyframes jdSlideInRight {
   from {
     opacity: 0;
-    transform: translateX(35px) scale(0.97);
+    transform: translateX(-35px) scale(0.97);
   }
   to {
     opacity: 1;
@@ -1505,7 +1505,7 @@
   }
   to {
     opacity: 0;
-    transform: translateX(35px) scale(0.97);
+    transform: translateX(-35px) scale(0.97);
   }
 }
 

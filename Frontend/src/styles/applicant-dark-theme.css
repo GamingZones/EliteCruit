@@ -6403,9 +6403,11 @@
 
 .jd-modal-container.with-side-panel .jd-panel-outer-wrap,
 [data-theme="dark"] .jd-modal-container.with-side-panel .jd-panel-outer-wrap {
-  width: min(720px, 54vw) !important;
-  max-width: min(720px, 54vw) !important;
-  flex-shrink: 1 !important;
+  width: min(680px, 54vw) !important;
+  max-width: min(680px, 54vw) !important;
+  min-width: min(520px, calc(100vw - 48px)) !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
 }
 
 .jd-side-comparison-panel,

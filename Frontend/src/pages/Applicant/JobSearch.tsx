@@ -744,7 +744,8 @@ export default function JobSearch() {
       handleCloseMatchDrawer();
     } else {
       setIsFaqDrawerOpen(false);
-      if (isJobMsgOpen) handleCloseJobMsg();
+      setIsJobMsgOpen(false);
+      setIsJobMsgClosing(false);
       setIsMatchDrawerClosing(false);
       setIsMatchDrawerOpen(true);
     }
@@ -772,7 +773,8 @@ export default function JobSearch() {
       handleCloseJobMsg();
     } else {
       setIsFaqDrawerOpen(false);
-      if (isMatchDrawerOpen) handleCloseMatchDrawer();
+      setIsMatchDrawerOpen(false);
+      setIsMatchDrawerClosing(false);
       setIsJobMsgOpen(true);
       setIsJobMsgClosing(false);
       const empId =
@@ -1581,9 +1583,10 @@ export default function JobSearch() {
       handleCloseEmployerJobs();
     } else {
       setIsEmployerFaqDrawerOpen(false);
-      if (isEmployerMsgOpen) handleCloseEmployerMsg();
-      setIsEmployerJobsOpen(true);
+      setIsEmployerMsgOpen(false);
+      setIsEmployerMsgClosing(false);
       setIsEmployerJobsClosing(false);
+      setIsEmployerJobsOpen(true);
     }
   };
 
@@ -1600,9 +1603,10 @@ export default function JobSearch() {
       handleCloseEmployerMsg();
     } else {
       setIsEmployerFaqDrawerOpen(false);
-      if (isEmployerJobsOpen) handleCloseEmployerJobs();
-      setIsEmployerMsgOpen(true);
+      setIsEmployerJobsOpen(false);
+      setIsEmployerJobsClosing(false);
       setIsEmployerMsgClosing(false);
+      setIsEmployerMsgOpen(true);
       if (selectedEmployerDetails?.employer_user_id) {
         fetchEmployerThreadMessages(selectedEmployerDetails.employer_user_id);
       }
@@ -2720,7 +2724,7 @@ export default function JobSearch() {
           </div>
 
           {/* ── Right Side Comparison Panel (Outside Main Modal) ── */}
-          {(isMatchDrawerOpen || isMatchDrawerClosing) && (() => {
+          {(isMatchDrawerOpen || isMatchDrawerClosing) && !isJobMsgOpen && (() => {
             const matchDetails = calculateJobMatchDetails(detailsJob, applicantMatchProfile);
             const appSkills = applicantMatchProfile?.skills || [];
             const appQuals = applicantMatchProfile?.qualifications || [];
@@ -3070,7 +3074,7 @@ export default function JobSearch() {
             })()}
 
             {/* ── Job Details Side Message Panel ── */}
-            {(isJobMsgOpen || isJobMsgClosing) && detailsJob && (
+            {(isJobMsgOpen || isJobMsgClosing) && !isMatchDrawerOpen && detailsJob && (
               <aside
                 className={`jd-side-comparison-panel cand-message-side-panel ${isJobMsgClosing ? "closing" : "opening"}`}
                 style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}
@@ -3547,7 +3551,7 @@ export default function JobSearch() {
           </div>
 
           {/* ── Employer Side-Docked Jobs Panel ── */}
-          {(isEmployerJobsOpen || isEmployerJobsClosing) && selectedEmployerDetails && (
+          {(isEmployerJobsOpen || isEmployerJobsClosing) && !isEmployerMsgOpen && selectedEmployerDetails && (
             <aside
               className={`jd-side-comparison-panel ${isEmployerJobsClosing ? "closing" : "opening"}`}
               style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}
@@ -3679,7 +3683,7 @@ export default function JobSearch() {
           )}
 
           {/* ── Employer Side-Docked Message Panel ── */}
-          {(isEmployerMsgOpen || isEmployerMsgClosing) && selectedEmployerDetails && (
+          {(isEmployerMsgOpen || isEmployerMsgClosing) && !isEmployerJobsOpen && selectedEmployerDetails && (
             <aside
               className={`jd-side-comparison-panel cand-message-side-panel ${isEmployerMsgClosing ? "closing" : "opening"}`}
               style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}
