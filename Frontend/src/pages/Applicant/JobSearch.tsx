@@ -686,7 +686,7 @@ export default function JobSearch() {
   const [employerSortBy, setEmployerSortBy] = useState<"active_jobs" | "rating" | "name_asc" | "name_desc">("active_jobs");
   const [employerCurrentPage, setEmployerCurrentPage] = useState(1);
   const [selectedEmployerDetails, setSelectedEmployerDetails] = useState<EmployerItem | null>(null);
-  const [returnToEmployerDetails, setReturnToEmployerDetails] = useState<EmployerItem | null>(null);
+  const [isEmployerFaqDrawerOpen, setIsEmployerFaqDrawerOpen] = useState(false);
 
   // Employer Side Panels state in Company Details Modal (Jobs & Messages)
   const [isEmployerJobsOpen, setIsEmployerJobsOpen] = useState(false);
@@ -1466,7 +1466,7 @@ export default function JobSearch() {
 
   const handleOpenEmployerDetails = (employer: EmployerItem, openJobs = false) => {
     setSelectedEmployerDetails(employer);
-    setIsFaqDrawerOpen(false);
+    setIsEmployerFaqDrawerOpen(false);
     setIsEmployerMsgOpen(false);
     setIsEmployerMsgClosing(false);
     setEmployerMsgThread(null);
@@ -1482,13 +1482,6 @@ export default function JobSearch() {
   };
 
   const handleOpenJobFromEmployerModal = (jobId: number) => {
-    setReturnToEmployerDetails(selectedEmployerDetails);
-    setSelectedEmployerDetails(null);
-    setIsFaqDrawerOpen(false);
-    setIsEmployerMsgOpen(false);
-    setIsEmployerMsgClosing(false);
-    setIsEmployerJobsOpen(false);
-    setIsEmployerJobsClosing(false);
     handleOpenJobDetailsById(jobId);
   };
 
@@ -1497,10 +1490,6 @@ export default function JobSearch() {
     setIsMatchDrawerOpen(false);
     setIsMatchDrawerClosing(false);
     setIsFaqDrawerOpen(false);
-    if (returnToEmployerDetails) {
-      setSelectedEmployerDetails(returnToEmployerDetails);
-      setReturnToEmployerDetails(null);
-    }
   };
 
   const fetchEmployerThreadMessages = async (employerUserId: number) => {
@@ -1565,7 +1554,7 @@ export default function JobSearch() {
     if (isEmployerJobsOpen) {
       handleCloseEmployerJobs();
     } else {
-      setIsFaqDrawerOpen(false);
+      setIsEmployerFaqDrawerOpen(false);
       if (isEmployerMsgOpen) handleCloseEmployerMsg();
       setIsEmployerJobsOpen(true);
       setIsEmployerJobsClosing(false);
@@ -1584,7 +1573,7 @@ export default function JobSearch() {
     if (isEmployerMsgOpen) {
       handleCloseEmployerMsg();
     } else {
-      setIsFaqDrawerOpen(false);
+      setIsEmployerFaqDrawerOpen(false);
       if (isEmployerJobsOpen) handleCloseEmployerJobs();
       setIsEmployerMsgOpen(true);
       setIsEmployerMsgClosing(false);
@@ -1682,7 +1671,7 @@ export default function JobSearch() {
   }, [isEmployerMsgOpen, selectedEmployerDetails?.employer_user_id, employerMsgThread?.id, employerMessages.length]);
 
   const handleOpenEmployerFaqs = (employerUserId: number) => {
-    setIsFaqDrawerOpen(true);
+    setIsEmployerFaqDrawerOpen(true);
     setFaqLoading(true);
     setExpandedFaqIds([]);
 
@@ -2447,6 +2436,7 @@ export default function JobSearch() {
           role="dialog"
           aria-modal="true"
           aria-label="Job Details"
+          style={selectedEmployerDetails ? { zIndex: 2500 } : undefined}
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               handleCloseJobDetails();
@@ -3040,8 +3030,7 @@ export default function JobSearch() {
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setSelectedEmployerDetails(null);
-              setReturnToEmployerDetails(null);
-              setIsFaqDrawerOpen(false);
+              setIsEmployerFaqDrawerOpen(false);
               setIsEmployerMsgOpen(false);
               setIsEmployerMsgClosing(false);
               setIsEmployerJobsOpen(false);
@@ -3155,10 +3144,10 @@ export default function JobSearch() {
                   </div>
                   <button
                     type="button"
-                    className={`jd-faq-btn ${isFaqDrawerOpen ? "active" : ""}`}
+                    className={`jd-faq-btn ${isEmployerFaqDrawerOpen ? "active" : ""}`}
                     onClick={() => {
-                      if (isFaqDrawerOpen) {
-                        setIsFaqDrawerOpen(false);
+                      if (isEmployerFaqDrawerOpen) {
+                        setIsEmployerFaqDrawerOpen(false);
                       } else {
                         if (isEmployerMsgOpen) handleCloseEmployerMsg();
                         if (isEmployerJobsOpen) handleCloseEmployerJobs();
@@ -3229,10 +3218,10 @@ export default function JobSearch() {
                 </div>
 
                 {/* Slide-in FAQ Drawer */}
-                <div className={`jd-faq-drawer ${isFaqDrawerOpen ? "open" : ""}`}>
+                <div className={`jd-faq-drawer ${isEmployerFaqDrawerOpen ? "open" : ""}`}>
                   <div className="jd-faq-header">
                     <h3>Company FAQ's</h3>
-                    <button type="button" className="jd-faq-back-btn" aria-label="Back to company details" onClick={() => setIsFaqDrawerOpen(false)}>
+                    <button type="button" className="jd-faq-back-btn" aria-label="Back to company details" onClick={() => setIsEmployerFaqDrawerOpen(false)}>
                       ←
                     </button>
                   </div>
@@ -3281,8 +3270,7 @@ export default function JobSearch() {
                   className="cand-details-cancel-btn"
                   onClick={() => {
                     setSelectedEmployerDetails(null);
-                    setReturnToEmployerDetails(null);
-                    setIsFaqDrawerOpen(false);
+                    setIsEmployerFaqDrawerOpen(false);
                     setIsEmployerMsgOpen(false);
                     setIsEmployerMsgClosing(false);
                     setIsEmployerJobsOpen(false);
