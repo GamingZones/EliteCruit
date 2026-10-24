@@ -728,6 +728,8 @@ export default function JobSearch() {
   const [isFaqDrawerOpen, setIsFaqDrawerOpen] = useState(false);
   const [isMatchDrawerOpen, setIsMatchDrawerOpen] = useState(false);
   const [isMatchDrawerClosing, setIsMatchDrawerClosing] = useState(false);
+  const [isJobMsgOpen, setIsJobMsgOpen] = useState(false);
+  const [isJobMsgClosing, setIsJobMsgClosing] = useState(false);
   const [hoveredCompareTag, setHoveredCompareTag] = useState<{
     item: string;
     side: "applicant" | "employer";
@@ -739,13 +741,10 @@ export default function JobSearch() {
 
   const handleToggleMatchDrawer = () => {
     if (isMatchDrawerOpen) {
-      setIsMatchDrawerClosing(true);
-      setTimeout(() => {
-        setIsMatchDrawerOpen(false);
-        setIsMatchDrawerClosing(false);
-      }, 220);
+      handleCloseMatchDrawer();
     } else {
       setIsFaqDrawerOpen(false);
+      if (isJobMsgOpen) handleCloseJobMsg();
       setIsMatchDrawerClosing(false);
       setIsMatchDrawerOpen(true);
     }
@@ -758,6 +757,31 @@ export default function JobSearch() {
       setIsMatchDrawerOpen(false);
       setIsMatchDrawerClosing(false);
     }, 220);
+  };
+
+  const handleCloseJobMsg = () => {
+    setIsJobMsgClosing(true);
+    setTimeout(() => {
+      setIsJobMsgOpen(false);
+      setIsJobMsgClosing(false);
+    }, 220);
+  };
+
+  const handleToggleJobMsg = () => {
+    if (isJobMsgOpen) {
+      handleCloseJobMsg();
+    } else {
+      setIsFaqDrawerOpen(false);
+      if (isMatchDrawerOpen) handleCloseMatchDrawer();
+      setIsJobMsgOpen(true);
+      setIsJobMsgClosing(false);
+      const empId =
+        detailsJob?.employerUserId ||
+        employers.find((e) => e.company_name.toLowerCase() === detailsJob?.company.toLowerCase())?.employer_user_id;
+      if (empId) {
+        fetchEmployerThreadMessages(empId);
+      }
+    }
   };
 
   const handleOpenFaqs = (job: JobCard) => {
@@ -1489,6 +1513,8 @@ export default function JobSearch() {
     setDetailsJob(null);
     setIsMatchDrawerOpen(false);
     setIsMatchDrawerClosing(false);
+    setIsJobMsgOpen(false);
+    setIsJobMsgClosing(false);
     setIsFaqDrawerOpen(false);
   };
 
@@ -1585,7 +1611,13 @@ export default function JobSearch() {
 
   const handleSendEmployerMessage = async () => {
     const text = employerMsgInput.trim();
-    if (!text || isEmployerMsgSending || !selectedEmployerDetails?.employer_user_id) return;
+    const targetEmpId =
+      detailsJob?.employerUserId ||
+      employers.find((e) => e.company_name.toLowerCase() === detailsJob?.company.toLowerCase())?.employer_user_id ||
+      selectedEmployerDetails?.employer_user_id;
+    const targetCompanyName = detailsJob?.company || selectedEmployerDetails?.company_name || "Employer";
+
+    if (!text || isEmployerMsgSending || !targetEmpId) return;
 
     const rawUser = localStorage.getItem("elitecruit-user");
     if (!rawUser) return;
@@ -1615,8 +1647,8 @@ export default function JobSearch() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             created_by_user_id: currentUid,
-            participant_user_ids: [selectedEmployerDetails.employer_user_id],
-            title: `Employer: ${selectedEmployerDetails.company_name}`,
+            participant_user_ids: [targetEmpId],
+            title: `Employer: ${targetCompanyName}`,
             message_text: text,
           }),
         });
@@ -1636,13 +1668,18 @@ export default function JobSearch() {
   };
 
   useEffect(() => {
-    if (isEmployerMsgOpen && employerMsgEndRef.current) {
+    if ((isEmployerMsgOpen || isJobMsgOpen) && employerMsgEndRef.current) {
       employerMsgEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [employerMessages, isEmployerMsgOpen]);
+  }, [employerMessages, isEmployerMsgOpen, isJobMsgOpen]);
 
   useEffect(() => {
-    if (!isEmployerMsgOpen || !selectedEmployerDetails?.employer_user_id || !employerMsgThread?.id) return;
+    const isAnyMsgOpen = isEmployerMsgOpen || isJobMsgOpen;
+    const empId =
+      detailsJob?.employerUserId ||
+      selectedEmployerDetails?.employer_user_id ||
+      employers.find((e) => e.company_name.toLowerCase() === detailsJob?.company.toLowerCase())?.employer_user_id;
+    if (!isAnyMsgOpen || !empId || !employerMsgThread?.id) return;
     const interval = setInterval(async () => {
       try {
         const res = await fetch(`/api/messages/threads/${employerMsgThread.id}`);
@@ -1668,7 +1705,7 @@ export default function JobSearch() {
       } catch {}
     }, 4000);
     return () => clearInterval(interval);
-  }, [isEmployerMsgOpen, selectedEmployerDetails?.employer_user_id, employerMsgThread?.id, employerMessages.length]);
+  }, [isEmployerMsgOpen, isJobMsgOpen, detailsJob?.employerUserId, selectedEmployerDetails?.employer_user_id, employerMsgThread?.id, employerMessages.length]);
 
   const handleOpenEmployerFaqs = (employerUserId: number) => {
     setIsEmployerFaqDrawerOpen(true);
@@ -2443,9 +2480,38 @@ export default function JobSearch() {
             }
           }}
         >
-          <div className={`jd-modal-container ${isMatchDrawerOpen || isMatchDrawerClosing ? "with-side-panel" : ""}`}>
-            {/* ── Main Job Details Panel (Left) ── */}
-            <div className="jd-panel">
+          <div
+            className={`jd-modal-container ${
+              isMatchDrawerOpen || isMatchDrawerClosing || isJobMsgOpen || isJobMsgClosing
+                ? "with-side-panel"
+                : ""
+            }`}
+            style={{
+              maxWidth:
+                isMatchDrawerOpen || isMatchDrawerClosing || isJobMsgOpen || isJobMsgClosing
+                  ? "1260px"
+                  : "820px",
+            }}
+          >
+            <div className="jd-panel-outer-wrap">
+              <div className="jd-floating-tabs-container">
+                <button
+                  type="button"
+                  className={`jd-floating-breakdown-tab ${isMatchDrawerOpen && !isMatchDrawerClosing ? "active" : ""}`}
+                  onClick={handleToggleMatchDrawer}
+                >
+                  <span>{isMatchDrawerOpen && !isMatchDrawerClosing ? "Hide Breakdown" : "Match Breakdown"}</span>
+                </button>
+                <button
+                  type="button"
+                  className={`jd-floating-breakdown-tab ${isJobMsgOpen && !isJobMsgClosing ? "active" : ""}`}
+                  onClick={handleToggleJobMsg}
+                >
+                  <span>{isJobMsgOpen && !isJobMsgClosing ? "Hide Message" : "Message"}</span>
+                </button>
+              </div>
+              {/* ── Main Job Details Panel (Left) ── */}
+              <div className="jd-panel">
               {/* Cover banner */}
               <div className="jd-cover-banner">
                 {detailsJob.companyCoverPath ? (
@@ -2638,15 +2704,6 @@ export default function JobSearch() {
                   <span><strong>Applications:</strong> {detailsJob.applicantCount}</span>
                   <span><strong>Close Date:</strong> {detailsJob.closeDate}</span>
                 </div>
-                <div className="jd-footer-middle">
-                  <button
-                    type="button"
-                    className={`jd-breakdown-btn ${isMatchDrawerOpen && !isMatchDrawerClosing ? "active" : ""}`}
-                    onClick={handleToggleMatchDrawer}
-                  >
-                    <span>{isMatchDrawerOpen && !isMatchDrawerClosing ? "Hide Breakdown" : "Match Breakdown"}</span>
-                  </button>
-                </div>
                 <div className="jd-footer-actions">
                   <button
                     type="button"
@@ -2666,30 +2723,31 @@ export default function JobSearch() {
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* ── Right Side Comparison Panel (Outside Main Modal) ── */}
-            {(isMatchDrawerOpen || isMatchDrawerClosing) && (() => {
-              const matchDetails = calculateJobMatchDetails(detailsJob, applicantMatchProfile);
-              const appSkills = applicantMatchProfile?.skills || [];
-              const appQuals = applicantMatchProfile?.qualifications || [];
-              const appCerts = applicantMatchProfile?.certifications || [];
+          {/* ── Right Side Comparison Panel (Outside Main Modal) ── */}
+          {(isMatchDrawerOpen || isMatchDrawerClosing) && (() => {
+            const matchDetails = calculateJobMatchDetails(detailsJob, applicantMatchProfile);
+            const appSkills = applicantMatchProfile?.skills || [];
+            const appQuals = applicantMatchProfile?.qualifications || [];
+            const appCerts = applicantMatchProfile?.certifications || [];
 
-              const jobSkills = detailsJob.skillTags || [];
-              const jobQuals = detailsJob.qualTags || [];
-              const jobCerts = detailsJob.certTags || [];
+            const jobSkills = detailsJob.skillTags || [];
+            const jobQuals = detailsJob.qualTags || [];
+            const jobCerts = detailsJob.certTags || [];
 
-              const checkMatch = (jobItem: string, appItems: string[]) => {
-                if (!appItems || appItems.length === 0) return false;
-                return appItems.some((appItem) => isSkillMatch(jobItem, appItem));
-              };
+            const checkMatch = (jobItem: string, appItems: string[]) => {
+              if (!appItems || appItems.length === 0) return false;
+              return appItems.some((appItem) => isSkillMatch(jobItem, appItem));
+            };
 
-              const isAppRelevant = (appItem: string, jItems: string[]) => {
-                if (!jItems || jItems.length === 0) return false;
-                return jItems.some((jobItem) => isSkillMatch(jobItem, appItem));
-              };
+            const isAppRelevant = (appItem: string, jItems: string[]) => {
+              if (!jItems || jItems.length === 0) return false;
+              return jItems.some((jobItem) => isSkillMatch(jobItem, appItem));
+            };
 
-              return (
-                <aside className={`jd-side-comparison-panel ${isMatchDrawerClosing ? "closing" : "opening"}`}>
+            return (
+              <aside className={`jd-side-comparison-panel ${isMatchDrawerClosing ? "closing" : "opening"}`} style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}>
                   <div className="jd-side-panel-header">
                     <div className="jd-side-title-row">
                       <h3>Competencies & Requirements</h3>
@@ -3016,6 +3074,223 @@ export default function JobSearch() {
                 </aside>
               );
             })()}
+
+            {/* ── Job Details Side Message Panel ── */}
+            {(isJobMsgOpen || isJobMsgClosing) && detailsJob && (
+              <aside
+                className={`jd-side-comparison-panel cand-message-side-panel ${isJobMsgClosing ? "closing" : "opening"}`}
+                style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}
+              >
+                <div className="jd-side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
+                  <div className="jd-side-title-row" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div
+                      className="cand-msg-header-avatar"
+                      style={{
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "50%",
+                        background: "#0284c7",
+                        color: "#ffffff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: 800,
+                        fontSize: "0.88rem",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {initialsFrom(detailsJob.company)}
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column" }}>
+                      <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
+                        {detailsJob.company}
+                      </h3>
+                      <span className="jd-side-subtitle" style={{ fontSize: "0.78rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                        Message • {detailsJob.title}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="jd-side-header-actions">
+                    <button
+                      type="button"
+                      className="jd-side-close-btn"
+                      aria-label="Close message panel"
+                      onClick={handleCloseJobMsg}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  className="cand-msg-chat-body"
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    minHeight: 0,
+                    overflow: "hidden",
+                    background: "#f8fafc",
+                  }}
+                >
+                  {/* Chat Messages List */}
+                  <div
+                    className="cand-msg-messages-scroll"
+                    style={{
+                      flex: 1,
+                      overflowY: "auto",
+                      padding: "16px 18px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "12px",
+                    }}
+                  >
+                    {isEmployerMsgLoading ? (
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#64748b", fontSize: "0.88rem", gap: "8px" }}>
+                        <span className="spinner-mini" style={{ width: "16px", height: "16px", border: "2px solid #cbd5e1", borderTopColor: "#0284c7", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
+                        <span>Loading messages...</span>
+                      </div>
+                    ) : employerMessages.length === 0 ? (
+                      <div
+                        style={{
+                          margin: "auto",
+                          textAlign: "center",
+                          padding: "24px 16px",
+                          maxWidth: "340px",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: "10px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "48px",
+                            height: "48px",
+                            borderRadius: "14px",
+                            background: "rgba(2, 132, 199, 0.12)",
+                            color: "#0284c7",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "1.4rem",
+                          }}
+                        >
+                          💬
+                        </div>
+                        <h4 className="cand-msg-empty-title" style={{ margin: 0, fontSize: "1rem", fontWeight: 800 }}>
+                          Start a conversation
+                        </h4>
+                        <p style={{ margin: 0, fontSize: "0.82rem", color: "#64748b", lineHeight: 1.5, textAlign: "center" }}>
+                          Send a direct message to {detailsJob.company} to inquire about this role or company.
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        {employerMessages.map((msg: any) => {
+                          const isMe = Number(msg.sender_user_id) === Number(applicantUserId);
+                          const timeStr = msg.created_at
+                            ? new Date(msg.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+                            : "";
+                          return (
+                            <div
+                              key={msg.id}
+                              className={`cand-msg-row ${isMe ? "outgoing" : "incoming"}`}
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: isMe ? "flex-end" : "flex-start",
+                                gap: "3px",
+                              }}
+                            >
+                              {!isMe && (
+                                <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 700, paddingLeft: "4px" }}>
+                                  {detailsJob.company}
+                                </span>
+                              )}
+                              <div
+                                className={`cand-msg-bubble ${isMe ? "outgoing" : "incoming"}`}
+                                style={{
+                                  maxWidth: "82%",
+                                  padding: "10px 14px",
+                                  borderRadius: isMe ? "14px 14px 2px 14px" : "14px 14px 14px 2px",
+                                  background: isMe ? "#0284c7" : "#ffffff",
+                                  color: isMe ? "#ffffff" : "#1e293b",
+                                  border: isMe ? "none" : "1px solid #e2e8f0",
+                                  boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
+                                  fontSize: "0.86rem",
+                                  lineHeight: 1.5,
+                                  whiteSpace: "pre-wrap",
+                                  wordBreak: "break-word",
+                                }}
+                              >
+                                {msg.message_text}
+                              </div>
+                              <span style={{ fontSize: "0.68rem", color: "#94a3b8", padding: "0 4px" }}>
+                                {timeStr}
+                              </span>
+                            </div>
+                          );
+                        })}
+                        <div ref={employerMsgEndRef} />
+                      </>
+                    )}
+                  </div>
+
+                  {/* Compose Bar */}
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleSendEmployerMessage();
+                    }}
+                    className="cand-msg-compose-bar"
+                    style={{
+                      padding: "12px 16px",
+                      borderTop: "1px solid #e2e8f0",
+                      background: "#ffffff",
+                      display: "flex",
+                      gap: "10px",
+                      alignItems: "center",
+                    }}
+                  >
+                    <input
+                      type="text"
+                      className="cand-msg-input"
+                      placeholder={`Message ${detailsJob.company}...`}
+                      value={employerMsgInput}
+                      onChange={(e) => setEmployerMsgInput(e.target.value)}
+                      disabled={isEmployerMsgSending}
+                      style={{
+                        flex: 1,
+                        padding: "10px 14px",
+                        borderRadius: "8px",
+                        border: "1px solid #cbd5e1",
+                        fontSize: "0.85rem",
+                        fontFamily: "inherit",
+                        outline: "none",
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      className="cand-msg-send-btn"
+                      disabled={!employerMsgInput.trim() || isEmployerMsgSending}
+                      style={{
+                        padding: "10px 18px",
+                        borderRadius: "8px",
+                        border: "none",
+                        background: "#0284c7",
+                        color: "#ffffff",
+                        fontWeight: 700,
+                        fontSize: "0.85rem",
+                        cursor: !employerMsgInput.trim() || isEmployerMsgSending ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      {isEmployerMsgSending ? "..." : "Send"}
+                    </button>
+                  </form>
+                </div>
+              </aside>
+            )}
           </div>
         </div>
       )}
