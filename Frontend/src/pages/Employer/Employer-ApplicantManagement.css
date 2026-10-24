@@ -1690,12 +1690,12 @@
 
 .jd-modal-container {
   max-width: min(940px, calc(100vw - 48px)) !important;
-  margin-top: 18px !important;
+  margin: auto !important;
 }
 
 .jd-modal-container.with-side-panel {
   max-width: min(1320px, calc(100vw - 48px)) !important;
-  margin-top: 18px !important;
+  margin: auto !important;
 }
 
 .jd-modal-container.with-side-panel .jd-panel-outer-wrap {
@@ -1705,9 +1705,7 @@
 
 .jd-panel-outer-wrap .jd-panel {
   width: 100% !important;
-  height: 630px !important;
-  max-height: calc(85vh - 46px) !important;
-  min-height: 480px !important;
+  max-height: calc(88vh - 46px) !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
@@ -1716,8 +1714,7 @@
 .jd-side-comparison-panel {
   margin-top: 0 !important;
   align-self: center !important;
-  height: 630px !important;
-  max-height: calc(85vh - 46px) !important;
+  max-height: calc(88vh - 46px) !important;
 }
 
 .jd-body-wrapper {

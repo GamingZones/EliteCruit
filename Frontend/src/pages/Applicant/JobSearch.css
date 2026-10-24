@@ -1376,7 +1376,7 @@
   justify-content: center;
   z-index: 1000;
   animation: jdFadeIn 0.2s ease;
-  padding: 24px 20px;
+  padding: 54px 20px 28px 20px;
   box-sizing: border-box;
   overflow-y: auto;
   overflow-x: auto;
@@ -1421,10 +1421,59 @@
   gap: 16px;
   width: 100%;
   max-width: min(840px, calc(100vw - 40px));
-  max-height: 90vh;
+  max-height: calc(90vh - 20px);
   transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
-  margin: auto;
+  margin: auto !important;
+}
+
+.jd-floating-tabs-container {
+  position: absolute;
+  right: 0;
+  top: -38px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 9999;
+}
+
+.jd-floating-tabs-container .jd-floating-breakdown-tab {
+  position: relative !important;
+  top: 0 !important;
+  right: 0 !important;
+}
+
+.jd-floating-breakdown-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #ffffff;
+  border: 1.5px solid #0284c7;
+  color: #0284c7;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.2);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 9999;
+  white-space: nowrap;
+}
+
+.jd-floating-breakdown-tab:hover {
+  background: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.3);
+  transform: translateY(-2px);
+}
+
+.jd-floating-breakdown-tab.active {
+  background: #01294a;
+  border-color: #01294a;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(1, 41, 74, 0.3);
 }
 
 .jd-modal-container.with-side-panel {
@@ -3039,3 +3088,7 @@
 }
 
 
+
+.cand-msg-empty-title {
+  color: #0f172a;
+}

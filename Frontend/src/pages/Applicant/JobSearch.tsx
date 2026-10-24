@@ -36,7 +36,6 @@ import {
 } from "../../utils/filters";
 import "./Applicant-Dashboard.css";
 import "./JobSearch.css";
-import "../Employer/Employer-ApplicantManagement.css";
 import { useUnreadNotificationsCount } from "../../hooks/useUnreadNotificationsCount";
 import { useUnreadMessagesCount } from "../../hooks/useUnreadMessagesCount";
 

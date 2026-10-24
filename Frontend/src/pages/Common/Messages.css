@@ -1420,6 +1420,7 @@
   max-height: 90vh;
   transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
+  margin: auto;
 }
 
 .jd-modal-container.with-side-panel {
