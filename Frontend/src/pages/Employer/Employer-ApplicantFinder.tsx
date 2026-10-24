@@ -3955,6 +3955,50 @@ export default function EmployerApplicantFinder() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="jd-panel-outer-wrap">
+                <div className="jd-floating-tabs-container">
+                  {activeJobs.length > 0 && (
+                    <button
+                      type="button"
+                      className={`jd-floating-breakdown-tab ${isMatchDrawerOpen && !isMatchDrawerClosing ? "active" : ""}`}
+                      onClick={() => {
+                        if (isMatchDrawerOpen) {
+                          handleCloseMatchDrawer();
+                        } else {
+                          setViewingJobDetails(activeJobs[0]);
+                          setIsOtherJobsOpen(false);
+                          setIsMessagePanelOpen(false);
+                          setIsMatchDrawerOpen(true);
+                          setIsMatchDrawerClosing(false);
+                        }
+                      }}
+                    >
+                      <span>{isMatchDrawerOpen && !isMatchDrawerClosing ? "Hide Breakdown" : "Match Breakdown"}</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className={`jd-floating-breakdown-tab ${isOtherJobsOpen && !isOtherJobsClosing ? "active" : ""}`}
+                    onClick={() => {
+                      if (isOtherJobsOpen) {
+                        handleCloseOtherJobs();
+                      } else {
+                        setIsMatchDrawerOpen(false);
+                        setIsMessagePanelOpen(false);
+                        setIsOtherJobsOpen(true);
+                        setIsOtherJobsClosing(false);
+                      }
+                    }}
+                  >
+                    <span>{isOtherJobsOpen && !isOtherJobsClosing ? "Hide Other Jobs" : "Other Jobs"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`jd-floating-breakdown-tab ${isMessagePanelOpen && !isMessagePanelClosing ? "active" : ""}`}
+                    onClick={handleToggleMessagePanel}
+                  >
+                    <span>{isMessagePanelOpen && !isMessagePanelClosing ? "Hide Message" : "Message"}</span>
+                  </button>
+                </div>
                 <div className="cand-details-panel jd-panel">
                   <div className="cand-details-strip" style={{ paddingTop: "20px" }}>
                 <div className="cand-details-logo-info">
@@ -4559,15 +4603,12 @@ export default function EmployerApplicantFinder() {
                   </button>
                   <button
                     type="button"
-                    className={`finder-btn finder-btn-outline ${isMessagePanelOpen && !isMessagePanelClosing ? "active" : ""}`}
-                    onClick={handleToggleMessagePanel}
-                  >
-                    Message
-                  </button>
-                  <button
-                    type="button"
-                    className={`finder-btn finder-btn-green ${isOtherJobsOpen && !isOtherJobsClosing ? "active" : ""}`}
-                    onClick={handleToggleOtherJobs}
+                    className="finder-btn finder-btn-green"
+                    onClick={() => {
+                      if (selectedCandidate) {
+                        openInviteModal(selectedCandidate);
+                      }
+                    }}
                   >
                     Recruit
                   </button>
@@ -4578,10 +4619,10 @@ export default function EmployerApplicantFinder() {
 
           {/* ── Other Employer Jobs Panel (Container 2) ── */}
           {(isOtherJobsOpen || isOtherJobsClosing) && (
-            <aside className={`jd-side-comparison-panel ${isOtherJobsClosing ? "closing" : "opening"}`} style={{ fontFamily: '"Manrope", sans-serif' }}>
+            <aside className={`jd-side-comparison-panel ${isOtherJobsClosing ? "closing" : "opening"}`} style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}>
               <div className="jd-side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
                 <div className="jd-side-title-row">
-                  <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>Employer Jobs</h3>
+                  <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>Other Employer Jobs</h3>
                   <span className="jd-side-subtitle" style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>Candidate compatibility across your active job postings</span>
                 </div>
                 <div className="jd-side-header-actions">
@@ -4628,7 +4669,6 @@ export default function EmployerApplicantFinder() {
                         salary_max: Number(otherJob.salary_max) || 0,
                       }
                     );
-                    const matchStyle = getMatchPercentStyle(percent);
 
                     return (
                       <div
@@ -4679,21 +4719,17 @@ export default function EmployerApplicantFinder() {
                         </div>
 
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px", flexShrink: 0 }}>
-                          <div
-                            className={`jd-other-job-match-pill ${percent >= 85 ? "green" : percent >= 70 ? "yellow" : "red"}`}
+                          <span
                             style={{
                               fontWeight: 800,
-                              fontSize: "0.82rem",
-                              padding: "4px 10px",
-                              borderRadius: "999px",
+                              fontSize: "0.85rem",
+                              color: "#01294a",
                               whiteSpace: "nowrap",
                               fontFamily: '"Manrope", sans-serif',
-                              background: matchStyle.track,
-                              color: matchStyle.color,
                             }}
                           >
                             {percent}% Match
-                          </div>
+                          </span>
                           <button
                             type="button"
                             className="details-btn jd-other-job-details-btn"
@@ -4702,14 +4738,14 @@ export default function EmployerApplicantFinder() {
                               color: "#ffffff",
                               fontWeight: 800,
                               fontSize: "0.82rem",
-                              padding: "4px 12px",
+                              padding: "4px 16px",
                               borderRadius: "999px",
                               border: "1px solid #01294a",
                               whiteSpace: "nowrap",
                               cursor: "pointer",
                               boxShadow: "0 2px 6px rgba(1, 41, 74, 0.2)",
                               transition: "all 0.15s ease",
-                              width: "100%",
+                              minWidth: "75px",
                               textAlign: "center",
                               fontFamily: '"Manrope", sans-serif',
                             }}
@@ -4719,33 +4755,6 @@ export default function EmployerApplicantFinder() {
                             }}
                           >
                             Details
-                          </button>
-                          <button
-                            type="button"
-                            className="recruit-btn jd-other-job-recruit-btn"
-                            style={{
-                              background: "#16a34a",
-                              color: "#ffffff",
-                              fontWeight: 800,
-                              fontSize: "0.82rem",
-                              padding: "4px 12px",
-                              borderRadius: "999px",
-                              border: "1px solid #16a34a",
-                              whiteSpace: "nowrap",
-                              cursor: "pointer",
-                              boxShadow: "0 2px 6px rgba(22, 163, 74, 0.25)",
-                              transition: "all 0.15s ease",
-                              width: "100%",
-                              textAlign: "center",
-                              fontFamily: '"Manrope", sans-serif',
-                            }}
-                            onClick={() => {
-                              if (selectedCandidate) {
-                                openInviteModal(selectedCandidate, otherJob.id);
-                              }
-                            }}
-                          >
-                            Recruit
                           </button>
                         </div>
                       </div>
@@ -4760,7 +4769,7 @@ export default function EmployerApplicantFinder() {
           {(isMessagePanelOpen || isMessagePanelClosing) && selectedCandidate && (
             <aside
               className={`jd-side-comparison-panel cand-message-side-panel ${isMessagePanelClosing ? "closing" : "opening"}`}
-              style={{ fontFamily: '"Manrope", sans-serif' }}
+              style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}
             >
               <div className="jd-side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
                 <div className="jd-side-title-row" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
