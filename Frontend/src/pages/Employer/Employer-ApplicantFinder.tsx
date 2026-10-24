@@ -4708,10 +4708,6 @@ export default function EmployerApplicantFinder() {
                             </span>
                             {otherJob.salary_min ? (
                               <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Manrope", sans-serif' }}>
-                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                  <line x1="12" y1="1" x2="12" y2="23" />
-                                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                                </svg>
                                 PHP {Number(otherJob.salary_min).toLocaleString()} - {Number(otherJob.salary_max).toLocaleString()}
                               </span>
                             ) : null}
@@ -4720,13 +4716,7 @@ export default function EmployerApplicantFinder() {
 
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px", flexShrink: 0 }}>
                           <span
-                            style={{
-                              fontWeight: 800,
-                              fontSize: "0.85rem",
-                              color: "#01294a",
-                              whiteSpace: "nowrap",
-                              fontFamily: '"Manrope", sans-serif',
-                            }}
+                            className={`jd-other-job-match-pill ${percent >= 80 ? "green" : percent >= 50 ? "yellow" : "red"}`}
                           >
                             {percent}% Match
                           </span>
@@ -4734,18 +4724,18 @@ export default function EmployerApplicantFinder() {
                             type="button"
                             className="details-btn jd-other-job-details-btn"
                             style={{
-                              background: "#01294a",
+                              background: "#0284c7",
                               color: "#ffffff",
                               fontWeight: 800,
-                              fontSize: "0.82rem",
-                              padding: "4px 16px",
+                              fontSize: "0.84rem",
+                              padding: "6px 22px",
                               borderRadius: "999px",
-                              border: "1px solid #01294a",
+                              border: "none",
                               whiteSpace: "nowrap",
                               cursor: "pointer",
-                              boxShadow: "0 2px 6px rgba(1, 41, 74, 0.2)",
+                              boxShadow: "0 2px 8px rgba(2, 132, 199, 0.3)",
                               transition: "all 0.15s ease",
-                              minWidth: "75px",
+                              minWidth: "85px",
                               textAlign: "center",
                               fontFamily: '"Manrope", sans-serif',
                             }}

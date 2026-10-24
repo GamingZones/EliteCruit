@@ -3380,10 +3380,10 @@ export default function JobSearch() {
               <div className="jd-side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
                 <div className="jd-side-title-row">
                   <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
-                    Available Job Openings
+                    Other Employer Jobs
                   </h3>
                   <span className="jd-side-subtitle" style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
-                    {selectedEmployerDetails.company_name} • {selectedEmployerDetails.jobs?.length || 0} Openings
+                    Candidate compatibility across your active job postings
                   </span>
                 </div>
                 <div className="jd-side-header-actions">
@@ -3420,8 +3420,6 @@ export default function JobSearch() {
                     const matchPct = foundJob
                       ? calculateJobMatchDetails(foundJob, applicantMatchProfile).score
                       : 85;
-                    const isApplied = appliedJobIds.includes(j.id);
-                    const isApplying = applyingJobId === j.id;
 
                     return (
                       <div
@@ -3440,13 +3438,10 @@ export default function JobSearch() {
                           fontFamily: '"Manrope", sans-serif',
                         }}
                       >
-                        <div style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                            <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
-                              {j.title}
-                            </h4>
-                            {j.urgent && <span className="urgent-pill" style={{ fontSize: "0.7rem", padding: "2px 6px" }}>URGENT</span>}
-                          </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, minWidth: 0 }}>
+                          <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
+                            {j.title}
+                          </h4>
                           <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginTop: "2px", fontSize: "0.8rem", color: "#64748b", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
                             <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Manrope", sans-serif' }}>
                               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -3464,10 +3459,6 @@ export default function JobSearch() {
                             </span>
                             {j.salary_min ? (
                               <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Manrope", sans-serif' }}>
-                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                  <line x1="12" y1="1" x2="12" y2="23" />
-                                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                                </svg>
                                 {formatSalary(j.salary_min, j.salary_max)}
                               </span>
                             ) : null}
@@ -3476,56 +3467,33 @@ export default function JobSearch() {
 
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px", flexShrink: 0 }}>
                           <span
-                            style={{
-                              fontWeight: 800,
-                              fontSize: "0.85rem",
-                              color: "#01294a",
-                              whiteSpace: "nowrap",
-                              fontFamily: '"Manrope", sans-serif',
-                            }}
+                            className={`jd-other-job-match-pill ${matchPct >= 80 ? "green" : matchPct >= 50 ? "yellow" : "red"}`}
                           >
                             {matchPct}% Match
                           </span>
-                          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                            <button
-                              type="button"
-                              className="details-btn jd-other-job-details-btn"
-                              style={{
-                                background: "#01294a",
-                                color: "#ffffff",
-                                fontWeight: 800,
-                                fontSize: "0.82rem",
-                                padding: "4px 16px",
-                                borderRadius: "999px",
-                                border: "1px solid #01294a",
-                                whiteSpace: "nowrap",
-                                cursor: "pointer",
-                                boxShadow: "0 2px 6px rgba(1, 41, 74, 0.2)",
-                                transition: "all 0.15s ease",
-                                minWidth: "70px",
-                                textAlign: "center",
-                                fontFamily: '"Manrope", sans-serif',
-                              }}
-                              onClick={() => handleOpenJobFromEmployerModal(j.id)}
-                            >
-                              Details
-                            </button>
-                            <button
-                              type="button"
-                              className={`solid-btn ${isApplied ? "applied-btn" : ""}`}
-                              style={{
-                                padding: "4px 16px",
-                                fontSize: "0.82rem",
-                                fontWeight: 800,
-                                borderRadius: "999px",
-                                whiteSpace: "nowrap",
-                              }}
-                              onClick={() => setApplyJobTarget({ jobId: j.id, title: j.title })}
-                              disabled={isApplied || isApplying}
-                            >
-                              {isApplied ? "Applied" : isApplying ? "Applying..." : "Apply"}
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            className="details-btn jd-other-job-details-btn"
+                            style={{
+                              background: "#0284c7",
+                              color: "#ffffff",
+                              fontWeight: 800,
+                              fontSize: "0.84rem",
+                              padding: "6px 22px",
+                              borderRadius: "999px",
+                              border: "none",
+                              whiteSpace: "nowrap",
+                              cursor: "pointer",
+                              boxShadow: "0 2px 8px rgba(2, 132, 199, 0.3)",
+                              transition: "all 0.15s ease",
+                              minWidth: "85px",
+                              textAlign: "center",
+                              fontFamily: '"Manrope", sans-serif',
+                            }}
+                            onClick={() => handleOpenJobFromEmployerModal(j.id)}
+                          >
+                            Details
+                          </button>
                         </div>
                       </div>
                     );

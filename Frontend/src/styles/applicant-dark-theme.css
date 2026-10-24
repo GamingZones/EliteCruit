@@ -5645,6 +5645,13 @@
   color: #ffffff !important;
 }
 
+[data-theme="dark"] .other-jobs-card .solid-btn:hover,
+[data-theme="dark"] .jd-other-job-card .details-btn:hover,
+[data-theme="dark"] .jd-other-job-card .jd-other-job-details-btn:hover {
+  background: #0369a1 !important;
+  color: #ffffff !important;
+}
+
 [data-theme="dark"] .jd-other-job-card .recruit-btn,
 [data-theme="dark"] .jd-other-job-card .jd-other-job-recruit-btn {
   background: #16a34a !important;

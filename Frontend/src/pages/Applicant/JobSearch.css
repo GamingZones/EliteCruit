@@ -1539,6 +1539,61 @@
   gap: 14px;
 }
 
+/* Other Jobs Match Pill & Action Buttons */
+.jd-other-job-match-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 4px 14px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+  font-family: "Manrope", sans-serif;
+  letter-spacing: 0.02em;
+  transition: all 0.15s ease;
+}
+
+.jd-other-job-match-pill.green {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.jd-other-job-match-pill.yellow {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.jd-other-job-match-pill.red {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.jd-other-job-details-btn {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  font-size: 0.84rem !important;
+  padding: 6px 22px !important;
+  border-radius: 999px !important;
+  border: none !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.28) !important;
+  transition: all 0.15s ease !important;
+  min-width: 85px !important;
+  text-align: center !important;
+  font-family: "Manrope", sans-serif !important;
+}
+
+.jd-other-job-details-btn:hover {
+  background: #0369a1 !important;
+  transform: translateY(-1px) !important;
+}
+
 .jd-panel {
   background: #ffffff;
   border-radius: 16px;
