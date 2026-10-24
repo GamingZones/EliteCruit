@@ -678,6 +678,7 @@ export default function JobSearch() {
   const [employerSortBy, setEmployerSortBy] = useState<"active_jobs" | "rating" | "name_asc" | "name_desc">("active_jobs");
   const [employerCurrentPage, setEmployerCurrentPage] = useState(1);
   const [selectedEmployerDetails, setSelectedEmployerDetails] = useState<EmployerItem | null>(null);
+  const [returnToEmployerDetails, setReturnToEmployerDetails] = useState<EmployerItem | null>(null);
 
   const availableEmployerCities = useMemo(() => {
     if (employerSelectedProvince !== "All provinces") {
@@ -1448,6 +1449,24 @@ export default function JobSearch() {
     setIsFaqDrawerOpen(false);
   };
 
+  const handleOpenJobFromEmployerModal = (jobId: number) => {
+    setReturnToEmployerDetails(selectedEmployerDetails);
+    setSelectedEmployerDetails(null);
+    setIsFaqDrawerOpen(false);
+    handleOpenJobDetailsById(jobId);
+  };
+
+  const handleCloseJobDetails = () => {
+    setDetailsJob(null);
+    setIsMatchDrawerOpen(false);
+    setIsMatchDrawerClosing(false);
+    setIsFaqDrawerOpen(false);
+    if (returnToEmployerDetails) {
+      setSelectedEmployerDetails(returnToEmployerDetails);
+      setReturnToEmployerDetails(null);
+    }
+  };
+
   const handleOpenEmployerFaqs = (employerUserId: number) => {
     setIsFaqDrawerOpen(true);
     setFaqLoading(true);
@@ -2114,38 +2133,6 @@ export default function JobSearch() {
                             <span className="status-chip closed">No Active Postings</span>
                           )}
                         </div>
-
-                        {/* Preview chips of active jobs */}
-                        {employer.jobs && employer.jobs.length > 0 && (
-                          <div className="employer-jobs-preview-wrap">
-                            <span className="preview-label">ACTIVE OPENINGS:</span>
-                            <div className="employer-jobs-chips-list">
-                              {employer.jobs.slice(0, 3).map((j) => (
-                                <button
-                                  key={j.id}
-                                  type="button"
-                                  className="employer-job-chip-btn"
-                                  title={`Click to view details for ${j.title}`}
-                                  onClick={() => handleOpenJobDetailsById(j.id)}
-                                >
-                                  <span className="job-chip-icon">💼</span>
-                                  <span className="job-chip-title">{j.title}</span>
-                                  <span className="job-chip-type">({j.work_arrangement || "On-Site"})</span>
-                                </button>
-                              ))}
-                              {employer.jobs.length > 3 && (
-                                <button
-                                  type="button"
-                                  className="employer-job-chip-more"
-                                  title="View more openings"
-                                  onClick={() => handleOpenJobDetailsById(employer.jobs[3].id)}
-                                >
-                                  +{employer.jobs.length - 3} more
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        )}
                       </div>
 
                       <div className="result-right-col">
@@ -2248,9 +2235,7 @@ export default function JobSearch() {
           aria-label="Job Details"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
-              setDetailsJob(null);
-              setIsMatchDrawerOpen(false);
-              setIsFaqDrawerOpen(false);
+              handleCloseJobDetails();
             }
           }}
         >
@@ -2462,12 +2447,7 @@ export default function JobSearch() {
                   <button
                     type="button"
                     className="jd-cancel-btn"
-                    onClick={() => {
-                      setDetailsJob(null);
-                      setIsMatchDrawerOpen(false);
-                      setIsMatchDrawerClosing(false);
-                      setIsFaqDrawerOpen(false);
-                    }}
+                    onClick={handleCloseJobDetails}
                   >
                     Close
                   </button>
@@ -2846,6 +2826,7 @@ export default function JobSearch() {
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setSelectedEmployerDetails(null);
+              setReturnToEmployerDetails(null);
               setIsFaqDrawerOpen(false);
             }
           }}
@@ -2944,6 +2925,84 @@ export default function JobSearch() {
               {/* Scrollable body & drawer container */}
               <div className="jd-body-wrapper" style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
                 <div className="jd-body" style={{ maxHeight: "calc(88vh - 280px)", overflowY: "auto", padding: "20px 24px" }}>
+                  {/* Section: Active Job Openings */}
+                  <div className="company-modal-jobs-section">
+                    <div className="company-modal-jobs-header">
+                      <h3 className="company-modal-jobs-title">
+                        Job Openings ({selectedEmployerDetails.jobs?.length || 0})
+                      </h3>
+                      {selectedEmployerDetails.jobs && selectedEmployerDetails.jobs.length > 0 && (
+                        <span className="status-chip open" style={{ fontSize: "0.75rem", padding: "2px 8px" }}>
+                          {selectedEmployerDetails.jobs.length} Active
+                        </span>
+                      )}
+                    </div>
+
+                    {(!selectedEmployerDetails.jobs || selectedEmployerDetails.jobs.length === 0) ? (
+                      <div className="company-modal-jobs-empty">
+                        No active job openings posted by this employer at the moment.
+                      </div>
+                    ) : (
+                      <div className="company-modal-jobs-list">
+                        {selectedEmployerDetails.jobs.map((j) => {
+                          const skills = parseCompetencyDisplayTags(j.required_skills);
+                          const isApplied = appliedJobIds.includes(j.id);
+                          const isApplying = applyingJobId === j.id;
+
+                          return (
+                            <div key={j.id} className="company-modal-job-item">
+                              <div className="company-modal-job-info">
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "4px" }}>
+                                  <span className="company-modal-job-title">{j.title}</span>
+                                  {j.urgent && <span className="urgent-pill" style={{ fontSize: "0.7rem", padding: "2px 6px" }}>URGENT</span>}
+                                </div>
+                                <div className="company-modal-job-meta">
+                                  <span className="setup-pill">{j.work_arrangement || "On-Site"}</span>
+                                  <span className="salary-pill">{formatSalary(j.salary_min, j.salary_max)}</span>
+                                  <span className="company-modal-job-loc">📍 {j.location || selectedEmployerDetails.location || "Cavite"}</span>
+                                </div>
+                                {skills.length > 0 && (
+                                  <div className="company-modal-job-skills">
+                                    {skills.slice(0, 3).map((s, idx) => (
+                                      <span key={idx} className="js-tag-skill" style={{ fontSize: "0.72rem", padding: "2px 7px", borderRadius: "999px" }}>
+                                        {s}
+                                      </span>
+                                    ))}
+                                    {skills.length > 3 && (
+                                      <span style={{ fontSize: "0.72rem", color: "#94a3b8", alignSelf: "center" }}>
+                                        +{skills.length - 3}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="company-modal-job-actions">
+                                <button
+                                  type="button"
+                                  className="details-btn"
+                                  style={{ padding: "6px 14px", fontSize: "0.82rem" }}
+                                  onClick={() => handleOpenJobFromEmployerModal(j.id)}
+                                >
+                                  Details
+                                </button>
+                                <button
+                                  type="button"
+                                  className={`solid-btn ${isApplied ? "applied-btn" : ""}`}
+                                  style={{ padding: "6px 14px", fontSize: "0.82rem" }}
+                                  onClick={() => setApplyJobTarget({ jobId: j.id, title: j.title })}
+                                  disabled={isApplied || isApplying}
+                                >
+                                  {isApplied ? "Applied" : isApplying ? "Applying..." : "Apply"}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
                   {/* Section: Company Overview */}
                   <div style={{ marginBottom: "24px" }}>
                     <h3 style={{ fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b", fontWeight: 700, marginBottom: "8px" }}>
@@ -3051,6 +3110,7 @@ export default function JobSearch() {
                   className="cand-details-cancel-btn"
                   onClick={() => {
                     setSelectedEmployerDetails(null);
+                    setReturnToEmployerDetails(null);
                     setIsFaqDrawerOpen(false);
                   }}
                 >

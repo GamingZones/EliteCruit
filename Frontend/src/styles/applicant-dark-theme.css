@@ -1970,6 +1970,34 @@
   color: #ffffff !important;
 }
 
+[data-theme="dark"] .company-modal-jobs-title {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .company-modal-jobs-empty {
+  background: #242735 !important;
+  border: 1px dashed #334155 !important;
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .company-modal-job-item {
+  background: #242735 !important;
+  border: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .company-modal-job-item:hover {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .company-modal-job-title {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .company-modal-job-loc {
+  color: #94a3b8 !important;
+}
+
 /* --------------------------------------------------------------------------
    11. Generic Inputs and Form Elements
    -------------------------------------------------------------------------- */
