@@ -2,6 +2,51 @@
   padding: 0;
   display: grid;
   gap: 0;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ── Standardized Header Topbar (Matching Offer-Letter Benchmark) ── */
+.messages-main .appdash-topbar {
+  background: #ffffff;
+  border-bottom: 1px solid #d9e2ee;
+  padding: 8px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  min-height: 56px;
+  box-sizing: border-box;
+}
+
+[data-theme="dark"] .messages-main .appdash-topbar {
+  background: #1c1e27 !important;
+  border-bottom: 1px solid #2e3244 !important;
+  color: #f8fafc !important;
+}
+
+.messages-main .appdash-top-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.messages-main .appdash-top-left strong {
+  font-size: 1.15rem !important;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #0c2a47;
+}
+
+[data-theme="dark"] .messages-main .appdash-top-left strong {
+  color: #ffffff !important;
+}
+
+.messages-main .appdash-top-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .messages-shell {
@@ -10,6 +55,7 @@
   grid-template-columns: 290px minmax(0, 1fr);
   gap: 10px;
   min-height: calc(100vh - 94px);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .thread-list-panel,
@@ -1867,3 +1913,39 @@
 .company-info-card-val {
   color: #0f172a;
 }
+
+/* ==========================================================================
+   PHONE & MOBILE UI ADJUSTMENTS (max-width: 768px)
+   Scope: Applied STRICTLY to phones/mobile screens; desktop/laptop UI is 100% untouched.
+   ========================================================================== */
+@media (max-width: 768px) {
+  .messages-shell {
+    grid-template-columns: 1fr !important;
+    margin: 8px !important;
+    gap: 10px !important;
+    min-height: auto !important;
+  }
+
+  .thread-list-panel {
+    max-height: 280px !important;
+    overflow-y: auto !important;
+  }
+
+  .chat-panel {
+    min-height: 480px !important;
+  }
+
+  .chat-header {
+    padding: 10px 14px !important;
+  }
+
+  .chat-input-row {
+    padding: 10px 12px !important;
+    gap: 8px !important;
+  }
+
+  .chat-input-row input {
+    font-size: 16px !important;
+  }
+}
+

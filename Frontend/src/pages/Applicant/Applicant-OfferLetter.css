@@ -1,0 +1,569 @@
+/* ==========================================================================
+   APPLICANT - OFFER LETTERS & RESPONSE NOTICES (INDEPENDENT STYLES)
+   Exact match to Employer Notices & FAQs (Pic 1)
+   Theme Isolation: Clean Light Mode + Obsidian Dark Mode ([data-theme="dark"])
+   Font: Inter (Globally Standardized)
+   Prefix: .aol- (Strictly isolated to prevent collisions)
+   ========================================================================== */
+
+.aol-page-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  background: #f8fafc;
+  color: #0f172a;
+  box-sizing: border-box;
+  font-family: "Inter", sans-serif;
+}
+
+[data-theme="dark"] .aol-page-layout {
+  background: #0f1117;
+  color: #f1f5f9;
+}
+
+.aol-main-content {
+  flex: 1;
+  min-width: 0;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ── Standardized Header Topbar (Benchmark) ── */
+.aol-main-content .appdash-topbar,
+.appdash-topbar {
+  background: #ffffff;
+  border-bottom: 1px solid #d9e2ee;
+  padding: 8px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  min-height: 56px;
+  box-sizing: border-box;
+}
+
+[data-theme="dark"] .aol-main-content .appdash-topbar,
+[data-theme="dark"] .appdash-topbar {
+  background: #1c1e27 !important;
+  border-bottom: 1px solid #2e3244 !important;
+  color: #f8fafc !important;
+}
+
+.appdash-top-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.appdash-top-left strong {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #0c2a47;
+}
+
+[data-theme="dark"] .appdash-top-left strong {
+  color: #ffffff !important;
+}
+
+.appdash-top-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.aol-card-container {
+  padding: 24px 28px 48px;
+  flex: 1;
+  box-sizing: border-box;
+}
+
+/* ── Main Container Card ── */
+.aol-notices-page-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e2e8f0;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-sizing: border-box;
+}
+
+[data-theme="dark"] .aol-notices-page-card {
+  background: #1c1e27 !important;
+  border: 1px solid #2e3244 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35) !important;
+  color: #f1f5f9 !important;
+}
+
+/* ── Tab Switcher ── */
+.aol-notices-tab-nav {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 24px;
+  padding-bottom: 0;
+  width: 100%;
+}
+
+[data-theme="dark"] .aol-notices-tab-nav {
+  border-bottom: 2px solid #2e3244 !important;
+}
+
+.aol-notices-tab-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 13px 20px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: -2px;
+  border-radius: 6px 6px 0 0;
+  line-height: 1;
+  text-align: center;
+  font-family: inherit;
+}
+
+.aol-notices-tab-btn:hover {
+  color: #0d3c61;
+  background: #f8fafc;
+}
+
+.aol-notices-tab-btn.active {
+  color: #0d3c61;
+  font-weight: 700;
+  border-bottom-color: #0d3c61;
+  background: #f0f7fc;
+}
+
+[data-theme="dark"] .aol-notices-tab-btn {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .aol-notices-tab-btn:hover {
+  color: #ffffff !important;
+  background: #242735 !important;
+}
+
+[data-theme="dark"] .aol-notices-tab-btn.active {
+  color: #38bdf8 !important;
+  border-bottom-color: #38bdf8 !important;
+  background: rgba(56, 189, 248, 0.1) !important;
+}
+
+.aol-tab-btn-icon {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  display: block;
+  color: currentColor;
+}
+
+.aol-tab-btn-text {
+  display: inline-block;
+  line-height: 1;
+}
+
+/* ── Decision Templates Grid (Two Side-by-Side Cards) ── */
+.aol-decision-templates-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 1024px) {
+  .aol-decision-templates-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.aol-template-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.18s ease;
+  box-sizing: border-box;
+}
+
+.aol-template-card:hover {
+  border-color: #cbd5e1;
+}
+
+.aol-template-card.acceptance {
+  border-top: 4px solid #16a34a;
+}
+
+.aol-template-card.denial {
+  border-top: 4px solid #dc2626;
+}
+
+[data-theme="dark"] .aol-template-card {
+  background: #1c1e27 !important;
+  border: 1px solid #2e3244 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+}
+
+[data-theme="dark"] .aol-template-card:hover {
+  border-color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .aol-template-card.acceptance {
+  border-top: 4px solid #22c55e !important;
+}
+
+[data-theme="dark"] .aol-template-card.denial {
+  border-top: 4px solid #ef4444 !important;
+}
+
+/* ── Card Head ── */
+.aol-template-card-head {
+  padding: 16px 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+[data-theme="dark"] .aol-template-card-head {
+  background: #14151B !important;
+  border-bottom: 1px solid #2e3244 !important;
+}
+
+.aol-template-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.aol-template-card-title-group h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+[data-theme="dark"] .aol-template-card-title-group h3 {
+  color: #ffffff !important;
+}
+
+.aol-template-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.aol-template-badge.acceptance {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.aol-template-badge.denial {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+[data-theme="dark"] .aol-template-badge.acceptance {
+  background: rgba(34, 197, 94, 0.16) !important;
+  color: #4ade80 !important;
+  border: 1px solid rgba(34, 197, 94, 0.35) !important;
+}
+
+[data-theme="dark"] .aol-template-badge.denial {
+  background: rgba(239, 68, 68, 0.16) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.35) !important;
+}
+
+/* ── Card Body ── */
+.aol-template-card-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+}
+
+/* ── Tag Chips Bar ── */
+.aol-template-tags-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.8rem;
+}
+
+.aol-template-tags-bar span {
+  color: #64748b;
+  font-weight: 600;
+  margin-right: 2px;
+}
+
+[data-theme="dark"] .aol-template-tags-bar {
+  background: #14151B !important;
+  border: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .aol-template-tags-bar span {
+  color: #94a3b8 !important;
+}
+
+.aol-template-tag-chip {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #0284c7;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+}
+
+.aol-template-tag-chip:hover {
+  background: #f0f9ff;
+  border-color: #0284c7;
+  transform: translateY(-1px);
+}
+
+[data-theme="dark"] .aol-template-tag-chip {
+  background: #242735 !important;
+  border: 1px solid #2e3244 !important;
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .aol-template-tag-chip:hover {
+  background: rgba(56, 189, 248, 0.16) !important;
+  border-color: #38bdf8 !important;
+  color: #7dd3fc !important;
+}
+
+/* ── Textarea ── */
+.aol-template-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #1e293b;
+  background: #ffffff;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 170px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.aol-template-textarea:focus {
+  outline: none;
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+[data-theme="dark"] .aol-template-textarea {
+  background: #14151B !important;
+  border: 1px solid #2e3244 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .aol-template-textarea:focus {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18) !important;
+}
+
+/* ── Preview Box ── */
+.aol-template-preview-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+[data-theme="dark"] .aol-template-preview-box {
+  background: #14151B !important;
+  border: 1px solid #2e3244 !important;
+}
+
+.aol-template-preview-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #64748b;
+  letter-spacing: 0.04em;
+}
+
+[data-theme="dark"] .aol-template-preview-label {
+  color: #94a3b8 !important;
+}
+
+.aol-template-preview-content {
+  font-size: 0.84rem;
+  line-height: 1.55;
+  color: #334155;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+[data-theme="dark"] .aol-template-preview-content {
+  color: #cbd5e1 !important;
+}
+
+/* ── Card Message ── */
+.aol-template-card-msg {
+  padding: 8px 14px;
+  margin: 0 20px 10px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  animation: aolFadeIn 0.2s ease-out;
+}
+
+.aol-template-card-msg.success {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.aol-template-card-msg.error {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+[data-theme="dark"] .aol-template-card-msg.success {
+  background: rgba(34, 197, 94, 0.16) !important;
+  color: #4ade80 !important;
+  border: 1px solid rgba(34, 197, 94, 0.35) !important;
+}
+
+[data-theme="dark"] .aol-template-card-msg.error {
+  background: rgba(239, 68, 68, 0.16) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.35) !important;
+}
+
+/* ── Card Footer ── */
+.aol-template-card-footer {
+  padding: 14px 20px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+[data-theme="dark"] .aol-template-card-footer {
+  background: #14151B !important;
+  border-top: 1px solid #2e3244 !important;
+}
+
+.aol-notices-reset-btn {
+  background: transparent;
+  border: none;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.aol-notices-reset-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+[data-theme="dark"] .aol-notices-reset-btn {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .aol-notices-reset-btn:hover {
+  background: #242735 !important;
+  color: #ffffff !important;
+}
+
+.aol-notices-save-btn {
+  background: #0284c7;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.aol-notices-save-btn:hover:not(:disabled) {
+  background: #0369a1;
+  transform: translateY(-1px);
+}
+
+.aol-notices-save-btn:disabled,
+.aol-notices-reset-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .aol-main-content {
+    padding: 16px 14px 36px !important;
+  }
+  .aol-notices-page-card {
+    padding: 16px 14px !important;
+  }
+  .aol-template-card-footer {
+    flex-direction: column-reverse !important;
+    gap: 8px !important;
+  }
+  .aol-notices-reset-btn,
+  .aol-notices-save-btn {
+    width: 100% !important;
+    text-align: center !important;
+  }
+}

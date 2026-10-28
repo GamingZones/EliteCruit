@@ -9,7 +9,7 @@
   background: #f5f1e8;
   color: #0b2f53;
   overflow: hidden;
-  font-family: "Manrope", sans-serif;
+  font-family: "Inter", sans-serif;
 }
 
 [data-theme="dark"] .settings-page-shell {
@@ -24,7 +24,7 @@
   flex-direction: column;
 }
 
-/* Standard Header Bar Matching Feedback / Dashboard */
+/* Standard Header Bar Matching Offer-Letter Benchmark */
 .settings-main-content .appdash-topbar {
   background: #ffffff;
   border-bottom: 1px solid #d9e2ee;
@@ -35,11 +35,14 @@
   position: sticky;
   top: 0;
   z-index: 20;
+  min-height: 56px;
+  box-sizing: border-box;
 }
 
 [data-theme="dark"] .settings-main-content .appdash-topbar {
-  background: #1c1e27;
-  border-bottom-color: #2e3244;
+  background: #1c1e27 !important;
+  border-bottom: 1px solid #2e3244 !important;
+  color: #f8fafc !important;
 }
 
 .settings-main-content .appdash-top-left {
@@ -50,12 +53,13 @@
 
 .settings-main-content .appdash-top-left strong {
   font-size: 1.15rem;
-  font-weight: 700;
-  color: #0b2f53;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #0c2a47;
 }
 
 [data-theme="dark"] .settings-main-content .appdash-top-left strong {
-  color: #f1f5f9;
+  color: #ffffff !important;
 }
 
 .settings-main-content .appdash-top-right {
@@ -547,3 +551,51 @@
 [data-theme="dark"] .theme-option-label {
   color: #f1f5f9;
 }
+
+/* ==========================================================================
+   PHONE & MOBILE UI ADJUSTMENTS (max-width: 768px)
+   Scope: Applied STRICTLY to phones/mobile screens; desktop/laptop UI is 100% untouched.
+   ========================================================================== */
+@media (max-width: 768px) {
+  .settings-page-shell {
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow-y: auto !important;
+  }
+
+  .settings-main-content {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .settings-main-content .appdash-topbar {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    padding: 12px 16px !important;
+  }
+
+  .settings-content-card {
+    margin: 12px 14px 28px !important;
+    padding: 18px 14px !important;
+    border-radius: 12px !important;
+  }
+
+  .theme-options-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .settings-form-row {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .settings-btn {
+    width: 100% !important;
+    min-height: 44px !important;
+  }
+}
+

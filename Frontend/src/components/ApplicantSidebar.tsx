@@ -2,6 +2,8 @@ import React, { useState, useMemo } from "react";
 import "./ApplicantSidebar.css";
 import { clearAuth } from "../utils/auth";
 import { SideIcon, ChevronIcon, type SideNavItem } from "./Icons";
+import { useUnreadNotificationsCount } from "../hooks/useUnreadNotificationsCount";
+import { useUnreadMessagesCount } from "../hooks/useUnreadMessagesCount";
 
 export interface ApplicantNavItem {
   label: string;
@@ -20,7 +22,7 @@ interface ApplicantSidebarProps {
 
 export default function ApplicantSidebar({
   activePath = typeof window !== "undefined" ? window.location.pathname.toLowerCase() : "/applicant-dashboard",
-  activeSection = "section-overview",
+  activeSection = "section-smart-matches",
   applicantName = "Applicant",
   onNavigateSection,
 }: ApplicantSidebarProps) {
@@ -30,6 +32,8 @@ export default function ApplicantSidebar({
   // Keep dropdown open if on workspace page, or allow toggle on any page
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(isWorkspaceActivePage);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const unreadNotifCount = useUnreadNotificationsCount();
+  const unreadMessagesCount = useUnreadMessagesCount();
 
   // Dynamically resolve real logged-in applicant name if available
   const resolvedApplicantName = useMemo(() => {
@@ -49,7 +53,6 @@ export default function ApplicantSidebar({
   }, [applicantName]);
 
   const workspaceNav: ApplicantNavItem[] = [
-    { label: "Overview", icon: "overview", sectionId: "section-overview" },
     { label: "Smart Matches", icon: "star", sectionId: "section-smart-matches" },
     { label: "My Applications", icon: "applications", sectionId: "section-applications" },
     { label: "Job Invitations", icon: "notifications", sectionId: "section-invitations" },
@@ -57,6 +60,7 @@ export default function ApplicantSidebar({
 
   const secondaryNav: ApplicantNavItem[] = [
     { label: "Job Search", icon: "search", href: "/job-search" },
+    { label: "Offer Letters", icon: "documents", href: "/applicant-offer-letter" },
     { label: "Messages", icon: "messages", href: "/messages" },
     { label: "Notifications", icon: "notifications", href: "/notifications" },
     { label: "Feedback", icon: "feedback", href: "/feedback" },
@@ -65,10 +69,28 @@ export default function ApplicantSidebar({
   return (
     <aside className="appdash-sidebar" aria-label="Applicant Navigation">
       {/* Brand Header - Matching Applicant Dashboard 1:1 */}
-      <a href="/" className="appdash-brand">
-        <strong>EliteCruit</strong>
-        <span>Candidate Workspace</span>
-      </a>
+      <div className="appdash-brand">
+        <a href="/" className="appdash-brand-link">
+          <strong>EliteCruit</strong>
+          <span>Candidate Workspace</span>
+        </a>
+        <button
+          type="button"
+          className="appdash-sidebar-toggle"
+          aria-label="Close sidebar menu"
+          onClick={() => {
+            const page = document.querySelector('.appdash-page, .profile-page, .jobsearch-page, .messages-page, .settings-page-shell');
+            if (page) {
+              page.classList.remove('sidebar-visible');
+              page.classList.add('sidebar-hidden');
+            }
+          }}
+        >
+          <svg viewBox="0 0 24 24" style={{ width: 18, height: 18, fill: "none", stroke: "currentColor", strokeWidth: 2.2, strokeLinecap: "round", strokeLinejoin: "round" }} aria-hidden="true">
+            <path d="M5 7h14M5 12h14M5 17h14" />
+          </svg>
+        </button>
+      </div>
 
       {/* Main Nav List */}
       <ul className="appdash-secondary-list">
@@ -123,6 +145,14 @@ export default function ApplicantSidebar({
         {/* Secondary Nav Items */}
         {secondaryNav.map((item) => {
           const isActive = item.href ? activePath === item.href.toLowerCase() : false;
+          const isNotif = item.label === "Notifications";
+          const isMessages = item.label === "Messages";
+          const badgeCount = isNotif
+            ? unreadNotifCount > 0 ? unreadNotifCount : null
+            : isMessages
+            ? unreadMessagesCount > 0 ? unreadMessagesCount : null
+            : item.badge;
+
           return (
             <li key={item.label} className={isActive ? "active" : ""}>
               <a href={item.href || "#"}>
@@ -130,7 +160,7 @@ export default function ApplicantSidebar({
                   <SideIcon name={item.icon} />
                 </span>
                 <span>{item.label}</span>
-                {item.badge ? <span className="item-badge">{item.badge}</span> : null}
+                {badgeCount ? <span className="item-badge">{badgeCount}</span> : null}
               </a>
             </li>
           );

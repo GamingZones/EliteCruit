@@ -61,7 +61,7 @@ export async function authFetch(input: RequestInfo | URL, init?: RequestInit): P
 
   if (response.status === 401) {
     const url = typeof input === "string" ? input : input instanceof Request ? input.url : input.toString();
-    const isAuthAttempt = url.includes("/api/auth/login") || url.includes("/api/auth/register");
+    const isAuthAttempt = url.includes("/api/auth/");
     if (!isAuthAttempt) {
       clearAuth();
       if (typeof window !== "undefined") {

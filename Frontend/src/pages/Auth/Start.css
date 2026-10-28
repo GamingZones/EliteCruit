@@ -2,6 +2,9 @@
 	min-height: 100vh;
 	display: flex;
 	flex-direction: column;
+	overflow-y: visible;
+	overflow-x: hidden;
+	width: 100%;
 }
 
 .hero {
@@ -16,12 +19,14 @@
 	position: absolute;
 	inset: 0;
 	background: linear-gradient(to bottom right, rgba(10, 15, 28, 0.72), rgba(24, 47, 80, 0.45));
+	pointer-events: none;
 }
 
 .hero-bg-container {
 	position: absolute;
 	inset: 0;
 	opacity: 0.4;
+	pointer-events: none;
 }
 
 .bg-panel {
@@ -29,7 +34,9 @@
 	border: 1px solid rgba(255, 255, 255, 0.22);
 	border-radius: 18px;
 	backdrop-filter: blur(2px);
+	pointer-events: none;
 }
+
 
 .bg-panel.top {
 	top: 54px;
@@ -74,7 +81,7 @@
 }
 
 .brand-main {
-	font-family: "Sora", sans-serif;
+	font-family: "Inter", sans-serif;
 	font-size: 1.72rem;
 	line-height: 1;
 	letter-spacing: 0.01em;
@@ -98,7 +105,7 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	font-family: "Manrope", sans-serif;
+	font-family: "Inter", sans-serif;
 	font-size: 0.95rem;
 	font-weight: 700;
 	border-radius: 12px;
@@ -146,7 +153,7 @@
 
 .hero-copy h1 {
 	margin: 14px 0 12px;
-	font-family: "Sora", sans-serif;
+	font-family: "Inter", sans-serif;
 	font-size: clamp(1.8rem, 3.75vw, 3.35rem);
 	line-height: 1.07;
 	letter-spacing: -0.025em;
@@ -276,37 +283,85 @@
 	}
 }
 
-@media (max-width: 700px) {
+/* ==========================================================================
+   PHONE & MOBILE UI ADJUSTMENTS (max-width: 768px)
+   Scope: Applied STRICTLY to phones/mobile screens; desktop/laptop UI is 100% untouched.
+   ========================================================================== */
+@media (max-width: 768px) {
+	.page {
+		height: auto !important;
+		min-height: 100vh !important;
+		overflow-y: visible !important;
+		overflow-x: hidden !important;
+	}
+
 	.hero {
-		min-height: 560px;
+		min-height: auto !important;
+		height: auto !important;
+		overflow: hidden !important;
+	}
+
+	.hero-content {
+		padding: 16px 16px 28px !important;
+		overflow: visible !important;
 	}
 
 	.hero-copy {
-		margin-top: 28px;
+		margin-top: 18px !important;
+	}
+
+	.hero-copy h1 {
+		font-size: 1.65rem !important;
+		line-height: 1.15 !important;
+		margin: 10px 0 !important;
+	}
+
+	.hero-copy p {
+		font-size: 0.88rem !important;
+		line-height: 1.4 !important;
 	}
 
 	.topbar {
-		align-items: flex-start;
-		flex-direction: column;
+		align-items: flex-start !important;
+		flex-direction: column !important;
+		gap: 12px !important;
 	}
 
 	.top-actions {
-		width: 100%;
+		width: 100% !important;
+		display: flex !important;
+		gap: 8px !important;
 	}
 
 	.top-actions .btn {
-		flex: 1;
+		flex: 1 !important;
+		min-height: 42px !important;
+		padding: 10px 14px !important;
+		font-size: 0.88rem !important;
+	}
+
+	.features-wrap {
+		padding: 18px 14px 32px !important;
+		overflow-y: visible !important;
 	}
 
 	.features-grid {
-		grid-template-columns: 1fr;
+		grid-template-columns: 1fr !important;
+		gap: 12px !important;
+	}
+
+	.feature-card {
+		padding: 14px !important;
 	}
 
 	.feature-card h2 {
-		font-size: 1.3rem;
+		font-size: 1.15rem !important;
+		margin: 8px 0 4px !important;
 	}
 
 	.feature-card p {
-		font-size: 0.95rem;
+		font-size: 0.85rem !important;
 	}
 }
+
+

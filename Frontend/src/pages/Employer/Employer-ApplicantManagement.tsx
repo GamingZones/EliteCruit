@@ -19,6 +19,7 @@ import {
   calculateJobMatchDetails,
   getMatchColorClass,
   isSkillMatch,
+  isCertificationMatch,
   formatExperienceLevel,
   formatLocationWithCavite,
   parseCompetencyDisplayTags,
@@ -3376,7 +3377,7 @@ export default function EmployerApplicantManagement() {
                   </div>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: "3px", marginTop: "4px", width: "100%", overflow: "hidden" }}>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "0.8rem", color: "#64748b", fontFamily: '"Manrope", sans-serif' }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "0.8rem", color: "#64748b", fontFamily: '"Inter", sans-serif' }}>
                       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" />
                         <circle cx="12" cy="10" r="2.5" />
@@ -3384,7 +3385,7 @@ export default function EmployerApplicantManagement() {
                       {currentApp.city || currentApp.address || "Cavite"}
                     </span>
                     {(currentApp.email || currentApp.phone || (currentApp as any).contact_number) && (
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", flexWrap: "wrap", fontSize: "0.78rem", color: "#64748b", fontFamily: '"Manrope", sans-serif', wordBreak: "break-all" }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", flexWrap: "wrap", fontSize: "0.78rem", color: "#64748b", fontFamily: '"Inter", sans-serif', wordBreak: "break-all" }}>
                         {currentApp.email && (
                           <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", wordBreak: "break-all" }}>
                             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -3420,7 +3421,7 @@ export default function EmployerApplicantManagement() {
                               <span key={idx} className="preview-pill skill-pill">{item}</span>
                             ))
                           ) : (
-                            <span style={{ fontSize: "0.78rem", color: "#64748b", fontStyle: "italic", fontFamily: '"Manrope", sans-serif' }}>
+                            <span style={{ fontSize: "0.78rem", color: "#64748b", fontStyle: "italic", fontFamily: '"Inter", sans-serif' }}>
                               No skills listed
                             </span>
                           );
@@ -3438,7 +3439,7 @@ export default function EmployerApplicantManagement() {
                               <span key={idx} className="preview-pill quali-pill">{item}</span>
                             ))
                           ) : (
-                            <span style={{ fontSize: "0.78rem", color: "#64748b", fontStyle: "italic", fontFamily: '"Manrope", sans-serif' }}>
+                            <span style={{ fontSize: "0.78rem", color: "#64748b", fontStyle: "italic", fontFamily: '"Inter", sans-serif' }}>
                               No qualifications listed
                             </span>
                           );
@@ -3456,7 +3457,7 @@ export default function EmployerApplicantManagement() {
                               <span key={idx} className="preview-pill cert-pill">{item}</span>
                             ))
                           ) : (
-                            <span style={{ fontSize: "0.78rem", color: "#64748b", fontStyle: "italic", fontFamily: '"Manrope", sans-serif' }}>
+                            <span style={{ fontSize: "0.78rem", color: "#64748b", fontStyle: "italic", fontFamily: '"Inter", sans-serif' }}>
                               No certifications listed
                             </span>
                           );
@@ -4567,22 +4568,28 @@ export default function EmployerApplicantManagement() {
                   }
                 );
 
-                const checkMatch = (jobItem: string, appItems: string[]) => {
+                const checkMatch = (jobItem: string, appItems: string[], type?: "skills" | "qualifications" | "certifications") => {
                   if (!appItems || appItems.length === 0) return false;
+                  if (type === "certifications") {
+                    return appItems.some((appItem) => isCertificationMatch(jobItem, appItem));
+                  }
                   return appItems.some((appItem) => isSkillMatch(jobItem, appItem));
                 };
 
-                const isCandRelevant = (appItem: string, jItems: string[]) => {
+                const isCandRelevant = (appItem: string, jItems: string[], type?: "skills" | "qualifications" | "certifications") => {
                   if (!jItems || jItems.length === 0) return false;
+                  if (type === "certifications") {
+                    return jItems.some((jobItem) => isCertificationMatch(jobItem, appItem));
+                  }
                   return jItems.some((jobItem) => isSkillMatch(jobItem, appItem));
                 };
 
                 return (
-                  <aside className={`jd-side-comparison-panel ${isMatchDrawerClosing ? "closing" : "opening"}`} style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}>
-                    <div className="jd-side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
+                  <aside className={`jd-side-comparison-panel ${isMatchDrawerClosing ? "closing" : "opening"}`} style={{ marginTop: "44px", fontFamily: '"Inter", sans-serif' }}>
+                    <div className="jd-side-panel-header" style={{ fontFamily: '"Inter", sans-serif' }}>
                       <div className="jd-side-title-row">
-                        <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>Match Breakdown</h3>
-                        <span className="jd-side-subtitle" style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>Side-by-side candidate profile vs job requirements</span>
+                        <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Inter", sans-serif' }}>Match Breakdown</h3>
+                        <span className="jd-side-subtitle" style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Inter", sans-serif' }}>Side-by-side candidate profile vs job requirements</span>
                       </div>
                       <div className="jd-side-header-actions">
                         <span className={`match-badge-pill ${getMatchColorClass(matchDetails.score)}`}>
@@ -4780,9 +4787,9 @@ export default function EmployerApplicantManagement() {
                               <div className="jd-col-tags-container">
                                 {jobCerts.length > 0 ? (
                                   jobCerts.map((item) => {
-                                    const matched = checkMatch(item, candCerts);
+                                    const matched = checkMatch(item, candCerts, "certifications");
                                     const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
-                                    const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "certifications" && isSkillMatch(item, hoveredCompareTag.item));
+                                    const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "certifications" && isCertificationMatch(item, hoveredCompareTag.item));
                                     return (
                                       <span
                                         key={item}
@@ -4809,11 +4816,11 @@ export default function EmployerApplicantManagement() {
 
               {/* ── Other Employer Jobs Panel (Container 2) ── */}
               {(isOtherJobsOpen || isOtherJobsClosing) && (
-                <aside className={`jd-side-comparison-panel ${isOtherJobsClosing ? "closing" : "opening"}`} style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}>
-                  <div className="jd-side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
+                <aside className={`jd-side-comparison-panel ${isOtherJobsClosing ? "closing" : "opening"}`} style={{ marginTop: "44px", fontFamily: '"Inter", sans-serif' }}>
+                  <div className="jd-side-panel-header" style={{ fontFamily: '"Inter", sans-serif' }}>
                     <div className="jd-side-title-row">
-                      <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>Other Employer Jobs</h3>
-                      <span className="jd-side-subtitle" style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>Candidate compatibility across your active job postings</span>
+                      <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Inter", sans-serif' }}>Other Employer Jobs</h3>
+                      <span className="jd-side-subtitle" style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Inter", sans-serif' }}>Candidate compatibility across your active job postings</span>
                     </div>
                     <div className="jd-side-header-actions">
                       <button
@@ -4833,7 +4840,7 @@ export default function EmployerApplicantManagement() {
                     </div>
                   </div>
 
-                  <div className="jd-side-panel-body" style={{ display: "flex", flexDirection: "column", gap: "14px", padding: "18px", fontFamily: '"Manrope", sans-serif' }}>
+                  <div className="jd-side-panel-body" style={{ display: "flex", flexDirection: "column", gap: "14px", padding: "18px", fontFamily: '"Inter", sans-serif' }}>
                     {(() => {
                       const otherJobsList = Object.values(allJobsMap).filter(
                         (j: any) => Number(j.id) !== Number(reviewModalApp.job_post_id)
@@ -4841,7 +4848,7 @@ export default function EmployerApplicantManagement() {
 
                       if (otherJobsList.length === 0) {
                         return (
-                          <div style={{ textAlign: "center", color: "#64748b", padding: "30px 10px", fontSize: "0.9rem", fontFamily: '"Manrope", sans-serif' }}>
+                          <div style={{ textAlign: "center", color: "#64748b", padding: "30px 10px", fontSize: "0.9rem", fontFamily: '"Inter", sans-serif' }}>
                             No other job posts found for this employer.
                           </div>
                         );
@@ -4885,22 +4892,22 @@ export default function EmployerApplicantManagement() {
                               justifyContent: "space-between",
                               alignItems: "center",
                               gap: "12px",
-                              fontFamily: '"Manrope", sans-serif',
+                              fontFamily: '"Inter", sans-serif',
                             }}
                           >
                             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                              <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
+                              <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800, color: "#01294a", fontFamily: '"Inter", sans-serif' }}>
                                 {otherJob.title}
                               </h4>
-                              <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginTop: "2px", fontSize: "0.8rem", color: "#64748b", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
-                                <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Manrope", sans-serif' }}>
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginTop: "2px", fontSize: "0.8rem", color: "#64748b", fontWeight: 600, fontFamily: '"Inter", sans-serif' }}>
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Inter", sans-serif' }}>
                                   <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" />
                                     <circle cx="12" cy="10" r="2.5" />
                                   </svg>
                                   {otherJob.location || "Cavite"}
                                 </span>
-                                <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Manrope", sans-serif' }}>
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Inter", sans-serif' }}>
                                   <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
                                     <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
@@ -4908,7 +4915,7 @@ export default function EmployerApplicantManagement() {
                                   {otherJob.work_arrangement || "On-Site"}
                                 </span>
                                 {otherJob.salary_min ? (
-                                  <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Manrope", sans-serif' }}>
+                                  <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Inter", sans-serif' }}>
                                     PHP {Number(otherJob.salary_min).toLocaleString()} - {Number(otherJob.salary_max).toLocaleString()}
                                   </span>
                                 ) : null}
@@ -4924,7 +4931,7 @@ export default function EmployerApplicantManagement() {
                                   padding: "4px 14px",
                                   borderRadius: "999px",
                                   whiteSpace: "nowrap",
-                                  fontFamily: '"Manrope", sans-serif',
+                                  fontFamily: '"Inter", sans-serif',
                                 }}
                               >
                                 {percent}% Match
@@ -4946,7 +4953,7 @@ export default function EmployerApplicantManagement() {
                                   transition: "all 0.15s ease",
                                   minWidth: "85px",
                                   textAlign: "center",
-                                  fontFamily: '"Manrope", sans-serif',
+                                  fontFamily: '"Inter", sans-serif',
                                 }}
                                 onClick={() => {
                                   setSelectedJobDetails(otherJob);
@@ -4969,9 +4976,9 @@ export default function EmployerApplicantManagement() {
               {(isMessagePanelOpen || isMessagePanelClosing) && reviewModalApp && (
                 <aside
                   className={`jd-side-comparison-panel cand-message-side-panel ${isMessagePanelClosing ? "closing" : "opening"}`}
-                  style={{ marginTop: "44px", fontFamily: '"Manrope", sans-serif' }}
+                  style={{ marginTop: "44px", fontFamily: '"Inter", sans-serif' }}
                 >
-                  <div className="jd-side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
+                  <div className="jd-side-panel-header" style={{ fontFamily: '"Inter", sans-serif' }}>
                     <div className="jd-side-title-row" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                       <div
                         className="cand-msg-header-avatar"
@@ -4992,10 +4999,10 @@ export default function EmployerApplicantManagement() {
                         {initialsFrom(reviewModalApp.applicant_name)}
                       </div>
                       <div style={{ display: "flex", flexDirection: "column" }}>
-                        <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
+                        <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#01294a", fontFamily: '"Inter", sans-serif' }}>
                           {reviewModalApp.applicant_name}
                         </h3>
-                        <span className="jd-side-subtitle" style={{ fontSize: "0.78rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                        <span className="jd-side-subtitle" style={{ fontSize: "0.78rem", color: "#557796", fontWeight: 600, fontFamily: '"Inter", sans-serif' }}>
                           Message • {reviewModalApp.job_title || "Application"}
                         </span>
                       </div>
@@ -5217,7 +5224,7 @@ export default function EmployerApplicantManagement() {
                   zIndex: 25000,
                   padding: "24px 36px",
                   overflowX: "hidden",
-                  fontFamily: '"Manrope", sans-serif',
+                  fontFamily: '"Inter", sans-serif',
                   animation: isJobDetailsClosing
                     ? "jdFadeOut 0.2s ease forwards"
                     : "jdFadeIn 0.22s ease forwards",
@@ -5246,7 +5253,7 @@ export default function EmployerApplicantManagement() {
                     overflow: "hidden",
                     position: "relative",
                     flexShrink: 0,
-                    fontFamily: '"Manrope", sans-serif',
+                    fontFamily: '"Inter", sans-serif',
                     animation: isJobDetailsClosing
                       ? "jdPopOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards"
                       : "jdPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards",
@@ -5264,7 +5271,7 @@ export default function EmployerApplicantManagement() {
                     }}
                   >
                     <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                      <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
+                      <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800, color: "#01294a", fontFamily: '"Inter", sans-serif' }}>
                         Job Details
                       </h3>
                     </div>
@@ -5277,7 +5284,7 @@ export default function EmployerApplicantManagement() {
                           padding: "4px 10px",
                           borderRadius: "999px",
                           whiteSpace: "nowrap",
-                          fontFamily: '"Manrope", sans-serif',
+                          fontFamily: '"Inter", sans-serif',
                         }}
                       >
                         {detailsMatchPct}% Match
@@ -5296,7 +5303,7 @@ export default function EmployerApplicantManagement() {
                           cursor: "pointer",
                           boxShadow: "0 2px 6px rgba(1, 41, 74, 0.2)",
                           transition: "all 0.15s ease",
-                          fontFamily: '"Manrope", sans-serif',
+                          fontFamily: '"Inter", sans-serif',
                         }}
                         onClick={() => {
                           setIsJobBreakdownModalOpen((prev) => !prev);
@@ -5323,29 +5330,29 @@ export default function EmployerApplicantManagement() {
                     </div>
                   </div>
 
-                  <div style={{ padding: "20px 24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px", flex: 1, fontFamily: '"Manrope", sans-serif' }}>
+                  <div style={{ padding: "20px 24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px", flex: 1, fontFamily: '"Inter", sans-serif' }}>
                     <div>
-                      <h4 style={{ margin: "0 0 8px 0", fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
+                      <h4 style={{ margin: "0 0 8px 0", fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Inter", sans-serif' }}>
                         {selectedJobDetails.title}
                       </h4>
                       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
-                        <span className="jd-side-status-pill" style={{ background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0", padding: "4px 10px", borderRadius: "999px", fontSize: "0.76rem", fontWeight: 700, fontFamily: '"Manrope", sans-serif' }}>
+                        <span className="jd-side-status-pill" style={{ background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0", padding: "4px 10px", borderRadius: "999px", fontSize: "0.76rem", fontWeight: 700, fontFamily: '"Inter", sans-serif' }}>
                           {selectedJobDetails.status ? selectedJobDetails.status.toUpperCase() : "OPEN"}
                         </span>
                         {(selectedJobDetails.is_urgent === 1 || selectedJobDetails.is_urgent === true || String(selectedJobDetails.is_urgent) === "1") && (
-                          <span className="jd-side-urgent-pill" style={{ background: "#fef2f2", color: "#b91c1c", border: "1px solid #fca5a5", padding: "4px 10px", borderRadius: "999px", fontSize: "0.76rem", fontWeight: 700, fontFamily: '"Manrope", sans-serif' }}>
+                          <span className="jd-side-urgent-pill" style={{ background: "#fef2f2", color: "#b91c1c", border: "1px solid #fca5a5", padding: "4px 10px", borderRadius: "999px", fontSize: "0.76rem", fontWeight: 700, fontFamily: '"Inter", sans-serif' }}>
                             Urgent
                           </span>
                         )}
-                        <span className="jd-side-setup-pill" style={{ background: "#e0f2fe", color: "#0369a1", padding: "4px 12px", borderRadius: "999px", fontSize: "0.78rem", fontWeight: 700, fontFamily: '"Manrope", sans-serif' }}>
+                        <span className="jd-side-setup-pill" style={{ background: "#e0f2fe", color: "#0369a1", padding: "4px 12px", borderRadius: "999px", fontSize: "0.78rem", fontWeight: 700, fontFamily: '"Inter", sans-serif' }}>
                           {selectedJobDetails.work_arrangement || "On-Site"}
                         </span>
                         {(selectedJobDetails.salary_min || selectedJobDetails.salary_max) && (
-                          <span className="jd-side-salary-pill" style={{ background: "#fef3c7", color: "#b45309", padding: "4px 12px", borderRadius: "999px", fontSize: "0.78rem", fontWeight: 700, fontFamily: '"Manrope", sans-serif' }}>
+                          <span className="jd-side-salary-pill" style={{ background: "#fef3c7", color: "#b45309", padding: "4px 12px", borderRadius: "999px", fontSize: "0.78rem", fontWeight: 700, fontFamily: '"Inter", sans-serif' }}>
                             PHP {Number(selectedJobDetails.salary_min || 0).toLocaleString()} - {Number(selectedJobDetails.salary_max || 0).toLocaleString()}
                           </span>
                         )}
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "0.8rem", color: "#64748b", fontFamily: '"Manrope", sans-serif' }}>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "0.8rem", color: "#64748b", fontFamily: '"Inter", sans-serif' }}>
                           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" />
                             <circle cx="12" cy="10" r="2.5" />
@@ -5357,28 +5364,28 @@ export default function EmployerApplicantManagement() {
 
                     {/* JOB DESCRIPTION */}
                     <div>
-                      <span style={{ fontSize: "0.74rem", fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: "8px", fontFamily: '"Manrope", sans-serif' }}>
+                      <span style={{ fontSize: "0.74rem", fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: "8px", fontFamily: '"Inter", sans-serif' }}>
                         JOB DESCRIPTION
                       </span>
-                      <p style={{ margin: 0, fontSize: "0.86rem", color: "#334155", lineHeight: 1.6, whiteSpace: "pre-line", fontFamily: '"Manrope", sans-serif' }}>
+                      <p style={{ margin: 0, fontSize: "0.86rem", color: "#334155", lineHeight: 1.6, whiteSpace: "pre-line", fontFamily: '"Inter", sans-serif' }}>
                         {selectedJobDetails.description || "No job description provided."}
                       </p>
                     </div>
 
                     {/* REQUIRED SKILLS */}
                     <div>
-                      <span style={{ fontSize: "0.74rem", fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: "8px", fontFamily: '"Manrope", sans-serif' }}>
+                      <span style={{ fontSize: "0.74rem", fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: "8px", fontFamily: '"Inter", sans-serif' }}>
                         REQUIRED SKILLS
                       </span>
                       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                         {parseCompetencyDisplayTags(selectedJobDetails.required_skills || selectedJobDetails.skills || "").length > 0 ? (
                           parseCompetencyDisplayTags(selectedJobDetails.required_skills || selectedJobDetails.skills || "").map((sk, idx) => (
-                            <span key={idx} className="jd-side-tag jd-side-skill-tag" style={{ background: "#f0f9ff", color: "#0369a1", border: "1px solid #bae6fd", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                            <span key={idx} className="jd-side-tag jd-side-skill-tag" style={{ background: "#f0f9ff", color: "#0369a1", border: "1px solid #bae6fd", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Inter", sans-serif' }}>
                               {sk}
                             </span>
                           ))
                         ) : (
-                          <span style={{ fontSize: "0.82rem", color: "#94a3b8", fontStyle: "italic", fontFamily: '"Manrope", sans-serif' }}>
+                          <span style={{ fontSize: "0.82rem", color: "#94a3b8", fontStyle: "italic", fontFamily: '"Inter", sans-serif' }}>
                             No specific skills required
                           </span>
                         )}
@@ -5387,18 +5394,18 @@ export default function EmployerApplicantManagement() {
 
                     {/* QUALIFICATIONS */}
                     <div>
-                      <span style={{ fontSize: "0.74rem", fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: "8px", fontFamily: '"Manrope", sans-serif' }}>
+                      <span style={{ fontSize: "0.74rem", fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: "8px", fontFamily: '"Inter", sans-serif' }}>
                         QUALIFICATIONS
                       </span>
                       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                         {parseCompetencyDisplayTags(selectedJobDetails.qualifications || selectedJobDetails.required_qualifications || "").length > 0 ? (
                           parseCompetencyDisplayTags(selectedJobDetails.qualifications || selectedJobDetails.required_qualifications || "").map((qu, idx) => (
-                            <span key={idx} className="jd-side-tag jd-side-qual-tag" style={{ background: "#faf5ff", color: "#7e22ce", border: "1px solid #e9d5ff", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                            <span key={idx} className="jd-side-tag jd-side-qual-tag" style={{ background: "#faf5ff", color: "#7e22ce", border: "1px solid #e9d5ff", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Inter", sans-serif' }}>
                               {qu}
                             </span>
                           ))
                         ) : (
-                          <span style={{ fontSize: "0.82rem", color: "#94a3b8", fontStyle: "italic", fontFamily: '"Manrope", sans-serif' }}>
+                          <span style={{ fontSize: "0.82rem", color: "#94a3b8", fontStyle: "italic", fontFamily: '"Inter", sans-serif' }}>
                             No specific qualifications required
                           </span>
                         )}
@@ -5407,18 +5414,18 @@ export default function EmployerApplicantManagement() {
 
                     {/* CERTIFICATIONS */}
                     <div>
-                      <span style={{ fontSize: "0.74rem", fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: "8px", fontFamily: '"Manrope", sans-serif' }}>
+                      <span style={{ fontSize: "0.74rem", fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: "8px", fontFamily: '"Inter", sans-serif' }}>
                         CERTIFICATIONS
                       </span>
                       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                         {parseCompetencyDisplayTags(selectedJobDetails.certifications || selectedJobDetails.required_certifications || "").length > 0 ? (
                           parseCompetencyDisplayTags(selectedJobDetails.certifications || selectedJobDetails.required_certifications || "").map((cert, idx) => (
-                            <span key={idx} className="jd-side-tag jd-side-cert-tag" style={{ background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                            <span key={idx} className="jd-side-tag jd-side-cert-tag" style={{ background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Inter", sans-serif' }}>
                               {cert}
                             </span>
                           ))
                         ) : (
-                          <span style={{ fontSize: "0.82rem", color: "#94a3b8", fontStyle: "italic", fontFamily: '"Manrope", sans-serif' }}>
+                          <span style={{ fontSize: "0.82rem", color: "#94a3b8", fontStyle: "italic", fontFamily: '"Inter", sans-serif' }}>
                             No specific certifications required
                           </span>
                         )}
@@ -5441,7 +5448,7 @@ export default function EmployerApplicantManagement() {
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
                       {selectedJobDetails.close_date && (
-                        <span style={{ fontSize: "0.8rem", color: "#64748b", fontFamily: '"Manrope", sans-serif', display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                        <span style={{ fontSize: "0.8rem", color: "#64748b", fontFamily: '"Inter", sans-serif', display: "inline-flex", alignItems: "center", gap: "5px" }}>
                           <strong style={{ color: "#0f172a" }}>Close Date:</strong> {selectedJobDetails.close_date}
                         </span>
                       )}
@@ -5462,7 +5469,7 @@ export default function EmployerApplicantManagement() {
                         alignItems: "center",
                         gap: "6px",
                         transition: "all 0.15s ease",
-                        fontFamily: '"Manrope", sans-serif',
+                        fontFamily: '"Inter", sans-serif',
                       }}
                       onClick={() => {
                         setRecruitJobTarget(selectedJobDetails);
@@ -5521,13 +5528,19 @@ export default function EmployerApplicantManagement() {
                       }
                     );
 
-                    const checkMatch = (jobItem: string, appItems: string[]) => {
+                    const checkMatch = (jobItem: string, appItems: string[], type?: "skills" | "qualifications" | "certifications") => {
                       if (!appItems || appItems.length === 0) return false;
+                      if (type === "certifications") {
+                        return appItems.some((appItem) => isCertificationMatch(jobItem, appItem));
+                      }
                       return appItems.some((appItem) => isSkillMatch(jobItem, appItem));
                     };
 
-                    const isCandRelevant = (appItem: string, jItems: string[]) => {
+                    const isCandRelevant = (appItem: string, jItems: string[], type?: "skills" | "qualifications" | "certifications") => {
                       if (!jItems || jItems.length === 0) return false;
+                      if (type === "certifications") {
+                        return jItems.some((jobItem) => isCertificationMatch(jobItem, appItem));
+                      }
                       return jItems.some((jobItem) => isSkillMatch(jobItem, appItem));
                     };
 
@@ -5546,7 +5559,7 @@ export default function EmployerApplicantManagement() {
                           boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.35)",
                           overflow: "hidden",
                           flexShrink: 0,
-                          fontFamily: '"Manrope", sans-serif',
+                          fontFamily: '"Inter", sans-serif',
                           animation: isJobDetailsClosing
                             ? "jdSlideOutRight 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards"
                             : "jdSlideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards",
@@ -5565,15 +5578,15 @@ export default function EmployerApplicantManagement() {
                           }}
                         >
                           <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                            <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
+                            <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Inter", sans-serif' }}>
                               Match Breakdown
                             </h3>
-                            <span style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                            <span style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Inter", sans-serif' }}>
                               Side-by-side comparison: {reviewModalApp.applicant_name} vs {selectedJobDetails.title}
                             </span>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                            <span className={`match-badge-pill ${bdStyle}`} style={{ fontFamily: '"Manrope", sans-serif' }}>
+                            <span className={`match-badge-pill ${bdStyle}`} style={{ fontFamily: '"Inter", sans-serif' }}>
                               {matchDetails.score}% Match
                             </span>
                             <button
@@ -5587,9 +5600,9 @@ export default function EmployerApplicantManagement() {
                         </div>
 
                         {/* Body */}
-                        <div style={{ padding: "20px 24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px", flex: 1, fontFamily: '"Manrope", sans-serif' }}>
+                        <div style={{ padding: "20px 24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px", flex: 1, fontFamily: '"Inter", sans-serif' }}>
                           {/* Legend strip */}
-                          <div className="jd-compare-legend" style={{ fontFamily: '"Manrope", sans-serif' }}>
+                          <div className="jd-compare-legend" style={{ fontFamily: '"Inter", sans-serif' }}>
                             <div className="legend-item">
                               <span className="legend-dot green"></span>
                               <span><strong>Green Tag:</strong> Matched candidate competency</span>
@@ -5601,7 +5614,7 @@ export default function EmployerApplicantManagement() {
                           </div>
 
                           {/* Master 2-Column Unified Container */}
-                          <div className="jd-unified-compare-container" style={{ fontFamily: '"Manrope", sans-serif' }}>
+                          <div className="jd-unified-compare-container" style={{ fontFamily: '"Inter", sans-serif' }}>
                             {/* ── Column 1: Candidate Profile ── */}
                             <div className="jd-master-col applicant-col">
                               <div className="jd-master-col-header">
@@ -5768,9 +5781,9 @@ export default function EmployerApplicantManagement() {
                                   <div className="jd-col-tags-container">
                                     {jobCerts.length > 0 ? (
                                       jobCerts.map((item) => {
-                                        const matched = checkMatch(item, candCerts);
+                                        const matched = checkMatch(item, candCerts, "certifications");
                                         const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
-                                        const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "certifications" && isSkillMatch(item, hoveredCompareTag.item));
+                                        const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "certifications" && isCertificationMatch(item, hoveredCompareTag.item));
                                         return (
                                           <span
                                             key={item}
@@ -5830,7 +5843,7 @@ export default function EmployerApplicantManagement() {
                 background: "#ffffff",
                 boxShadow: "0 20px 40px rgba(0,0,0,0.25)",
                 overflow: "hidden",
-                fontFamily: '"Manrope", sans-serif',
+                fontFamily: '"Inter", sans-serif',
                 animation: isRecruitModalClosing
                   ? "jdPopOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards"
                   : "jdPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards",
@@ -5848,7 +5861,7 @@ export default function EmployerApplicantManagement() {
                   alignItems: "center",
                 }}
               >
-                <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
+                <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#01294a", fontFamily: '"Inter", sans-serif' }}>
                   Invite Candidate to Apply
                 </h3>
                 <button
@@ -5867,7 +5880,7 @@ export default function EmployerApplicantManagement() {
                 </button>
               </div>
 
-              <form onSubmit={handleSendRecruitmentInvite} className="recruit-invite-form" style={{ padding: "20px", display: "grid", gap: "16px", fontFamily: '"Manrope", sans-serif' }}>
+              <form onSubmit={handleSendRecruitmentInvite} className="recruit-invite-form" style={{ padding: "20px", display: "grid", gap: "16px", fontFamily: '"Inter", sans-serif' }}>
                 {/* Applicant Summary */}
                 <div className="recruit-applicant-summary" style={{ display: "flex", gap: "12px", alignItems: "center", padding: "12px 14px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
                   {(() => {
@@ -5912,7 +5925,7 @@ export default function EmployerApplicantManagement() {
                 </div>
 
                 {/* Invitation Message Field */}
-                <label style={{ display: "grid", gap: "6px", fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", fontFamily: '"Manrope", sans-serif' }}>
+                <label style={{ display: "grid", gap: "6px", fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", fontFamily: '"Inter", sans-serif' }}>
                   Invitation Message:
                   <textarea
                     className="recruit-msg-textarea"
@@ -5925,7 +5938,7 @@ export default function EmployerApplicantManagement() {
                       borderRadius: "8px",
                       border: "1px solid #cbd5e1",
                       fontSize: "0.85rem",
-                      fontFamily: '"Manrope", sans-serif',
+                      fontFamily: '"Inter", sans-serif',
                       boxSizing: "border-box",
                       resize: "vertical",
                     }}
@@ -5952,7 +5965,7 @@ export default function EmployerApplicantManagement() {
                       fontWeight: 700,
                       cursor: "pointer",
                       fontSize: "0.85rem",
-                      fontFamily: '"Manrope", sans-serif',
+                      fontFamily: '"Inter", sans-serif',
                     }}
                     onClick={closeRecruitModal}
                   >
@@ -5970,7 +5983,7 @@ export default function EmployerApplicantManagement() {
                       fontWeight: 700,
                       cursor: "pointer",
                       fontSize: "0.85rem",
-                      fontFamily: '"Manrope", sans-serif',
+                      fontFamily: '"Inter", sans-serif',
                       opacity: isRecruitSending ? 0.7 : 1,
                     }}
                   >

@@ -22,10 +22,10 @@ const DEFAULT_APPLICANT_FAQS: ApplicantFAQItem[] = [
     actionHref: "/applicant-dashboard",
   },
   {
-    question: "What happens when an employer invites me?",
-    answer: "Direct recruitment invitations appear on your Dashboard and under Notifications. You can accept or decline direct invitations at any time.",
-    actionLabel: "View Notifications",
-    actionHref: "/notifications",
+    question: "What happens when an employer invites me or extends an offer?",
+    answer: "Direct recruitment invitations and formal job offers appear on your Dashboard and under Offer Letters. You can generate official acceptance or polite decline letters directly to employers.",
+    actionLabel: "View Offer Letters",
+    actionHref: "/applicant-offer-letter",
   },
   {
     question: "How do I update my profile and skills?",

@@ -1,0 +1,528 @@
+/* ==========================================================================
+   ApplicantDetailsModal.css - Dedicated Styles for Applicant Details Popup (Picture 1)
+   ========================================================================== */
+
+/* ── OVERLAY ── */
+.cand-details-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 30, 50, 0.65);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: jdFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 40px 20px 24px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+@keyframes jdFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes jdSlideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── MODAL CONTAINER & PANEL ── */
+.jd-modal-container {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  animation: jdSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+  margin: auto;
+  position: relative;
+}
+
+.cand-details-panel {
+  width: 920px;
+  max-width: 94vw;
+  height: 700px;
+  max-height: 88vh;
+  min-height: 520px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(1, 41, 74, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid #d2deed;
+}
+
+/* ── STRIP ── */
+.cand-details-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  background: #ffffff;
+  border-bottom: 1px solid #eef2f6;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.cand-details-logo-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.cand-details-logo {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: #0284c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #ffffff;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.cand-details-name {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0c2a47;
+  line-height: 1.2;
+}
+
+.cand-details-location {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+  font-size: 0.84rem;
+  color: #64748b;
+}
+
+.cand-details-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* ── BADGES & BUTTONS IN STRIP ── */
+.rating-score-box {
+  border-radius: 8px;
+  padding: 4px 10px;
+  text-align: center;
+  min-width: 54px;
+  height: 36px;
+  background: #fff8e6;
+  color: #b85a06;
+  border: 1px solid #f7d49e;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+
+.rating-score-box .star-icon {
+  color: #e39d1f;
+  font-size: 1rem;
+}
+
+.cand-details-docs-btn {
+  border: 1px solid #0d3c61;
+  background: #0d3c61;
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 7px 16px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+  transition: all 0.18s ease;
+}
+
+.cand-details-docs-btn:hover {
+  background: #144f7c;
+}
+
+.cand-details-docs-btn.active {
+  background: #0284c7;
+  border-color: #0284c7;
+}
+
+/* ── 4-SECTION NAVIGATION TABS ── */
+.cand-modal-nav-wrap {
+  padding: 0 24px;
+  background: #f8fbff;
+  border-bottom: 1px solid #e8f0f8;
+  flex-shrink: 0;
+}
+
+.cand-modal-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.cand-modal-tab-btn {
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: #64748b;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.cand-modal-tab-btn:hover {
+  color: #0284c7;
+}
+
+.cand-modal-tab-btn.active {
+  color: #0284c7;
+  border-bottom-color: #0284c7;
+  background: #ffffff;
+}
+
+.cand-modal-tab-btn .tab-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cand-modal-tab-btn.active .tab-num {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+/* ── BODY & CONTENT ── */
+.cand-details-body-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.cand-details-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.company-info-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 12px 14px;
+  border-radius: 10px;
+}
+
+.company-info-card-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.company-info-card-val {
+  color: #0f172a;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.setup-pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.jd-tags-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.js-tag-chip {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.js-tag-skill {
+  background: #f0fdf4;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.js-tag-qualification {
+  background: #eff6ff;
+  color: #1e40af;
+  border-color: #bfdbfe;
+}
+
+.js-tag-certification {
+  background: #faf5ff;
+  color: #6b21a8;
+  border-color: #e9d5ff;
+}
+
+/* ── SLIDE-IN DOCS DRAWER ── */
+.jd-faq-drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: #ffffff;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.jd-faq-drawer.open {
+  transform: translateX(0);
+}
+
+.jd-faq-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e8f0f8;
+  background: #f8fbff;
+  flex-shrink: 0;
+}
+
+.jd-faq-header h3 {
+  margin: 0;
+  font-size: 1.22rem;
+  color: #0d2f4f;
+  line-height: 1.2;
+}
+
+.jd-faq-back-btn {
+  border: 1px solid #c7d7e8;
+  background: #ffffff;
+  color: #0d3c61;
+  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.jd-faq-back-btn:hover {
+  background: #eef5fb;
+  border-color: #a0c3e0;
+  transform: translateX(-2px);
+}
+
+.jd-faq-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.jd-faq-loading,
+.jd-faq-empty {
+  text-align: center;
+  color: #5b8ab0;
+  font-size: 0.94rem;
+  margin: 40px 0;
+}
+
+.jd-faq-item {
+  flex-shrink: 0;
+  border: 1px solid #e2ecf5;
+  border-radius: 12px;
+  background: #fbfdff;
+  overflow: hidden;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.solid-btn {
+  background: #0284c7;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.solid-btn:hover {
+  background: #0369a1;
+}
+
+/* ── MODAL FOOTER ── */
+.cand-details-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.cand-details-cancel-btn {
+  padding: 8px 24px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #1e293b;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cand-details-cancel-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+/* ── STRICT DARK MODE ISOLATION ([data-theme="dark"]) ── */
+[data-theme="dark"] .cand-details-overlay {
+  background: rgba(3, 7, 18, 0.78) !important;
+}
+
+[data-theme="dark"] .cand-details-panel {
+  background: #0b1523 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.6) !important;
+}
+
+[data-theme="dark"] .cand-details-strip {
+  background: #0b1523 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+[data-theme="dark"] .cand-details-name {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .cand-details-location {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .cand-modal-nav-wrap {
+  background: #08101a !important;
+  border-bottom-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+[data-theme="dark"] .cand-modal-tab-btn {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .cand-modal-tab-btn.active {
+  background: #0b1523 !important;
+  color: #38bdf8 !important;
+  border-bottom-color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .company-info-card {
+  background: #0f1d30 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .company-info-card-label {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .company-info-card-val {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .cand-details-footer {
+  background: #0b1523 !important;
+  border-top-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+[data-theme="dark"] .cand-details-cancel-btn {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .cand-details-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .jd-faq-drawer {
+  background: #0b1523 !important;
+}
+
+[data-theme="dark"] .jd-faq-header {
+  background: #08101a !important;
+  border-bottom-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+[data-theme="dark"] .jd-faq-header h3 {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .jd-faq-back-btn {
+  background: #0f1d30 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .jd-faq-item {
+  background: #0f1d30 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}

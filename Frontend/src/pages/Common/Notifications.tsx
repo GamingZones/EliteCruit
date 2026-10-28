@@ -179,7 +179,21 @@ function getInitialApplicantName() {
   }
 }
 
+function MenuIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="chevron-icon" aria-hidden="true">
+      <path d="M5 7h14M5 12h14M5 17h14" />
+    </svg>
+  );
+}
+
 export default function Notifications() {
+  const [isSidebarVisible, setIsSidebarVisible] = useState(() => {
+    if (typeof window !== "undefined" && window.innerWidth <= 768) {
+      return false;
+    }
+    return true;
+  });
   const [sessionRole, setSessionRole] = useState<"applicant" | "employer">("applicant");
   const [applicantLabel, setApplicantLabel] = useState(getInitialApplicantName);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
@@ -433,7 +447,7 @@ export default function Notifications() {
   const paginatedNotices = filteredNotices.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   return (
-    <div className="notifications-page appdash-page sidebar-visible">
+    <div className={`notifications-page appdash-page ${isSidebarVisible ? "sidebar-visible" : "sidebar-hidden"}`}>
       {isEmployer ? (
         <aside className="appdash-sidebar" aria-label="Employer Navigation">
           <a href="/" className="appdash-brand">
@@ -502,7 +516,20 @@ export default function Notifications() {
         </aside>
       ) : (
         <aside className="appdash-sidebar" aria-label="Applicant Navigation">
-          <a href="/" className="appdash-brand"><strong>EliteCruit</strong><span>Candidate Workspace</span></a>
+          <div className="appdash-brand">
+            <a href="/" className="appdash-brand-link">
+              <strong>EliteCruit</strong>
+              <span>Candidate Workspace</span>
+            </a>
+            <button
+              type="button"
+              className="appdash-sidebar-toggle"
+              aria-label="Close sidebar menu"
+              onClick={() => setIsSidebarVisible(false)}
+            >
+              <MenuIcon />
+            </button>
+          </div>
           <ul className="appdash-secondary-list">
             <li className="applicant-workspace-item">
               <a
@@ -524,7 +551,6 @@ export default function Notifications() {
 
               {isWorkspaceOpen && (
                 <ul className="appdash-menu-list">
-                  <li><a href="/applicant-dashboard#section-overview"><span className="item-icon"><SideIcon name="overview" /></span><span>Overview</span></a></li>
                   <li><a href="/applicant-dashboard#section-smart-matches"><span className="item-icon"><SideIcon name="star" /></span><span>Smart Matches</span></a></li>
                   <li><a href="/applicant-dashboard#section-applications"><span className="item-icon"><SideIcon name="applications" /></span><span>My Applications</span></a></li>
                   <li><a href="/applicant-dashboard#section-invitations"><span className="item-icon"><SideIcon name="notifications" /></span><span>Job Invitations</span></a></li>
@@ -533,6 +559,7 @@ export default function Notifications() {
             </li>
 
             <li><a href="/job-search"><span className="item-icon"><SideIcon name="search" /></span><span>Job Search</span></a></li>
+            <li><a href="/applicant-offer-letter"><span className="item-icon"><SideIcon name="documents" /></span><span>Offer Letters</span></a></li>
             <li><a href="/messages"><span className="item-icon"><SideIcon name="messages" /></span><span>Messages</span>{unreadMessagesCount > 0 && <span className="item-badge">{unreadMessagesCount}</span>}</a></li>
             <li className="active"><a href="/notifications"><span className="item-icon"><SideIcon name="notifications" /></span><span>Notifications</span>{unreadCount > 0 && <span className="item-badge">{unreadCount}</span>}</a></li>
             <li><a href="/feedback"><span className="item-icon"><SideIcon name="feedback" /></span><span>Feedback</span></a></li>
@@ -561,9 +588,28 @@ export default function Notifications() {
         </aside>
       )}
 
+      {isSidebarVisible && (
+        <button
+          type="button"
+          className="appdash-backdrop"
+          aria-label="Close sidebar"
+          onClick={() => setIsSidebarVisible(false)}
+        />
+      )}
+
       <main className="appdash-main notifications-main">
         <header className="appdash-topbar">
-          <div className="appdash-top-left"><div><strong>Notifications</strong></div></div>
+          <div className="appdash-top-left">
+            <button
+              type="button"
+              className="appdash-mobile-nav-toggle"
+              aria-label={isSidebarVisible ? "Close navigation menu" : "Open navigation menu"}
+              onClick={() => setIsSidebarVisible((prev) => !prev)}
+            >
+              <MenuIcon />
+            </button>
+            <div><strong>Notifications</strong></div>
+          </div>
           <div className="appdash-top-right">
             <div className="chatbot-wrapper">
               {isEmployer ? (

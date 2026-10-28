@@ -381,3 +381,50 @@
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ==========================================================================
+   PHONE & MOBILE UI ADJUSTMENTS (max-width: 768px)
+   Scope: Applied STRICTLY to phones/mobile screens; desktop/laptop UI is 100% untouched.
+   ========================================================================== */
+@media (max-width: 768px) {
+  .notices-page-card {
+    padding: 16px 14px !important;
+    margin: 12px 14px 28px !important;
+    border-radius: 10px !important;
+  }
+
+  .notices-tab-nav {
+    flex-direction: column !important;
+    border-bottom: none !important;
+    gap: 6px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .notices-tab-btn {
+    width: 100% !important;
+    border-radius: 8px !important;
+    border-bottom: none !important;
+    padding: 10px 14px !important;
+    justify-content: flex-start !important;
+  }
+
+  .decision-templates-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .faq-editor-form {
+    padding: 14px !important;
+  }
+
+  .faq-form-actions {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .faq-form-actions button {
+    width: 100% !important;
+    min-height: 42px !important;
+  }
+}
+

@@ -49,7 +49,7 @@ if (typeof window !== "undefined") {
       const token = localStorage.getItem("elitecruit-token") || localStorage.getItem("token");
       if (token) {
         const headers = new Headers(init?.headers || {});
-        if (!headers.has("Authorization")) {
+        if (!headers.has("Authorization") || !headers.get("Authorization")?.trim()) {
           headers.set("Authorization", `Bearer ${token}`);
         }
         init = { ...init, headers };
@@ -61,7 +61,7 @@ if (typeof window !== "undefined") {
     // Automatic fallback: If 401 Unauthorized received, clear invalid auth and redirect to /login
     if (response.status === 401) {
       const url = typeof input === "string" ? input : input instanceof Request ? input.url : input.toString();
-      const isAuthAttempt = url.includes("/api/auth/login") || url.includes("/api/auth/register");
+      const isAuthAttempt = url.includes("/api/auth/");
       if (!isAuthAttempt) {
         localStorage.removeItem("elitecruit-token");
         localStorage.removeItem("token");

@@ -55,6 +55,7 @@ type JobPost = {
   location: string | null;
   status: string;
   is_urgent?: number | boolean | null;
+  hide_salary?: number | boolean | null;
   work_arrangement: string | null;
   experience_level: string | null;
   application_limit: number | null;
@@ -310,6 +311,68 @@ export default function EmployerJobPostsList() {
   const [jobToDelete, setJobToDelete] = useState<JobPost | null>(null);
   const [isDeletingJob, setIsDeletingJob] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [openActionsJobId, setOpenActionsJobId] = useState<number | null>(null);
+  const [jobToStatusChange, setJobToStatusChange] = useState<{ job: JobPost; targetStatus: "open" | "closed" } | null>(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [reopenCloseDate, setReopenCloseDate] = useState("");
+
+  useEffect(() => {
+    const handleOutsideClick = () => setOpenActionsJobId(null);
+    window.addEventListener("click", handleOutsideClick);
+    return () => window.removeEventListener("click", handleOutsideClick);
+  }, []);
+
+  useEffect(() => {
+    if (!message) return;
+    const timer = setTimeout(() => {
+      setMessage("");
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [message]);
+
+  const handleConfirmStatusChange = async () => {
+    if (!userId || !jobToStatusChange) return;
+    const { job, targetStatus } = jobToStatusChange;
+
+    try {
+      setIsUpdatingStatus(true);
+      const token = localStorage.getItem("elitecruit-token") || localStorage.getItem("token");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const body: Record<string, any> = { status: targetStatus };
+      if (targetStatus === "open" && reopenCloseDate.trim()) {
+        body.close_date = reopenCloseDate.trim();
+      }
+
+      const response = await fetch(`/api/employers/${userId}/job-posts/${job.id}/status`, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify(body),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.message || `Unable to mark job as ${targetStatus}.`);
+
+      setJobs((prev) =>
+        prev.map((item) =>
+          item.id === job.id
+            ? {
+                ...item,
+                status: targetStatus,
+                close_date: data.jobPost?.close_date || item.close_date,
+              }
+            : item
+        )
+      );
+      setJobToStatusChange(null);
+      setReopenCloseDate("");
+      setMessage(`Job post successfully ${targetStatus === "open" ? "reopened" : "closed"}.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to update job status.");
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
 
   const deleteJobPost = (job: JobPost) => {
     setJobToDelete(job);
@@ -429,7 +492,19 @@ export default function EmployerJobPostsList() {
           <a className="create-job-btn" href="/employer-job-posts/create">Create Job Post</a>
         </section>
 
-        {message && <p className="profile-message">{message}</p>}
+        {message && (
+          <div className="joblist-status-banner profile-message" role="status">
+            <span>{message}</span>
+            <button
+              type="button"
+              className="banner-dismiss-btn"
+              onClick={() => setMessage("")}
+              aria-label="Dismiss message"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         <section className="joblist-grid">
           {jobs.length === 0 ? (
@@ -459,7 +534,15 @@ export default function EmployerJobPostsList() {
                       <div className="job-chip-row">
                         <span className="job-chip work">{job.work_arrangement || "Flexible"}</span>
                         {job.experience_level && <span className="job-chip exp-level">{job.experience_level}</span>}
-                        <span className="job-chip salary">PHP {formatSalary(job.salary_min)} - {formatSalary(job.salary_max)}</span>
+                        {job.hide_salary ? (
+                          <span className="job-chip salary" title="Salary Range (Confidential - hidden from applicants)">
+                            {job.salary_min || job.salary_max
+                              ? `PHP ${formatSalary(job.salary_min)} - ${formatSalary(job.salary_max)} (Confidential)`
+                              : "Salary Confidential"}
+                          </span>
+                        ) : (
+                          <span className="job-chip salary">PHP {formatSalary(job.salary_min)} - {formatSalary(job.salary_max)}</span>
+                        )}
                       </div>
                     </div>
                     <div className="job-card-center">
@@ -492,7 +575,68 @@ export default function EmployerJobPostsList() {
                       <div className="job-actions">
                         <button type="button" onClick={() => { window.location.href = `/employer-applicant-management?jobId=${job.id}`; }}>Review</button>
                         <a className="job-action-link" href={`/employer-job-posts/create?edit=${job.id}`}>Edit</a>
-                        <button type="button" className="danger" onClick={() => deleteJobPost(job)}>Delete</button>
+                        <div className="job-actions-dropdown">
+                          <button
+                            type="button"
+                            className={`job-actions-btn ${openActionsJobId === job.id ? "active" : ""}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenActionsJobId((prev) => (prev === job.id ? null : job.id));
+                            }}
+                          >
+                            Actions <span className="action-caret">▾</span>
+                          </button>
+
+                          {openActionsJobId === job.id && (
+                            <div className="job-actions-menu" onClick={(e) => e.stopPropagation()}>
+                              {job.status === "open" ? (
+                                <button
+                                  type="button"
+                                  className="actions-menu-item close-item"
+                                  onClick={() => {
+                                    setOpenActionsJobId(null);
+                                    setJobToStatusChange({ job, targetStatus: "closed" });
+                                  }}
+                                >
+                                  <span className="actions-menu-icon">⏸</span>
+                                  <span>Close Post</span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="actions-menu-item reopen-item"
+                                  onClick={() => {
+                                    setOpenActionsJobId(null);
+                                    const future = new Date();
+                                    future.setDate(future.getDate() + 30);
+                                    const mm = String(future.getMonth() + 1).padStart(2, "0");
+                                    const dd = String(future.getDate()).padStart(2, "0");
+                                    const yyyy = future.getFullYear();
+                                    setReopenCloseDate(`${mm}/${dd}/${yyyy}`);
+                                    setJobToStatusChange({ job, targetStatus: "open" });
+                                  }}
+                                >
+                                  <span className="actions-menu-icon">▶</span>
+                                  <span>Reopen Post</span>
+                                </button>
+                              )}
+
+                              <div className="actions-menu-divider" />
+
+                              <button
+                                type="button"
+                                className="actions-menu-item delete-item"
+                                onClick={() => {
+                                  setOpenActionsJobId(null);
+                                  deleteJobPost(job);
+                                }}
+                              >
+                                <span className="actions-menu-icon">🗑</span>
+                                <span>Delete</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -565,6 +709,61 @@ export default function EmployerJobPostsList() {
             </button>
           </div>
         )}
+
+        {/* STATUS CHANGE CONFIRMATION MODAL */}
+        <ConfirmationModal
+          isOpen={Boolean(jobToStatusChange)}
+          type={jobToStatusChange?.targetStatus === "closed" ? "warning" : "success"}
+          title={jobToStatusChange?.targetStatus === "closed" ? "Close Job Post" : "Reopen Job Post"}
+          message={
+            jobToStatusChange?.targetStatus === "closed" ? (
+              <div>
+                <p style={{ margin: "0 0 8px" }}>
+                  Are you sure you want to close <strong>'{jobToStatusChange?.job?.title}'</strong>?
+                </p>
+                <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>
+                  This will remove the job from the applicant Job Search feed immediately. All received applications, review notes, and screening scores will remain completely saved and accessible in your dashboard.
+                </p>
+              </div>
+            ) : (
+              <div>
+                <p style={{ margin: "0 0 8px" }}>
+                  Are you sure you want to reopen <strong>'{jobToStatusChange?.job?.title}'</strong>?
+                </p>
+                <p style={{ margin: "0 0 12px", fontSize: "0.85rem", color: "#64748b" }}>
+                  This will make the job posting active and visible again in the Job Search feed for new applicants.
+                </p>
+                <div style={{ marginTop: "12px", textAlign: "left" }}>
+                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#64748b", marginBottom: "4px" }}>
+                    Active Close Date (MM/DD/YYYY):
+                  </label>
+                  <input
+                    type="text"
+                    value={reopenCloseDate}
+                    onChange={(e) => setReopenCloseDate(e.target.value)}
+                    placeholder="MM/DD/YYYY"
+                    style={{
+                      width: "100%",
+                      padding: "8px 12px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: "0.9rem",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+              </div>
+            )
+          }
+          cancelLabel={jobToStatusChange?.targetStatus === "closed" ? "Keep Job Open" : "Cancel"}
+          confirmLabel={jobToStatusChange?.targetStatus === "closed" ? "Close Job Post" : "Reopen Job Post"}
+          isConfirming={isUpdatingStatus}
+          onCancel={() => {
+            setJobToStatusChange(null);
+            setReopenCloseDate("");
+          }}
+          onConfirm={handleConfirmStatusChange}
+        />
 
         {/* DELETE JOB CONFIRMATION MODAL */}
         <ConfirmationModal

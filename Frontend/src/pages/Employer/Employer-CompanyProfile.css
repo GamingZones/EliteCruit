@@ -1120,3 +1120,58 @@
   to { opacity: 1; transform: scale(1); }
 }
 
+/* ==========================================================================
+   PHONE & MOBILE UI ADJUSTMENTS (max-width: 768px)
+   Scope: Applied STRICTLY to phones/mobile screens; desktop/laptop UI is 100% untouched.
+   ========================================================================== */
+@media (max-width: 768px) {
+  .employer-company-page {
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow-y: auto !important;
+  }
+
+  .company-profile-main {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 12px 14px 32px !important;
+    box-sizing: border-box !important;
+  }
+
+  .profile-banner {
+    height: 130px !important;
+  }
+
+  .company-header-card {
+    padding: 16px !important;
+  }
+
+  .company-info-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  .branch-info-horizontal {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+
+  .form-row,
+  .form-grid-2col {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .system-popup-card {
+    width: calc(100vw - 24px) !important;
+    max-width: 440px !important;
+    padding: 20px 16px !important;
+    margin: 12px !important;
+  }
+}
+
+

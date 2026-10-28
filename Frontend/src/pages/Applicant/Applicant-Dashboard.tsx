@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import ApplicantChatbotDrawer from "../../components/ApplicantChatbotDrawer";
 import CalendarDrawer from "../../components/CalendarDrawer";
 import ConfirmationModal from "../../components/ConfirmationModal";
+import ApplicantDecisionModal from "../../components/ApplicantDecisionModal";
 import {
   calculateJobMatch,
   calculateJobMatchDetails,
@@ -14,8 +15,8 @@ import {
 } from "../../utils/filters";
 import { useUnreadNotificationsCount } from "../../hooks/useUnreadNotificationsCount";
 import { useUnreadMessagesCount } from "../../hooks/useUnreadMessagesCount";
+import { JobDetailsModal, EmployerDetailsModal, type JobModalData } from "../../components/modals";
 import "./Applicant-Dashboard.css";
-import "./JobSearch.css";
 import { SideIcon, ChevronIcon, type SideNavItem } from "../../components/Icons";
 
 
@@ -62,43 +63,16 @@ type JobCard = {
   rating?: string;
 };
 
-type FaqItem = {
-  id: number;
-  question: string;
-  answer: string;
-  question_type?: string;
-  is_active?: number;
-};
-
-const DEFAULT_FAQS: FaqItem[] = [
-  {
-    id: 101,
-    question: "What is the recruitment and hiring process for this position?",
-    answer: "Our hiring process involves initial application screening, a preliminary interview with HR, a technical assessment, and a final interview with the hiring manager.",
-    question_type: "Hiring Process",
-  },
-  {
-    id: 102,
-    question: "What are the working hours and arrangement?",
-    answer: "Standard office hours are 8:00 AM to 5:00 PM Monday through Friday. Work arrangement (remote/on-site/hybrid) is as specified in the job details.",
-    question_type: "Work Setup",
-  },
-  {
-    id: 103,
-    question: "What employee benefits and perks are offered?",
-    answer: "We offer competitive compensation, comprehensive health coverage (HMO), paid leave allocations, and career growth opportunities.",
-    question_type: "Benefits",
-  },
-];
-
 type ApplicantMatchProfile = {
-  desiredJobTitle: string;
-  workArrangement: string;
-  expectedSalary: number;
-  city: string;
-  skills: string[];
-  qualifications: string[];
-  certifications: string[];
+  desiredJobTitle?: string;
+  workArrangement?: string;
+  expectedSalary?: number | null;
+  city?: string;
+  skills?: string[];
+  qualifications?: string[];
+  certifications?: string[];
+  rawSkills?: string;
+  rawCertifications?: string;
 };
 
 type JobInvitationItem = {
@@ -113,6 +87,7 @@ type JobInvitationItem = {
   job_location?: string;
   salary_min?: number;
   salary_max?: number;
+  hide_salary?: number | boolean | null;
   work_arrangement?: string;
   job_description?: string;
   required_skills?: string;
@@ -143,6 +118,7 @@ const navWorkspace: SideNavItem[] = [
 
 const navGeneral: SideNavItem[] = [
   { label: "Job Search", icon: "search", href: "/job-search" },
+  { label: "Offer Letters", icon: "documents", href: "/applicant-offer-letter" },
   { label: "Messages", icon: "messages", href: "/messages" },
   { label: "Notifications", icon: "notifications", href: "/notifications" },
   { label: "Feedback", icon: "feedback", href: "/feedback" },
@@ -253,7 +229,8 @@ function shortenText(raw: string | null | undefined, fallback: string, limit = 8
   return value.length > limit ? `${value.slice(0, limit)}...` : value;
 }
 
-function formatSalaryRange(minSalary: number | null, maxSalary: number | null) {
+function formatSalaryRange(minSalary: number | null, maxSalary: number | null, hideSalary?: boolean | number | null) {
+  if (hideSalary) return "Salary Confidential";
   const min = Number.isFinite(Number(minSalary)) ? Number(minSalary).toLocaleString("en-US") : "0";
   const max = Number.isFinite(Number(maxSalary)) ? Number(maxSalary).toLocaleString("en-US") : "0";
   return `PHP ${min} - ${max}`;
@@ -321,14 +298,33 @@ function getInitialApplicantName() {
   }
 }
 
+const WORKSPACE_TABS = [
+  { id: "section-smart-matches", label: "Smart Matches" },
+  { id: "section-applications", label: "My Applications" },
+  { id: "section-invitations", label: "Job Invitations" },
+] as const;
+
 export default function ApplicantDashboard() {
   const unreadNotifCount = useUnreadNotificationsCount();
   const unreadMessagesCount = useUnreadMessagesCount();
-  const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(() => {
+    if (typeof window !== "undefined" && window.innerWidth <= 768) {
+      return false;
+    }
+    return true;
+  });
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(true);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState("section-overview");
+  const [activeSection, setActiveSection] = useState(() => {
+    if (typeof window !== "undefined" && window.location.hash) {
+      const h = window.location.hash.replace("#", "");
+      if (["section-smart-matches", "section-applications", "section-invitations"].includes(h)) {
+        return h;
+      }
+    }
+    return "section-smart-matches";
+  });
   const [applicantLabel, setApplicantLabel] = useState(getInitialApplicantName);
   const [myApplicationsList, setMyApplicationsList] = useState<any[]>([]);
   const [invitationsList, setInvitationsList] = useState<JobInvitationItem[]>([]);
@@ -343,24 +339,90 @@ export default function ApplicantDashboard() {
   const [applyingJobId, setApplyingJobId] = useState<number | null>(null);
   const [detailsJob, setDetailsJob] = useState<JobCard | null>(null);
   const [applicantMatchProfile, setApplicantMatchProfile] = useState<ApplicantMatchProfile | null>(null);
+  const [selectedEmployerDetails, setSelectedEmployerDetails] = useState<any>(null);
 
-  // FAQ drawer state
-  const [companyFaqs, setCompanyFaqs] = useState<FaqItem[]>(DEFAULT_FAQS);
-  const [faqLoading, setFaqLoading] = useState(false);
-  const [expandedFaqIds, setExpandedFaqIds] = useState<number[]>([]);
-  const [isFaqDrawerOpen, setIsFaqDrawerOpen] = useState(false);
+  const handleOpenEmployerDetails = async (empUserId: number | string) => {
+    try {
+      const res = await fetch(`/api/employers/${empUserId}/profile`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.profile) {
+          setSelectedEmployerDetails({
+            ...data.profile,
+            employer_user_id: empUserId,
+            company_name: data.profile.business_name || data.profile.company_name,
+            company_description: data.profile.company_description || data.profile.description,
+            contact_number: data.profile.contact_number || data.profile.phone,
+            business_email: data.profile.business_email || data.profile.email,
+            company_address: data.profile.company_address || data.profile.location,
+            rating: data.profile.rating || detailsJob?.rating,
+          });
+          return;
+        }
+      }
+    } catch {}
+
+    if (detailsJob) {
+      setSelectedEmployerDetails({
+        employer_user_id: empUserId,
+        company_name: detailsJob.company || "Employer",
+        business_name: detailsJob.company || "Employer",
+        company_description: detailsJob.summary || "Employer organization description.",
+        company_address: detailsJob.location || "Cavite",
+        address: detailsJob.location || "Cavite",
+        rating: detailsJob.rating || "0.0",
+        company_logo_path: detailsJob.companyLogoPath || null,
+        company_cover_path: detailsJob.companyCoverPath || null,
+      });
+    }
+  };
+
+  const jobModalData: JobModalData | null = useMemo(() => {
+    if (!detailsJob) return null;
+    return {
+      id: detailsJob.id,
+      title: detailsJob.title,
+      job_title: detailsJob.title,
+      company: detailsJob.company,
+      company_name: detailsJob.company,
+      employerUserId: detailsJob.employerUserId,
+      employer_user_id: detailsJob.employerUserId,
+      companyLogoPath: detailsJob.companyLogoPath,
+      company_logo_path: detailsJob.companyLogoPath,
+      companyCoverPath: detailsJob.companyCoverPath,
+      company_cover_path: detailsJob.companyCoverPath,
+      location: detailsJob.location,
+      company_address: detailsJob.location,
+      rating: detailsJob.rating,
+      status: detailsJob.status,
+      urgent: detailsJob.urgent,
+      is_urgent: detailsJob.urgent,
+      setup: detailsJob.setup,
+      work_arrangement: detailsJob.setup,
+      experienceLevel: detailsJob.experienceLevel,
+      experience_level: detailsJob.experienceLevel,
+      salary: detailsJob.salary,
+      salary_min: detailsJob.salaryMin,
+      hide_salary: (detailsJob as any).hideSalary || (detailsJob as any).hide_salary,
+      summary: detailsJob.summary,
+      description: detailsJob.summary || detailsJob.responsibilities,
+      skillTags: detailsJob.skillTags,
+      qualTags: detailsJob.qualTags,
+      certTags: detailsJob.certTags,
+      applicantCount: detailsJob.applicantCount,
+      closeDate: detailsJob.closeDate,
+      close_date: detailsJob.closeDate,
+      applicationLimit: detailsJob.applicationLimit,
+    };
+  }, [detailsJob]);
 
   // DOUBLE VERIFICATION MODAL STATES
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [declineInvTarget, setDeclineInvTarget] = useState<JobInvitationItem | null>(null);
+  const [decisionModalTarget, setDecisionModalTarget] = useState<{
+    inv: JobInvitationItem;
+    action: "accept" | "decline";
+  } | null>(null);
   const [applyJobTarget, setApplyJobTarget] = useState<{ jobId: number; title: string } | null>(null);
-
-  const handleConfirmDeclineInvitation = async () => {
-    if (!declineInvTarget) return;
-    const invId = declineInvTarget.id;
-    setDeclineInvTarget(null);
-    await handleRespondInvitation(invId, "decline");
-  };
 
   const handleConfirmApply = async () => {
     if (!applyJobTarget) return;
@@ -378,8 +440,23 @@ export default function ApplicantDashboard() {
 
   const scrollToHashSection = () => {
     const hash = window.location.hash;
-    if (!hash) return;
+    if (!hash) {
+      setActiveSection("section-smart-matches");
+      return;
+    }
     const sectionId = hash.replace("#", "");
+    if (sectionId === "applicant-overview" || sectionId === "section-overview" || sectionId === "section-smart-matches") {
+      setActiveSection("section-smart-matches");
+      if (mainRef.current) mainRef.current.scrollTop = 0;
+      window.scrollTo({ top: 0, behavior: "auto" });
+      return;
+    }
+    if (["section-applications", "section-invitations"].includes(sectionId)) {
+      setActiveSection(sectionId);
+      if (mainRef.current) mainRef.current.scrollTop = 0;
+      window.scrollTo({ top: 0, behavior: "auto" });
+      return;
+    }
     const section = document.getElementById(sectionId);
     if (!section) return;
     section.scrollIntoView({ behavior: "auto", block: "start" });
@@ -498,6 +575,8 @@ export default function ApplicantDashboard() {
             skills: parseCompetencyDisplayTags(profile?.skills),
             qualifications: parseCompetencyDisplayTags(profile?.qualifications),
             certifications: parseCompetencyDisplayTags(profile?.certifications),
+            rawSkills: typeof profile?.skills === "string" ? profile?.skills : JSON.stringify(profile?.skills || []),
+            rawCertifications: typeof profile?.certifications === "string" ? profile?.certifications : JSON.stringify(profile?.certifications || []),
           });
         })
         .catch(() => {});
@@ -506,13 +585,19 @@ export default function ApplicantDashboard() {
     }
   }, []);
 
-  const handleRespondInvitation = async (invitationId: number, action: "accept" | "decline") => {
+  const handleRespondInvitation = async (
+    invitationId: number,
+    action: "accept" | "decline",
+    letter_text?: string,
+    letter_type?: string,
+    start_date?: string
+  ) => {
     setIsRespondingInvId(invitationId);
     try {
       const res = await fetch(`/api/invitations/${invitationId}/respond`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
+        body: JSON.stringify({ action, letter_text, letter_type, start_date }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -542,7 +627,7 @@ export default function ApplicantDashboard() {
       company: inv.business_name || "Employer",
       location: inv.job_location || "Cavite",
       summary: inv.job_description || "No job description provided yet.",
-      salary: formatSalaryRange(inv.salary_min ?? null, inv.salary_max ?? null),
+      salary: formatSalaryRange(inv.salary_min ?? null, inv.salary_max ?? null, inv.hide_salary),
       salaryMin: Number(inv.salary_min) || 0,
       setup: inv.work_arrangement || "On-Site",
       status: inv.job_status === "closed" ? "closed" : "open",
@@ -592,7 +677,7 @@ export default function ApplicantDashboard() {
           company: row.company_name || "Employer",
           location: formatLocationWithCavite(row.location || row.company_address),
           summary: row.description || "No job description provided yet.",
-          salary: formatSalaryRange(row.salary_min ?? null, row.salary_max ?? null),
+          salary: formatSalaryRange(row.salary_min ?? null, row.salary_max ?? null, row.hide_salary),
           salaryMin: Number.isFinite(Number(row.salary_min)) ? Number(row.salary_min) : 0,
           setup: row.work_arrangement || "Flexible",
           experienceLevel: row.experience_level || null,
@@ -707,7 +792,7 @@ export default function ApplicantDashboard() {
       company: app.company_name || "Employer",
       location: app.location || app.city || "Cavite",
       summary: app.description || "No job description provided yet.",
-      salary: formatSalaryRange(app.salary_min ?? null, app.salary_max ?? null),
+      salary: formatSalaryRange(app.salary_min ?? null, app.salary_max ?? null, app.hide_salary),
       salaryMin: Number.isFinite(Number(app.salary_min)) ? Number(app.salary_min) : 0,
       setup: app.work_arrangement || "Flexible",
       status: app.status === "closed" ? "closed" : "open",
@@ -735,45 +820,54 @@ export default function ApplicantDashboard() {
     setDetailsJob(jobObj);
   };
 
-  const handleOpenFaqs = async (job: JobCard) => {
-    setIsFaqDrawerOpen(true);
-    if (!job.employerUserId) {
-      setCompanyFaqs(DEFAULT_FAQS);
-      return;
+  const handleTabClick = (sectionId: string) => {
+    setActiveSection(sectionId);
+    window.location.hash = sectionId;
+    if (mainRef.current) {
+      mainRef.current.scrollTop = 0;
     }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
-    setFaqLoading(true);
-    try {
-      const res = await fetch(`/api/employers/${job.employerUserId}/faqs`);
-      const data = await res.json();
-      if (!res.ok) throw new Error("Failed to load FAQs");
-      const activeFaqs = Array.isArray(data.faqs)
-        ? data.faqs.filter((f: FaqItem) => f.is_active === undefined || Number(f.is_active) === 1)
-        : [];
-      setCompanyFaqs(activeFaqs.length > 0 ? activeFaqs : DEFAULT_FAQS);
-    } catch {
-      setCompanyFaqs(DEFAULT_FAQS);
-    } finally {
-      setFaqLoading(false);
-    }
+  const currentTabIndex = WORKSPACE_TABS.findIndex((tab) => tab.id === activeSection);
+  const safeTabIndex = currentTabIndex >= 0 ? currentTabIndex : 0;
+
+  const handlePrevTab = () => {
+    const prev = (safeTabIndex - 1 + WORKSPACE_TABS.length) % WORKSPACE_TABS.length;
+    handleTabClick(WORKSPACE_TABS[prev].id);
+  };
+
+  const handleNextTab = () => {
+    const next = (safeTabIndex + 1) % WORKSPACE_TABS.length;
+    handleTabClick(WORKSPACE_TABS[next].id);
   };
 
   const handleSectionClick = (event: React.MouseEvent<HTMLAnchorElement>, sectionId?: string) => {
     if (!sectionId) return;
     event.preventDefault();
-    const section = document.getElementById(sectionId);
-    if (!section) return;
-    section.scrollIntoView({ behavior: "smooth", block: "start" });
-    setActiveSection(sectionId);
+    handleTabClick(sectionId);
+    if (typeof window !== "undefined" && window.innerWidth <= 768) {
+      setIsSidebarVisible(false);
+    }
   };
 
   return (
     <div className={`appdash-page ${isSidebarVisible ? "sidebar-visible" : "sidebar-hidden"}`}>
       <aside className="appdash-sidebar" aria-label="Applicant Navigation">
-        <a href="/" className="appdash-brand">
-          <strong>EliteCruit</strong>
-          <span>Candidate Workspace</span>
-        </a>
+        <div className="appdash-brand">
+          <a href="/" className="appdash-brand-link">
+            <strong>EliteCruit</strong>
+            <span>Candidate Workspace</span>
+          </a>
+          <button
+            type="button"
+            className="appdash-sidebar-toggle"
+            aria-label="Close sidebar menu"
+            onClick={() => setIsSidebarVisible(false)}
+          >
+            <MenuIcon />
+          </button>
+        </div>
 
         <ul className="appdash-secondary-list">
           <li className="applicant-workspace-item active">
@@ -798,12 +892,6 @@ export default function ApplicantDashboard() {
 
             {isWorkspaceOpen && (
               <ul id="workspace-links" className="appdash-menu-list">
-                <li className={activeSection === "section-overview" ? "active" : ""}>
-                  <a href="/applicant-dashboard#section-overview" onClick={(event) => handleSectionClick(event, "section-overview")}>
-                    <span className="item-icon"><SideIcon name="overview" /></span>
-                    <span>Overview</span>
-                  </a>
-                </li>
                 <li className={activeSection === "section-smart-matches" ? "active" : ""}>
                   <a href="/applicant-dashboard#section-smart-matches" onClick={(event) => handleSectionClick(event, "section-smart-matches")}>
                     <span className="item-icon"><SideIcon name="star" /></span>
@@ -872,35 +960,84 @@ export default function ApplicantDashboard() {
       <main className="appdash-main" id="applicant-overview" ref={mainRef}>
         <header className="appdash-topbar">
           <div className="appdash-top-left">
+            <button
+              type="button"
+              className="appdash-mobile-nav-toggle"
+              aria-label={isSidebarVisible ? "Close navigation menu" : "Open navigation menu"}
+              onClick={() => setIsSidebarVisible((prev) => !prev)}
+            >
+              <MenuIcon />
+            </button>
             <div>
               <strong>Applicant Workspace</strong>
             </div>
           </div>
 
           <div className="appdash-top-right">
-            <ApplicantChatbotDrawer
-              isOpen={isChatbotOpen}
-              onToggle={() => setIsChatbotOpen((prev) => !prev)}
-              pageTitle="Dashboard"
-            />
+            <div className="chatbot-wrapper">
+              <ApplicantChatbotDrawer
+                isOpen={isChatbotOpen}
+                onToggle={() => setIsChatbotOpen((prev) => !prev)}
+                pageTitle="Dashboard"
+              />
+            </div>
             <CalendarDrawer />
           </div>
         </header>
 
-        <section className="stats-grid section-anchor" id="section-overview" aria-label="Dashboard metrics">
-          {dashboardStats.map((card) => (
-            <article key={card.label} className="stat-card">
-              <div className="stat-head">
-                <h2>{card.label}</h2>
-                <span className="stat-icon" aria-hidden="true"><SideIcon name={card.icon} /></span>
-              </div>
-              <strong>{card.value}</strong>
-              <p>{card.hint}</p>
-            </article>
-          ))}
-        </section>
+        {/* 3-SECTION NAVIGATION TABS (Smart Matches, My Applications, Job Invitations) */}
+        <div className="dash-nav-container">
+          {/* Desktop Tab Row (Hidden on mobile screens <= 768px) */}
+          <nav className="profile-section-nav dash-section-nav dash-desktop-tabs" aria-label="Workspace Sections">
+            {WORKSPACE_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                className={`section-nav-btn ${activeSection === tab.id ? "active" : ""}`}
+                onClick={() => handleTabClick(tab.id)}
+              >
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </nav>
 
-        {/* ── SMART MATCHES SECTION (Same UI as Job Search cards) ── */}
+          {/* Mobile Single Item Switcher with Swap Arrows (Visible on mobile <= 768px) */}
+          <div className="dash-mobile-switcher" aria-label="Workspace Sections">
+            <button
+              type="button"
+              className="dash-switcher-btn prev"
+              onClick={handlePrevTab}
+              aria-label="Previous Section"
+            >
+              <ChevronIcon direction="left" />
+            </button>
+            <div className="dash-switcher-center">
+              <span className="dash-switcher-title">{WORKSPACE_TABS[safeTabIndex].label}</span>
+              <div className="dash-switcher-dots" aria-hidden="true">
+                {WORKSPACE_TABS.map((tab, idx) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    className={`dash-switcher-dot ${idx === safeTabIndex ? "active" : ""}`}
+                    onClick={() => handleTabClick(tab.id)}
+                    aria-label={tab.label}
+                  />
+                ))}
+              </div>
+            </div>
+            <button
+              type="button"
+              className="dash-switcher-btn next"
+              onClick={handleNextTab}
+              aria-label="Next Section"
+            >
+              <ChevronIcon direction="right" />
+            </button>
+          </div>
+        </div>
+
+        {/* ── SECTION 1: SMART MATCHES ── */}
+        {activeSection === "section-smart-matches" && (
         <section className="matches-card section-anchor" id="section-smart-matches">
           <div className="matches-head">
             <div>
@@ -938,32 +1075,23 @@ export default function ApplicantDashboard() {
                       {job.urgent ? <span className="status-chip urgent">Urgent</span> : null}
                       <span className="setup-pill">{job.setup}</span>
                       {job.experienceLevel && <span className="exp-level-pill">{formatExperienceLevel(job.experienceLevel)}</span>}
-                      <span className="salary-pill">{job.salary}</span>
-                    </div>
-                  </div>
-
-                  <div className="result-middle-col">
-                    <div className="result-middle-meta">
-                      <span>Applications: {job.applicantCount}</span>
-                      <span>Close Date: {job.closeDate}</span>
-                      {job.skillTags.length > 0 && (
-                        <div className="js-meta-tag-line">
-                          <span className="js-meta-label">Skills: </span>
-                          <RenderTagChips items={job.skillTags} type="skill" maxVisible={1} />
-                        </div>
-                      )}
-                      {job.qualTags.length > 0 && (
-                        <div className="js-meta-tag-line">
-                          <span className="js-meta-label">Qualifications: </span>
-                          <RenderTagChips items={job.qualTags} type="qualification" maxVisible={1} />
-                        </div>
-                      )}
-                      {job.certTags && job.certTags.length > 0 && (
-                        <div className="js-meta-tag-line">
-                          <span className="js-meta-label">Certifications: </span>
-                          <RenderTagChips items={job.certTags} type="certification" maxVisible={1} />
-                        </div>
-                      )}
+                      {(() => {
+                        const isHidden = Boolean(
+                          (job as any).hideSalary ||
+                          (job as any).hide_salary === 1 ||
+                          (job as any).hide_salary === "1" ||
+                          (job as any).hide_salary === true ||
+                          (job as any).hide_salary === "true" ||
+                          job.salary === "Salary Confidential"
+                        );
+                        if (isHidden) {
+                          return <span className="salary-pill confidential">Salary Confidential</span>;
+                        }
+                        if (job.salary) {
+                          return <span className="salary-pill">{job.salary}</span>;
+                        }
+                        return null;
+                      })()}
                     </div>
                   </div>
 
@@ -985,8 +1113,20 @@ export default function ApplicantDashboard() {
                     </div>
                     <button type="button" className="details-btn" onClick={() => setDetailsJob(job)}>Details</button>
                     <div className="card-bottom-actions">
-                      <button type="button" className={`solid-btn apply-right-btn ${appliedJobIds.includes(job.id) ? "applied-btn" : ""}`} onClick={() => setApplyJobTarget({ jobId: job.id, title: job.title })} disabled={appliedJobIds.includes(job.id) || applyingJobId === job.id}>{appliedJobIds.includes(job.id) ? "Applied" : applyingJobId === job.id ? "Applying..." : "Apply"}</button>
-                      <button type="button" className="bookmark-icon-btn" aria-label={bookmarkedIds.includes(job.id) ? "Remove bookmark" : "Bookmark job"} onClick={() => toggleBookmark(job.id)}>
+                      <button
+                        type="button"
+                        className={`solid-btn apply-right-btn ${appliedJobIds.includes(job.id) ? "applied-btn" : ""}`}
+                        onClick={() => setApplyJobTarget({ jobId: job.id, title: job.title })}
+                        disabled={appliedJobIds.includes(job.id) || applyingJobId === job.id}
+                      >
+                        {appliedJobIds.includes(job.id) ? "Applied" : applyingJobId === job.id ? "Applying..." : "Apply"}
+                      </button>
+                      <button
+                        type="button"
+                        className="bookmark-icon-btn"
+                        aria-label={bookmarkedIds.includes(job.id) ? "Remove bookmark" : "Bookmark job"}
+                        onClick={() => toggleBookmark(job.id)}
+                      >
                         <MiniIcon name={bookmarkedIds.includes(job.id) ? "bookmarkFilled" : "bookmark"} />
                       </button>
                     </div>
@@ -996,8 +1136,10 @@ export default function ApplicantDashboard() {
             ))
           )}
         </section>
+        )}
 
-        {/* ── MY APPLICATIONS SECTION ── */}
+        {/* ── SECTION 2: MY APPLICATIONS ── */}
+        {activeSection === "section-applications" && (
         <section className="matches-card section-anchor" id="section-applications" style={{ marginTop: "24px" }}>
           <div className="matches-head">
             <div>
@@ -1034,6 +1176,15 @@ export default function ApplicantDashboard() {
                   </span>
                 </div>
                 <div className="job-actions">
+                  {["approved", "accepted", "shortlisted"].includes((app.status || "").toLowerCase()) || app.response_letter ? (
+                    <a
+                      href={`/applicant-offer-letter?applicationId=${app.id}&action=accept`}
+                      className="solid-btn"
+                      style={{ background: "#059669", borderColor: "#059669", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "5px" }}
+                    >
+                      {app.response_letter ? "View Letter ✉" : "Formal Offer Letter ✉"}
+                    </a>
+                  ) : null}
                   <button type="button" className="solid-btn" onClick={() => handleReviewApplication(app)}>
                     Review
                   </button>
@@ -1043,8 +1194,10 @@ export default function ApplicantDashboard() {
             ))
           )}
         </section>
+        )}
 
-        {/* ── JOB INVITATIONS SECTION ── */}
+        {/* ── SECTION 3: JOB INVITATIONS ── */}
+        {activeSection === "section-invitations" && (
         <section className="matches-card section-anchor" id="section-invitations" style={{ marginTop: "24px" }}>
           <div className="matches-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
             <div>
@@ -1113,9 +1266,9 @@ export default function ApplicantDashboard() {
                       <p style={{ margin: "4px 0" }}>
                         <strong>{inv.business_name || "Employer"}</strong> • {inv.job_location || "Cavite"} • {inv.work_arrangement || "On-Site"}
                       </p>
-                      {inv.salary_min && (
+                      {(inv.hide_salary || inv.salary_min) && (
                         <p style={{ margin: "2px 0", color: "#0284c7", fontWeight: 600, fontSize: "0.86rem" }}>
-                          {formatSalaryRange(inv.salary_min ?? null, inv.salary_max ?? null)}
+                          {formatSalaryRange(inv.salary_min ?? null, inv.salary_max ?? null, inv.hide_salary)}
                         </p>
                       )}
                       <small style={{ color: "#64748b" }}>
@@ -1132,28 +1285,28 @@ export default function ApplicantDashboard() {
                           <button
                             type="button"
                             className="inv-action-btn inv-accept-btn"
-                            onClick={() => handleRespondInvitation(inv.id, "accept")}
+                            onClick={() => setDecisionModalTarget({ inv, action: "accept" })}
                             disabled={isRespondingInvId === inv.id}
                           >
-                            {isRespondingInvId === inv.id ? "..." : "Accept"}
+                            Accept
                           </button>
                           <button
                             type="button"
                             className="inv-action-btn inv-decline-btn"
-                            onClick={() => setDeclineInvTarget(inv)}
+                            onClick={() => setDecisionModalTarget({ inv, action: "decline" })}
                             disabled={isRespondingInvId === inv.id}
                           >
-                            {isRespondingInvId === inv.id ? "..." : "Decline"}
+                            Decline
                           </button>
                         </>
-                      ) : status === "accepted" ? (
-                        <button type="button" className="inv-action-btn inv-accepted-status-btn" disabled>
-                          Accepted
-                        </button>
                       ) : (
-                        <button type="button" className="inv-action-btn inv-declined-status-btn" disabled>
-                          Declined
-                        </button>
+                        <a
+                          href={`/applicant-offer-letter?invitationId=${inv.id}`}
+                          className={`inv-action-btn ${status === "accepted" ? "inv-accepted-status-btn" : "inv-declined-status-btn"}`}
+                          style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                        >
+                          {status === "accepted" ? "Accepted · View Letter" : "Declined · View Letter"}
+                        </a>
                       )}
                       <a href="/messages" className="inv-action-btn inv-message-btn">
                         Message
@@ -1164,213 +1317,40 @@ export default function ApplicantDashboard() {
               })
           )}
         </section>
+        )}
       </main>
 
       {/* ── JOB DETAILS MODAL ── */}
-      {detailsJob && (
-        <div className="jd-overlay" role="dialog" aria-modal="true" aria-label="Job Details" onClick={(e) => { if (e.target === e.currentTarget) setDetailsJob(null); }}>
-          <div className="jd-panel">
-            {/* Cover banner */}
-            <div className="jd-cover-banner">
-              {detailsJob.companyCoverPath ? (
-                <img
-                  src={detailsJob.companyCoverPath.startsWith("http") || detailsJob.companyCoverPath.startsWith("/api") ? detailsJob.companyCoverPath : `/api/employers/${detailsJob.employerUserId}/cover`}
-                  alt={`${detailsJob.company} cover`}
-                  onError={(e) => {
-                    (e.currentTarget as HTMLElement).style.display = "none";
-                    const placeholder = e.currentTarget.parentElement?.querySelector(".jd-cover-placeholder") as HTMLElement;
-                    if (placeholder) placeholder.style.display = "flex";
-                  }}
-                />
-              ) : null}
-              <div className="jd-cover-placeholder" style={{ display: detailsJob.companyCoverPath ? "none" : "flex" }}>
-                <span>Cover photo</span>
-              </div>
-            </div>
+      <JobDetailsModal
+        isOpen={Boolean(detailsJob)}
+        job={jobModalData}
+        onClose={() => {
+          setDetailsJob(null);
+          setIsFaqDrawerOpen(false);
+        }}
+        currentUserId={applicantUserId || undefined}
+        applicantProfile={applicantMatchProfile}
+        onApply={() => {
+          if (detailsJob) {
+            setApplyJobTarget({ jobId: detailsJob.id, title: detailsJob.title });
+          }
+        }}
+        isApplied={detailsJob ? appliedJobIds.includes(detailsJob.id) : false}
+        isApplying={detailsJob ? applyingJobId === detailsJob.id : false}
+        appliedLabel="Applied"
+        onEmployerClick={(empId) => {
+          if (empId) handleOpenEmployerDetails(empId);
+        }}
+        zIndex={10000}
+      />
 
-            <div className="jd-employer-strip">
-                <div className="jd-employer-logo-info">
-                  <div className="jd-employer-logo" aria-label="Company logo" style={{ overflow: "hidden", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {(() => {
-                      const logoSrc = detailsJob.companyLogoPath
-                        ? (detailsJob.companyLogoPath.startsWith("http") || detailsJob.companyLogoPath.startsWith("/api") ? detailsJob.companyLogoPath : `/api/employers/${detailsJob.employerUserId}/logo`)
-                        : (detailsJob.employerUserId ? `/api/employers/${detailsJob.employerUserId}/logo` : null);
-                      return (
-                        <>
-                          {logoSrc && (
-                            <img
-                              src={logoSrc}
-                              alt={detailsJob.company}
-                              style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                              onError={(e) => {
-                                (e.currentTarget as HTMLElement).style.display = "none";
-                                if (e.currentTarget.nextElementSibling) {
-                                  (e.currentTarget.nextElementSibling as HTMLElement).style.display = "block";
-                                }
-                              }}
-                            />
-                          )}
-                          <svg viewBox="0 0 24 24" aria-hidden="true" style={{ display: logoSrc ? "none" : "block" }}>
-                            <path d="M3 21h18M5 21V7l7-4 7 4v14M9 11h2m2 0h2M9 15h2m2 0h2" />
-                          </svg>
-                        </>
-                      );
-                    })()}
-                  </div>
-                  <div>
-                    <strong className="jd-employer-name">{detailsJob.company}</strong>
-                    <span className="jd-employer-location"><RenderLocationMeta location={detailsJob.location} /></span>
-                  </div>
-                </div>
-                <div className="jd-header-right-actions">
-                  <div className="rating-score-box" title="Company rating">
-                    <span className="star-icon">★</span>
-                    <span>{detailsJob.rating ? Number(detailsJob.rating).toFixed(1) : "0.0"}</span>
-                  </div>
-                  {(() => {
-                    const detailsMatchInfo = calculateJobMatchDetails(detailsJob, applicantMatchProfile);
-                    return (
-                      <div className={`match-score-box ${getMatchColorClass(detailsMatchInfo.score)}`} title={detailsMatchInfo.breakdown}>
-                        <small>Match</small>
-                        <b>{detailsMatchInfo.score}%</b>
-                      </div>
-                    );
-                  })()}
-                  <button
-                    type="button"
-                    className={`jd-faq-btn ${isFaqDrawerOpen ? "active" : ""}`}
-                    onClick={() => {
-                      if (isFaqDrawerOpen) {
-                        setIsFaqDrawerOpen(false);
-                      } else {
-                        handleOpenFaqs(detailsJob);
-                      }
-                    }}
-                  >
-                    FAQ's
-                  </button>
-                </div>
-              </div>
-
-            <div className="jd-body-wrapper">
-              <div className="jd-body">
-                <div className="jd-top-section">
-                  <div className="jd-title-row">
-                    <h2 className="jd-title-h2">{detailsJob.title}</h2>
-                  </div>
-                  <div className="jd-chips-inline">
-                    <span className={`status-chip ${detailsJob.status === "open" ? "open" : "closed"}`}>{detailsJob.status === "open" ? "Open" : "Closed"}</span>
-                    {detailsJob.urgent && <span className="status-chip urgent">Urgent</span>}
-                    <span className="setup-pill">{detailsJob.setup}</span>
-                    {detailsJob.experienceLevel && <span className="exp-level-pill">{formatExperienceLevel(detailsJob.experienceLevel)}</span>}
-                    <span className="salary-pill">{detailsJob.salary}</span>
-                  </div>
-                </div>
-
-                <div className="jd-section">
-                  <h3>Job Description</h3>
-                  <p>{detailsJob.summary || "No description provided."}</p>
-                </div>
-
-                {detailsJob.skillTags.length > 0 && (
-                  <div className="jd-section">
-                    <h3>Required Skills</h3>
-                    <div className="jd-tags-wrap">
-                      {detailsJob.skillTags.map((s) => (
-                        <span className="js-tag-chip js-tag-skill" key={s} title={s}>{s}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {detailsJob.qualTags.length > 0 && (
-                  <div className="jd-section">
-                    <h3>Required Qualifications</h3>
-                    <div className="jd-tags-wrap">
-                      {detailsJob.qualTags.map((q) => (
-                        <span className="js-tag-chip js-tag-qualification" key={q} title={q}>{q}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {detailsJob.certTags && detailsJob.certTags.length > 0 && (
-                  <div className="jd-section">
-                    <h3>Required Certifications</h3>
-                    <div className="jd-tags-wrap">
-                      {detailsJob.certTags.map((c) => (
-                        <span className="js-tag-chip js-tag-certification" key={c} title={c}>{c}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className={`jd-faq-drawer ${isFaqDrawerOpen ? "open" : ""}`}>
-                <div className="jd-faq-header">
-                  <h3>Company FAQ's</h3>
-                  <button type="button" className="jd-faq-back-btn" aria-label="Back to job details" onClick={() => setIsFaqDrawerOpen(false)}>
-                    ←
-                  </button>
-                </div>
-                <div className="jd-faq-body">
-                  {faqLoading ? (
-                    <p className="jd-faq-loading">Loading FAQ's...</p>
-                  ) : companyFaqs.length === 0 ? (
-                    <p className="jd-faq-empty">No FAQ's created by this company yet.</p>
-                  ) : (
-                    companyFaqs.map((faq) => {
-                      const isExpanded = expandedFaqIds.includes(faq.id);
-                      return (
-                        <div key={faq.id} className={`jd-faq-item ${isExpanded ? "expanded" : ""}`}>
-                          <button
-                            type="button"
-                            className="jd-faq-question-btn"
-                            onClick={() => {
-                              setExpandedFaqIds((prev) =>
-                                prev.includes(faq.id) ? prev.filter((id) => id !== faq.id) : [...prev, faq.id]
-                              );
-                            }}
-                          >
-                            <div className="jd-faq-q-left">
-                              {faq.question_type && <span className="jd-faq-type-badge">{faq.question_type}</span>}
-                              <span className="jd-faq-question-text">{faq.question}</span>
-                            </div>
-                            <span className="jd-faq-toggle-icon">{isExpanded ? "−" : "+"}</span>
-                          </button>
-                          {isExpanded && (
-                            <div className="jd-faq-answer">
-                              <p>{faq.answer}</p>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="jd-panel-footer">
-              <div className="jd-footer-meta">
-                <span><strong>Applications:</strong> {detailsJob.applicantCount}</span>
-                <span><strong>Close Date:</strong> {detailsJob.closeDate}</span>
-              </div>
-              <div className="jd-footer-actions">
-                <button type="button" className="jd-cancel-btn" onClick={() => { setDetailsJob(null); setIsFaqDrawerOpen(false); }}>Close</button>
-                <button
-                  type="button"
-                  className={`solid-btn ${appliedJobIds.includes(detailsJob.id) ? "applied-btn" : ""}`}
-                  onClick={() => setApplyJobTarget({ jobId: detailsJob.id, title: detailsJob.title })}
-                  disabled={appliedJobIds.includes(detailsJob.id) || applyingJobId === detailsJob.id}
-                >
-                  {appliedJobIds.includes(detailsJob.id) ? "Applied" : applyingJobId === detailsJob.id ? "Applying..." : "Apply Now"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ── EMPLOYER DETAILS MODAL ── */}
+      <EmployerDetailsModal
+        isOpen={Boolean(selectedEmployerDetails)}
+        onClose={() => setSelectedEmployerDetails(null)}
+        employer={selectedEmployerDetails}
+        zIndex={10250}
+      />
 
       {isSidebarVisible && (
         <button
@@ -1407,27 +1387,25 @@ export default function ApplicantDashboard() {
         }}
       />
 
-      {/* DOUBLE VERIFICATION: DECLINE INVITATION MODAL */}
-      <ConfirmationModal
-        isOpen={!!declineInvTarget}
-        type="danger"
-        title="Decline Job Invitation"
-        message={
-          <div>
-            <p style={{ margin: "0 0 8px" }}>
-              Are you sure you want to decline the invitation for{" "}
-              <strong>{declineInvTarget?.job_title || "this position"}</strong> at{" "}
-              <strong>{declineInvTarget?.business_name || "the employer"}</strong>?
-            </p>
-            <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>
-              You will not be able to accept this recruitment invitation once declined.
-            </p>
-          </div>
-        }
-        cancelLabel="Keep Invitation"
-        confirmLabel="Decline Invitation"
-        onCancel={() => setDeclineInvTarget(null)}
-        onConfirm={handleConfirmDeclineInvitation}
+      {/* APPLICANT DECISION MODAL (Accept / Decline Recruitment - Pic 2 & Pic 3 Design) */}
+      <ApplicantDecisionModal
+        isOpen={!!decisionModalTarget}
+        action={decisionModalTarget?.action || null}
+        jobTitle={decisionModalTarget?.inv.job_title}
+        companyName={decisionModalTarget?.inv.business_name}
+        candidateName={applicantLabel}
+        currentUserId={applicantUserId || undefined}
+        onClose={() => setDecisionModalTarget(null)}
+        onConfirm={async ({ action, letter_text, letter_type, start_date }) => {
+          if (!decisionModalTarget) return;
+          await handleRespondInvitation(
+            decisionModalTarget.inv.id,
+            action,
+            letter_text,
+            letter_type,
+            start_date
+          );
+        }}
       />
 
       {/* DOUBLE VERIFICATION: APPLY TO JOB MODAL */}

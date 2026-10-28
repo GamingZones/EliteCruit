@@ -775,10 +775,13 @@ export default function EmployerCompanyProfile() {
                       <strong>{effectiveCompanyLabel}</strong>
                       <small>{draft.industry || "Industry not set"}</small>
                     </div>
-                    <span className="rating-score-box" style={{ marginLeft: "auto" }}>
-                      <span className="star-icon">★</span>
-                      {(profile as any)?.rating ? Number((profile as any).rating).toFixed(1) : "0.0"}
-                    </span>
+                    <a href="/feedback" style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: "6px", textDecoration: "none" }} title="View candidate feedback & ratings">
+                      <span className="rating-score-box">
+                        <span className="star-icon">★</span>
+                        {(profile as any)?.rating ? Number((profile as any).rating).toFixed(1) : "0.0"}
+                      </span>
+                      <span style={{ fontSize: "0.78rem", color: "#38bdf8", fontWeight: 600 }}>Reviews ↗</span>
+                    </a>
                   </div>
                 </div>
                 <div className="upload-pane">

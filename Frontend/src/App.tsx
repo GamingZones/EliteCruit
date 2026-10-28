@@ -4,6 +4,7 @@ import Login from "./pages/Auth/Login";
 import CreateAccount from "./pages/Auth/Create-Account";
 import ApplicantDashboard from "./pages/Applicant/Applicant-Dashboard";
 import ApplicantProfile from "./pages/Applicant/ApplicantProfile";
+import ApplicantOfferLetter from "./pages/Applicant/Applicant-OfferLetter";
 import JobSearch from "./pages/Applicant/JobSearch";
 import Messages from "./pages/Common/Messages";
 import Notifications from "./pages/Common/Notifications";
@@ -15,7 +16,7 @@ import EmployerApplicantManagement from "./pages/Employer/Employer-ApplicantMana
 import EmployerCompanyProfile from "./pages/Employer/Employer-CompanyProfile";
 import EmployerNoticesFaqs from "./pages/Employer/Employer-NoticesFaqs";
 import EmployerApplicantFinder from "./pages/Employer/Employer-ApplicantFinder";
-import ApplicantFeedback from "./pages/Applicant/Applicant-Feedback";
+import Feedback from "./pages/Common/Feedback";
 import AdminDashboard from "./pages/Admin/Admin-Dashboard";
 import AdminApplicantManagement from "./pages/Admin/Admin-ApplicantManagement";
 import AdminEmployerManagement from "./pages/Admin/Admin-EmployerManagement";
@@ -120,7 +121,10 @@ export default function App() {
     return <ProtectedRoute element={<ApplicantProfile />} allowedRoles={["applicant", "admin"]} />;
   }
   if (path === "/feedback" || path === "/applicant-feedback") {
-    return <ProtectedRoute element={<ApplicantFeedback />} allowedRoles={["applicant", "employer", "admin"]} />;
+    return <ProtectedRoute element={<Feedback />} allowedRoles={["applicant", "employer", "admin"]} />;
+  }
+  if (path === "/applicant-offer-letter" || path === "/applicant/offer-letter" || path === "/job-offer-response") {
+    return <ProtectedRoute element={<ApplicantOfferLetter />} allowedRoles={["applicant", "admin"]} />;
   }
 
   // Employer routes

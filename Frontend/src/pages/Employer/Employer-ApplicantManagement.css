@@ -387,19 +387,24 @@
 }
 
 .action-btn {
-  width: 32px;
-  height: 32px;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
   border-radius: 6px;
   border: 1px solid #d3e0ee;
   background: #ffffff;
   color: #355678;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   cursor: pointer;
   text-decoration: none;
   transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.15s ease, box-shadow 0.15s ease;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  flex-shrink: 0 !important;
 }
 
 .action-btn:hover {
@@ -408,9 +413,13 @@
 }
 
 .action-btn svg {
-  width: 16px;
-  height: 16px;
-  fill: currentColor;
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  min-height: 16px !important;
+  fill: currentColor !important;
+  flex-shrink: 0 !important;
+  display: block !important;
 }
 
 /* Review button: Deep blue hover */
@@ -1992,7 +2001,7 @@
   flex-direction: row;
   overflow: hidden;
   animation: systemPopupScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  font-family: "Manrope", sans-serif;
+  font-family: "Inter", sans-serif;
   transition: max-width 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -3867,7 +3876,7 @@
   max-height: 90vh;
   width: auto;
   animation: systemPopupScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  font-family: "Manrope", sans-serif;
+  font-family: "Inter", sans-serif;
 }
 
 .decision-card {
@@ -4080,3 +4089,73 @@
 .cand-msg-empty-title {
   color: #0f172a;
 }
+
+/* ==========================================================================
+   PHONE & MOBILE UI ADJUSTMENTS (max-width: 768px)
+   Scope: Applied STRICTLY to phones/mobile screens; desktop/laptop UI is 100% untouched.
+   ========================================================================== */
+@media (max-width: 768px) {
+  .applicant-mgmt-page {
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow-y: auto !important;
+  }
+
+  .applicant-mgmt-main {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+  }
+
+  .pipeline-tabs-nav {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    white-space: nowrap !important;
+    padding: 10px 12px !important;
+    gap: 8px !important;
+  }
+
+  .candidate-card-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .cand-details-modal-backdrop,
+  .jd-modal-backdrop {
+    padding: 10px 8px !important;
+  }
+
+  .jd-modal-container {
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 94vh !important;
+    align-items: stretch !important;
+    overflow-y: auto !important;
+    gap: 12px !important;
+  }
+
+  .jd-panel-outer-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .jd-top-floating-actions {
+    position: relative !important;
+    top: 0 !important;
+    flex-wrap: wrap !important;
+    margin-bottom: 8px !important;
+  }
+
+  .jd-side-comparison-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    max-height: none !important;
+    animation: none !important;
+  }
+}
+

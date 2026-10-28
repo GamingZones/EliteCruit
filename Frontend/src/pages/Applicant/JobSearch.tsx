@@ -3,6 +3,7 @@ import { ChevronIcon, SideIcon } from "../../components/Icons";
 import ApplicantChatbotDrawer from "../../components/ApplicantChatbotDrawer";
 import CalendarDrawer from "../../components/CalendarDrawer";
 import ConfirmationModal from "../../components/ConfirmationModal";
+import { EmployerDetailsModal } from "../../components/modals";
 import {
   calculateJobMatch,
   calculateJobMatchDetails,
@@ -10,6 +11,7 @@ import {
   getMatchColorClass,
   inferMatchScore,
   isSkillMatch,
+  isCertificationMatch,
   BSIT_BSCS_JOB_TITLES,
   BSIT_BSCS_SKILLS,
   BSIT_BSCS_QUALIFICATIONS,
@@ -33,6 +35,8 @@ import {
   getKeywordsForJobRole,
   getRelatedJobRolesForKeyword,
   parseCompetencyDisplayTags,
+  JobCardInput,
+  isJobClosedOrExpired,
 } from "../../utils/filters";
 import "./Applicant-Dashboard.css";
 import "./JobSearch.css";
@@ -54,6 +58,8 @@ type JobCard = {
   summary: string;
   salary: string;
   salaryMin: number;
+  hideSalary?: boolean;
+  hide_salary?: number | boolean;
   setup: string;
   experienceLevel?: string | null;
   jobType: "Full-time" | "Part-time" | "Contract" | "Internship" | "Remote";
@@ -86,6 +92,7 @@ type EmployerJob = {
   work_arrangement: string;
   salary_min: number | null;
   salary_max: number | null;
+  hide_salary?: number | boolean;
   required_skills: string | null;
   required_qualifications: string | null;
   required_certifications: string | null;
@@ -220,7 +227,187 @@ type ApplicantMatchProfile = {
   skills: string[];
   qualifications: string[];
   certifications: string[];
+  rawSkills?: string | null;
+  rawCertifications?: string | null;
 };
+
+type BreakdownCourseSkillItem = {
+  name: string;
+  course: string;
+  year?: string;
+};
+
+type BreakdownCertItem = {
+  name: string;
+  category: string;
+  acquiredYear?: string;
+  expiry?: string;
+};
+
+function parseSingleBreakdownSkillToken(token: string): BreakdownCourseSkillItem {
+  let course = "General IT";
+  const courseMatch = token.match(/\[([^\[\]]+)\]/);
+  if (courseMatch && courseMatch[1].trim()) {
+    course = courseMatch[1].trim();
+  }
+
+  let year = "2026";
+  const lastParen = token.match(/\(([^()]+)\)$/);
+  if (lastParen && lastParen[1].trim()) {
+    year = lastParen[1].replace(/^Since\s*/i, "").replace(/^Acquired\s*/i, "").trim() || "2026";
+  }
+
+  let cleanName = token
+    .replace(/\s*\[[^\[\]]*\]/g, "")
+    .replace(/\s*\([^()]*\)$/, "")
+    .trim();
+
+  // Fix unbalanced parentheses in name if any
+  const openCount = (cleanName.match(/\(/g) || []).length;
+  const closeCount = (cleanName.match(/\)/g) || []).length;
+  if (openCount > closeCount) {
+    cleanName = cleanName + ")".repeat(openCount - closeCount);
+  } else if (closeCount > openCount) {
+    cleanName = cleanName.replace(/\)+$/, "");
+  }
+
+  return {
+    name: cleanName || token.trim(),
+    course,
+    year,
+  };
+}
+
+function parseBreakdownSkillItems(raw?: string | null, fallbackTags: string[] = []): Record<string, BreakdownCourseSkillItem[]> {
+  const items: BreakdownCourseSkillItem[] = [];
+  if (raw && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((p) => {
+          if (typeof p === "object" && p !== null && p.name) {
+            items.push({
+              name: String(p.name).trim(),
+              course: p.course || "General IT",
+              year: p.year || p.years || "2026",
+            });
+          } else if (p) {
+            items.push(parseSingleBreakdownSkillToken(String(p)));
+          }
+        });
+      }
+    } catch {}
+
+    if (items.length === 0) {
+      const rawTokens = raw.includes(")")
+        ? raw.split(/(?<=\))\s*,\s*/)
+        : raw.split(/[\n,;•|]+/);
+      rawTokens.forEach((tok) => {
+        if (tok.trim()) items.push(parseSingleBreakdownSkillToken(tok));
+      });
+    }
+  }
+
+  if (items.length === 0 && fallbackTags.length > 0) {
+    fallbackTags.forEach((tok) => items.push(parseSingleBreakdownSkillToken(tok)));
+  }
+
+  const grouped: Record<string, BreakdownCourseSkillItem[]> = {};
+  items.forEach((item) => {
+    if (!item.name) return;
+    const cat = item.course && item.course.trim() ? item.course.trim() : "General IT";
+    if (!grouped[cat]) grouped[cat] = [];
+    if (!grouped[cat].some((existing) => existing.name.toLowerCase() === item.name.toLowerCase())) {
+      grouped[cat].push(item);
+    }
+  });
+  return grouped;
+}
+
+function parseBreakdownCertItems(raw?: string | null, fallbackTags: string[] = []): Record<string, BreakdownCertItem[]> {
+  const items: BreakdownCertItem[] = [];
+
+  const parseToken = (token: string): BreakdownCertItem => {
+    let category = "General";
+    const catMatch = token.match(/\[([^\[\]]+)\]/);
+    if (catMatch && catMatch[1].trim()) {
+      category = catMatch[1].trim();
+    }
+
+    let acquiredYear = "2010";
+    let expiry = "2026";
+
+    const lastParen = token.match(/\(([^()]+)\)$/);
+    if (lastParen) {
+      const inside = lastParen[1].trim();
+      const acqMatch = inside.match(/Acquired\s*([0-9]{4})/i);
+      if (acqMatch) acquiredYear = acqMatch[1].trim();
+      const expMatch = inside.match(/(?:Expiration|Expires|Expiry)\s*([^\)]+)/i);
+      if (expMatch) {
+        expiry = expMatch[1].trim();
+      } else if (!acqMatch) {
+        expiry = inside;
+      }
+    }
+
+    let cleanName = token.replace(/\s*\[[^\[\]]*\]/g, "").replace(/\s*\([^()]*\)$/, "").trim();
+    const openCount = (cleanName.match(/\(/g) || []).length;
+    const closeCount = (cleanName.match(/\)/g) || []).length;
+    if (openCount > closeCount) cleanName = cleanName + ")".repeat(openCount - closeCount);
+    else if (closeCount > openCount) cleanName = cleanName.replace(/\)+$/, "");
+
+    return {
+      name: cleanName || token.trim(),
+      category,
+      acquiredYear,
+      expiry,
+    };
+  };
+
+  if (raw && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((p) => {
+          if (typeof p === "object" && p !== null && p.name) {
+            items.push({
+              name: String(p.name).trim(),
+              category: p.category || "General",
+              acquiredYear: p.acquiredYear || p.acquired || "2010",
+              expiry: p.expiry || p.years || "2026",
+            });
+          } else if (p) {
+            items.push(parseToken(String(p)));
+          }
+        });
+      }
+    } catch {}
+
+    if (items.length === 0) {
+      const rawTokens = raw.includes(")")
+        ? raw.split(/(?<=\))\s*,\s*/)
+        : raw.split(/[\n,;•|]+/);
+      rawTokens.forEach((tok) => {
+        if (tok.trim()) items.push(parseToken(tok));
+      });
+    }
+  }
+
+  if (items.length === 0 && fallbackTags.length > 0) {
+    fallbackTags.forEach((tok) => items.push(parseToken(tok)));
+  }
+
+  const grouped: Record<string, BreakdownCertItem[]> = {};
+  items.forEach((item) => {
+    if (!item.name) return;
+    const cat = item.category && item.category.trim() ? item.category.trim() : "General";
+    if (!grouped[cat]) grouped[cat] = [];
+    if (!grouped[cat].some((existing) => existing.name.toLowerCase() === item.name.toLowerCase())) {
+      grouped[cat].push(item);
+    }
+  });
+  return grouped;
+}
 
 const SALARY_RANGES = [
   "PHP 10,000+",
@@ -621,7 +808,15 @@ function shortenText(raw: string | null | undefined, fallback: string, limit = 8
   return value.length > limit ? `${value.slice(0, limit)}...` : value;
 }
 
-function formatSalary(minSalary: number | null, maxSalary: number | null) {
+function formatSalary(minSalary: number | null, maxSalary: number | null, hideSalary?: boolean | number | string | null) {
+  const isHidden = Boolean(
+    hideSalary === true ||
+    hideSalary === 1 ||
+    hideSalary === "1" ||
+    hideSalary === "true" ||
+    (typeof hideSalary === "string" && hideSalary.toLowerCase() === "true")
+  );
+  if (isHidden) return "Salary Confidential";
   const min = Number.isFinite(Number(minSalary)) ? Number(minSalary).toLocaleString("en-US") : "0";
   const max = Number.isFinite(Number(maxSalary)) ? Number(maxSalary).toLocaleString("en-US") : "0";
   return `PHP ${min} - ${max}`;
@@ -653,9 +848,23 @@ function parseExpectedSalary(raw: string | null | undefined) {
   return Number.isFinite(amount) ? amount : 0;
 }
 
+function MenuIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="chevron-icon" aria-hidden="true">
+      <path d="M5 7h14M5 12h14M5 17h14" />
+    </svg>
+  );
+}
+
 export default function JobSearch() {
   const unreadNotifCount = useUnreadNotificationsCount();
   const unreadMessagesCount = useUnreadMessagesCount();
+  const [isSidebarVisible, setIsSidebarVisible] = useState(() => {
+    if (typeof window !== "undefined" && window.innerWidth <= 768) {
+      return false;
+    }
+    return true;
+  });
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
@@ -698,6 +907,8 @@ export default function JobSearch() {
   const [isEmployerMsgLoading, setIsEmployerMsgLoading] = useState(false);
   const [isEmployerMsgSending, setIsEmployerMsgSending] = useState(false);
   const employerMsgEndRef = useRef<HTMLDivElement>(null);
+  const jobMsgScrollRef = useRef<HTMLDivElement>(null);
+  const employerMsgScrollRef = useRef<HTMLDivElement>(null);
 
   const availableEmployerCities = useMemo(() => {
     if (employerSelectedProvince !== "All provinces") {
@@ -722,6 +933,7 @@ export default function JobSearch() {
   const [applicantUserId, setApplicantUserId] = useState<number | null>(null);
   const [appliedJobIds, setAppliedJobIds] = useState<number[]>([]);
   const [initialAppliedJobIds, setInitialAppliedJobIds] = useState<number[]>([]);
+  const [applicationStatusByJobId, setApplicationStatusByJobId] = useState<Record<number, string>>({});
   const [applyingJobId, setApplyingJobId] = useState<number | null>(null);
   const [detailsJob, setDetailsJob] = useState<JobCard | null>(null);
   const [isFaqDrawerOpen, setIsFaqDrawerOpen] = useState(false);
@@ -734,9 +946,176 @@ export default function JobSearch() {
     side: "applicant" | "employer";
     category: "skills" | "qualifications" | "certifications";
   } | null>(null);
+  const [activeBreakdownPopup, setActiveBreakdownPopup] = useState<{
+    type: "skills" | "certifications";
+    category: string;
+  } | null>(null);
+
+  const groupedBreakdownSkills = useMemo(() => {
+    return parseBreakdownSkillItems(applicantMatchProfile?.rawSkills, applicantMatchProfile?.skills || []);
+  }, [applicantMatchProfile?.rawSkills, applicantMatchProfile?.skills]);
+
+  const groupedBreakdownCerts = useMemo(() => {
+    return parseBreakdownCertItems(applicantMatchProfile?.rawCertifications, applicantMatchProfile?.certifications || []);
+  }, [applicantMatchProfile?.rawCertifications, applicantMatchProfile?.certifications]);
   const [companyFaqs, setCompanyFaqs] = useState<FaqItem[]>([]);
   const [faqLoading, setFaqLoading] = useState(false);
   const [expandedFaqIds, setExpandedFaqIds] = useState<number[]>([]);
+
+  // Modal refs & states for equal-height synchronization and FAQ loading
+  const modalPanelRef = useRef<HTMLDivElement>(null);
+  const modalBannerRef = useRef<HTMLDivElement>(null);
+  const modalStripRef = useRef<HTMLDivElement>(null);
+  const modalBodyWrapperRef = useRef<HTMLDivElement>(null);
+  const modalBodyRef = useRef<HTMLDivElement>(null);
+  const modalFaqDrawerRef = useRef<HTMLDivElement>(null);
+  const modalFooterRef = useRef<HTMLDivElement>(null);
+  const modalSidePanelSlotRef = useRef<HTMLDivElement>(null);
+  const [modalMatchedHeight, setModalMatchedHeight] = useState<number | null>(null);
+  const [modalFaqsList, setModalFaqsList] = useState<FaqItem[]>(DEFAULT_FAQS);
+  const [modalLoadingFaqs, setModalLoadingFaqs] = useState(false);
+  const [isEmployerModalOnTop, setIsEmployerModalOnTop] = useState(false);
+
+  // Measure natural unconstrained height of Container 1 (Job details modal)
+  const measureModalH1 = React.useCallback(() => {
+    if (!modalPanelRef.current) return 0;
+    const bannerH = modalBannerRef.current ? modalBannerRef.current.offsetHeight : 140;
+    const stripH = modalStripRef.current ? modalStripRef.current.offsetHeight : 65;
+    const footerH = modalFooterRef.current ? modalFooterRef.current.offsetHeight : 65;
+
+    let bodyH = 0;
+    if (isFaqDrawerOpen && modalFaqDrawerRef.current) {
+      const faqHeader = modalFaqDrawerRef.current.querySelector(".jd-faq-header") as HTMLElement | null;
+      const faqBody = modalFaqDrawerRef.current.querySelector(".jd-faq-body") as HTMLElement | null;
+      bodyH = (faqHeader?.offsetHeight || 50) + (faqBody?.scrollHeight || 200);
+    } else if (modalBodyRef.current) {
+      bodyH = modalBodyRef.current.scrollHeight || 180;
+    }
+
+    return bannerH + stripH + bodyH + footerH;
+  }, [isFaqDrawerOpen]);
+
+  // Measure natural unconstrained height of Container 2 (Side panel)
+  const measureModalH2 = React.useCallback((h1: number) => {
+    const slot = modalSidePanelSlotRef.current;
+    if (!slot) return h1;
+    const sideEl = slot.querySelector(".jd-side-comparison-panel") as HTMLElement | null;
+    if (!sideEl) return slot.scrollHeight || h1;
+
+    const isMsgPanel =
+      sideEl.classList.contains("cand-message-side-panel") ||
+      Boolean(sideEl.querySelector(".cand-msg-chat-body"));
+
+    if (isMsgPanel) {
+      return h1;
+    }
+
+    const sideHeader = sideEl.querySelector(".jd-side-panel-header") as HTMLElement | null;
+    const headerH = sideHeader?.offsetHeight || 60;
+    const sideBody = sideEl.querySelector(".jd-side-panel-body") as HTMLElement | null;
+    if (sideBody) {
+      return headerH + (sideBody.scrollHeight || 0);
+    }
+
+    return sideEl.scrollHeight || h1;
+  }, []);
+
+  // Equal height calculation
+  const calculateModalEqualHeight = React.useCallback(() => {
+    const hasSidePanel = Boolean((isMatchDrawerOpen && !isMatchDrawerClosing) || (isJobMsgOpen && !isJobMsgClosing));
+    if (!hasSidePanel || window.innerWidth <= 860) {
+      setModalMatchedHeight(null);
+      return;
+    }
+
+    const maxAllowed = Math.floor(window.innerHeight * 0.88 - 40);
+    const minAllowed = 440;
+
+    const h1 = measureModalH1();
+    if (!h1) return;
+
+    const h2 = measureModalH2(h1);
+
+    const clampedH1 = Math.max(minAllowed, Math.min(h1, maxAllowed));
+    const clampedH2 = Math.max(minAllowed, Math.min(h2, maxAllowed));
+
+    const equalH = Math.min(clampedH1, clampedH2);
+
+    setModalMatchedHeight((prev) => {
+      if (prev !== null && Math.abs(prev - equalH) <= 2) return prev;
+      return equalH;
+    });
+  }, [isMatchDrawerOpen, isMatchDrawerClosing, isJobMsgOpen, isJobMsgClosing, measureModalH1, measureModalH2]);
+
+  useEffect(() => {
+    const hasSidePanel = Boolean((isMatchDrawerOpen && !isMatchDrawerClosing) || (isJobMsgOpen && !isJobMsgClosing));
+    if (!detailsJob || !hasSidePanel) {
+      setModalMatchedHeight(null);
+      return;
+    }
+
+    let rafId: number;
+    const runMeasure = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        calculateModalEqualHeight();
+      });
+    };
+
+    runMeasure();
+    const t1 = setTimeout(runMeasure, 60);
+    const t2 = setTimeout(runMeasure, 180);
+
+    window.addEventListener("resize", runMeasure);
+
+    let observer: MutationObserver | null = null;
+    if (modalSidePanelSlotRef.current) {
+      observer = new MutationObserver(() => {
+        runMeasure();
+      });
+      observer.observe(modalSidePanelSlotRef.current, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
+    }
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(t1);
+      clearTimeout(t2);
+      window.removeEventListener("resize", runMeasure);
+      if (observer) observer.disconnect();
+    };
+  }, [detailsJob, isMatchDrawerOpen, isMatchDrawerClosing, isJobMsgOpen, isJobMsgClosing, isFaqDrawerOpen, expandedFaqIds, calculateModalEqualHeight]);
+
+  useEffect(() => {
+    if (!detailsJob) {
+      setModalFaqsList(DEFAULT_FAQS);
+      return;
+    }
+    const empId = detailsJob.employerUserId;
+    if (empId) {
+      setModalLoadingFaqs(true);
+      fetch(`/api/employers/${empId}/faqs`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data?.faqs)) {
+            const activeFaqs = data.faqs.filter((f: any) => f.is_active !== 0);
+            if (activeFaqs.length > 0) {
+              setModalFaqsList(activeFaqs);
+              return;
+            }
+          }
+          setModalFaqsList(DEFAULT_FAQS);
+        })
+        .catch(() => setModalFaqsList(DEFAULT_FAQS))
+        .finally(() => setModalLoadingFaqs(false));
+    } else {
+      setModalFaqsList(DEFAULT_FAQS);
+    }
+  }, [detailsJob?.employerUserId, detailsJob?.id]);
+
 
   const handleToggleMatchDrawer = () => {
     if (isMatchDrawerOpen) {
@@ -753,6 +1132,7 @@ export default function JobSearch() {
   const handleCloseMatchDrawer = () => {
     if (!isMatchDrawerOpen) return;
     setIsMatchDrawerClosing(true);
+    setActiveBreakdownPopup(null);
     setTimeout(() => {
       setIsMatchDrawerOpen(false);
       setIsMatchDrawerClosing(false);
@@ -853,9 +1233,11 @@ export default function JobSearch() {
             workArrangement: profile?.work_arrangement || "",
             expectedSalary: parseExpectedSalary(profile?.expected_salary || ""),
             city: profile?.city || "",
-            skills: parseCompetencyDisplayTags(profile?.skills),
-            certifications: parseCompetencyDisplayTags(profile?.certifications),
-            qualifications: parseCompetencyDisplayTags(profile?.qualifications),
+            skills: parseCompetencyDisplayTags(profile?.skills, "skills"),
+            certifications: parseCompetencyDisplayTags(profile?.certifications, "certifications"),
+            qualifications: parseCompetencyDisplayTags(profile?.qualifications, "qualifications"),
+            rawSkills: typeof profile?.skills === "string" ? profile.skills : (Array.isArray(profile?.skills) ? JSON.stringify(profile.skills) : null),
+            rawCertifications: typeof profile?.certifications === "string" ? profile.certifications : (Array.isArray(profile?.certifications) ? JSON.stringify(profile.certifications) : null),
           });
         })
         .catch(() => {
@@ -879,10 +1261,39 @@ export default function JobSearch() {
           : [];
         setAppliedJobIds(ids);
         setInitialAppliedJobIds(ids);
+
+        if (Array.isArray(data?.applications)) {
+          const statusMap: Record<number, string> = {};
+          data.applications.forEach((item: any) => {
+            const jobId = Number(item?.job_post_id);
+            if (jobId > 0 && item?.status) {
+              statusMap[jobId] = String(item.status).toLowerCase();
+            }
+          });
+          setApplicationStatusByJobId((prev) => ({ ...prev, ...statusMap }));
+        }
       })
       .catch(() => {
         // Keep UI usable even when applications endpoint is temporarily unavailable.
       });
+
+    fetch(`/api/applicants/${applicantUserId}/invitations`)
+      .then(async (response) => {
+        const data = await response.json();
+        if (response.ok && Array.isArray(data?.invitations)) {
+          setApplicationStatusByJobId((prev) => {
+            const next = { ...prev };
+            data.invitations.forEach((inv: any) => {
+              const jobId = Number(inv?.job_post_id);
+              if (jobId > 0 && !next[jobId]) {
+                next[jobId] = "shortlisted";
+              }
+            });
+            return next;
+          });
+        }
+      })
+      .catch(() => {});
   }, [applicantUserId]);
 
   useEffect(() => {
@@ -904,15 +1315,30 @@ export default function JobSearch() {
         const data = await response.json();
         if (!response.ok) throw new Error(data?.message || "Unable to load job postings.");
         const rows = Array.isArray(data?.jobPosts) ? data.jobPosts : [];
-        const mapped: JobCard[] = rows.map((row: any, index: number) => ({
-          id: Number(row.id),
-          title: row.title || "Untitled Job",
-          company: row.company_name || "Employer",
-          location: formatLocationWithCavite(row.location || row.company_address),
-          summary: row.description || "No job description provided yet.",
-          salary: formatSalary(row.salary_min ?? null, row.salary_max ?? null),
-          salaryMin: Number.isFinite(Number(row.salary_min)) ? Number(row.salary_min) : 0,
-          setup: row.work_arrangement || "Flexible",
+        const mapped: JobCard[] = rows.map((row: any, index: number) => {
+          const isHiddenSalary = Boolean(
+            row.hide_salary === true ||
+            row.hide_salary === 1 ||
+            row.hide_salary === "1" ||
+            row.hide_salary === "true" ||
+            row.hideSalary === true ||
+            row.hideSalary === 1 ||
+            row.hideSalary === "1" ||
+            row.hideSalary === "true" ||
+            (typeof row.hide_salary === "string" && row.hide_salary.toLowerCase() === "true") ||
+            (typeof row.hideSalary === "string" && row.hideSalary.toLowerCase() === "true")
+          );
+          return {
+            id: Number(row.id),
+            title: row.title || "Untitled Job",
+            company: row.company_name || "Employer",
+            location: formatLocationWithCavite(row.location || row.company_address),
+            summary: row.description || "No job description provided yet.",
+            salary: formatSalary(row.salary_min ?? null, row.salary_max ?? null, isHiddenSalary),
+            salaryMin: Number.isFinite(Number(row.salary_min)) ? Number(row.salary_min) : 0,
+            hideSalary: isHiddenSalary,
+            hide_salary: isHiddenSalary ? 1 : 0,
+            setup: row.work_arrangement || "Flexible",
           experienceLevel: row.experience_level || null,
           status: row.status === "closed" ? "closed" : "open",
           closeDate: row.close_date || "-",
@@ -921,9 +1347,9 @@ export default function JobSearch() {
           qualifications: row.qualifications || "Not provided",
           certifications: row.certifications || "Not provided",
           responsibilities: row.responsibilities || "Not provided",
-          skillTags: parseCompetencyDisplayTags(row.required_skills),
-          qualTags: parseCompetencyDisplayTags(row.qualifications),
-          certTags: parseCompetencyDisplayTags(row.certifications),
+          skillTags: parseCompetencyDisplayTags(row.required_skills, "skills"),
+          qualTags: parseCompetencyDisplayTags(row.qualifications, "qualifications"),
+          certTags: parseCompetencyDisplayTags(row.certifications, "certifications"),
           jobType: row.work_arrangement === "Remote" ? "Remote" : "Full-time",
           functionGroup: inferFunctionGroup(row.title || "", parseCompetencyDisplayTags(row.required_skills)),
           distance: "Cavite",
@@ -935,8 +1361,9 @@ export default function JobSearch() {
           companyLogoPath: row.company_logo_path || null,
           companyCoverPath: row.company_cover_path || null,
           rating: row.rating ? String(row.rating) : "0.0",
-        }));
-        setJobs(mapped);
+        };
+      });
+      setJobs(mapped);
       })
       .catch((error) => setJobsMessage(error instanceof Error ? error.message : "Unable to load job postings."));
   }, []);
@@ -1005,6 +1432,11 @@ export default function JobSearch() {
     const minSalary = selectedMinSalary === "Any salary" ? 0 : Number(selectedMinSalary.replace(/\D/g, "")) || 0;
 
     const filtered = jobs.filter((job) => {
+      // Exclude job postings the applicant has already applied for
+      if (appliedJobIds.includes(job.id)) {
+        return false;
+      }
+
       const combined = `${job.title} ${job.company} ${job.location} ${job.summary} ${job.badges.join(" ")} ${job.skillTags.join(" ")} ${job.qualTags.join(" ")}`.toLowerCase();
       
       const bySearch =
@@ -1130,12 +1562,6 @@ export default function JobSearch() {
     const scope = sortBy === "Bookmarked" ? filtered.filter((job) => bookmarkedIds.includes(job.id)) : filtered;
 
     const sorted = [...scope].sort((a, b) => {
-      const aApplied = initialAppliedJobIds.includes(a.id);
-      const bApplied = initialAppliedJobIds.includes(b.id);
-      if (aApplied !== bApplied) {
-        return aApplied ? 1 : -1;
-      }
-
       if (sortBy === "Match") {
         return calculateJobMatch(b, applicantMatchProfile) - calculateJobMatch(a, applicantMatchProfile);
       }
@@ -1163,7 +1589,7 @@ export default function JobSearch() {
     sortBy,
     bookmarkedIds,
     applicantMatchProfile,
-    initialAppliedJobIds,
+    appliedJobIds,
   ]);
 
   const JOBS_PER_PAGE = 10;
@@ -1276,6 +1702,8 @@ export default function JobSearch() {
       const data = await response.json();
       if (!response.ok) throw new Error(data?.message || "Unable to submit application.");
       setAppliedJobIds((current) => (current.includes(jobId) ? current : [...current, jobId]));
+      setApplicationStatusByJobId((prev) => ({ ...prev, [jobId]: "submitted" }));
+      setJobsMessage("Application submitted successfully! You can track this application in My Applications on your Dashboard.");
       setJobs((prevJobs) =>
         prevJobs.map((j) => (j.id === jobId ? { ...j, applicantCount: j.applicantCount + 1 } : j))
       );
@@ -1451,14 +1879,28 @@ export default function JobSearch() {
     for (const emp of employers) {
       const ej = emp.jobs?.find((j) => j.id === jobId);
       if (ej) {
+        const isHiddenSalary = Boolean(
+          ej.hide_salary === true ||
+          ej.hide_salary === 1 ||
+          ej.hide_salary === "1" ||
+          ej.hide_salary === "true" ||
+          (ej as any).hideSalary === true ||
+          (ej as any).hideSalary === 1 ||
+          (ej as any).hideSalary === "1" ||
+          (ej as any).hideSalary === "true" ||
+          (typeof ej.hide_salary === "string" && ej.hide_salary.toLowerCase() === "true") ||
+          (typeof (ej as any).hideSalary === "string" && (ej as any).hideSalary.toLowerCase() === "true")
+        );
         const fallbackJob: JobCard = {
           id: ej.id,
           title: ej.title,
           company: emp.company_name,
           location: formatLocationWithCavite(ej.location || emp.location),
           summary: "No job description provided yet.",
-          salary: formatSalary(ej.salary_min, ej.salary_max),
+          salary: formatSalary(ej.salary_min, ej.salary_max, isHiddenSalary),
           salaryMin: Number(ej.salary_min) || 0,
+          hideSalary: isHiddenSalary,
+          hide_salary: isHiddenSalary ? 1 : 0,
           setup: ej.work_arrangement || "Flexible",
           experienceLevel: null,
           jobType: ej.work_arrangement === "Remote" ? "Remote" : "Full-time",
@@ -1510,6 +1952,22 @@ export default function JobSearch() {
     handleOpenJobDetailsById(jobId);
   };
 
+  const handleOpenEmployerDetailsById = (employerUserId: number) => {
+    const found = employers.find((emp) => emp.employer_user_id === employerUserId);
+    if (found) {
+      handleOpenEmployerDetails(found);
+    } else {
+      fetch(`/api/employers/${employerUserId}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data?.employer) {
+            handleOpenEmployerDetails(data.employer);
+          }
+        })
+        .catch(() => {});
+    }
+  };
+
   const handleCloseJobDetails = () => {
     setDetailsJob(null);
     setIsMatchDrawerOpen(false);
@@ -1517,6 +1975,10 @@ export default function JobSearch() {
     setIsJobMsgOpen(false);
     setIsJobMsgClosing(false);
     setIsFaqDrawerOpen(false);
+    setActiveBreakdownPopup(null);
+    setExpandedFaqIds([]);
+    setModalMatchedHeight(null);
+    setIsEmployerModalOnTop(false);
   };
 
   const fetchEmployerThreadMessages = async (employerUserId: number) => {
@@ -1581,13 +2043,57 @@ export default function JobSearch() {
     if (isEmployerJobsOpen) {
       handleCloseEmployerJobs();
     } else {
-      setIsEmployerFaqDrawerOpen(false);
       setIsEmployerMsgOpen(false);
       setIsEmployerMsgClosing(false);
       setIsEmployerJobsClosing(false);
       setIsEmployerJobsOpen(true);
     }
   };
+
+  const getJobApplicationStatus = (jobId: number): {
+    label: "Applied" | "Recruited" | "Approved" | "Denied";
+    statusClass: "applied" | "recruited" | "approved" | "denied";
+  } | null => {
+    const rawStatus = applicationStatusByJobId[jobId];
+    if (rawStatus) {
+      const s = rawStatus.toLowerCase().trim();
+      if (s === "approved" || s === "accepted" || s === "hired") {
+        return { label: "Approved", statusClass: "approved" };
+      }
+      if (s === "denied" || s === "rejected") {
+        return { label: "Denied", statusClass: "denied" };
+      }
+      if (s === "shortlisted" || s === "recruited") {
+        return { label: "Recruited", statusClass: "recruited" };
+      }
+      return { label: "Applied", statusClass: "applied" };
+    }
+    if (appliedJobIds.includes(jobId)) {
+      return { label: "Applied", statusClass: "applied" };
+    }
+    return null;
+  };
+
+  const sortedEmployerJobs = useMemo(() => {
+    if (!selectedEmployerDetails?.jobs || selectedEmployerDetails.jobs.length === 0) return [];
+    return [...selectedEmployerDetails.jobs]
+      .map((j) => {
+        const foundJob = jobs.find((x) => x.id === j.id);
+        const cardInput: JobCardInput = foundJob || {
+          id: j.id,
+          title: j.title || "",
+          location: j.location || selectedEmployerDetails?.location || "Cavite",
+          salaryMin: Number(j.salary_min) || 0,
+          setup: j.work_arrangement || "On-Site",
+          skillTags: parseCompetencyDisplayTags(j.required_skills, "skills"),
+          qualTags: parseCompetencyDisplayTags(j.required_qualifications, "qualifications"),
+          certTags: parseCompetencyDisplayTags(j.required_certifications, "certifications"),
+        };
+        const matchPct = calculateJobMatchDetails(cardInput, applicantMatchProfile).score;
+        return { ...j, matchPct };
+      })
+      .sort((a, b) => b.matchPct - a.matchPct || b.id - a.id);
+  }, [selectedEmployerDetails?.jobs, selectedEmployerDetails?.location, jobs, applicantMatchProfile]);
 
   const handleCloseEmployerMsg = () => {
     setIsEmployerMsgClosing(true);
@@ -1601,7 +2107,6 @@ export default function JobSearch() {
     if (isEmployerMsgOpen) {
       handleCloseEmployerMsg();
     } else {
-      setIsEmployerFaqDrawerOpen(false);
       setIsEmployerJobsOpen(false);
       setIsEmployerJobsClosing(false);
       setIsEmployerMsgClosing(false);
@@ -1643,6 +2148,7 @@ export default function JobSearch() {
           setEmployerMessages((prev) => [...prev, data.message]);
           setEmployerMsgInput("");
           window.dispatchEvent(new Event("elitecruit_messages_update"));
+          scrollChatToBottom(false);
         }
       } else {
         const res = await fetch("/api/messages/threads", {
@@ -1661,6 +2167,7 @@ export default function JobSearch() {
           setEmployerMessages([data.message]);
           setEmployerMsgInput("");
           window.dispatchEvent(new Event("elitecruit_messages_update"));
+          scrollChatToBottom(false);
         }
       }
     } catch (err) {
@@ -1670,11 +2177,30 @@ export default function JobSearch() {
     }
   };
 
+  const scrollChatToBottom = (instant = true) => {
+    const doScroll = () => {
+      [jobMsgScrollRef.current, employerMsgScrollRef.current].forEach((el) => {
+        if (el) {
+          el.scrollTop = el.scrollHeight;
+        }
+      });
+      if (employerMsgEndRef.current) {
+        employerMsgEndRef.current.scrollIntoView({ behavior: instant ? "auto" : "smooth", block: "end" });
+      }
+    };
+
+    doScroll();
+    requestAnimationFrame(doScroll);
+    setTimeout(doScroll, 40);
+    setTimeout(doScroll, 120);
+    setTimeout(doScroll, 250);
+  };
+
   useEffect(() => {
-    if ((isEmployerMsgOpen || isJobMsgOpen) && employerMsgEndRef.current) {
-      employerMsgEndRef.current.scrollIntoView({ behavior: "smooth" });
+    if (isEmployerMsgOpen || isJobMsgOpen) {
+      scrollChatToBottom(true);
     }
-  }, [employerMessages, isEmployerMsgOpen, isJobMsgOpen]);
+  }, [isEmployerMsgOpen, isJobMsgOpen, employerMessages, isEmployerMsgLoading]);
 
   useEffect(() => {
     const isAnyMsgOpen = isEmployerMsgOpen || isJobMsgOpen;
@@ -1736,13 +2262,958 @@ export default function JobSearch() {
     }
   };
 
+  const renderCompetenciesPanel = () => {
+    if (!detailsJob) return null;
+    const matchDetails = calculateJobMatchDetails(detailsJob, applicantMatchProfile);
+    const appSkills = applicantMatchProfile?.skills || [];
+    const appQuals = applicantMatchProfile?.qualifications || [];
+    const appCerts = applicantMatchProfile?.certifications || [];
+
+    const jobSkills = detailsJob.skillTags || [];
+    const jobQuals = detailsJob.qualTags || [];
+    const jobCerts = detailsJob.certTags || [];
+
+    const checkMatch = (jobItem: string, appItems: string[], type?: "skills" | "qualifications" | "certifications") => {
+      if (!appItems || appItems.length === 0) return false;
+      if (type === "certifications") {
+        return appItems.some((appItem) => isCertificationMatch(jobItem, appItem));
+      }
+      return appItems.some((appItem) => isSkillMatch(jobItem, appItem));
+    };
+
+    const isAppRelevant = (appItem: string, jItems: string[], type?: "skills" | "qualifications" | "certifications") => {
+      if (!jItems || jItems.length === 0) return false;
+      if (type === "certifications") {
+        return jItems.some((jobItem) => isCertificationMatch(jobItem, appItem));
+      }
+      return jItems.some((jobItem) => isSkillMatch(jobItem, appItem));
+    };
+
+    return (
+      <aside className={`jd-side-comparison-panel ${isMatchDrawerClosing ? "closing" : "opening"}`} style={{ fontFamily: "'Inter', sans-serif" }}>
+        <div className="jd-side-panel-header">
+          <div className="jd-side-title-row">
+            <h3>Competencies & Requirements</h3>
+            <span className="jd-side-subtitle">Side-by-side profile match vs employer postings</span>
+          </div>
+          <div className="jd-side-header-actions">
+            <span className={`match-badge-pill ${getMatchColorClass(matchDetails.score)}`}>
+              {matchDetails.score}% Match
+            </span>
+            <button
+              type="button"
+              className="jd-side-close-btn"
+              aria-label="Close comparison panel"
+              onClick={handleCloseMatchDrawer}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <div className="jd-side-panel-body">
+          {/* Legend strip */}
+          <div className="jd-compare-legend">
+            <div className="legend-item">
+              <span className="legend-dot green"></span>
+              <span><strong>Green Tag:</strong> Matched with your profile</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-dot red"></span>
+              <span><strong>Red Tag:</strong> Required by employer, missing from your profile</span>
+            </div>
+          </div>
+
+          {/* Master 2-Column Unified Container */}
+          <div className="jd-unified-compare-container">
+            {/* Column Headers */}
+            <div className="jd-master-col-header applicant-header">
+              <span>Your Profile</span>
+            </div>
+            <div className="jd-master-col-header employer-header">
+              <span>Employer's Requirements</span>
+            </div>
+
+            {/* ── Row 1: Skills ── */}
+            <div className="jd-master-row-card applicant-col">
+              <div className="jd-row-label-wrap">
+                <span className="jd-row-label">Skills</span>
+                <span className="col-count-text">{appSkills.length} listed</span>
+              </div>
+              <div className="jd-col-tags-container">
+                {Object.keys(groupedBreakdownSkills).length > 0 ? (
+                  <div className="category-pills-row">
+                    {Object.entries(groupedBreakdownSkills).map(([catName, groupItems]) => {
+                      const isLinked = Boolean(
+                        hoveredCompareTag?.side === "employer" &&
+                        hoveredCompareTag?.category === "skills" &&
+                        groupItems.some((it) => isSkillMatch(it.name, hoveredCompareTag.item))
+                      );
+                      return (
+                        <button
+                          key={catName}
+                          type="button"
+                          className={`category-popup-trigger-btn ${activeBreakdownPopup?.type === "skills" && activeBreakdownPopup?.category === catName ? "active" : ""} ${isLinked ? "category-hover-linked" : ""}`}
+                          onClick={() => setActiveBreakdownPopup({ type: "skills", category: catName })}
+                          title={`Click to open ${catName} skills list (${groupItems.length})`}
+                        >
+                          <span className="category-pill-name">{catName}</span>
+                          <span className="category-pill-meta">
+                            <span className="category-pill-badge">{groupItems.length}</span>
+                            <span className="category-pill-arrow">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                              </svg>
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <span className="jd-no-data-text">No skills in your profile</span>
+                )}
+              </div>
+            </div>
+
+            <div className="jd-master-row-card employer-col">
+              <div className="jd-row-label-wrap">
+                <span className="jd-row-label">Skills</span>
+                <span className="col-count-text">{jobSkills.length} required</span>
+              </div>
+              <div className="jd-col-tags-container">
+                {jobSkills.length > 0 ? (
+                  jobSkills.map((item) => {
+                    const matched = checkMatch(item, appSkills);
+                    const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
+                    const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "skills" && isSkillMatch(item, hoveredCompareTag.item));
+                    return (
+                      <span
+                        key={item}
+                        className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
+                        onMouseEnter={() => setHoveredCompareTag({ item, side: "employer", category: "skills" })}
+                        onMouseLeave={() => setHoveredCompareTag(null)}
+                      >
+                        <span className="tag-icon">{matched ? "✓" : "✗"}</span>
+                        <span className="tag-text">{item}</span>
+                      </span>
+                    );
+                  })
+                ) : (
+                  <span className="jd-no-data-text">No specific skills required</span>
+                )}
+              </div>
+            </div>
+
+            {/* ── Row 2: Qualifications ── */}
+            <div className="jd-master-row-card applicant-col">
+              <div className="jd-row-label-wrap">
+                <span className="jd-row-label">Qualifications</span>
+                <span className="col-count-text">{appQuals.length} listed</span>
+              </div>
+              <div className="jd-col-tags-container">
+                {appQuals.length > 0 ? (
+                  appQuals.map((item) => {
+                    const isRel = isAppRelevant(item, jobQuals);
+                    const isSource = hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.item === item;
+                    const isLinked = Boolean(hoveredCompareTag?.side === "employer" && hoveredCompareTag?.category === "qualifications" && isSkillMatch(item, hoveredCompareTag.item));
+                    return (
+                      <span
+                        key={item}
+                        className={`jd-comp-tag ${isRel ? "app-matched" : "app-neutral"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
+                        onMouseEnter={() => setHoveredCompareTag({ item, side: "applicant", category: "qualifications" })}
+                        onMouseLeave={() => setHoveredCompareTag(null)}
+                      >
+                        {isRel && <span className="tag-check">✓ </span>}
+                        <span className="tag-text">{item}</span>
+                      </span>
+                    );
+                  })
+                ) : (
+                  <span className="jd-no-data-text">No qualifications in your profile</span>
+                )}
+              </div>
+            </div>
+
+            <div className="jd-master-row-card employer-col">
+              <div className="jd-row-label-wrap">
+                <span className="jd-row-label">Qualifications</span>
+                <span className="col-count-text">{jobQuals.length} required</span>
+              </div>
+              <div className="jd-col-tags-container">
+                {jobQuals.length > 0 ? (
+                  jobQuals.map((item) => {
+                    const matched = checkMatch(item, appQuals);
+                    const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
+                    const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "qualifications" && isSkillMatch(item, hoveredCompareTag.item));
+                    return (
+                      <span
+                        key={item}
+                        className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
+                        onMouseEnter={() => setHoveredCompareTag({ item, side: "employer", category: "qualifications" })}
+                        onMouseLeave={() => setHoveredCompareTag(null)}
+                      >
+                        <span className="tag-icon">{matched ? "✓" : "✗"}</span>
+                        <span className="tag-text">{item}</span>
+                      </span>
+                    );
+                  })
+                ) : (
+                  <span className="jd-no-data-text">No specific qualifications required</span>
+                )}
+              </div>
+            </div>
+
+            {/* ── Row 3: Certifications ── */}
+            <div className="jd-master-row-card applicant-col">
+              <div className="jd-row-label-wrap">
+                <span className="jd-row-label">Certifications</span>
+                <span className="col-count-text">{appCerts.length} listed</span>
+              </div>
+              <div className="jd-col-tags-container">
+                {Object.keys(groupedBreakdownCerts).length > 0 ? (
+                  <div className="category-pills-row">
+                    {Object.entries(groupedBreakdownCerts).map(([catName, groupItems]) => {
+                      const isLinked = Boolean(
+                        hoveredCompareTag?.side === "employer" &&
+                        hoveredCompareTag?.category === "certifications" &&
+                        groupItems.some((it) => isCertificationMatch(hoveredCompareTag.item, it.name))
+                      );
+                      return (
+                        <button
+                          key={catName}
+                          type="button"
+                          className={`category-popup-trigger-btn ${activeBreakdownPopup?.type === "certifications" && activeBreakdownPopup?.category === catName ? "active" : ""} ${isLinked ? "category-hover-linked" : ""}`}
+                          onClick={() => setActiveBreakdownPopup({ type: "certifications", category: catName })}
+                          title={`Click to open ${catName} certifications list (${groupItems.length})`}
+                        >
+                          <span className="category-pill-name">{catName}</span>
+                          <span className="category-pill-meta">
+                            <span className="category-pill-badge">{groupItems.length}</span>
+                            <span className="category-pill-arrow">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                              </svg>
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <span className="jd-no-data-text">No certifications in your profile</span>
+                )}
+              </div>
+            </div>
+
+            <div className="jd-master-row-card employer-col">
+              <div className="jd-row-label-wrap">
+                <span className="jd-row-label">Certifications</span>
+                <span className="col-count-text">{jobCerts.length} required</span>
+              </div>
+              <div className="jd-col-tags-container">
+                {jobCerts.length > 0 ? (
+                  jobCerts.map((item) => {
+                    const matched = checkMatch(item, appCerts, "certifications");
+                    const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
+                    const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "certifications" && isCertificationMatch(item, hoveredCompareTag.item));
+                    return (
+                      <span
+                        key={item}
+                        className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
+                        onMouseEnter={() => setHoveredCompareTag({ item, side: "employer", category: "certifications" })}
+                        onMouseLeave={() => setHoveredCompareTag(null)}
+                      >
+                        <span className="tag-icon">{matched ? "✓" : "✗"}</span>
+                        <span className="tag-text">{item}</span>
+                      </span>
+                    );
+                  })
+                ) : (
+                  <span className="jd-no-data-text">No certifications required for this position</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    );
+  };
+
+  const renderJobMessagePanel = () => {
+    if (!detailsJob) return null;
+    return (
+      <aside
+        className={`jd-side-comparison-panel cand-message-side-panel ${isJobMsgClosing ? "closing" : "opening"}`}
+        style={{ fontFamily: "'Inter', sans-serif" }}
+      >
+        <div className="jd-side-panel-header" style={{ fontFamily: "'Inter', sans-serif" }}>
+          <div className="jd-side-title-row" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div
+              className="cand-msg-header-avatar"
+              style={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "50%",
+                background: "#0284c7",
+                color: "#ffffff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 700,
+                fontSize: "0.85rem",
+                overflow: "hidden",
+                flexShrink: 0,
+                position: "relative",
+              }}
+            >
+              {(() => {
+                const empUserId = detailsJob.employerUserId;
+                const logoSrc = detailsJob.companyLogoPath
+                  ? detailsJob.companyLogoPath.startsWith("http") || detailsJob.companyLogoPath.startsWith("/api")
+                    ? detailsJob.companyLogoPath
+                    : empUserId ? `/api/employers/${empUserId}/logo` : null
+                  : empUserId ? `/api/employers/${empUserId}/logo` : null;
+                return (
+                  <>
+                    {logoSrc ? (
+                      <img
+                        src={logoSrc}
+                        alt={detailsJob.company}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = "none";
+                          const fallback = e.currentTarget.parentElement?.querySelector(".cand-msg-avatar-fallback") as HTMLElement;
+                          if (fallback) fallback.style.display = "flex";
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className="cand-msg-avatar-fallback"
+                      style={{
+                        display: logoSrc ? "none" : "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: "100%",
+                        height: "100%",
+                      }}
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true" style={{ width: "20px", height: "20px", stroke: "#ffffff", fill: "none", strokeWidth: 2 }}>
+                        <path d="M3 21h18M5 21V7l7-4 7 4v14M9 11h2m2 0h2M9 15h2m2 0h2" />
+                      </svg>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#01294a", fontFamily: "'Inter', sans-serif" }}>
+                {detailsJob.company}
+              </h3>
+              <span className="jd-side-subtitle" style={{ fontSize: "0.8rem", color: "#557796", fontWeight: 600 }}>
+                Direct Messaging
+              </span>
+            </div>
+          </div>
+          <div className="jd-side-header-actions" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <button
+              type="button"
+              className="cand-msg-employer-details-btn"
+              onClick={() => {
+                const empId = detailsJob.employerUserId || employers.find((e) => e.company_name.toLowerCase() === detailsJob.company.toLowerCase())?.employer_user_id;
+                if (empId) {
+                  setIsEmployerModalOnTop(true);
+                  handleOpenEmployerDetailsById(empId);
+                }
+              }}
+              style={{
+                padding: "5px 12px",
+                fontSize: "0.8rem",
+                fontWeight: 700,
+                background: "#0284c7",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontFamily: "'Inter', sans-serif",
+                transition: "all 0.15s ease",
+              }}
+            >
+              Employer Details
+            </button>
+            <button
+              type="button"
+              className="jd-side-close-btn"
+              aria-label="Close message panel"
+              onClick={handleCloseJobMsg}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+
+        {/* Messaging Chat Body */}
+        <div className="cand-msg-chat-body" style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+          <div
+            ref={jobMsgScrollRef}
+            className="cand-msg-messages-scroll"
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              padding: "16px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+            }}
+          >
+            {isEmployerMsgLoading ? (
+              <div style={{ padding: "30px", textAlign: "center", color: "#64748b", fontSize: "0.85rem" }}>
+                Loading conversation...
+              </div>
+            ) : employerMessages.length === 0 ? (
+              <div
+                style={{
+                  padding: "40px 20px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "10px",
+                  flex: 1,
+                }}
+              >
+                <div
+                  style={{
+                    width: "48px",
+                    height: "48px",
+                    borderRadius: "50%",
+                    background: "rgba(2, 132, 199, 0.15)",
+                    color: "#0284c7",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="24"
+                    height="24"
+                    fill="none"
+                    stroke="#0284c7"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                </div>
+                <h4 className="cand-msg-empty-title" style={{ margin: 0, fontSize: "1rem", fontWeight: 800 }}>
+                  Start a conversation
+                </h4>
+                <p style={{ margin: 0, fontSize: "0.82rem", color: "#64748b", lineHeight: 1.5, textAlign: "center" }}>
+                  Send a direct message to {detailsJob.company} to inquire about this role or company.
+                </p>
+              </div>
+            ) : (
+              <>
+                {employerMessages.map((msg: any) => {
+                  const isMe = Number(msg.sender_user_id) === Number(applicantUserId);
+                  const timeStr = msg.created_at
+                    ? new Date(msg.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+                    : "";
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`cand-msg-row ${isMe ? "outgoing" : "incoming"}`}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: isMe ? "flex-end" : "flex-start",
+                        gap: "3px",
+                      }}
+                    >
+                      {!isMe && (
+                        <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 700, paddingLeft: "4px" }}>
+                          {detailsJob.company}
+                        </span>
+                      )}
+                      <div
+                        className={`cand-msg-bubble ${isMe ? "outgoing" : "incoming"}`}
+                        style={{
+                          maxWidth: "82%",
+                          padding: "10px 14px",
+                          borderRadius: isMe ? "14px 14px 2px 14px" : "14px 14px 14px 2px",
+                          fontSize: "0.86rem",
+                          lineHeight: 1.5,
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {msg.message_text}
+                      </div>
+                      <span style={{ fontSize: "0.68rem", color: "#94a3b8", padding: "0 4px" }}>
+                        {timeStr}
+                      </span>
+                    </div>
+                  );
+                })}
+                <div ref={employerMsgEndRef} />
+              </>
+            )}
+          </div>
+
+          {/* Compose Bar */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSendEmployerMessage();
+            }}
+            className="cand-msg-compose-bar"
+            style={{
+              padding: "12px 16px",
+              display: "flex",
+              gap: "10px",
+              alignItems: "center",
+            }}
+          >
+            <input
+              type="text"
+              className="cand-msg-input"
+              placeholder={`Message ${detailsJob.company}...`}
+              value={employerMsgInput}
+              onChange={(e) => setEmployerMsgInput(e.target.value)}
+              disabled={isEmployerMsgSending}
+              style={{
+                flex: 1,
+                padding: "10px 14px",
+                borderRadius: "8px",
+                fontSize: "0.85rem",
+                fontFamily: "inherit",
+                outline: "none",
+              }}
+            />
+            <button
+              type="submit"
+              className="cand-msg-send-btn"
+              disabled={!employerMsgInput.trim() || isEmployerMsgSending}
+              style={{
+                padding: "10px 18px",
+                borderRadius: "8px",
+                border: "none",
+                background: "#0284c7",
+                color: "#ffffff",
+                fontWeight: 700,
+                fontSize: "0.85rem",
+                cursor: !employerMsgInput.trim() || isEmployerMsgSending ? "not-allowed" : "pointer",
+              }}
+            >
+              {isEmployerMsgSending ? "..." : "Send"}
+            </button>
+          </form>
+        </div>
+      </aside>
+    );
+  };
+
+  const renderJobDetailsModal = () => {
+    if (!detailsJob) return null;
+
+    const empUserId = detailsJob.employerUserId;
+    const jobTitle = detailsJob.title || "Job Details";
+    const companyName = detailsJob.company || "Employer";
+    const locationStr = detailsJob.location || "Cavite";
+    const appCount = detailsJob.applicantCount ?? 0;
+    const closeDate = detailsJob.closeDate || "-";
+    const isClosed = detailsJob.status === "closed" || isJobClosedOrExpired(closeDate, detailsJob.status, detailsJob.applicationLimit, appCount);
+    const isOpenStatus = !isClosed;
+    const isUrgent = Boolean(detailsJob.urgent);
+    const workSetup = detailsJob.setup || "Flexible";
+    const experienceLevel = detailsJob.experienceLevel || "";
+    const descriptionText = detailsJob.summary || detailsJob.responsibilities || "No job description provided.";
+    const ratingText = detailsJob.rating ? Number(detailsJob.rating).toFixed(1) : "0.0";
+    const matchInfo = calculateJobMatchDetails(detailsJob, applicantMatchProfile);
+
+    const skills = detailsJob.skillTags && detailsJob.skillTags.length > 0
+      ? detailsJob.skillTags
+      : (detailsJob.badges && detailsJob.badges.length > 0 ? detailsJob.badges : []);
+    const qualifications = detailsJob.qualTags && detailsJob.qualTags.length > 0
+      ? detailsJob.qualTags
+      : parseCompetencyDisplayTags(detailsJob.qualifications, "qualifications");
+    const certifications = detailsJob.certTags && detailsJob.certTags.length > 0
+      ? detailsJob.certTags
+      : parseCompetencyDisplayTags(detailsJob.certifications, "certifications");
+
+    const coverSrc = detailsJob.companyCoverPath
+      ? detailsJob.companyCoverPath.startsWith("http") || detailsJob.companyCoverPath.startsWith("/api")
+        ? detailsJob.companyCoverPath
+        : empUserId ? `/api/employers/${empUserId}/cover` : null
+      : empUserId ? `/api/employers/${empUserId}/cover` : null;
+
+    const logoSrc = detailsJob.companyLogoPath
+      ? detailsJob.companyLogoPath.startsWith("http") || detailsJob.companyLogoPath.startsWith("/api")
+        ? detailsJob.companyLogoPath
+        : empUserId ? `/api/employers/${empUserId}/logo` : null
+      : empUserId ? `/api/employers/${empUserId}/logo` : null;
+
+    const statusInfo = getJobApplicationStatus(detailsJob.id);
+    const isApplying = applyingJobId === detailsJob.id;
+    const hasSidePanel = Boolean((isMatchDrawerOpen || isMatchDrawerClosing) && !isJobMsgOpen) || Boolean((isJobMsgOpen || isJobMsgClosing) && !isMatchDrawerOpen);
+
+    const toggleFaqItem = (id: number | string) => {
+      setExpandedFaqIds((prev) =>
+        prev.includes(Number(id)) ? prev.filter((item) => item !== Number(id)) : [...prev, Number(id)]
+      );
+    };
+
+    return (
+      <div
+        className="jd-overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Job Details"
+        style={{
+          zIndex: selectedEmployerDetails && !isEmployerModalOnTop ? 10050 : 10000,
+        }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) handleCloseJobDetails();
+        }}
+      >
+        <div
+          className={`jd-modal-container ${hasSidePanel ? "with-side-panel" : ""}`}
+          style={!hasSidePanel ? { maxWidth: "820px" } : undefined}
+        >
+          <div className="jd-panel-outer-wrap">
+            {!isEmployerModalOnTop && (
+              <div className="jd-floating-tabs-container">
+                <button
+                  type="button"
+                  className="jd-floating-breakdown-tab"
+                  onClick={() => {
+                    const empId = detailsJob.employerUserId || employers.find((e) => e.company_name.toLowerCase() === detailsJob.company.toLowerCase())?.employer_user_id;
+                    if (empId) {
+                      setIsEmployerModalOnTop(true);
+                      handleOpenEmployerDetailsById(empId);
+                    }
+                  }}
+                >
+                  <span>Employer Details</span>
+                </button>
+                <button
+                  type="button"
+                  className={`jd-floating-breakdown-tab ${isMatchDrawerOpen && !isMatchDrawerClosing ? "active" : ""}`}
+                  onClick={handleToggleMatchDrawer}
+                >
+                  <span>{isMatchDrawerOpen && !isMatchDrawerClosing ? "Hide Breakdown" : "Match Breakdown"}</span>
+                </button>
+                <button
+                  type="button"
+                  className={`jd-floating-breakdown-tab ${isJobMsgOpen && !isJobMsgClosing ? "active" : ""}`}
+                  onClick={handleToggleJobMsg}
+                >
+                  <span>{isJobMsgOpen && !isJobMsgClosing ? "Hide Message" : "Message"}</span>
+                </button>
+              </div>
+            )}
+
+            <div
+              ref={modalPanelRef}
+              className="jd-panel"
+              style={modalMatchedHeight ? { height: `${modalMatchedHeight}px`, maxHeight: `${modalMatchedHeight}px` } : undefined}
+            >
+              {/* Cover banner */}
+              <div ref={modalBannerRef} className="jd-cover-banner">
+                {coverSrc ? (
+                  <img
+                    src={coverSrc}
+                    alt={`${companyName} cover`}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLElement).style.display = "none";
+                      const placeholder = e.currentTarget.parentElement?.querySelector(".jd-cover-placeholder") as HTMLElement;
+                      if (placeholder) placeholder.style.display = "flex";
+                    }}
+                  />
+                ) : null}
+                <div className="jd-cover-placeholder" style={{ display: coverSrc ? "none" : "flex" }}>
+                  <span>Cover photo</span>
+                </div>
+              </div>
+
+              {/* Employer strip */}
+              <div ref={modalStripRef} className="jd-employer-strip">
+                <div className="jd-employer-logo-info">
+                  <div
+                    className={`jd-employer-logo ${empUserId ? "clickable" : ""}`}
+                    aria-label="Company logo"
+                    onClick={() => {
+                      if (empUserId) {
+                        setIsEmployerModalOnTop(true);
+                        handleOpenEmployerDetailsById(empUserId);
+                      }
+                    }}
+                    style={{
+                      cursor: empUserId ? "pointer" : "default",
+                      overflow: "hidden",
+                      position: "relative",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {logoSrc ? (
+                      <img
+                        src={logoSrc}
+                        alt={companyName}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = "none";
+                          if (e.currentTarget.nextElementSibling) {
+                            (e.currentTarget.nextElementSibling as HTMLElement).style.display = "block";
+                          }
+                        }}
+                      />
+                    ) : null}
+                    <svg viewBox="0 0 24 24" aria-hidden="true" style={{ display: logoSrc ? "none" : "block", width: "32px", height: "32px", stroke: "#0284c7" }}>
+                      <path d="M3 21h18M5 21V7l7-4 7 4v14M9 11h2m2 0h2M9 15h2m2 0h2" />
+                    </svg>
+                  </div>
+                  <div>
+                    <strong
+                      className={`jd-employer-name ${empUserId ? "clickable" : ""}`}
+                      onClick={() => {
+                        if (empUserId) {
+                          setIsEmployerModalOnTop(true);
+                          handleOpenEmployerDetailsById(empUserId);
+                        }
+                      }}
+                      style={{ cursor: empUserId ? "pointer" : "default" }}
+                    >
+                      {companyName}
+                    </strong>
+                    <span className="jd-employer-location">
+                      <svg viewBox="0 0 24 24" aria-hidden="true" width="12" height="12" fill="none" stroke="#5b8ab0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                      </svg>
+                      {locationStr}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="jd-header-right-actions">
+                  <div className="rating-score-box" title="Company rating">
+                    <span className="star-icon">★</span>
+                    <span>{ratingText}</span>
+                  </div>
+                  <div
+                    className={`match-score-box ${getMatchColorClass(matchInfo.score)}`}
+                    title="Match Score"
+                  >
+                    <small>MATCH</small>
+                    <b>{matchInfo.score}%</b>
+                  </div>
+                  <button
+                    type="button"
+                    className={`jd-faq-btn ${isFaqDrawerOpen ? "active" : ""}`}
+                    onClick={() => setIsFaqDrawerOpen((prev) => !prev)}
+                  >
+                    FAQ's
+                  </button>
+                </div>
+              </div>
+
+              {/* Scrollable body & drawer container */}
+              <div ref={modalBodyWrapperRef} className="jd-body-wrapper">
+                <div ref={modalBodyRef} className="jd-body">
+                  {/* Title row */}
+                  <div className="jd-top-section">
+                    <div className="jd-title-row">
+                      <h2 className="jd-title-h2">{jobTitle}</h2>
+                    </div>
+                    <div className="jd-chips-inline">
+                      <span className={`status-chip ${isOpenStatus ? "open" : "closed"}`}>
+                        {isOpenStatus ? "Open" : "Closed"}
+                      </span>
+                      {isUrgent && <span className="status-chip urgent">Urgent</span>}
+                      <span className="setup-pill">{workSetup}</span>
+                      {experienceLevel && <span className="exp-level-pill">{experienceLevel}</span>}
+                      {(() => {
+                        const isHidden = Boolean(
+                          detailsJob.hideSalary ||
+                          detailsJob.hide_salary === 1 ||
+                          detailsJob.hide_salary === "1" ||
+                          detailsJob.hide_salary === true ||
+                          detailsJob.hide_salary === "true" ||
+                          detailsJob.salary === "Salary Confidential"
+                        );
+                        if (isHidden) {
+                          return <span className="salary-pill confidential">Salary Confidential</span>;
+                        }
+                        if (detailsJob.salary) {
+                          return <span className="salary-pill">{detailsJob.salary}</span>;
+                        }
+                        return null;
+                      })()}
+                    </div>
+                  </div>
+
+                  <div className="jd-section">
+                    <h3>Job Description</h3>
+                    <p>{descriptionText}</p>
+                  </div>
+
+                  {skills.length > 0 && (
+                    <div className="jd-section">
+                      <h3>Required Skills</h3>
+                      <div className="jd-tags-wrap">
+                        {skills.map((s, idx) => (
+                          <span className="js-tag-chip js-tag-skill" key={idx} title={s}>{s}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {qualifications.length > 0 && (
+                    <div className="jd-section">
+                      <h3>Required Qualifications</h3>
+                      <div className="jd-tags-wrap">
+                        {qualifications.map((q, idx) => (
+                          <span className="js-tag-chip js-tag-qualification" key={idx} title={q}>{q}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {certifications.length > 0 && (
+                    <div className="jd-section">
+                      <h3>Required Certifications</h3>
+                      <div className="jd-tags-wrap">
+                        {certifications.map((c, idx) => (
+                          <span className="js-tag-chip js-tag-certification" key={idx} title={c}>{c}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Slide-in FAQ Drawer */}
+                <div ref={modalFaqDrawerRef} className={`jd-faq-drawer ${isFaqDrawerOpen ? "open" : ""}`}>
+                  <div className="jd-faq-header">
+                    <h3>Company FAQ's</h3>
+                    <button type="button" className="jd-faq-back-btn" aria-label="Back to job details" onClick={() => setIsFaqDrawerOpen(false)}>
+                      ←
+                    </button>
+                  </div>
+                  <div className="jd-faq-body">
+                    {modalLoadingFaqs ? (
+                      <p className="jd-faq-loading">Loading FAQ's...</p>
+                    ) : modalFaqsList.length === 0 ? (
+                      <p className="jd-faq-empty">No FAQ's created by this company yet.</p>
+                    ) : (
+                      modalFaqsList.map((faq) => {
+                        const isExpanded = expandedFaqIds.includes(Number(faq.id));
+                        return (
+                          <div key={faq.id} className={`jd-faq-item ${isExpanded ? "expanded" : ""}`}>
+                            <button
+                              type="button"
+                              className="jd-faq-question-btn"
+                              onClick={() => toggleFaqItem(faq.id)}
+                            >
+                              <div className="jd-faq-q-left">
+                                {faq.question_type && <span className="jd-faq-type-badge">{faq.question_type}</span>}
+                                <span className="jd-faq-question-text">{faq.question}</span>
+                              </div>
+                              <span className="jd-faq-toggle-icon">{isExpanded ? "−" : "+"}</span>
+                            </button>
+                            {isExpanded && (
+                              <div className="jd-faq-answer">
+                                <p>{faq.answer}</p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div ref={modalFooterRef} className="jd-panel-footer">
+                <div className="jd-footer-meta">
+                  <span><strong>Close Date:</strong> {closeDate}</span>
+                </div>
+                <div className="jd-footer-actions">
+                  <button type="button" className="jd-cancel-btn" onClick={handleCloseJobDetails}>
+                    Close
+                  </button>
+                  {statusInfo ? (
+                    <button
+                      type="button"
+                      className={`solid-btn applied-btn status-${statusInfo.statusClass}`}
+                      disabled
+                    >
+                      {statusInfo.label}
+                    </button>
+                  ) : isClosed ? (
+                    <button
+                      type="button"
+                      className="solid-btn closed-btn status-closed"
+                      disabled
+                    >
+                      Closed
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="solid-btn"
+                      onClick={() => setApplyJobTarget({ jobId: detailsJob.id, title: detailsJob.title })}
+                      disabled={isApplying}
+                    >
+                      {isApplying ? "Applying..." : "Apply Now"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Docked Side Panel (Match Breakdown or Message) */}
+          {hasSidePanel && (
+            <div
+              ref={modalSidePanelSlotRef}
+              className="jd-side-panel-slot"
+              style={modalMatchedHeight ? { height: `${modalMatchedHeight}px`, maxHeight: `${modalMatchedHeight}px` } : undefined}
+            >
+              {(isMatchDrawerOpen || isMatchDrawerClosing) && !isJobMsgOpen ? (
+                renderCompetenciesPanel()
+              ) : (isJobMsgOpen || isJobMsgClosing) && !isMatchDrawerOpen ? (
+                renderJobMessagePanel()
+              ) : null}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="jobsearch-page appdash-page sidebar-visible">
+    <div className={`jobsearch-page appdash-page ${isSidebarVisible ? "sidebar-visible" : "sidebar-hidden"}`}>
       <aside className="appdash-sidebar" aria-label="Applicant Navigation">
-        <a href="/" className="appdash-brand">
-          <strong>EliteCruit</strong>
-          <span>Candidate Workspace</span>
-        </a>
+        <div className="appdash-brand">
+          <a href="/" className="appdash-brand-link">
+            <strong>EliteCruit</strong>
+            <span>Candidate Workspace</span>
+          </a>
+          <button
+            type="button"
+            className="appdash-sidebar-toggle"
+            aria-label="Close sidebar menu"
+            onClick={() => setIsSidebarVisible(false)}
+          >
+            <MenuIcon />
+          </button>
+        </div>
 
         <ul className="appdash-secondary-list">
           <li className="applicant-workspace-item">
@@ -1765,7 +3236,6 @@ export default function JobSearch() {
 
             {isWorkspaceOpen && (
               <ul className="appdash-menu-list">
-                <li><a href="/applicant-dashboard#section-overview"><span className="item-icon"><SideIcon name="overview" /></span><span>Overview</span></a></li>
                 <li><a href="/applicant-dashboard#section-smart-matches"><span className="item-icon"><SideIcon name="star" /></span><span>Smart Matches</span></a></li>
                 <li><a href="/applicant-dashboard#section-applications"><span className="item-icon"><SideIcon name="applications" /></span><span>My Applications</span></a></li>
                 <li><a href="/applicant-dashboard#section-invitations"><span className="item-icon"><SideIcon name="notifications" /></span><span>Job Invitations</span></a></li>
@@ -1774,6 +3244,7 @@ export default function JobSearch() {
           </li>
 
           <li className="active"><a href="/job-search"><span className="item-icon"><SideIcon name="search" /></span><span>Job Search</span></a></li>
+          <li><a href="/applicant-offer-letter"><span className="item-icon"><SideIcon name="documents" /></span><span>Offer Letters</span></a></li>
           <li><a href="/messages"><span className="item-icon"><SideIcon name="messages" /></span><span>Messages</span>{unreadMessagesCount > 0 && <span className="item-badge">{unreadMessagesCount}</span>}</a></li>
           <li><a href="/notifications"><span className="item-icon"><SideIcon name="notifications" /></span><span>Notifications</span>{unreadNotifCount > 0 && <span className="item-badge">{unreadNotifCount}</span>}</a></li>
           <li><a href="/feedback"><span className="item-icon"><SideIcon name="feedback" /></span><span>Feedback</span></a></li>
@@ -1805,20 +3276,39 @@ export default function JobSearch() {
         </div>
       </aside>
 
+      {isSidebarVisible && (
+        <button
+          type="button"
+          className="appdash-backdrop"
+          aria-label="Close sidebar"
+          onClick={() => setIsSidebarVisible(false)}
+        />
+      )}
+
       <main ref={mainRef} className="appdash-main jobsearch-main">
         <header className="appdash-topbar">
           <div className="appdash-top-left">
+            <button
+              type="button"
+              className="appdash-mobile-nav-toggle"
+              aria-label={isSidebarVisible ? "Close navigation menu" : "Open navigation menu"}
+              onClick={() => setIsSidebarVisible((prev) => !prev)}
+            >
+              <MenuIcon />
+            </button>
             <div>
               <strong>{searchMode === "jobs" ? "Job Search" : "Employer Search"}</strong>
             </div>
           </div>
 
           <div className="appdash-top-right">
-            <ApplicantChatbotDrawer
-              isOpen={isChatbotOpen}
-              onToggle={() => setIsChatbotOpen((prev) => !prev)}
-              pageTitle={searchMode === "jobs" ? "Job Search" : "Employer Search"}
-            />
+            <div className="chatbot-wrapper">
+              <ApplicantChatbotDrawer
+                isOpen={isChatbotOpen}
+                onToggle={() => setIsChatbotOpen((prev) => !prev)}
+                pageTitle={searchMode === "jobs" ? "Job Search" : "Employer Search"}
+              />
+            </div>
             <CalendarDrawer />
           </div>
         </header>
@@ -2028,32 +3518,23 @@ export default function JobSearch() {
                           {job.urgent ? <span className="status-chip urgent">Urgent</span> : null}
                           <span className="setup-pill">{job.setup}</span>
                           {job.experienceLevel && <span className="exp-level-pill">{formatExperienceLevel(job.experienceLevel)}</span>}
-                          <span className="salary-pill">{job.salary}</span>
-                        </div>
-                      </div>
-
-                      <div className="result-middle-col">
-                        <div className="result-middle-meta">
-                          <span>Applications: {job.applicantCount}</span>
-                          <span>Close Date: {job.closeDate}</span>
-                          {job.skillTags.length > 0 && (
-                            <div className="js-meta-tag-line">
-                              <span className="js-meta-label">Skills: </span>
-                              <RenderTagChips items={job.skillTags} type="skill" maxVisible={1} />
-                            </div>
-                          )}
-                          {job.qualTags.length > 0 && (
-                            <div className="js-meta-tag-line">
-                              <span className="js-meta-label">Qualifications: </span>
-                              <RenderTagChips items={job.qualTags} type="qualification" maxVisible={1} />
-                            </div>
-                          )}
-                          {job.certTags && job.certTags.length > 0 && (
-                            <div className="js-meta-tag-line">
-                              <span className="js-meta-label">Certifications: </span>
-                              <RenderTagChips items={job.certTags} type="certification" maxVisible={1} />
-                            </div>
-                          )}
+                          {(() => {
+                            const isHidden = Boolean(
+                              job.hideSalary ||
+                              job.hide_salary === 1 ||
+                              job.hide_salary === "1" ||
+                              job.hide_salary === true ||
+                              job.hide_salary === "true" ||
+                              job.salary === "Salary Confidential"
+                            );
+                            if (isHidden) {
+                              return <span className="salary-pill confidential">Salary Confidential</span>;
+                            }
+                            if (job.salary) {
+                              return <span className="salary-pill">{job.salary}</span>;
+                            }
+                            return null;
+                          })()}
                         </div>
                       </div>
 
@@ -2075,7 +3556,22 @@ export default function JobSearch() {
                         </div>
                         <button type="button" className="details-btn" onClick={() => setDetailsJob(job)}>Details</button>
                         <div className="card-bottom-actions">
-                          <button type="button" className={`solid-btn apply-right-btn ${appliedJobIds.includes(job.id) ? "applied-btn" : ""}`} onClick={() => setApplyJobTarget({ jobId: job.id, title: job.title })} disabled={appliedJobIds.includes(job.id) || applyingJobId === job.id}>{appliedJobIds.includes(job.id) ? "Applied" : applyingJobId === job.id ? "Applying..." : "Apply"}</button>
+                          {(() => {
+                            const statusInfo = getJobApplicationStatus(job.id);
+                            const isJobClosed = job.status === "closed" || isJobClosedOrExpired(job.closeDate, job.status, job.applicationLimit, job.applicantCount);
+                            const isApplying = applyingJobId === job.id;
+                            const isApplied = Boolean(statusInfo);
+                            return (
+                              <button
+                                type="button"
+                                className={`solid-btn apply-right-btn ${isApplied ? `applied-btn status-${statusInfo?.statusClass || "applied"}` : isJobClosed ? "status-closed" : ""}`}
+                                onClick={() => !isApplied && !isJobClosed && setApplyJobTarget({ jobId: job.id, title: job.title })}
+                                disabled={isApplied || isJobClosed || isApplying}
+                              >
+                                {isApplied ? statusInfo!.label : isJobClosed ? "Closed" : isApplying ? "Applying..." : "Apply"}
+                              </button>
+                            );
+                          })()}
                           <button type="button" className="bookmark-icon-btn" aria-label={bookmarkedIds.includes(job.id) ? "Remove bookmark" : "Bookmark job"} onClick={() => toggleBookmark(job.id)}>
                             <MiniIcon name={bookmarkedIds.includes(job.id) ? "bookmarkFilled" : "bookmark"} />
                           </button>
@@ -2469,1098 +3965,190 @@ export default function JobSearch() {
     )}
       </main>
 
-      {/* ── Job Details Modal ── */}
-      {detailsJob && (
+      {/* ── Standardized Job Details Modal ── */}
+      {renderJobDetailsModal()}
+
+      {/* ── Category Skills & Certifications Popup Modal ── */}
+      {activeBreakdownPopup && (
         <div
-          className="jd-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Job Details"
-          style={selectedEmployerDetails ? { zIndex: 2500 } : undefined}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              handleCloseJobDetails();
-            }
-          }}
+          className="skill-popup-modal-overlay"
+          onClick={() => setActiveBreakdownPopup(null)}
+          style={{ zIndex: 10200 }}
         >
           <div
-            className={`jd-modal-container ${
-              isMatchDrawerOpen || isMatchDrawerClosing || isJobMsgOpen || isJobMsgClosing
-                ? "with-side-panel"
-                : ""
-            }`}
+            className="skill-popup-modal-content"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="breakdown-category-modal-title"
           >
-            <div className="jd-panel-outer-wrap">
-              <div className="jd-floating-tabs-container">
-                <button
-                  type="button"
-                  className={`jd-floating-breakdown-tab ${isMatchDrawerOpen && !isMatchDrawerClosing ? "active" : ""}`}
-                  onClick={handleToggleMatchDrawer}
-                >
-                  <span>{isMatchDrawerOpen && !isMatchDrawerClosing ? "Hide Breakdown" : "Match Breakdown"}</span>
-                </button>
-                <button
-                  type="button"
-                  className={`jd-floating-breakdown-tab ${isJobMsgOpen && !isJobMsgClosing ? "active" : ""}`}
-                  onClick={handleToggleJobMsg}
-                >
-                  <span>{isJobMsgOpen && !isJobMsgClosing ? "Hide Message" : "Message"}</span>
-                </button>
+            <div className="skill-popup-modal-header">
+              <div className="skill-popup-title-group">
+                <span className="skill-popup-icon">
+                  {activeBreakdownPopup.type === "skills" ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="8" r="7"></circle>
+                      <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+                    </svg>
+                  )}
+                </span>
+                <h3 id="breakdown-category-modal-title" className="skill-popup-title">
+                  {activeBreakdownPopup.category}
+                </h3>
+                {(() => {
+                  const list = activeBreakdownPopup.type === "skills"
+                    ? (groupedBreakdownSkills[activeBreakdownPopup.category] || [])
+                    : (groupedBreakdownCerts[activeBreakdownPopup.category] || []);
+                  const label = activeBreakdownPopup.type === "skills"
+                    ? (list.length === 1 ? "skill" : "skills")
+                    : (list.length === 1 ? "certification" : "certifications");
+                  return (
+                    <span className="skill-popup-count-badge">
+                      {list.length} {label}
+                    </span>
+                  );
+                })()}
               </div>
-              {/* ── Main Job Details Panel (Left) ── */}
-              <div className="jd-panel">
-              {/* Cover banner */}
-              <div className="jd-cover-banner">
-                {detailsJob.companyCoverPath ? (
-                  <img
-                    src={detailsJob.companyCoverPath.startsWith("http") || detailsJob.companyCoverPath.startsWith("/api") ? detailsJob.companyCoverPath : `/api/employers/${detailsJob.employerUserId}/cover`}
-                    alt={`${detailsJob.company} cover`}
-                    onError={(e) => {
-                      (e.currentTarget as HTMLElement).style.display = "none";
-                      const placeholder = e.currentTarget.parentElement?.querySelector(".jd-cover-placeholder") as HTMLElement;
-                      if (placeholder) placeholder.style.display = "flex";
-                    }}
-                  />
-                ) : null}
-                <div className="jd-cover-placeholder" style={{ display: detailsJob.companyCoverPath ? "none" : "flex" }}>
-                  <span>Cover photo</span>
-                </div>
-              </div>
+              <button
+                type="button"
+                className="skill-popup-close-btn"
+                onClick={() => setActiveBreakdownPopup(null)}
+                aria-label="Close popup"
+              >
+                ✕
+              </button>
+            </div>
 
-              <div className="jd-employer-strip">
-                <div className="jd-employer-logo-info">
-                  <div className="jd-employer-logo" aria-label="Company logo" style={{ overflow: "hidden", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {(() => {
-                      const logoSrc = detailsJob.companyLogoPath
-                        ? (detailsJob.companyLogoPath.startsWith("http") || detailsJob.companyLogoPath.startsWith("/api") ? detailsJob.companyLogoPath : `/api/employers/${detailsJob.employerUserId}/logo`)
-                        : (detailsJob.employerUserId ? `/api/employers/${detailsJob.employerUserId}/logo` : null);
-                      return (
-                        <>
-                          {logoSrc && (
-                            <img
-                              src={logoSrc}
-                              alt={detailsJob.company}
-                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                                onError={(e) => {
-                                  (e.currentTarget as HTMLElement).style.display = "none";
-                                  if (e.currentTarget.nextElementSibling) {
-                                    (e.currentTarget.nextElementSibling as HTMLElement).style.display = "block";
-                                  }
-                                }}
-                              />
-                            )}
-                            <svg viewBox="0 0 24 24" aria-hidden="true" style={{ display: logoSrc ? "none" : "block" }}>
-                              <path d="M3 21h18M5 21V7l7-4 7 4v14M9 11h2m2 0h2M9 15h2m2 0h2" />
-                            </svg>
-                          </>
-                        );
-                      })()}
-                    </div>
-                    <div>
-                      <strong className="jd-employer-name">{detailsJob.company}</strong>
-                      <span className="jd-employer-location"><RenderLocationMeta location={detailsJob.location} /></span>
-                    </div>
-                  </div>
-                  <div className="jd-header-right-actions">
-                    <div className="rating-score-box" title="Company rating">
-                      <span className="star-icon">★</span>
-                      <span>{detailsJob.rating ? Number(detailsJob.rating).toFixed(1) : "0.0"}</span>
-                    </div>
-                    {(() => {
-                      const detailsMatchInfo = calculateJobMatchDetails(detailsJob, applicantMatchProfile);
-                      return (
-                        <div
-                          className={`match-score-box ${getMatchColorClass(detailsMatchInfo.score)}`}
-                          title="Match Score"
-                        >
-                          <small>MATCH</small>
-                          <b>{detailsMatchInfo.score}%</b>
+            <div className="skill-popup-modal-body">
+              <div className="skill-popup-list">
+                {(() => {
+                  const list = activeBreakdownPopup.type === "skills"
+                    ? (groupedBreakdownSkills[activeBreakdownPopup.category] || [])
+                    : (groupedBreakdownCerts[activeBreakdownPopup.category] || []);
+                  const targetJobTags = activeBreakdownPopup.type === "skills"
+                    ? (detailsJob?.skillTags || [])
+                    : (detailsJob?.certTags || []);
+
+                  if (list.length === 0) {
+                    return (
+                      <div className="empty-category-notice">
+                        No items found in this category.
+                      </div>
+                    );
+                  }
+
+                  return list.map((item, idx) => {
+                    const isCert = activeBreakdownPopup.type === "certifications";
+                    const isRel = targetJobTags.length > 0 && targetJobTags.some((jt) =>
+                      isCert ? isCertificationMatch(jt, item.name) : isSkillMatch(jt, item.name)
+                    );
+                    const isSource = hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.item === item.name;
+                    const isLinked = Boolean(
+                      hoveredCompareTag?.side === "employer" &&
+                      hoveredCompareTag?.category === activeBreakdownPopup.type &&
+                      (isCert ? isCertificationMatch(hoveredCompareTag.item, item.name) : isSkillMatch(item.name, hoveredCompareTag.item))
+                    );
+                    const certItem = item as BreakdownCertItem;
+
+                    return (
+                      <div
+                        key={`${item.name}-${idx}`}
+                        className={`skill-popup-item-row ${isRel ? "item-matched" : ""} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
+                        onMouseEnter={() => setHoveredCompareTag({ item: item.name, side: "applicant", category: activeBreakdownPopup.type })}
+                        onMouseLeave={() => setHoveredCompareTag(null)}
+                      >
+                        <span className="skill-popup-item-name">{item.name}</span>
+                        <div className="skill-popup-item-actions">
+                          {item.year && !isCert && (
+                            <span className="skill-popup-since-label">
+                              Since {item.year}
+                            </span>
+                          )}
+                          {isCert && certItem.expiry && (
+                            <span className="skill-popup-since-label">
+                              Expires: {certItem.expiry}
+                            </span>
+                          )}
+                          {isRel && (
+                            <span className="jd-match-status-pill matched">
+                              <span className="status-icon">✓</span> Matched with Job
+                            </span>
+                          )}
                         </div>
-                      );
-                    })()}
-                    <button
-                      type="button"
-                      className={`jd-faq-btn ${isFaqDrawerOpen ? "active" : ""}`}
-                      onClick={() => {
-                        if (isFaqDrawerOpen) {
-                          setIsFaqDrawerOpen(false);
-                        } else {
-                          handleOpenFaqs(detailsJob);
-                        }
-                      }}
-                    >
-                      FAQ's
-                    </button>
-                  </div>
-                </div>
-
-              {/* Scrollable body & drawer container */}
-              <div className="jd-body-wrapper">
-                <div className="jd-body">
-                  {/* Title row */}
-                  <div className="jd-top-section">
-                    <div className="jd-title-row">
-                      <h2 className="jd-title-h2">{detailsJob.title}</h2>
-                    </div>
-                    <div className="jd-chips-inline">
-                      <span className={`status-chip ${detailsJob.status === "open" ? "open" : "closed"}`}>{detailsJob.status === "open" ? "Open" : "Closed"}</span>
-                      {detailsJob.urgent && <span className="status-chip urgent">Urgent</span>}
-                      <span className="setup-pill">{detailsJob.setup}</span>
-                      {detailsJob.experienceLevel && <span className="exp-level-pill">{formatExperienceLevel(detailsJob.experienceLevel)}</span>}
-                      <span className="salary-pill">{detailsJob.salary}</span>
-                    </div>
-                  </div>
-
-                  <div className="jd-section">
-                    <h3>Job Description</h3>
-                    <p>{detailsJob.summary || "No description provided."}</p>
-                  </div>
-
-                  {(detailsJob.skillTags?.length ?? 0) > 0 && (
-                    <div className="jd-section">
-                      <h3>Required Skills</h3>
-                      <div className="jd-tags-wrap">
-                        {detailsJob.skillTags?.map((s) => (
-                          <span className="js-tag-chip js-tag-skill" key={s} title={s}>{s}</span>
-                        ))}
                       </div>
-                    </div>
-                  )}
-
-                  {(detailsJob.qualTags?.length ?? 0) > 0 && (
-                    <div className="jd-section">
-                      <h3>Required Qualifications</h3>
-                      <div className="jd-tags-wrap">
-                        {detailsJob.qualTags?.map((q) => (
-                          <span className="js-tag-chip js-tag-qualification" key={q} title={q}>{q}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {(detailsJob.certTags?.length ?? 0) > 0 && (
-                    <div className="jd-section">
-                      <h3>Required Certifications</h3>
-                      <div className="jd-tags-wrap">
-                        {detailsJob.certTags?.map((c) => (
-                          <span className="js-tag-chip js-tag-certification" key={c} title={c}>{c}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Slide-in FAQ Drawer (Internal to jd-panel) */}
-                <div className={`jd-faq-drawer ${isFaqDrawerOpen ? "open" : ""}`}>
-                  <div className="jd-faq-header">
-                    <h3>Company FAQ's</h3>
-                    <button type="button" className="jd-faq-back-btn" aria-label="Back to job details" onClick={() => setIsFaqDrawerOpen(false)}>
-                      ←
-                    </button>
-                  </div>
-                  <div className="jd-faq-body">
-                    {faqLoading ? (
-                      <p className="jd-faq-loading">Loading FAQ's...</p>
-                    ) : companyFaqs.length === 0 ? (
-                      <p className="jd-faq-empty">No FAQ's created by this company yet.</p>
-                    ) : (
-                      companyFaqs.map((faq) => {
-                        const isExpanded = expandedFaqIds.includes(faq.id);
-                        return (
-                          <div key={faq.id} className={`jd-faq-item ${isExpanded ? "expanded" : ""}`}>
-                            <button
-                              type="button"
-                              className="jd-faq-question-btn"
-                              onClick={() => {
-                                setExpandedFaqIds((prev) =>
-                                  prev.includes(faq.id) ? prev.filter((id) => id !== faq.id) : [...prev, faq.id]
-                                );
-                              }}
-                            >
-                              <div className="jd-faq-q-left">
-                                {faq.question_type && <span className="jd-faq-type-badge">{faq.question_type}</span>}
-                                <span className="jd-faq-question-text">{faq.question}</span>
-                              </div>
-                              <span className="jd-faq-toggle-icon">{isExpanded ? "−" : "+"}</span>
-                            </button>
-                            {isExpanded && (
-                              <div className="jd-faq-answer">
-                                <p>{faq.answer}</p>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="jd-panel-footer">
-                <div className="jd-footer-meta">
-                  <span><strong>Applications:</strong> {detailsJob.applicantCount}</span>
-                  <span><strong>Close Date:</strong> {detailsJob.closeDate}</span>
-                </div>
-                <div className="jd-footer-actions">
-                  <button
-                    type="button"
-                    className="jd-cancel-btn"
-                    onClick={handleCloseJobDetails}
-                  >
-                    Close
-                  </button>
-                  <button
-                    type="button"
-                    className={`solid-btn ${appliedJobIds.includes(detailsJob.id) ? "applied-btn" : ""}`}
-                    onClick={() => setApplyJobTarget({ jobId: detailsJob.id, title: detailsJob.title })}
-                    disabled={appliedJobIds.includes(detailsJob.id) || applyingJobId === detailsJob.id}
-                  >
-                    {appliedJobIds.includes(detailsJob.id) ? "Applied" : applyingJobId === detailsJob.id ? "Applying..." : "Apply Now"}
-                  </button>
-                </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
-          </div>
 
-          {/* ── Right Side Comparison Panel (Outside Main Modal) ── */}
-          {(isMatchDrawerOpen || isMatchDrawerClosing) && !isJobMsgOpen && (() => {
-            const matchDetails = calculateJobMatchDetails(detailsJob, applicantMatchProfile);
-            const appSkills = applicantMatchProfile?.skills || [];
-            const appQuals = applicantMatchProfile?.qualifications || [];
-            const appCerts = applicantMatchProfile?.certifications || [];
-
-            const jobSkills = detailsJob.skillTags || [];
-            const jobQuals = detailsJob.qualTags || [];
-            const jobCerts = detailsJob.certTags || [];
-
-            const checkMatch = (jobItem: string, appItems: string[]) => {
-              if (!appItems || appItems.length === 0) return false;
-              return appItems.some((appItem) => isSkillMatch(jobItem, appItem));
-            };
-
-            const isAppRelevant = (appItem: string, jItems: string[]) => {
-              if (!jItems || jItems.length === 0) return false;
-              return jItems.some((jobItem) => isSkillMatch(jobItem, appItem));
-            };
-
-            return (
-              <aside className={`jd-side-comparison-panel ${isMatchDrawerClosing ? "closing" : "opening"}`} style={{ fontFamily: '"Manrope", sans-serif' }}>
-                  <div className="jd-side-panel-header">
-                    <div className="jd-side-title-row">
-                      <h3>Competencies & Requirements</h3>
-                      <span className="jd-side-subtitle">Side-by-side profile match vs employer postings</span>
-                    </div>
-                    <div className="jd-side-header-actions">
-                      <span className={`match-badge-pill ${getMatchColorClass(matchDetails.score)}`}>
-                        {matchDetails.score}% Match
-                      </span>
-                      <button
-                        type="button"
-                        className="jd-side-close-btn"
-                        aria-label="Close comparison panel"
-                        onClick={handleCloseMatchDrawer}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="jd-side-panel-body">
-                    {/* Legend strip */}
-                    <div className="jd-compare-legend">
-                      <div className="legend-item">
-                        <span className="legend-dot green"></span>
-                        <span><strong>Green Tag:</strong> Matched with your profile</span>
-                      </div>
-                      <div className="legend-item">
-                        <span className="legend-dot red"></span>
-                        <span><strong>Red Tag:</strong> Required by employer, missing from your profile</span>
-                      </div>
-                    </div>
-
-                    {/* Master 2-Column Unified Container */}
-                    <div className="jd-unified-compare-container">
-                      {/* ── Column 1: Applicant Profile ── */}
-                      <div className="jd-master-col applicant-col">
-                        <div className="jd-master-col-header">
-                          <span>Your Profile</span>
-                        </div>
-                        <div className="jd-master-col-content">
-                          {/* 1. Location */}
-                          <div className="jd-master-row">
-                            <span className="jd-row-label">Location</span>
-                            <div className="jd-col-tags-container">
-                              <span className="jd-comp-tag app-neutral">
-                                <span className="tag-text">{formatLocationWithCavite(applicantMatchProfile?.city || "Mendez")}</span>
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* 2. Work Arrangement */}
-                          <div className="jd-master-row">
-                            <span className="jd-row-label">Work Arrangement</span>
-                            <div className="jd-col-tags-container">
-                              <span className="jd-comp-tag app-neutral">
-                                <span className="tag-text">{applicantMatchProfile?.workArrangement || "Any"}</span>
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* 3. Salary Range */}
-                          <div className="jd-master-row">
-                            <span className="jd-row-label">Salary Range</span>
-                            <div className="jd-col-tags-container">
-                              <span className="jd-comp-tag app-neutral">
-                                <span className="tag-text">
-                                  {applicantMatchProfile?.expectedSalary
-                                    ? `PHP ${Number(applicantMatchProfile.expectedSalary).toLocaleString()}`
-                                    : "Not set"}
-                                </span>
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* 4. Skills */}
-                          <div className="jd-master-row">
-                            <div className="jd-row-label-wrap">
-                              <span className="jd-row-label">Skills</span>
-                              <span className="col-count-text">{appSkills.length} listed</span>
-                            </div>
-                            <div className="jd-col-tags-container">
-                                {appSkills.length > 0 ? (
-                                  appSkills.map((item) => {
-                                    const isRel = isAppRelevant(item, jobSkills);
-                                    const isSource = hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.item === item;
-                                    const isLinked = Boolean(hoveredCompareTag?.side === "employer" && hoveredCompareTag?.category === "skills" && isSkillMatch(item, hoveredCompareTag.item));
-                                    return (
-                                      <span
-                                        key={item}
-                                        className={`jd-comp-tag ${isRel ? "app-matched" : "app-neutral"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
-                                        onMouseEnter={() => setHoveredCompareTag({ item, side: "applicant", category: "skills" })}
-                                        onMouseLeave={() => setHoveredCompareTag(null)}
-                                      >
-                                        {isRel && <span className="tag-check">✓ </span>}
-                                        <span className="tag-text">{item}</span>
-                                      </span>
-                                    );
-                                  })
-                                ) : (
-                                  <span className="jd-no-data-text">No skills in your profile</span>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* 5. Qualifications */}
-                            <div className="jd-master-row">
-                              <div className="jd-row-label-wrap">
-                                <span className="jd-row-label">Qualifications</span>
-                                <span className="col-count-text">{appQuals.length} listed</span>
-                              </div>
-                              <div className="jd-col-tags-container">
-                                {appQuals.length > 0 ? (
-                                  appQuals.map((item) => {
-                                    const isRel = isAppRelevant(item, jobQuals);
-                                    const isSource = hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.item === item;
-                                    const isLinked = Boolean(hoveredCompareTag?.side === "employer" && hoveredCompareTag?.category === "qualifications" && isSkillMatch(item, hoveredCompareTag.item));
-                                    return (
-                                      <span
-                                        key={item}
-                                        className={`jd-comp-tag ${isRel ? "app-matched" : "app-neutral"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
-                                        onMouseEnter={() => setHoveredCompareTag({ item, side: "applicant", category: "qualifications" })}
-                                        onMouseLeave={() => setHoveredCompareTag(null)}
-                                      >
-                                        {isRel && <span className="tag-check">✓ </span>}
-                                        <span className="tag-text">{item}</span>
-                                      </span>
-                                    );
-                                  })
-                                ) : (
-                                  <span className="jd-no-data-text">No qualifications in your profile</span>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* 6. Certifications */}
-                            <div className="jd-master-row">
-                              <div className="jd-row-label-wrap">
-                                <span className="jd-row-label">Certifications</span>
-                                <span className="col-count-text">{appCerts.length} listed</span>
-                              </div>
-                              <div className="jd-col-tags-container">
-                                {appCerts.length > 0 ? (
-                                  appCerts.map((item) => {
-                                    const isRel = isAppRelevant(item, jobCerts);
-                                    const isSource = hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.item === item;
-                                    const isLinked = Boolean(hoveredCompareTag?.side === "employer" && hoveredCompareTag?.category === "certifications" && isSkillMatch(item, hoveredCompareTag.item));
-                                    return (
-                                      <span
-                                        key={item}
-                                        className={`jd-comp-tag ${isRel ? "app-matched" : "app-neutral"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
-                                        onMouseEnter={() => setHoveredCompareTag({ item, side: "applicant", category: "certifications" })}
-                                        onMouseLeave={() => setHoveredCompareTag(null)}
-                                      >
-                                        {isRel && <span className="tag-check">✓ </span>}
-                                        <span className="tag-text">{item}</span>
-                                      </span>
-                                    );
-                                  })
-                                ) : (
-                                  <span className="jd-no-data-text">No certifications in your profile</span>
-                                )}
-                              </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* ── Column 2: Employer Requirements ── */}
-                      <div className="jd-master-col employer-col">
-                        <div className="jd-master-col-header employer">
-                          <span>Employer's Requirements</span>
-                        </div>
-                        <div className="jd-master-col-content">
-                          {/* 1. Location */}
-                          <div className="jd-master-row">
-                            <span className="jd-row-label">Location</span>
-                            <div className="jd-col-tags-container">
-                              {(() => {
-                                const matched = matchDetails.locationPts >= 12;
-                                return (
-                                  <span
-                                    className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"}`}
-                                    title={matched ? "Matched with your location" : "Different location"}
-                                  >
-                                    <span className="tag-icon">{matched ? "✓" : "✗"}</span>
-                                    <span className="tag-text">{formatLocationWithCavite(detailsJob.location)}</span>
-                                  </span>
-                                );
-                              })()}
-                            </div>
-                          </div>
-
-                          {/* 2. Work Arrangement */}
-                          <div className="jd-master-row">
-                            <span className="jd-row-label">Work Arrangement</span>
-                            <div className="jd-col-tags-container">
-                              {(() => {
-                                const matched = matchDetails.setupPts >= 15;
-                                return (
-                                  <span
-                                    className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"}`}
-                                    title={matched ? "Matched with your setup preference" : "Different work arrangement"}
-                                  >
-                                    <span className="tag-icon">{matched ? "✓" : "✗"}</span>
-                                    <span className="tag-text">{detailsJob.setup || "Standard"}</span>
-                                  </span>
-                                );
-                              })()}
-                            </div>
-                          </div>
-
-                          {/* 3. Salary Range */}
-                          <div className="jd-master-row">
-                            <span className="jd-row-label">Salary Range</span>
-                            <div className="jd-col-tags-container">
-                              {(() => {
-                                const matched = matchDetails.salaryPts >= 12;
-                                return (
-                                  <span
-                                    className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"}`}
-                                    title={matched ? "Matches your salary range" : "Different salary range"}
-                                  >
-                                    <span className="tag-icon">{matched ? "✓" : "✗"}</span>
-                                    <span className="tag-text">{detailsJob.salary}</span>
-                                  </span>
-                                );
-                              })()}
-                            </div>
-                          </div>
-
-                          {/* 4. Skills */}
-                          <div className="jd-master-row">
-                            <div className="jd-row-label-wrap">
-                              <span className="jd-row-label">Skills</span>
-                              <span className="col-count-text">{jobSkills.length} required</span>
-                            </div>
-                            <div className="jd-col-tags-container">
-                              {jobSkills.length > 0 ? (
-                                jobSkills.map((item) => {
-                                  const matched = checkMatch(item, appSkills);
-                                  const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
-                                  const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "skills" && isSkillMatch(item, hoveredCompareTag.item));
-                                  return (
-                                    <span
-                                      key={item}
-                                      className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
-                                      onMouseEnter={() => setHoveredCompareTag({ item, side: "employer", category: "skills" })}
-                                      onMouseLeave={() => setHoveredCompareTag(null)}
-                                    >
-                                      <span className="tag-icon">{matched ? "✓" : "✗"}</span>
-                                      <span className="tag-text">{item}</span>
-                                    </span>
-                                  );
-                                })
-                              ) : (
-                                <span className="jd-no-data-text">No specific skills required</span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* 5. Qualifications */}
-                          <div className="jd-master-row">
-                            <div className="jd-row-label-wrap">
-                              <span className="jd-row-label">Qualifications</span>
-                              <span className="col-count-text">{jobQuals.length} required</span>
-                            </div>
-                            <div className="jd-col-tags-container">
-                              {jobQuals.length > 0 ? (
-                                jobQuals.map((item) => {
-                                  const matched = checkMatch(item, appQuals);
-                                  const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
-                                  const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "qualifications" && isSkillMatch(item, hoveredCompareTag.item));
-                                  return (
-                                    <span
-                                      key={item}
-                                      className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
-                                      onMouseEnter={() => setHoveredCompareTag({ item, side: "employer", category: "qualifications" })}
-                                      onMouseLeave={() => setHoveredCompareTag(null)}
-                                    >
-                                      <span className="tag-icon">{matched ? "✓" : "✗"}</span>
-                                      <span className="tag-text">{item}</span>
-                                    </span>
-                                  );
-                                })
-                              ) : (
-                                <span className="jd-no-data-text">No specific qualifications required</span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* 6. Certifications */}
-                          <div className="jd-master-row">
-                            <div className="jd-row-label-wrap">
-                              <span className="jd-row-label">Certifications</span>
-                              <span className="col-count-text">{jobCerts.length} required</span>
-                            </div>
-                            <div className="jd-col-tags-container">
-                              {jobCerts.length > 0 ? (
-                                jobCerts.map((item) => {
-                                  const matched = checkMatch(item, appCerts);
-                                  const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
-                                  const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "certifications" && isSkillMatch(item, hoveredCompareTag.item));
-                                  return (
-                                    <span
-                                      key={item}
-                                      className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
-                                      onMouseEnter={() => setHoveredCompareTag({ item, side: "employer", category: "certifications" })}
-                                      onMouseLeave={() => setHoveredCompareTag(null)}
-                                    >
-                                      <span className="tag-icon">{matched ? "✓" : "✗"}</span>
-                                      <span className="tag-text">{item}</span>
-                                    </span>
-                                  );
-                                })
-                              ) : (
-                                <span className="jd-no-data-text">No certifications required for this position</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </aside>
-              );
-            })()}
-
-            {/* ── Job Details Side Message Panel ── */}
-            {(isJobMsgOpen || isJobMsgClosing) && !isMatchDrawerOpen && detailsJob && (
-              <aside
-                className={`jd-side-comparison-panel cand-message-side-panel ${isJobMsgClosing ? "closing" : "opening"}`}
-                style={{ fontFamily: '"Manrope", sans-serif' }}
+            <div className="skill-popup-modal-footer">
+              <button
+                type="button"
+                className="skill-popup-done-btn"
+                onClick={() => setActiveBreakdownPopup(null)}
               >
-                <div className="jd-side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
-                  <div className="jd-side-title-row" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <div
-                      className="cand-msg-header-avatar"
-                      style={{
-                        width: "36px",
-                        height: "36px",
-                        borderRadius: "50%",
-                        background: "#0284c7",
-                        color: "#ffffff",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontWeight: 800,
-                        fontSize: "0.88rem",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {initialsFrom(detailsJob.company)}
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column" }}>
-                      <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
-                        {detailsJob.company}
-                      </h3>
-                      <span className="jd-side-subtitle" style={{ fontSize: "0.78rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
-                        Message • {detailsJob.title}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="jd-side-header-actions">
-                    <button
-                      type="button"
-                      className="jd-side-close-btn"
-                      aria-label="Close message panel"
-                      onClick={handleCloseJobMsg}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </div>
-
-                <div
-                  className="cand-msg-chat-body"
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    minHeight: 0,
-                    overflow: "hidden",
-                    background: "#f8fafc",
-                  }}
-                >
-                  {/* Chat Messages List */}
-                  <div
-                    className="cand-msg-messages-scroll"
-                    style={{
-                      flex: 1,
-                      overflowY: "auto",
-                      padding: "16px 18px",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "12px",
-                    }}
-                  >
-                    {isEmployerMsgLoading ? (
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#64748b", fontSize: "0.88rem", gap: "8px" }}>
-                        <span className="spinner-mini" style={{ width: "16px", height: "16px", border: "2px solid #cbd5e1", borderTopColor: "#0284c7", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
-                        <span>Loading messages...</span>
-                      </div>
-                    ) : employerMessages.length === 0 ? (
-                      <div
-                        style={{
-                          margin: "auto",
-                          textAlign: "center",
-                          padding: "24px 16px",
-                          maxWidth: "340px",
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          gap: "10px",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "48px",
-                            height: "48px",
-                            borderRadius: "14px",
-                            background: "rgba(2, 132, 199, 0.12)",
-                            color: "#0284c7",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "1.4rem",
-                          }}
-                        >
-                          💬
-                        </div>
-                        <h4 className="cand-msg-empty-title" style={{ margin: 0, fontSize: "1rem", fontWeight: 800 }}>
-                          Start a conversation
-                        </h4>
-                        <p style={{ margin: 0, fontSize: "0.82rem", color: "#64748b", lineHeight: 1.5, textAlign: "center" }}>
-                          Send a direct message to {detailsJob.company} to inquire about this role or company.
-                        </p>
-                      </div>
-                    ) : (
-                      <>
-                        {employerMessages.map((msg: any) => {
-                          const isMe = Number(msg.sender_user_id) === Number(applicantUserId);
-                          const timeStr = msg.created_at
-                            ? new Date(msg.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
-                            : "";
-                          return (
-                            <div
-                              key={msg.id}
-                              className={`cand-msg-row ${isMe ? "outgoing" : "incoming"}`}
-                              style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: isMe ? "flex-end" : "flex-start",
-                                gap: "3px",
-                              }}
-                            >
-                              {!isMe && (
-                                <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 700, paddingLeft: "4px" }}>
-                                  {detailsJob.company}
-                                </span>
-                              )}
-                              <div
-                                className={`cand-msg-bubble ${isMe ? "outgoing" : "incoming"}`}
-                                style={{
-                                  maxWidth: "82%",
-                                  padding: "10px 14px",
-                                  borderRadius: isMe ? "14px 14px 2px 14px" : "14px 14px 14px 2px",
-                                  background: isMe ? "#0284c7" : "#ffffff",
-                                  color: isMe ? "#ffffff" : "#1e293b",
-                                  border: isMe ? "none" : "1px solid #e2e8f0",
-                                  boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
-                                  fontSize: "0.86rem",
-                                  lineHeight: 1.5,
-                                  whiteSpace: "pre-wrap",
-                                  wordBreak: "break-word",
-                                }}
-                              >
-                                {msg.message_text}
-                              </div>
-                              <span style={{ fontSize: "0.68rem", color: "#94a3b8", padding: "0 4px" }}>
-                                {timeStr}
-                              </span>
-                            </div>
-                          );
-                        })}
-                        <div ref={employerMsgEndRef} />
-                      </>
-                    )}
-                  </div>
-
-                  {/* Compose Bar */}
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      handleSendEmployerMessage();
-                    }}
-                    className="cand-msg-compose-bar"
-                    style={{
-                      padding: "12px 16px",
-                      borderTop: "1px solid #e2e8f0",
-                      background: "#ffffff",
-                      display: "flex",
-                      gap: "10px",
-                      alignItems: "center",
-                    }}
-                  >
-                    <input
-                      type="text"
-                      className="cand-msg-input"
-                      placeholder={`Message ${detailsJob.company}...`}
-                      value={employerMsgInput}
-                      onChange={(e) => setEmployerMsgInput(e.target.value)}
-                      disabled={isEmployerMsgSending}
-                      style={{
-                        flex: 1,
-                        padding: "10px 14px",
-                        borderRadius: "8px",
-                        border: "1px solid #cbd5e1",
-                        fontSize: "0.85rem",
-                        fontFamily: "inherit",
-                        outline: "none",
-                      }}
-                    />
-                    <button
-                      type="submit"
-                      className="cand-msg-send-btn"
-                      disabled={!employerMsgInput.trim() || isEmployerMsgSending}
-                      style={{
-                        padding: "10px 18px",
-                        borderRadius: "8px",
-                        border: "none",
-                        background: "#0284c7",
-                        color: "#ffffff",
-                        fontWeight: 700,
-                        fontSize: "0.85rem",
-                        cursor: !employerMsgInput.trim() || isEmployerMsgSending ? "not-allowed" : "pointer",
-                      }}
-                    >
-                      {isEmployerMsgSending ? "..." : "Send"}
-                    </button>
-                  </form>
-                </div>
-              </aside>
-            )}
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* ── COMPANY DETAILS MODAL (Picture 2) ── */}
-      {selectedEmployerDetails && (
-        <div
-          className="jd-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Company Details"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setSelectedEmployerDetails(null);
-              setIsEmployerFaqDrawerOpen(false);
-              setIsEmployerMsgOpen(false);
-              setIsEmployerMsgClosing(false);
-              setIsEmployerJobsOpen(false);
-              setIsEmployerJobsClosing(false);
-            }
-          }}
-        >
-          <div
-            className={`jd-modal-container ${
-              isEmployerMsgOpen || isEmployerMsgClosing || isEmployerJobsOpen || isEmployerJobsClosing
-                ? "with-side-panel"
-                : ""
-            }`}
-          >
-            <div className="jd-panel-outer-wrap">
-              <div className="jd-floating-tabs-container">
-                <button
-                  type="button"
-                  className={`jd-floating-breakdown-tab ${isEmployerJobsOpen && !isEmployerJobsClosing ? "active" : ""}`}
-                  onClick={handleToggleEmployerJobs}
-                >
-                  <span>{isEmployerJobsOpen && !isEmployerJobsClosing ? "Hide Job List" : "Job List"}</span>
-                </button>
-                <button
-                  type="button"
-                  className={`jd-floating-breakdown-tab ${isEmployerMsgOpen && !isEmployerMsgClosing ? "active" : ""}`}
-                  onClick={handleToggleEmployerMsg}
-                >
-                  <span>{isEmployerMsgOpen && !isEmployerMsgClosing ? "Hide Message" : "Message"}</span>
-                </button>
-              </div>
-              <div className="jd-panel">
-              {/* Cover banner */}
-              <div className="jd-cover-banner">
-                {selectedEmployerDetails.company_cover_path ? (
-                  <img
-                    src={
-                      selectedEmployerDetails.company_cover_path.startsWith("http") || selectedEmployerDetails.company_cover_path.startsWith("/api")
-                        ? selectedEmployerDetails.company_cover_path
-                        : `/api/employers/${selectedEmployerDetails.employer_user_id}/cover`
-                    }
-                    alt={`${selectedEmployerDetails.company_name} cover`}
-                    onError={(e) => {
-                      (e.currentTarget as HTMLElement).style.display = "none";
-                      const placeholder = e.currentTarget.parentElement?.querySelector(".jd-cover-placeholder") as HTMLElement;
-                      if (placeholder) placeholder.style.display = "flex";
-                    }}
-                  />
-                ) : null}
-                <div className="jd-cover-placeholder" style={{ display: selectedEmployerDetails.company_cover_path ? "none" : "flex" }}>
-                  <span>Company Cover</span>
-                </div>
-              </div>
-
-              {/* Employer strip underneath banner */}
-              <div className="jd-employer-strip">
-                <div className="jd-employer-logo-info">
-                  <div
-                    className="jd-employer-logo"
-                    aria-label="Company logo"
-                    style={{ overflow: "hidden", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}
-                  >
-                    {(() => {
-                      const logoSrc = selectedEmployerDetails.company_logo_path
-                        ? selectedEmployerDetails.company_logo_path.startsWith("http") || selectedEmployerDetails.company_logo_path.startsWith("/api")
-                          ? selectedEmployerDetails.company_logo_path
-                          : `/api/employers/${selectedEmployerDetails.employer_user_id}/logo`
-                        : `/api/employers/${selectedEmployerDetails.employer_user_id}/logo`;
-                      return (
-                        <>
-                          <img
-                            src={logoSrc}
-                            alt={selectedEmployerDetails.company_name}
-                            style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                            onError={(e) => {
-                              (e.currentTarget as HTMLElement).style.display = "none";
-                              if (e.currentTarget.nextElementSibling) {
-                                (e.currentTarget.nextElementSibling as HTMLElement).style.display = "block";
-                              }
-                            }}
-                          />
-                          <svg viewBox="0 0 24 24" aria-hidden="true" style={{ display: "none", width: "32px", height: "32px", stroke: "#0284c7" }}>
-                            <path d="M3 21h18M5 21V7l7-4 7 4v14M9 11h2m2 0h2M9 15h2m2 0h2" />
-                          </svg>
-                        </>
-                      );
-                    })()}
-                  </div>
-                  <div>
-                    <strong className="jd-employer-name">{selectedEmployerDetails.company_name}</strong>
-                    <span className="jd-employer-location">
-                      <svg viewBox="0 0 24 24" aria-hidden="true" width="13" height="13" fill="none" stroke="#5b8ab0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-                      </svg>
-                      {selectedEmployerDetails.industry ? selectedEmployerDetails.industry.toUpperCase() : "GENERAL INDUSTRY"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="jd-header-right-actions">
-                  <div className="rating-score-box" title="Company rating">
-                    <span className="star-icon">★</span>
-                    <span>{selectedEmployerDetails.rating ? Number(selectedEmployerDetails.rating).toFixed(1) : "0.0"}</span>
-                  </div>
-                  <button
-                    type="button"
-                    className={`jd-faq-btn ${isEmployerFaqDrawerOpen ? "active" : ""}`}
-                    onClick={() => {
-                      if (isEmployerFaqDrawerOpen) {
-                        setIsEmployerFaqDrawerOpen(false);
-                      } else {
-                        if (isEmployerMsgOpen) handleCloseEmployerMsg();
-                        if (isEmployerJobsOpen) handleCloseEmployerJobs();
-                        handleOpenEmployerFaqs(selectedEmployerDetails.employer_user_id);
-                      }
-                    }}
-                  >
-                    FAQ's
-                  </button>
-                </div>
-              </div>
-
-              {/* Scrollable body & drawer container */}
-              <div className="jd-body-wrapper" style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-                <div className="jd-body" style={{ maxHeight: "calc(88vh - 280px)", overflowY: "auto", padding: "20px 24px" }}>
-                  {/* Section: Company Overview */}
-                  <div style={{ marginBottom: "24px" }}>
-                    <h3 style={{ fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b", fontWeight: 700, marginBottom: "8px" }}>
-                      About Company
-                    </h3>
-                    <p className="company-modal-about" style={{ fontSize: "0.95rem", lineHeight: 1.6, whiteSpace: "pre-line", margin: 0 }}>
-                      {selectedEmployerDetails.company_description || "No company description provided."}
-                    </p>
-                  </div>
-
-                  {/* Section: Contact & Company Information Cards */}
-                  <div style={{ marginBottom: "24px" }}>
-                    <h3 style={{ fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b", fontWeight: 700, marginBottom: "12px" }}>
-                      Contact Information
-                    </h3>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
-                      <div className="company-info-card" style={{ padding: "12px 14px", borderRadius: "10px" }}>
-                        <small className="company-info-card-label" style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "4px" }}>BUSINESS EMAIL</small>
-                        <span className="company-info-card-val" style={{ fontSize: "0.88rem", fontWeight: 600, wordBreak: "break-all" }}>
-                          {selectedEmployerDetails.business_email || "Not provided"}
-                        </span>
-                      </div>
-
-                      <div className="company-info-card" style={{ padding: "12px 14px", borderRadius: "10px" }}>
-                        <small className="company-info-card-label" style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "4px" }}>CONTACT NUMBER</small>
-                        <span className="company-info-card-val" style={{ fontSize: "0.88rem", fontWeight: 600 }}>
-                          {selectedEmployerDetails.contact_number || "Not provided"}
-                        </span>
-                      </div>
-
-                      {selectedEmployerDetails.website && (
-                        <div className="company-info-card" style={{ padding: "12px 14px", borderRadius: "10px" }}>
-                          <small className="company-info-card-label" style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "4px" }}>WEBSITE</small>
-                          <a
-                            href={selectedEmployerDetails.website.startsWith("http") ? selectedEmployerDetails.website : `https://${selectedEmployerDetails.website}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{ color: "#0284c7", fontSize: "0.88rem", fontWeight: 600, textDecoration: "underline", wordBreak: "break-all" }}
-                          >
-                            {selectedEmployerDetails.website}
-                          </a>
-                        </div>
-                      )}
-
-                      <div className="company-info-card" style={{ padding: "12px 14px", borderRadius: "10px" }}>
-                        <small className="company-info-card-label" style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "4px" }}>HEADQUARTERS</small>
-                        <span className="company-info-card-val" style={{ fontSize: "0.88rem", fontWeight: 600 }}>
-                          {selectedEmployerDetails.company_address || selectedEmployerDetails.city || selectedEmployerDetails.location || "Cavite"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Slide-in FAQ Drawer */}
-                <div className={`jd-faq-drawer ${isEmployerFaqDrawerOpen ? "open" : ""}`}>
-                  <div className="jd-faq-header">
-                    <h3>Company FAQ's</h3>
-                    <button type="button" className="jd-faq-back-btn" aria-label="Back to company details" onClick={() => setIsEmployerFaqDrawerOpen(false)}>
-                      ←
-                    </button>
-                  </div>
-                  <div className="jd-faq-body">
-                    {faqLoading ? (
-                      <p className="jd-faq-loading">Loading FAQ's...</p>
-                    ) : companyFaqs.length === 0 ? (
-                      <p className="jd-faq-empty">No FAQ's created by this company yet.</p>
-                    ) : (
-                      companyFaqs.map((faq) => {
-                        const isExpanded = expandedFaqIds.includes(faq.id);
-                        return (
-                          <div key={faq.id} className={`jd-faq-item ${isExpanded ? "expanded" : ""}`}>
-                            <button
-                              type="button"
-                              className="jd-faq-question-btn"
-                              onClick={() => {
-                                setExpandedFaqIds((prev) =>
-                                  prev.includes(faq.id) ? prev.filter((id) => id !== faq.id) : [...prev, faq.id]
-                                );
-                              }}
-                            >
-                              <div className="jd-faq-q-left">
-                                {faq.question_type && <span className="jd-faq-type-badge">{faq.question_type}</span>}
-                                <span className="jd-faq-question-text">{faq.question}</span>
-                              </div>
-                              <span className="jd-faq-toggle-icon">{isExpanded ? "−" : "+"}</span>
-                            </button>
-                            {isExpanded && (
-                              <div className="jd-faq-answer">
-                                <p>{faq.answer}</p>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Modal Footer */}
-              <div className="jd-footer" style={{ padding: "16px 24px", borderTop: "1px solid #2e3244", display: "flex", justifyContent: "flex-end" }}>
-                <button
-                  type="button"
-                  className="cand-details-cancel-btn"
-                  onClick={() => {
-                    setSelectedEmployerDetails(null);
-                    setIsEmployerFaqDrawerOpen(false);
-                    setIsEmployerMsgOpen(false);
-                    setIsEmployerMsgClosing(false);
-                    setIsEmployerJobsOpen(false);
-                    setIsEmployerJobsClosing(false);
-                  }}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* ── Employer Side-Docked Jobs Panel ── */}
-          {(isEmployerJobsOpen || isEmployerJobsClosing) && !isEmployerMsgOpen && selectedEmployerDetails && (
+      {/* ── COMPANY DETAILS MODAL ── */}
+      <EmployerDetailsModal
+        isOpen={Boolean(selectedEmployerDetails)}
+        zIndex={isEmployerModalOnTop ? 10100 : undefined}
+        onClose={() => {
+          setSelectedEmployerDetails(null);
+          setIsEmployerModalOnTop(false);
+          setIsEmployerFaqDrawerOpen(false);
+          setIsEmployerMsgOpen(false);
+          setIsEmployerMsgClosing(false);
+          setIsEmployerJobsOpen(false);
+          setIsEmployerJobsClosing(false);
+        }}
+        employer={selectedEmployerDetails}
+        isFaqOpen={isEmployerFaqDrawerOpen}
+        onFaqOpenChange={(open) => {
+          setIsEmployerFaqDrawerOpen(open);
+        }}
+        topFloatingActions={
+          !isEmployerModalOnTop ? (
+            <>
+              <button
+                type="button"
+                className={`jd-floating-breakdown-tab ${isEmployerJobsOpen && !isEmployerJobsClosing ? "active" : ""}`}
+                onClick={handleToggleEmployerJobs}
+              >
+                <span>{isEmployerJobsOpen && !isEmployerJobsClosing ? "Hide Job List" : "Job List"}</span>
+              </button>
+              <button
+                type="button"
+                className={`jd-floating-breakdown-tab ${isEmployerMsgOpen && !isEmployerMsgClosing ? "active" : ""}`}
+                onClick={handleToggleEmployerMsg}
+              >
+                <span>{isEmployerMsgOpen && !isEmployerMsgClosing ? "Hide Message" : "Message"}</span>
+              </button>
+            </>
+          ) : undefined
+        }
+        sidePanel={
+          !isEmployerModalOnTop && (isEmployerJobsOpen || isEmployerJobsClosing) && !isEmployerMsgOpen && selectedEmployerDetails ? (
             <aside
               className={`jd-side-comparison-panel ${isEmployerJobsClosing ? "closing" : "opening"}`}
-              style={{ fontFamily: '"Manrope", sans-serif' }}
+              style={{ fontFamily: "'Inter', sans-serif" }}
             >
-              <div className="jd-side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
+              <div className="jd-side-panel-header" style={{ fontFamily: "'Inter', sans-serif" }}>
                 <div className="jd-side-title-row">
-                  <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
+                  <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: "'Inter', sans-serif" }}>
                     Other Employer Jobs
                   </h3>
-                  <span className="jd-side-subtitle" style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                  <span className="jd-side-subtitle" style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: "'Inter', sans-serif" }}>
                     Open job positions available to apply
                   </span>
                 </div>
@@ -3583,21 +4171,19 @@ export default function JobSearch() {
                   flexDirection: "column",
                   gap: "14px",
                   padding: "18px",
-                  fontFamily: '"Manrope", sans-serif',
+                  fontFamily: "'Inter', sans-serif",
                   overflowY: "auto",
                   flex: 1,
                 }}
               >
-                {(!selectedEmployerDetails.jobs || selectedEmployerDetails.jobs.length === 0) ? (
-                  <div style={{ textAlign: "center", color: "#64748b", padding: "30px 10px", fontSize: "0.9rem", fontFamily: '"Manrope", sans-serif' }}>
+                {sortedEmployerJobs.length === 0 ? (
+                  <div style={{ textAlign: "center", color: "#64748b", padding: "30px 10px", fontSize: "0.9rem", fontFamily: "'Inter', sans-serif" }}>
                     No active job openings posted by this employer at the moment.
                   </div>
                 ) : (
-                  selectedEmployerDetails.jobs.map((j) => {
-                    const foundJob = jobs.find((x) => x.id === j.id);
-                    const matchPct = foundJob
-                      ? calculateJobMatchDetails(foundJob, applicantMatchProfile).score
-                      : 85;
+                  sortedEmployerJobs.map((j) => {
+                    const statusInfo = getJobApplicationStatus(j.id);
+                    const isApplying = applyingJobId === j.id;
 
                     return (
                       <div
@@ -3613,65 +4199,87 @@ export default function JobSearch() {
                           justifyContent: "space-between",
                           alignItems: "center",
                           gap: "12px",
-                          fontFamily: '"Manrope", sans-serif',
+                          fontFamily: "'Inter', sans-serif",
                         }}
                       >
                         <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, minWidth: 0 }}>
-                          <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
+                          <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800, color: "#01294a", fontFamily: "'Inter', sans-serif" }}>
                             {j.title}
                           </h4>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginTop: "2px", fontSize: "0.8rem", color: "#64748b", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Manrope", sans-serif' }}>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginTop: "2px", fontSize: "0.8rem", color: "#64748b", fontWeight: 600, fontFamily: "'Inter', sans-serif" }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: "'Inter', sans-serif" }}>
                               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" />
                                 <circle cx="12" cy="10" r="2.5" />
                               </svg>
                               {j.location || selectedEmployerDetails.location || "Cavite"}
                             </span>
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Manrope", sans-serif' }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: "'Inter', sans-serif" }}>
                               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                 <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
                                 <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
                               </svg>
                               {j.work_arrangement || "On-Site"}
                             </span>
-                            {j.salary_min ? (
-                              <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Manrope", sans-serif' }}>
-                                {formatSalary(j.salary_min, j.salary_max)}
+                            {Boolean(
+                              j.hide_salary === 1 ||
+                              j.hide_salary === "1" ||
+                              j.hide_salary === true ||
+                              j.hide_salary === "true" ||
+                              (j as any).hideSalary
+                            ) ? (
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: "'Inter', sans-serif" }}>
+                                Salary Confidential
+                              </span>
+                            ) : j.salary_min ? (
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: "'Inter', sans-serif" }}>
+                                {formatSalary(j.salary_min, j.salary_max, false)}
                               </span>
                             ) : null}
                           </div>
                         </div>
 
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px", flexShrink: 0 }}>
+                        <div className="jd-other-job-action-col">
                           <span
-                            className={`jd-other-job-match-pill ${matchPct >= 80 ? "green" : matchPct >= 50 ? "yellow" : "red"}`}
+                            className={`jd-other-job-match-pill ${j.matchPct >= 80 ? "green" : j.matchPct >= 50 ? "yellow" : "red"}`}
                           >
-                            {matchPct}% Match
+                            {j.matchPct}% Match
                           </span>
                           <button
                             type="button"
                             className="details-btn jd-other-job-details-btn"
-                            style={{
-                              background: "#0284c7",
-                              color: "#ffffff",
-                              fontWeight: 800,
-                              fontSize: "0.84rem",
-                              padding: "6px 22px",
-                              borderRadius: "999px",
-                              border: "none",
-                              whiteSpace: "nowrap",
-                              cursor: "pointer",
-                              boxShadow: "0 2px 8px rgba(2, 132, 199, 0.3)",
-                              transition: "all 0.15s ease",
-                              minWidth: "85px",
-                              textAlign: "center",
-                              fontFamily: '"Manrope", sans-serif',
-                            }}
                             onClick={() => handleOpenJobFromEmployerModal(j.id)}
                           >
                             Details
                           </button>
+                          {statusInfo ? (
+                            <button
+                              type="button"
+                              disabled
+                              className={`jd-other-job-apply-btn status-${statusInfo.statusClass}`}
+                              aria-label={`Application status: ${statusInfo.label}`}
+                            >
+                              {statusInfo.label}
+                            </button>
+                          ) : isJobClosedOrExpired(j.close_date, (j as any).status) ? (
+                            <button
+                              type="button"
+                              disabled
+                              className="jd-other-job-apply-btn status-closed"
+                              aria-label="Job is closed"
+                            >
+                              Closed
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="jd-other-job-apply-btn apply-btn-action"
+                              disabled={isApplying}
+                              onClick={() => setApplyJobTarget({ jobId: j.id, title: j.title })}
+                            >
+                              {isApplying ? "Applying..." : "Apply"}
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
@@ -3679,15 +4287,12 @@ export default function JobSearch() {
                 )}
               </div>
             </aside>
-          )}
-
-          {/* ── Employer Side-Docked Message Panel ── */}
-          {(isEmployerMsgOpen || isEmployerMsgClosing) && !isEmployerJobsOpen && selectedEmployerDetails && (
+          ) : !isEmployerModalOnTop && (isEmployerMsgOpen || isEmployerMsgClosing) && !isEmployerJobsOpen && selectedEmployerDetails ? (
             <aside
               className={`jd-side-comparison-panel cand-message-side-panel ${isEmployerMsgClosing ? "closing" : "opening"}`}
-              style={{ fontFamily: '"Manrope", sans-serif' }}
+              style={{ fontFamily: "'Inter', sans-serif" }}
             >
-              <div className="jd-side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
+              <div className="jd-side-panel-header" style={{ fontFamily: "'Inter', sans-serif" }}>
                 <div className="jd-side-title-row" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <div
                     className="cand-msg-header-avatar"
@@ -3702,16 +4307,40 @@ export default function JobSearch() {
                       justifyContent: "center",
                       fontWeight: 800,
                       fontSize: "0.88rem",
+                      overflow: "hidden",
                       flexShrink: 0,
                     }}
                   >
-                    {initialsFrom(selectedEmployerDetails.company_name)}
+                    {(() => {
+                      const logoSrc = selectedEmployerDetails.company_logo_path
+                        ? selectedEmployerDetails.company_logo_path.startsWith("http") || selectedEmployerDetails.company_logo_path.startsWith("/api")
+                          ? selectedEmployerDetails.company_logo_path
+                          : `/api/employers/${selectedEmployerDetails.employer_user_id}/logo`
+                        : selectedEmployerDetails.employer_user_id
+                        ? `/api/employers/${selectedEmployerDetails.employer_user_id}/logo`
+                        : null;
+                      return logoSrc ? (
+                        <img
+                          src={logoSrc}
+                          alt={selectedEmployerDetails.company_name}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = "none";
+                            if (e.currentTarget.parentElement) {
+                              e.currentTarget.parentElement.textContent = initialsFrom(selectedEmployerDetails.company_name);
+                            }
+                          }}
+                        />
+                      ) : (
+                        initialsFrom(selectedEmployerDetails.company_name)
+                      );
+                    })()}
                   </div>
                   <div style={{ display: "flex", flexDirection: "column" }}>
-                    <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
+                    <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>
                       {selectedEmployerDetails.company_name}
                     </h3>
-                    <span className="jd-side-subtitle" style={{ fontSize: "0.78rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                    <span className="jd-side-subtitle" style={{ fontSize: "0.78rem", color: "#557796", fontWeight: 600, fontFamily: "'Inter', sans-serif" }}>
                       Message • {selectedEmployerDetails.industry || "Employer"}
                     </span>
                   </div>
@@ -3736,11 +4365,11 @@ export default function JobSearch() {
                   flexDirection: "column",
                   minHeight: 0,
                   overflow: "hidden",
-                  background: "#f8fafc",
                 }}
               >
                 {/* Chat Messages List */}
                 <div
+                  ref={employerMsgScrollRef}
                   className="cand-msg-messages-scroll"
                   style={{
                     flex: 1,
@@ -3774,15 +4403,26 @@ export default function JobSearch() {
                           width: "48px",
                           height: "48px",
                           borderRadius: "14px",
-                          background: "rgba(2, 132, 199, 0.12)",
+                          background: "rgba(2, 132, 199, 0.15)",
                           color: "#0284c7",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          fontSize: "1.4rem",
                         }}
                       >
-                        💬
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="24"
+                          height="24"
+                          fill="none"
+                          stroke="#0284c7"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                        </svg>
                       </div>
                       <h4 className="cand-msg-empty-title" style={{ margin: 0, fontSize: "1rem", fontWeight: 800 }}>
                         Start a conversation
@@ -3820,10 +4460,6 @@ export default function JobSearch() {
                                 maxWidth: "82%",
                                 padding: "10px 14px",
                                 borderRadius: isMe ? "14px 14px 2px 14px" : "14px 14px 14px 2px",
-                                background: isMe ? "#0284c7" : "#ffffff",
-                                color: isMe ? "#ffffff" : "#1e293b",
-                                border: isMe ? "none" : "1px solid #e2e8f0",
-                                boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
                                 fontSize: "0.86rem",
                                 lineHeight: 1.5,
                                 whiteSpace: "pre-wrap",
@@ -3852,8 +4488,6 @@ export default function JobSearch() {
                   className="cand-msg-compose-bar"
                   style={{
                     padding: "12px 16px",
-                    borderTop: "1px solid #e2e8f0",
-                    background: "#ffffff",
                     display: "flex",
                     gap: "10px",
                     alignItems: "center",
@@ -3870,7 +4504,6 @@ export default function JobSearch() {
                       flex: 1,
                       padding: "10px 14px",
                       borderRadius: "8px",
-                      border: "1px solid #cbd5e1",
                       fontSize: "0.85rem",
                       fontFamily: "inherit",
                       outline: "none",
@@ -3909,10 +4542,9 @@ export default function JobSearch() {
                 </form>
               </div>
             </aside>
-          )}
-        </div>
-      </div>
-    )}
+          ) : null
+        }
+      />
 
       {/* DOUBLE VERIFICATION: LOGOUT CONFIRMATION MODAL */}
       <ConfirmationModal

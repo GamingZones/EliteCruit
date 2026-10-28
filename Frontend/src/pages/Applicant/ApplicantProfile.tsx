@@ -100,6 +100,7 @@ type ApplicantProfileData = {
   latitude: number | string | null;
   longitude: number | string | null;
   nearby_location?: string | null;
+  is_email_verified?: boolean;
 };
 
 const emptyProfile: ApplicantProfileData = {
@@ -129,6 +130,7 @@ const emptyProfile: ApplicantProfileData = {
   latitude: null,
   longitude: null,
   nearby_location: null,
+  is_email_verified: false,
 };
 
 const DESIRED_JOB_TITLES = BSIT_BSCS_JOB_TITLES;
@@ -236,6 +238,7 @@ function Field({
   onBlur,
   prefix,
   numbersOnly = false,
+  maxLength,
   wide = false,
   currencyFormat = false,
   placeholder,
@@ -250,20 +253,23 @@ function Field({
   onBlur?: () => void;
   prefix?: string;
   numbersOnly?: boolean;
+  maxLength?: number;
   wide?: boolean;
   currencyFormat?: boolean;
   placeholder?: string;
   hasError?: boolean;
   optional?: boolean;
 }) {
+  const maxDigits = name === "phone" ? 10 : maxLength;
   const strVal = value !== null && value !== undefined ? String(value) : "";
   const isMissing = !optional && !strVal.trim();
+  const rawNum = numbersOnly ? strVal.replace(/\D/g, "") : strVal;
   const inputValue = currencyFormat
     ? editing
       ? strVal.replace(/,/g, "").replace(/[^0-9.]/g, "")
       : formatCurrencyInput(strVal)
     : numbersOnly
-      ? strVal.replace(/\D/g, "")
+      ? maxDigits ? rawNum.slice(0, maxDigits) : rawNum
       : strVal;
 
   return (
@@ -275,6 +281,7 @@ function Field({
           value={inputValue}
           readOnly={!editing}
           inputMode={numbersOnly || currencyFormat ? "numeric" : undefined}
+          maxLength={maxDigits}
           onChange={(event) => {
             if (currencyFormat) {
               const val = event.target.value.replace(/,/g, "").trim();
@@ -282,7 +289,11 @@ function Field({
               onChange(name, numOnly);
               return;
             }
-            onChange(name, numbersOnly ? event.target.value.replace(/\D/g, "") : event.target.value);
+            let nextVal = numbersOnly ? event.target.value.replace(/\D/g, "") : event.target.value;
+            if (maxDigits && numbersOnly) {
+              nextVal = nextVal.slice(0, maxDigits);
+            }
+            onChange(name, nextVal);
           }}
           onBlur={onBlur}
           placeholder={placeholder || (optional ? "Optional" : "Not provided")}
@@ -1094,21 +1105,53 @@ type CourseSkillItem = {
   year: string;
 };
 
+function parseSingleCourseSkillToken(token: string): CourseSkillItem {
+  const courseMatch = token.match(/^(.*?)\s*\[(.*?)\]\s*\((.*?)\)$/);
+  if (courseMatch) {
+    const cleanYear = courseMatch[3].replace(/^Since\s*/i, "").replace(/^Acquired\s*/i, "").trim();
+    return {
+      name: courseMatch[1].trim(),
+      course: courseMatch[2].trim() || "General IT",
+      year: cleanYear || "2026",
+    };
+  }
+  const bracketOnly = token.match(/^(.*?)\s*\[(.*?)\]$/);
+  if (bracketOnly) {
+    return {
+      name: bracketOnly[1].trim(),
+      course: bracketOnly[2].trim() || "General IT",
+      year: "2026",
+    };
+  }
+  const match = token.match(/^(.*?)\s*\((.*?)\)$/);
+  if (match) {
+    const cleanYear = match[2].replace(/^Since\s*/i, "").replace(/^Acquired\s*/i, "").trim();
+    return {
+      name: match[1].trim(),
+      course: "General IT",
+      year: cleanYear || "2026",
+    };
+  }
+  return { name: token.trim(), course: "General IT", year: "2026" };
+}
+
 function parseCourseSkillItems(raw?: string | null): CourseSkillItem[] {
   if (!raw || !raw.trim()) return [];
   try {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
-      return parsed.map((p) => {
-        if (typeof p === "object" && p !== null && p.name) {
-          return {
-            name: p.name,
-            course: p.course || "General IT",
-            year: p.year || p.years || "2026",
-          };
-        }
-        return { name: String(p), course: "General IT", year: "2026" };
-      });
+      return parsed
+        .map((p) => {
+          if (typeof p === "object" && p !== null && p.name) {
+            return {
+              name: String(p.name).trim(),
+              course: p.course || "General IT",
+              year: p.year || p.years || "2026",
+            };
+          }
+          return parseSingleCourseSkillToken(String(p));
+        })
+        .filter((item) => Boolean(item.name));
     }
   } catch {}
 
@@ -1116,27 +1159,8 @@ function parseCourseSkillItems(raw?: string | null): CourseSkillItem[] {
     .split(/[\n,;•|]+/)
     .map((s) => s.trim())
     .filter(Boolean)
-    .map((token) => {
-      const courseMatch = token.match(/^(.*?)\s*\[(.*?)\]\s*\((.*?)\)$/);
-      if (courseMatch) {
-        const cleanYear = courseMatch[3].replace(/^Since\s*/i, "").replace(/^Acquired\s*/i, "").trim();
-        return {
-          name: courseMatch[1].trim(),
-          course: courseMatch[2].trim(),
-          year: cleanYear || "2026",
-        };
-      }
-      const match = token.match(/^(.*?)\s*\((.*?)\)$/);
-      if (match) {
-        const cleanYear = match[2].replace(/^Since\s*/i, "").replace(/^Acquired\s*/i, "").trim();
-        return {
-          name: match[1].trim(),
-          course: "General IT",
-          year: cleanYear || "2026",
-        };
-      }
-      return { name: token, course: "General IT", year: "2026" };
-    });
+    .map(parseSingleCourseSkillToken)
+    .filter((item) => Boolean(item.name));
 }
 
 function CourseSkillsEditor({
@@ -1154,6 +1178,22 @@ function CourseSkillsEditor({
   const [selectedCourse, setSelectedCourse] = useState("");
   const [inputValue, setInputValue] = useState("");
   const [selectedYear, setSelectedYear] = useState("2026");
+
+  // Track which category has its popup list open
+  const [activePopupCategory, setActivePopupCategory] = useState<string | null>(null);
+
+  // Group items by course/category preserving original index for accurate mutations
+  const groupedSkills = useMemo(() => {
+    const groups: { [cat: string]: { item: CourseSkillItem; originalIndex: number }[] } = {};
+    items.forEach((item, originalIndex) => {
+      const cat = item.course && item.course.trim() ? item.course.trim() : "General IT";
+      if (!groups[cat]) {
+        groups[cat] = [];
+      }
+      groups[cat].push({ item, originalIndex });
+    });
+    return groups;
+  }, [items]);
 
   const courseSkills = useMemo(() => {
     return (selectedCourse && SKILL_COURSE_MAP[selectedCourse]) || ALL_SKILLS_OPTIONS;
@@ -1186,6 +1226,14 @@ function CourseSkillsEditor({
     const newItems = items.filter((_, idx) => idx !== indexToRemove);
     const formatted = newItems.map((it) => `${it.name} [${it.course}] (Since ${it.year})`);
     await onSave(formatted);
+    if (activePopupCategory) {
+      const remaining = newItems.filter(
+        (it) => (it.course && it.course.trim() ? it.course.trim() : "General IT") === activePopupCategory
+      );
+      if (remaining.length === 0) {
+        setActivePopupCategory(null);
+      }
+    }
   };
 
   const handleUpdateYear = async (indexToUpdate: number, newYear: string) => {
@@ -1207,40 +1255,106 @@ function CourseSkillsEditor({
         {items.length === 0 ? (
           <div className="empty-category-notice">No items selected yet. Select a course, pick a skill, and choose the year acquired below.</div>
         ) : (
-          items.map((item, idx) => (
-            <div key={`${item.name}-${idx}`} className="exp-item-chip">
-              <span className="exp-course-badge" title={`Course: ${item.course}`}>
-                {item.course}
-              </span>
-              <span className="exp-item-name">{item.name}</span>
-              <div className="exp-badge-group">
-                <span className="exp-label-text">Since:</span>
-                <select
-                  className="exp-years-select"
-                  value={ALL_NUMERIC_YEARS.includes(item.year) ? item.year : "2026"}
-                  disabled={disabled}
-                  onChange={(e) => handleUpdateYear(idx, e.target.value)}
-                >
-                  {ALL_NUMERIC_YEARS.map((yr) => (
-                    <option key={yr} value={yr}>
-                      {yr}
-                    </option>
-                  ))}
-                </select>
+          <div className="category-pills-row">
+            {Object.entries(groupedSkills).map(([catName, groupItems]) => (
+              <button
+                key={catName}
+                type="button"
+                className={`category-popup-trigger-btn ${activePopupCategory === catName ? "active" : ""}`}
+                onClick={() => setActivePopupCategory(catName)}
+                title={`Click to open ${catName} skills list (${groupItems.length})`}
+              >
+                <span className="category-pill-name">{catName}</span>
+                <span className="category-pill-badge">{groupItems.length}</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* POPUP LIST MODAL FOR ACTIVE CATEGORY */}
+      {activePopupCategory && groupedSkills[activePopupCategory] && (
+        <div className="skill-popup-modal-overlay" onClick={() => setActivePopupCategory(null)}>
+          <div
+            className="skill-popup-modal-content"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="skill-modal-title"
+          >
+            <div className="skill-popup-modal-header">
+              <div className="skill-popup-title-group">
+                <span className="skill-popup-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                </span>
+                <h3 id="skill-modal-title" className="skill-popup-title">
+                  {activePopupCategory}
+                </h3>
+                <span className="skill-popup-count-badge">
+                  {groupedSkills[activePopupCategory].length} {groupedSkills[activePopupCategory].length === 1 ? "skill" : "skills"}
+                </span>
               </div>
               <button
                 type="button"
-                className="exp-remove-btn"
-                onClick={() => handleRemoveItem(idx)}
-                disabled={disabled}
-                title={`Remove ${item.name}`}
+                className="skill-popup-close-btn"
+                onClick={() => setActivePopupCategory(null)}
+                aria-label="Close popup"
               >
-                ×
+                ✕
               </button>
             </div>
-          ))
-        )}
-      </div>
+
+            <div className="skill-popup-modal-body">
+              <div className="skill-popup-list">
+                {groupedSkills[activePopupCategory].map(({ item, originalIndex }) => (
+                  <div key={`${item.name}-${originalIndex}`} className="skill-popup-item-row">
+                    <span className="skill-popup-item-name">{item.name}</span>
+                    <div className="skill-popup-item-actions">
+                      <span className="skill-popup-since-label">Since:</span>
+                      <select
+                        className="exp-years-select"
+                        value={ALL_NUMERIC_YEARS.includes(item.year) ? item.year : "2026"}
+                        disabled={disabled}
+                        onChange={(e) => handleUpdateYear(originalIndex, e.target.value)}
+                      >
+                        {ALL_NUMERIC_YEARS.map((yr) => (
+                          <option key={yr} value={yr}>
+                            {yr}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        className="exp-remove-btn"
+                        onClick={() => handleRemoveItem(originalIndex)}
+                        disabled={disabled}
+                        title={`Remove ${item.name}`}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="skill-popup-modal-footer">
+              <button
+                type="button"
+                className="skill-popup-done-btn"
+                onClick={() => setActivePopupCategory(null)}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="add-item-controls edu-add-controls">
         <div className="edu-inputs-row">
@@ -1661,6 +1775,21 @@ function CertificationsWithExpiryEditor({
   const [selectedExpiry, setSelectedExpiry] = useState("2026");
   const [selectedCertCategory, setSelectedCertCategory] = useState("");
 
+  // Track which category has its popup list open
+  const [activePopupCategory, setActivePopupCategory] = useState<string | null>(null);
+
+  const groupedCerts = useMemo(() => {
+    const groups: { [cat: string]: { item: CertItem; originalIndex: number }[] } = {};
+    items.forEach((item, originalIndex) => {
+      const cat = item.category && item.category.trim() ? item.category.trim() : "General";
+      if (!groups[cat]) {
+        groups[cat] = [];
+      }
+      groups[cat].push({ item, originalIndex });
+    });
+    return groups;
+  }, [items]);
+
   const categoryOptions = useMemo(
     () => CERTIFICATION_CATEGORIES.filter((cat) => cat !== "All Certification Categories"),
     []
@@ -1701,6 +1830,14 @@ function CertificationsWithExpiryEditor({
     const newItems = items.filter((_, idx) => idx !== indexToRemove);
     const formatted = newItems.map((it) => `${it.name} [${it.category}] (Acquired ${it.acquiredYear || "2010"} - Expiration ${it.expiry})`);
     await onSave(formatted);
+    if (activePopupCategory) {
+      const remaining = newItems.filter(
+        (it) => (it.category && it.category.trim() ? it.category.trim() : "General") === activePopupCategory
+      );
+      if (remaining.length === 0) {
+        setActivePopupCategory(null);
+      }
+    }
   };
 
   const handleUpdateAcquired = async (indexToUpdate: number, newAcquired: string) => {
@@ -1728,51 +1865,122 @@ function CertificationsWithExpiryEditor({
         {items.length === 0 ? (
           <div className="empty-category-notice">No items selected yet. Type or select a certification below.</div>
         ) : (
-          items.map((item, idx) => (
-            <div key={`${item.name}-${idx}`} className="exp-item-chip">
-              <span className="exp-item-name">{item.name}</span>
-              <div className="exp-badge-group">
-                <span className="exp-label-text">Acquired:</span>
-                <select
-                  className="exp-years-select"
-                  value={ALL_NUMERIC_YEARS.includes(item.acquiredYear || "") ? item.acquiredYear : "2010"}
-                  disabled={disabled}
-                  onChange={(e) => handleUpdateAcquired(idx, e.target.value)}
-                >
-                  {ALL_NUMERIC_YEARS.map((yr) => (
-                    <option key={yr} value={yr}>
-                      {yr}
-                    </option>
-                  ))}
-                </select>
+          <div className="category-pills-row">
+            {Object.entries(groupedCerts).map(([catName, groupItems]) => (
+              <button
+                key={catName}
+                type="button"
+                className={`category-popup-trigger-btn ${activePopupCategory === catName ? "active" : ""}`}
+                onClick={() => setActivePopupCategory(catName)}
+                title={`Click to open ${catName} certifications list (${groupItems.length})`}
+              >
+                <span className="category-pill-name">{catName}</span>
+                <span className="category-pill-badge">{groupItems.length}</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
-                <span className="exp-label-text">Expiration:</span>
-                <select
-                  className="exp-years-select"
-                  value={EXPIRATION_YEAR_OPTIONS.includes(item.expiry) ? item.expiry : "2026"}
-                  disabled={disabled}
-                  onChange={(e) => handleUpdateExpiry(idx, e.target.value)}
-                >
-                  {EXPIRATION_YEAR_OPTIONS.map((yr) => (
-                    <option key={yr} value={yr}>
-                      {yr}
-                    </option>
-                  ))}
-                </select>
+      {/* POPUP LIST MODAL FOR ACTIVE CERTIFICATION CATEGORY */}
+      {activePopupCategory && groupedCerts[activePopupCategory] && (
+        <div className="skill-popup-modal-overlay" onClick={() => setActivePopupCategory(null)}>
+          <div
+            className="skill-popup-modal-content"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cert-modal-title"
+          >
+            <div className="skill-popup-modal-header">
+              <div className="skill-popup-title-group">
+                <span className="skill-popup-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="8" r="7"></circle>
+                    <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+                  </svg>
+                </span>
+                <h3 id="cert-modal-title" className="skill-popup-title">
+                  {activePopupCategory}
+                </h3>
+                <span className="skill-popup-count-badge">
+                  {groupedCerts[activePopupCategory].length} {groupedCerts[activePopupCategory].length === 1 ? "certification" : "certifications"}
+                </span>
               </div>
               <button
                 type="button"
-                className="exp-remove-btn"
-                onClick={() => handleRemoveItem(idx)}
-                disabled={disabled}
-                title={`Remove ${item.name}`}
+                className="skill-popup-close-btn"
+                onClick={() => setActivePopupCategory(null)}
+                aria-label="Close popup"
               >
-                ×
+                ✕
               </button>
             </div>
-          ))
-        )}
-      </div>
+
+            <div className="skill-popup-modal-body">
+              <div className="skill-popup-list">
+                {groupedCerts[activePopupCategory].map(({ item, originalIndex }) => (
+                  <div key={`${item.name}-${originalIndex}`} className="skill-popup-item-row">
+                    <span className="skill-popup-item-name">{item.name}</span>
+                    <div className="skill-popup-item-actions">
+                      <span className="skill-popup-since-label">Acquired:</span>
+                      <select
+                        className="exp-years-select"
+                        value={ALL_NUMERIC_YEARS.includes(item.acquiredYear || "") ? item.acquiredYear : "2010"}
+                        disabled={disabled}
+                        onChange={(e) => handleUpdateAcquired(originalIndex, e.target.value)}
+                      >
+                        {ALL_NUMERIC_YEARS.map((yr) => (
+                          <option key={yr} value={yr}>
+                            {yr}
+                          </option>
+                        ))}
+                      </select>
+
+                      <span className="skill-popup-since-label">Expires:</span>
+                      <select
+                        className="exp-years-select"
+                        value={EXPIRATION_YEAR_OPTIONS.includes(item.expiry) ? item.expiry : "2026"}
+                        disabled={disabled}
+                        onChange={(e) => handleUpdateExpiry(originalIndex, e.target.value)}
+                      >
+                        {EXPIRATION_YEAR_OPTIONS.map((yr) => (
+                          <option key={yr} value={yr}>
+                            {yr}
+                          </option>
+                        ))}
+                      </select>
+
+                      <button
+                        type="button"
+                        className="exp-remove-btn"
+                        onClick={() => handleRemoveItem(originalIndex)}
+                        disabled={disabled}
+                        title={`Remove ${item.name}`}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="skill-popup-modal-footer">
+              <button
+                type="button"
+                className="skill-popup-done-btn"
+                onClick={() => setActivePopupCategory(null)}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="add-item-controls edu-add-controls">
         <div className="edu-inputs-row">
@@ -1970,6 +2178,7 @@ function cleanAtsTag(raw?: string | null): string {
     .replace(/[\(\)\[\]]/g, "")
     .replace(/@/g, "-")
     .replace(/\s+/g, " ")
+    .replace(/^[,;\s]+|[,;\s]+$/g, "")
     .trim();
 }
 
@@ -1984,6 +2193,7 @@ function generateAtsPlainText(data: {
   expYears: string;
   summary: string;
   skillsList: string[];
+  categorizedSkills?: Record<string, string[]>;
   certsList: string[];
   qualsList: string[];
   educationItems?: EduItemWithSchool[];
@@ -2057,7 +2267,13 @@ function generateAtsPlainText(data: {
   }
 
   // Core Competencies & Skills
-  if (data.skillsList.length > 0) {
+  if (data.categorizedSkills && Object.keys(data.categorizedSkills).length > 0) {
+    doc += `                          Core Competencies & Skills\n\n`;
+    Object.entries(data.categorizedSkills).forEach(([catName, skills]) => {
+      doc += `• ${catName}: ${skills.join(", ")}\n`;
+    });
+    doc += "\n";
+  } else if (data.skillsList.length > 0) {
     doc += `                          Core Competencies & Skills\n\n`;
     doc += `• Technical Skills: ${data.skillsList.join(", ")}\n\n`;
   }
@@ -2080,6 +2296,7 @@ function buildAtsPages(atsData: {
   educationItems?: EduItemWithSchool[];
   certsList: string[];
   skillsList: string[];
+  categorizedSkills?: Record<string, string[]>;
   languages: string[];
   summary: string;
 }): AtsPageData[] {
@@ -2095,7 +2312,12 @@ function buildAtsPages(atsData: {
     ? atsData.educationItems
     : (atsData.qualsList || []);
   const eduWeight = eduList.length > 0 ? 45 + eduList.length * 40 : 0;
-  const skillsWeight = atsData.skillsList.length > 0 ? 60 : 0;
+  const categoryCount = atsData.categorizedSkills
+    ? Object.keys(atsData.categorizedSkills).length
+    : 0;
+  const skillsWeight = categoryCount > 0
+    ? 30 + categoryCount * 25
+    : (atsData.skillsList.length > 0 ? 60 : 0);
 
   const remainingExps = [...atsData.workExperiences];
   let eduPlaced = eduWeight === 0;
@@ -2241,9 +2463,23 @@ async function downloadAtsPdf(data: { name: string }) {
   }
 }
 
+function MenuIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="chevron-icon" aria-hidden="true">
+      <path d="M5 7h14M5 12h14M5 17h14" />
+    </svg>
+  );
+}
+
 export default function ApplicantProfile() {
   const unreadNotifCount = useUnreadNotificationsCount();
   const unreadMessagesCount = useUnreadMessagesCount();
+  const [isSidebarVisible, setIsSidebarVisible] = useState(() => {
+    if (typeof window !== "undefined" && window.innerWidth <= 768) {
+      return false;
+    }
+    return true;
+  });
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
@@ -2265,6 +2501,25 @@ export default function ApplicantProfile() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingTags, setIsSavingTags] = useState(false);
   const [universityList, setUniversityList] = useState<string[]>(PHILIPPINES_UNIVERSITIES_COLLEGES);
+
+  // Email OTP verification states
+  const [isEmailVerified, setIsEmailVerified] = useState<boolean>(false);
+  const [verifiedEmailAddress, setVerifiedEmailAddress] = useState<string>("");
+  const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [otpCodeInput, setOtpCodeInput] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [otpDevHint, setOtpDevHint] = useState<string | null>(null);
+  const [otpCooldown, setOtpCooldown] = useState(0);
+
+  useEffect(() => {
+    if (otpCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setOtpCooldown((c) => Math.max(0, c - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [otpCooldown]);
 
   useEffect(() => {
     fetchPhilippineUniversitiesApi().then((list) => {
@@ -2559,12 +2814,20 @@ export default function ApplicantProfile() {
 
       if (!initialMin && initialMax) initialMin = initialMax;
       if (!initialMax && initialMin) initialMax = initialMin;
+      const isVerified = Boolean(data.profile?.is_email_verified);
+      const userEmail = data.profile?.email ? String(data.profile.email).trim() : "";
+      setIsEmailVerified(isVerified);
+      if (isVerified && userEmail) {
+        setVerifiedEmailAddress(userEmail.toLowerCase());
+      }
+
       const loaded = {
         ...emptyProfile,
         ...data.profile,
         expected_salary_min: initialMin,
         expected_salary_max: initialMax,
         province: data.profile?.province || "Cavite",
+        is_email_verified: isVerified,
       };
       setProfile(loaded);
       setDraft(loaded);
@@ -2699,7 +2962,7 @@ export default function ApplicantProfile() {
       setProfileMessage("Work experience entry deleted.");
       if (itemToDelete) {
         setUndoToast({
-          message: `Removed "${itemToDelete.job_title || "Work Experience"}"`,
+          message: `Removed "${itemToDelete.title || (itemToDelete as any).job_title || "Work Experience"}"`,
           onUndo: async () => {
             await saveWorkExperiencesToBackend([...updatedList, itemToDelete]);
             setProfileMessage("Restored work experience entry.");
@@ -2716,6 +2979,18 @@ export default function ApplicantProfile() {
   const visibleProfile = isEditing ? draft : profile;
 
   const updateDraft = (name: keyof ApplicantProfileData, value: string) => {
+    if (name === "phone") {
+      const cleanPhone = String(value).replace(/\D/g, "").slice(0, 10);
+      setDraft((current) => ({ ...current, phone: cleanPhone }));
+      return;
+    }
+    if (name === "email") {
+      const cleanEmail = String(value).trim().toLowerCase();
+      const isMatch = isEmailVerified && verifiedEmailAddress && cleanEmail === verifiedEmailAddress;
+      setIsEmailVerified(Boolean(isMatch));
+      setDraft((current) => ({ ...current, email: value }));
+      return;
+    }
     setDraft((current) => ({ ...current, [name]: value }));
   };
 
@@ -2771,6 +3046,12 @@ export default function ApplicantProfile() {
     if (!userId) return;
     setSalaryError("");
     setProfileMessage("");
+
+    if (!isEmailVerified) {
+      setProfileMessageType("error");
+      setProfileMessage("Please verify your email address before saving.");
+      return;
+    }
 
     // Prevent save and trigger in-card error notification if max is lower than min
     const salaryValidationErr = validateSalaryRange(draft.expected_salary_min, draft.expected_salary_max);
@@ -2838,9 +3119,14 @@ export default function ApplicantProfile() {
         expected_salary_min: resMin || null,
         expected_salary_max: resMax || null,
         province: data.profile?.province || "Cavite",
+        is_email_verified: true,
       };
       setProfile(savedProfile);
       setDraft(savedProfile);
+      setIsEmailVerified(true);
+      if (savedProfile.email) {
+        setVerifiedEmailAddress(savedProfile.email.trim().toLowerCase());
+      }
       setIsEditing(false);
       setProfileMessageType("success");
       setProfileMessage("Profile updated successfully.");
@@ -2854,6 +3140,105 @@ export default function ApplicantProfile() {
       }
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSendEmailOtp = async () => {
+    const targetEmail = (draft.email || profile.email || "").trim();
+    if (!targetEmail || !targetEmail.includes("@")) {
+      setProfileMessageType("error");
+      setProfileMessage("Please enter a valid email address to verify.");
+      return;
+    }
+    const resolvedUserId = userId || (() => {
+      try {
+        const u = localStorage.getItem("elitecruit-user");
+        return u ? Number(JSON.parse(u).id) : null;
+      } catch {
+        return null;
+      }
+    })();
+
+    setIsSendingOtp(true);
+    setOtpError("");
+    setOtpDevHint(null);
+    try {
+      const token = localStorage.getItem("elitecruit-token") || localStorage.getItem("token") || sessionStorage.getItem("token");
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      const res = await fetch("/api/auth/send-email-otp", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ email: targetEmail, userId: resolvedUserId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to send verification code.");
+      }
+      if (data.devCode) {
+        setOtpDevHint(data.devCode);
+      }
+      setIsOtpModalOpen(true);
+      setOtpCodeInput("");
+      setOtpCooldown(60);
+    } catch (err: any) {
+      setProfileMessageType("error");
+      setProfileMessage(err.message || "Unable to send verification OTP.");
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyEmailOtp = async () => {
+    const targetEmail = (draft.email || profile.email || "").trim();
+    const cleanCode = otpCodeInput.replace(/\D/g, "");
+    if (cleanCode.length !== 6) {
+      setOtpError("Please enter the complete 6-digit verification code.");
+      return;
+    }
+    const resolvedUserId = userId || (() => {
+      try {
+        const u = localStorage.getItem("elitecruit-user");
+        return u ? Number(JSON.parse(u).id) : null;
+      } catch {
+        return null;
+      }
+    })();
+
+    setIsVerifyingOtp(true);
+    setOtpError("");
+    try {
+      const token = localStorage.getItem("elitecruit-token") || localStorage.getItem("token") || sessionStorage.getItem("token");
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      const res = await fetch("/api/auth/verify-email-otp", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ email: targetEmail, code: cleanCode, userId: resolvedUserId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Invalid verification code.");
+      }
+      setIsEmailVerified(true);
+      setVerifiedEmailAddress(targetEmail.toLowerCase());
+      setProfile((prev) => ({ ...prev, is_email_verified: true, email: targetEmail }));
+      setDraft((prev) => ({ ...prev, is_email_verified: true, email: targetEmail }));
+      setIsOtpModalOpen(false);
+      setProfileMessageType("success");
+      setProfileMessage("Email address verified successfully! You can now save your profile.");
+    } catch (err: any) {
+      setOtpError(err.message || "Verification failed. Please check the code and try again.");
+    } finally {
+      setIsVerifyingOtp(false);
     }
   };
 
@@ -3108,13 +3493,23 @@ export default function ApplicantProfile() {
   };
 
   return (
-    <div className="profile-shell appdash-page sidebar-visible">
+    <div className={`profile-shell appdash-page ${isSidebarVisible ? "sidebar-visible" : "sidebar-hidden"}`}>
       {/* APPLICANT SIDEBAR - Standardized 274px */}
       <aside className="appdash-sidebar" aria-label="Applicant Navigation">
-        <a href="/" className="appdash-brand">
-          <strong>EliteCruit</strong>
-          <span>Candidate Workspace</span>
-        </a>
+        <div className="appdash-brand">
+          <a href="/" className="appdash-brand-link">
+            <strong>EliteCruit</strong>
+            <span>Candidate Workspace</span>
+          </a>
+          <button
+            type="button"
+            className="appdash-sidebar-toggle"
+            aria-label="Close sidebar menu"
+            onClick={() => setIsSidebarVisible(false)}
+          >
+            <MenuIcon />
+          </button>
+        </div>
 
         <ul className="appdash-secondary-list">
           <li className="applicant-workspace-item">
@@ -3137,7 +3532,6 @@ export default function ApplicantProfile() {
 
             {isWorkspaceOpen && (
               <ul className="appdash-menu-list">
-                <li><a href="/applicant-dashboard#section-overview"><span className="item-icon"><SideIcon name="overview" /></span><span>Overview</span></a></li>
                 <li><a href="/applicant-dashboard#section-smart-matches"><span className="item-icon"><SideIcon name="star" /></span><span>Smart Matches</span></a></li>
                 <li><a href="/applicant-dashboard#section-applications"><span className="item-icon"><SideIcon name="applications" /></span><span>My Applications</span></a></li>
                 <li><a href="/applicant-dashboard#section-invitations"><span className="item-icon"><SideIcon name="notifications" /></span><span>Job Invitations</span></a></li>
@@ -3146,6 +3540,7 @@ export default function ApplicantProfile() {
           </li>
 
           <li><a href="/job-search"><span className="item-icon"><SideIcon name="search" /></span><span>Job Search</span></a></li>
+          <li><a href="/applicant-offer-letter"><span className="item-icon"><SideIcon name="documents" /></span><span>Offer Letters</span></a></li>
           <li><a href="/messages"><span className="item-icon"><SideIcon name="messages" /></span><span>Messages</span>{unreadMessagesCount > 0 && <span className="item-badge">{unreadMessagesCount}</span>}</a></li>
           <li><a href="/notifications"><span className="item-icon"><SideIcon name="notifications" /></span><span>Notifications</span>{unreadNotifCount > 0 && <span className="item-badge">{unreadNotifCount}</span>}</a></li>
           <li><a href="/feedback"><span className="item-icon"><SideIcon name="feedback" /></span><span>Feedback</span></a></li>
@@ -3176,21 +3571,39 @@ export default function ApplicantProfile() {
         </div>
       </aside>
 
+      {isSidebarVisible && (
+        <button
+          type="button"
+          className="appdash-backdrop"
+          aria-label="Close sidebar"
+          onClick={() => setIsSidebarVisible(false)}
+        />
+      )}
+
       {/* MAIN PROFILE SURFACE */}
       <main className="profile-page">
         <header className="appdash-topbar">
           <div className="appdash-top-left">
+            <button
+              type="button"
+              className="appdash-mobile-nav-toggle"
+              aria-label={isSidebarVisible ? "Close navigation menu" : "Open navigation menu"}
+              onClick={() => setIsSidebarVisible((prev) => !prev)}
+            >
+              <MenuIcon />
+            </button>
             <div>
               <strong>My Profile</strong>
             </div>
           </div>
-          <div className="appdash-top-right" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <ApplicantChatbotDrawer
-              isOpen={isChatbotOpen}
-              onToggle={() => setIsChatbotOpen((prev) => !prev)}
-              pageTitle="My Profile"
-            />
-
+          <div className="appdash-top-right">
+            <div className="chatbot-wrapper">
+              <ApplicantChatbotDrawer
+                isOpen={isChatbotOpen}
+                onToggle={() => setIsChatbotOpen((prev) => !prev)}
+                pageTitle="My Profile"
+              />
+            </div>
             <CalendarDrawer />
           </div>
         </header>
@@ -3350,9 +3763,21 @@ export default function ApplicantProfile() {
 
                     <button
                       type="button"
-                      className="edit-profile-button"
-                      onClick={() => (isEditing ? saveProfile() : setIsEditing(true))}
-                      disabled={isSaving}
+                      className={`edit-profile-button ${isEditing && !isEmailVerified ? "disabled-btn" : ""}`}
+                      onClick={() => {
+                        if (isEditing) {
+                          if (!isEmailVerified) {
+                            setProfileMessageType("error");
+                            setProfileMessage("Please verify your email address before saving.");
+                            return;
+                          }
+                          saveProfile();
+                        } else {
+                          setIsEditing(true);
+                        }
+                      }}
+                      disabled={isSaving || (isEditing && !isEmailVerified)}
+                      title={isEditing && !isEmailVerified ? "Email verification required before saving" : ""}
                     >
                       {isEditing ? (isSaving ? "Saving..." : "Save Profile") : "Edit Profile"}
                     </button>
@@ -3362,6 +3787,7 @@ export default function ApplicantProfile() {
                         className="cancel-profile-button"
                         onClick={() => {
                           setDraft(profile);
+                          setIsEmailVerified(Boolean(profile.is_email_verified));
                           setIsEditing(false);
                         }}
                       >
@@ -3425,8 +3851,55 @@ export default function ApplicantProfile() {
 
                   {/* 3RD LINE: Phone Number, Email Address */}
                   <div className="contact-row wide">
-                    <Field label="Phone Number" name="phone" value={visibleProfile.phone} editing={isEditing} onChange={updateDraft} prefix="+63" numbersOnly />
-                    <Field label="Email Address" name="email" value={visibleProfile.email} editing={isEditing} onChange={updateDraft} />
+                    <Field
+                      label="Phone Number"
+                      name="phone"
+                      value={visibleProfile.phone}
+                      editing={isEditing}
+                      onChange={updateDraft}
+                      prefix="+63"
+                      numbersOnly
+                      maxLength={10}
+                      placeholder="9123456789"
+                    />
+
+                    <div className={`profile-field email-field-block ${!visibleProfile.email?.trim() ? "missing-field" : ""}`}>
+                      <div className="email-field-header">
+                        <span>Email Address</span>
+                        {isEmailVerified ? (
+                          <span className="email-status-badge verified" title="Email is verified">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            Verified
+                          </span>
+                        ) : (
+                          <span className="email-status-badge unverified" title="Email is not verified">
+                            Unverified
+                          </span>
+                        )}
+                      </div>
+                      <div className="email-input-wrapper">
+                        <input
+                          type="email"
+                          value={visibleProfile.email || ""}
+                          readOnly={!isEditing}
+                          onChange={(e) => updateDraft("email", e.target.value)}
+                          placeholder="example@domain.com"
+                        />
+                        {!isEmailVerified && (
+                          <button
+                            type="button"
+                            className="email-verify-btn"
+                            onClick={handleSendEmailOtp}
+                            disabled={isSendingOtp}
+                            title="Verify email address with OTP"
+                          >
+                            {isSendingOtp ? "Sending..." : "Verify"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   {/* 4TH LINE: Professional Summary / Career Bio (FULL WIDTH CONTAINER) */}
@@ -4372,7 +4845,33 @@ export default function ApplicantProfile() {
                 arrangement: profile.work_arrangement || "Full-time",
                 expYears: profile.years_of_experience || "3+ years",
                 summary: aiOptimizedSummary || profile.summary || `Motivated ${profile.desired_job_title || "IT Professional"} with experience in software development and technical solutions. Open to target opportunities in ${profile.city || "Cavite"} and nearby regions.`,
-                skillsList: parsePreferredLocationTags(profile.skills).map(cleanAtsTag).filter(Boolean),
+                categorizedSkills: (() => {
+                  const parsed = parseCourseSkillItems(profile.skills);
+                  const groups: Record<string, string[]> = {};
+                  parsed.forEach((it) => {
+                    const cat = it.course && it.course.trim() ? it.course.trim() : "General IT";
+                    if (!groups[cat]) groups[cat] = [];
+                    const cleanName = cleanAtsTag(it.name).trim();
+                    if (cleanName && !groups[cat].includes(cleanName)) {
+                      groups[cat].push(cleanName);
+                    }
+                  });
+                  if (Object.keys(groups).length === 0) {
+                    const fallback = parsePreferredLocationTags(profile.skills).map(cleanAtsTag).map((s) => s.trim()).filter(Boolean);
+                    if (fallback.length > 0) {
+                      groups["General IT"] = fallback;
+                    }
+                  }
+                  return groups;
+                })(),
+                skillsList: (() => {
+                  const parsed = parseCourseSkillItems(profile.skills);
+                  const list = parsed.map((it) => cleanAtsTag(it.name).trim()).filter(Boolean);
+                  if (list.length > 0) {
+                    return Array.from(new Set(list));
+                  }
+                  return parsePreferredLocationTags(profile.skills).map(cleanAtsTag).map((s) => s.trim()).filter(Boolean);
+                })(),
                 certsList: (() => {
                   const parsed = parseCertItems(profile.certifications);
                   if (parsed.length > 0) {
@@ -4606,17 +5105,28 @@ export default function ApplicantProfile() {
                               )}
 
                               {/* CORE COMPETENCIES & SKILLS */}
-                              {page.includeSkills && atsData.skillsList.length > 0 && (
+                              {page.includeSkills && (atsData.categorizedSkills ? Object.keys(atsData.categorizedSkills).length > 0 : atsData.skillsList.length > 0) && (
                                 <>
                                   <h2 className="ats-doc-section-heading">Core Competencies & Skills</h2>
                                   <div className="ats-doc-section-body">
                                     <ul className="ats-doc-bullets">
-                                      <li>
-                                        <span className="ats-bullet-glyph">•</span>
-                                        <span className="ats-bullet-text">
-                                          <strong>Technical Skills:</strong> {atsData.skillsList.join(", ")}
-                                        </span>
-                                      </li>
+                                      {atsData.categorizedSkills && Object.keys(atsData.categorizedSkills).length > 0 ? (
+                                        Object.entries(atsData.categorizedSkills).map(([catName, skills]) => (
+                                          <li key={catName}>
+                                            <span className="ats-bullet-glyph">•</span>
+                                            <span className="ats-bullet-text">
+                                              <strong>{catName}:</strong> {skills.join(", ")}
+                                            </span>
+                                          </li>
+                                        ))
+                                      ) : (
+                                        <li>
+                                          <span className="ats-bullet-glyph">•</span>
+                                          <span className="ats-bullet-text">
+                                            <strong>Technical Skills:</strong> {atsData.skillsList.join(", ")}
+                                          </span>
+                                        </li>
+                                      )}
                                     </ul>
                                   </div>
                                 </>
@@ -4744,6 +5254,88 @@ export default function ApplicantProfile() {
           onUndo={undoToast.onUndo}
           onClose={() => setUndoToast(null)}
         />
+      )}
+
+      {/* EMAIL OTP VERIFICATION POPUP MODAL */}
+      {isOtpModalOpen && (
+        <div className="system-popup-overlay" onClick={() => !isVerifyingOtp && setIsOtpModalOpen(false)}>
+          <div className="system-popup-card" onClick={(e) => e.stopPropagation()}>
+            <div className="system-popup-icon-wrap info">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0284c7" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                <polyline points="22,6 12,13 2,6" />
+              </svg>
+            </div>
+            <h3 className="system-popup-title">Verify Email Address</h3>
+            <p className="system-popup-message" style={{ marginBottom: "12px" }}>
+              A 6-digit OTP code has been sent to:
+              <br />
+              <strong style={{ color: "#0284c7" }}>{draft.email || profile.email}</strong>
+            </p>
+
+            <div className="otp-input-container">
+              <input
+                type="text"
+                className="otp-code-input"
+                maxLength={6}
+                value={otpCodeInput}
+                autoFocus
+                onChange={(e) => {
+                  const numOnly = e.target.value.replace(/\D/g, "").slice(0, 6);
+                  setOtpCodeInput(numOnly);
+                  if (otpError) setOtpError("");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && otpCodeInput.length === 6) {
+                    handleVerifyEmailOtp();
+                  }
+                }}
+                placeholder="••••••"
+              />
+
+              {otpError && <div className="otp-error-msg">{otpError}</div>}
+
+              {otpDevHint && (
+                <div className="otp-dev-hint">
+                  Dev Code: <strong>{otpDevHint}</strong>
+                </div>
+              )}
+
+              <div className="otp-resend-wrap">
+                <span>Didn't receive the code?</span>
+                <button
+                  type="button"
+                  className="otp-resend-btn"
+                  onClick={handleSendEmailOtp}
+                  disabled={otpCooldown > 0 || isSendingOtp}
+                >
+                  {otpCooldown > 0 ? `Resend in ${otpCooldown}s` : "Resend Code"}
+                </button>
+              </div>
+            </div>
+
+            <div className="system-popup-actions" style={{ display: "flex", gap: "10px", marginTop: "16px" }}>
+              <button
+                type="button"
+                className="system-popup-btn secondary"
+                onClick={() => setIsOtpModalOpen(false)}
+                disabled={isVerifyingOtp}
+                style={{ flex: 1 }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="system-popup-btn primary"
+                onClick={handleVerifyEmailOtp}
+                disabled={isVerifyingOtp || otpCodeInput.length !== 6}
+                style={{ flex: 1, background: "#0284c7", color: "#ffffff" }}
+              >
+                {isVerifyingOtp ? "Verifying..." : "Verify Code"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

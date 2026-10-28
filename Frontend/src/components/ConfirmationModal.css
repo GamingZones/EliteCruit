@@ -203,3 +203,32 @@
   display: inline-block !important;
 }
 
+/* ==========================================================================
+   PHONE & MOBILE UI ADJUSTMENTS (max-width: 768px)
+   Scope: Applied STRICTLY to phones/mobile screens; desktop/laptop UI is 100% untouched.
+   ========================================================================== */
+@media (max-width: 768px) {
+  .system-popup-overlay {
+    padding: 12px !important;
+  }
+
+  .system-popup-card {
+    width: calc(100vw - 24px) !important;
+    max-width: 440px !important;
+    padding: 20px 16px !important;
+    border-radius: 14px !important;
+  }
+
+  .system-popup-actions {
+    flex-direction: column-reverse !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .system-popup-btn {
+    width: 100% !important;
+    min-height: 44px !important;
+  }
+}
+
+

@@ -28,3 +28,11 @@
 
 8. File Content & Change Inspection:
 	- When checking file contents or inspecting file modifications, use 1 command prompt instead of fragmenting it across multiple commands/prompts to check the contents of the file changes.
+
+
+9. Strict Theme Isolation (Light Mode vs. Dark Mode):
+	- Whenever adjusting, styling, or fixing a theme (Light Mode or Dark Mode), ensure ONLY the targeted theme is affected.
+	- If a code or CSS edit could affect both themes, strictly separate them:
+	  * NEVER hardcode theme-specific inline styles (e.g., hardcoded light text `#f8fafc` or dark backgrounds) directly in JSX where they leak across both modes.
+	  * Keep default/light mode styles in the component's base stylesheet and isolate dark mode styles under `[data-theme="dark"]` in the dark theme stylesheet (or use scoped CSS variables).
+	  * Ensure any change made to one theme leaves the other theme 100% intact, fully legible, and unaffected.

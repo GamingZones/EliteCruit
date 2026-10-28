@@ -392,5 +392,34 @@
 .status-progress-fill {
   height: 100%;
   border-radius: 4px;
-
 }
+
+/* ==========================================================================
+   PHONE & MOBILE UI ADJUSTMENTS (max-width: 768px)
+   Scope: Applied STRICTLY to phones/mobile screens; desktop/laptop UI is 100% untouched.
+   ========================================================================== */
+@media (max-width: 768px) {
+  .admin-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow-y: auto !important;
+  }
+
+  .admin-main {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .analytics-kpi-grid,
+  .analytics-graphs-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .analytics-card {
+    padding: 16px 14px !important;
+  }
+}
+

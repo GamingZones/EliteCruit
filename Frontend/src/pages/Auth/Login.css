@@ -59,7 +59,7 @@
   color: #ffc24b;
   font-size: 1.85rem;
   line-height: 1;
-  font-family: "Sora", sans-serif;
+  font-family: "Inter", sans-serif;
 }
 
 .login-brand-text span {
@@ -93,7 +93,7 @@
   font-size: clamp(1.85rem, 3.25vw, 2.75rem);
   line-height: 1.08;
   max-width: 620px;
-  font-family: "Sora", sans-serif;
+  font-family: "Inter", sans-serif;
 }
 
 .login-left p {
@@ -243,7 +243,7 @@
 
 .login-title {
   margin: 0 0 6px;
-  font-family: "Sora", sans-serif;
+  font-family: "Inter", sans-serif;
   font-size: 1.55rem;
   font-weight: 700;
   color: #0b2340;
@@ -320,7 +320,7 @@
   border: none;
   outline: none;
   flex: 1;
-  font-family: "Manrope", sans-serif;
+  font-family: "Inter", sans-serif;
   font-size: 0.9rem;
   color: #102946;
 }
@@ -605,32 +605,142 @@
   }
 }
 
-@media (max-width: 720px) {
+/* ==========================================================================
+   PHONE & MOBILE UI ADJUSTMENTS (max-width: 768px)
+   Scope: Applied STRICTLY to phones/mobile screens; desktop/laptop UI is 100% untouched.
+   ========================================================================== */
+@media (max-width: 768px) {
+  .login-page {
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    background: var(--cream) !important;
+  }
+
+  /* 1. Header with Logo & 3 Role Cards placed ABOVE FIRST (between Logo and Login) */
   .login-left {
-    padding: 20px;
+    order: 1 !important;
+    min-height: auto !important;
+    padding: 14px 14px 14px !important;
+    border-radius: 0 0 16px 16px !important;
+    box-shadow: 0 4px 16px rgba(12, 42, 71, 0.15) !important;
   }
 
-  .login-brand-text strong {
-    font-size: 1.45rem;
+  .login-left .login-brand-card {
+    display: flex !important;
+    margin: 0 auto 12px auto !important;
+    width: fit-content !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    padding: 8px 14px !important;
+    border-radius: 12px !important;
   }
 
-  .login-brand-text span {
-    font-size: 0.64rem;
+  .login-left .ec-tile {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
+    font-size: 0.9rem !important;
   }
 
-  .login-left h1 {
-    font-size: 2rem;
+  .login-left .login-brand-text strong {
+    font-size: 1.45rem !important;
+    color: #ffc24b !important;
   }
 
+  .login-left .login-brand-text span {
+    font-size: 0.65rem !important;
+    color: rgba(255, 255, 255, 0.78) !important;
+  }
+
+  .login-left-copy {
+    text-align: center !important;
+  }
+
+  /* Removed headline, badge, and copy on phones per user request */
+  .login-badge,
+  .login-left h1,
+  .login-left p {
+    display: none !important;
+  }
+
+  /* Compact 3-role cards strip directly under the logo and above login */
   .role-mini-grid {
-    grid-template-columns: 1fr;
+    margin-top: 2px !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
+  .role-mini-card {
+    padding: 8px 4px !important;
+    border-radius: 8px !important;
+    gap: 2px !important;
+    align-items: center !important;
+    text-align: center !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  }
+
+  .role-mini-card .mini-icon {
+    width: 20px !important;
+    height: 20px !important;
+    border-radius: 6px !important;
+  }
+
+  .role-mini-card .mini-icon img,
+  .role-mini-card .mini-icon svg {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .role-mini-card small {
+    margin-top: 2px !important;
+    font-size: 0.68rem !important;
+    line-height: 1.1 !important;
+    color: rgba(255, 255, 255, 0.75) !important;
+  }
+
+  .role-mini-card strong {
+    font-size: 0.72rem !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+    color: #ffffff !important;
+  }
+
+  /* 2. Login Form Card placed DIRECTLY BELOW the 3 cards */
   .login-right {
-    padding: 16px;
+    order: 2 !important;
+    width: 100% !important;
+    padding: 16px 14px 28px !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
   }
 
   .login-card {
-    padding: 20px;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 20px 18px !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 16px rgba(11, 47, 83, 0.08) !important;
+  }
+
+  .mfa-modal-card {
+    width: calc(100vw - 32px) !important;
+    max-width: 440px !important;
+    padding: 24px 18px !important;
+    margin: 16px !important;
   }
 }
+
+
+
+

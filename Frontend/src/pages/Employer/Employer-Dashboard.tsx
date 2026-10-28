@@ -148,7 +148,12 @@ function RenderLocationMeta({ location }: { location?: string | null }) {
 }
 
 export default function EmployerDashboard() {
-  const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(() => {
+    if (typeof window !== "undefined" && window.innerWidth <= 768) {
+      return false;
+    }
+    return true;
+  });
   const unreadNotifCount = useUnreadNotificationsCount();
   const unreadMessagesCount = useUnreadMessagesCount();
   const [isScreeningOpen, setIsScreeningOpen] = useState(false);
@@ -229,10 +234,20 @@ export default function EmployerDashboard() {
   return (
     <div className={`appdash-page employer-page ${isSidebarVisible ? "sidebar-visible" : "sidebar-hidden"}`}>
       <aside className="appdash-sidebar" aria-label="Employer Navigation">
-        <a href="/" className="appdash-brand">
-          <strong>EliteCruit</strong>
-          <span>Employer Workspace</span>
-        </a>
+        <div className="appdash-brand">
+          <a href="/" className="appdash-brand-link">
+            <strong>EliteCruit</strong>
+            <span>Employer Workspace</span>
+          </a>
+          <button
+            type="button"
+            className="appdash-sidebar-toggle"
+            aria-label="Close sidebar menu"
+            onClick={() => setIsSidebarVisible(false)}
+          >
+            <span style={{ fontSize: "1.2rem", lineHeight: 1 }}>☰</span>
+          </button>
+        </div>
 
         <div className="employer-links-wrap">
           <ul className="appdash-secondary-list">
@@ -299,7 +314,17 @@ export default function EmployerDashboard() {
 
       <main className="appdash-main employer-main">
         <header className="appdash-topbar">
-          <div className="appdash-top-left"><div><strong>Employer Workspace</strong></div></div>
+          <div className="appdash-top-left">
+            <button
+              type="button"
+              className="appdash-mobile-nav-toggle"
+              aria-label={isSidebarVisible ? "Close navigation menu" : "Open navigation menu"}
+              onClick={() => setIsSidebarVisible((prev) => !prev)}
+            >
+              <span style={{ fontSize: "1.2rem", lineHeight: 1 }}>☰</span>
+            </button>
+            <div><strong>Employer Workspace</strong></div>
+          </div>
           <div className="appdash-top-right">
             <div className="chatbot-wrapper">
               <EmployerChatbotDrawer
@@ -416,6 +441,15 @@ export default function EmployerDashboard() {
           </article>
         </section>
       </main>
+
+      {isSidebarVisible && (
+        <button
+          type="button"
+          className="appdash-backdrop"
+          aria-label="Close sidebar"
+          onClick={() => setIsSidebarVisible(false)}
+        />
+      )}
 
       {/* DOUBLE VERIFICATION: LOGOUT CONFIRMATION MODAL */}
       <ConfirmationModal

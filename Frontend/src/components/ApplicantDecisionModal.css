@@ -1,0 +1,451 @@
+/* ==========================================================================
+   APPLICANT DECISION MODAL (Accept / Decline Recruitment Invitations)
+   Design: Replicates Acceptance / Denial Decision Card from Applicant Management
+   Theme Isolation: Clean Light Mode + Obsidian Dark Mode ([data-theme="dark"])
+   Font: Inter (Globally Standardized)
+   Prefix: .adm- (Strictly isolated, prevents collision with any other page)
+   ========================================================================== */
+
+.adm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 18, 32, 0.68);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 10200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+  animation: admFadeIn 0.18s ease-out;
+}
+
+@keyframes admFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes admScaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.adm-decision-card {
+  width: 620px;
+  max-width: min(620px, calc(100vw - 32px));
+  max-height: 90vh;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: admScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: "Inter", sans-serif;
+  box-sizing: border-box;
+}
+
+/* ── Header ── */
+.adm-card-header {
+  padding: 16px 22px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+}
+
+.adm-card-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.adm-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.15rem;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.adm-close-btn:hover {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+/* ── Body ── */
+.adm-card-body {
+  padding: 20px 22px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+  box-sizing: border-box;
+}
+
+.adm-field-label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 6px 0;
+  display: block;
+}
+
+/* ── Response Type Selector ── */
+.adm-type-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.adm-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.adm-option-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.adm-option-card:hover {
+  border-color: #cbd5e1;
+  background: #ffffff;
+}
+
+.adm-option-card.selected {
+  border-color: #0284c7;
+  background: #f0f9ff;
+  box-shadow: 0 0 0 1px #0284c7;
+}
+
+.adm-option-radio-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.adm-option-card.selected .adm-option-radio-dot {
+  border-color: #0284c7;
+  background: #0284c7;
+  box-shadow: inset 0 0 0 2.5px #ffffff;
+}
+
+.adm-option-card input[type="radio"] {
+  display: none;
+}
+
+.adm-option-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.adm-option-info strong {
+  font-size: 0.88rem;
+  color: #0f172a;
+}
+
+/* ── Message Area ── */
+.adm-message-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.adm-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: #1e293b;
+  line-height: 1.55;
+  min-height: 220px;
+  resize: vertical;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.adm-textarea:focus {
+  outline: none;
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+.adm-textarea.automated-preview {
+  background: #f8fafc;
+  color: #334155;
+  border-color: #e2e8f0;
+  cursor: default;
+  user-select: text;
+}
+
+.adm-textarea.automated-preview:focus {
+  outline: none;
+  border-color: #e2e8f0;
+  box-shadow: none;
+}
+
+.adm-message-footnote {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.adm-footnote-link {
+  font-size: 0.78rem;
+  color: #0284c7;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.adm-footnote-link:hover {
+  color: #0369a1;
+  text-decoration: underline;
+}
+
+/* ── Footer ── */
+.adm-card-footer {
+  padding: 14px 22px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+}
+
+.adm-cancel-btn {
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.adm-cancel-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.adm-confirm-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.adm-confirm-btn:disabled,
+.adm-cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.adm-confirm-btn.accept {
+  background: #059669;
+}
+
+.adm-confirm-btn.accept:hover:not(:disabled) {
+  background: #047857;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+}
+
+.adm-confirm-btn.decline {
+  background: #dc2626;
+}
+
+.adm-confirm-btn.decline:hover:not(:disabled) {
+  background: #b91c1c;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+/* ==========================================================================
+   DARK THEME STYLES (Strictly Isolated via [data-theme="dark"])
+   Matches Pic 2 & Pic 3 exact dark mode appearance
+   ========================================================================== */
+
+[data-theme="dark"] .adm-decision-card {
+  background: #14151B !important;
+  border: 1px solid #2e3244 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .adm-card-header {
+  background: #14151B !important;
+  border-bottom: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .adm-card-title {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .adm-close-btn {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .adm-close-btn:hover {
+  background: #242735 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .adm-card-body {
+  background: #14151B !important;
+}
+
+[data-theme="dark"] .adm-field-label {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .adm-option-card {
+  background: #242735 !important;
+  border: 1.5px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .adm-option-card:hover {
+  background: #2b3042 !important;
+  border-color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .adm-option-card.selected {
+  background: rgba(2, 132, 199, 0.2) !important;
+  border-color: #0284c7 !important;
+}
+
+[data-theme="dark"] .adm-option-info strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .adm-option-radio-dot {
+  border-color: #64748b !important;
+}
+
+[data-theme="dark"] .adm-option-card.selected .adm-option-radio-dot {
+  border-color: #38bdf8 !important;
+  background: #38bdf8 !important;
+  box-shadow: inset 0 0 0 2.5px #14151B !important;
+}
+
+[data-theme="dark"] .adm-textarea {
+  background: #14151B !important;
+  border: 1px solid #2e3244 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .adm-textarea:focus {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18) !important;
+}
+
+[data-theme="dark"] .adm-textarea.automated-preview {
+  background: #181a22 !important;
+  border-color: #2e3244 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .adm-footnote-link {
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .adm-card-footer {
+  background: #14151B !important;
+  border-top: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .adm-cancel-btn {
+  background: #242735 !important;
+  border: 1px solid #2e3244 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .adm-cancel-btn:hover:not(:disabled) {
+  background: #2e3244 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .adm-confirm-btn.accept {
+  background: #059669 !important;
+}
+
+[data-theme="dark"] .adm-confirm-btn.accept:hover:not(:disabled) {
+  background: #10b981 !important;
+}
+
+[data-theme="dark"] .adm-confirm-btn.decline {
+  background: #dc2626 !important;
+}
+
+[data-theme="dark"] .adm-confirm-btn.decline:hover:not(:disabled) {
+  background: #ef4444 !important;
+}
+
+@media (max-width: 640px) {
+  .adm-decision-card {
+    width: 100% !important;
+    max-height: 94vh !important;
+  }
+  .adm-options-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .adm-card-footer {
+    flex-direction: column-reverse !important;
+    gap: 8px !important;
+  }
+  .adm-cancel-btn,
+  .adm-confirm-btn {
+    width: 100% !important;
+  }
+}

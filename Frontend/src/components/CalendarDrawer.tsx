@@ -2279,9 +2279,9 @@ export default function CalendarDrawer({
                 const candCity = viewingApplicantProfile?.city || viewingApplicantDetails.city || "Cavite";
                 const candSetup = viewingApplicantProfile?.work_arrangement || viewingApplicantDetails.work_arrangement || "On-Site";
                 const candSalary = viewingApplicantProfile?.expected_salary || viewingApplicantDetails.expected_salary || "";
-                const candSkills = Array.isArray(viewingApplicantDetails.skills) ? viewingApplicantDetails.skills : parseCompetencyDisplayTags(viewingApplicantProfile?.skills || viewingApplicantDetails.skills || "");
-                const candQuals = parseCompetencyDisplayTags(viewingApplicantProfile?.qualifications || viewingApplicantDetails.education || "");
-                const candCerts = parseCompetencyDisplayTags(viewingApplicantProfile?.certifications || viewingApplicantDetails.certifications || "");
+                const candSkills = Array.isArray(viewingApplicantDetails.skills) ? viewingApplicantDetails.skills : parseCompetencyDisplayTags(viewingApplicantProfile?.skills || viewingApplicantDetails.skills || "", "skills");
+                const candQuals = parseCompetencyDisplayTags(viewingApplicantProfile?.qualifications || viewingApplicantDetails.education || "", "qualifications");
+                const candCerts = parseCompetencyDisplayTags(viewingApplicantProfile?.certifications || viewingApplicantDetails.certifications || "", "certifications");
 
                 const jobLocation = "Cavite";
                 const jobSetup = "On-Site";
@@ -2323,11 +2323,11 @@ export default function CalendarDrawer({
                 };
 
                 return (
-                  <aside className="applicant-side-comparison-panel" style={{ fontFamily: '"Manrope", sans-serif' }}>
-                    <div className="side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
+                  <aside className="applicant-side-comparison-panel" style={{ fontFamily: '"Inter", sans-serif' }}>
+                    <div className="side-panel-header" style={{ fontFamily: '"Inter", sans-serif' }}>
                       <div className="side-title-row">
-                        <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>Match Breakdown</h3>
-                        <span className="side-subtitle" style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>Side-by-side candidate profile vs job requirements</span>
+                        <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Inter", sans-serif' }}>Match Breakdown</h3>
+                        <span className="side-subtitle" style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Inter", sans-serif' }}>Side-by-side candidate profile vs job requirements</span>
                       </div>
                       <div className="side-header-actions">
                         <span className={`match-badge-pill ${getMatchColorClass(viewingApplicantDetails.match_percentage || matchDetails.score)}`}>
@@ -2511,11 +2511,11 @@ export default function CalendarDrawer({
 
               {/* Side Panel 2: Other Jobs */}
               {isOtherJobsOpen && (
-                <aside className="applicant-side-comparison-panel" style={{ fontFamily: '"Manrope", sans-serif' }}>
-                  <div className="side-panel-header" style={{ fontFamily: '"Manrope", sans-serif' }}>
+                <aside className="applicant-side-comparison-panel" style={{ fontFamily: '"Inter", sans-serif' }}>
+                  <div className="side-panel-header" style={{ fontFamily: '"Inter", sans-serif' }}>
                     <div className="side-title-row">
-                      <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>Other Employer Jobs</h3>
-                      <span className="side-subtitle" style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>Candidate compatibility across active job postings</span>
+                      <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Inter", sans-serif' }}>Other Employer Jobs</h3>
+                      <span className="side-subtitle" style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Inter", sans-serif' }}>Candidate compatibility across active job postings</span>
                     </div>
                     <div className="side-header-actions">
                       <button
@@ -2529,7 +2529,7 @@ export default function CalendarDrawer({
                     </div>
                   </div>
 
-                  <div className="side-panel-body" style={{ display: "flex", flexDirection: "column", gap: "14px", padding: "18px", fontFamily: '"Manrope", sans-serif' }}>
+                  <div className="side-panel-body" style={{ display: "flex", flexDirection: "column", gap: "14px", padding: "18px", fontFamily: '"Inter", sans-serif' }}>
                     {employerJobs
                       .filter((j) => String(j.id) !== formJobId)
                       .map((otherJob) => {
@@ -2554,14 +2554,14 @@ export default function CalendarDrawer({
                               justifyContent: "space-between",
                               alignItems: "center",
                               gap: "12px",
-                              fontFamily: '"Manrope", sans-serif',
+                              fontFamily: '"Inter", sans-serif',
                             }}
                           >
                             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                              <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
+                              <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800, color: "#01294a", fontFamily: '"Inter", sans-serif' }}>
                                 {otherJob.title}
                               </h4>
-                              <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginTop: "2px", fontSize: "0.8rem", color: "#64748b", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginTop: "2px", fontSize: "0.8rem", color: "#64748b", fontWeight: 600, fontFamily: '"Inter", sans-serif' }}>
                                 <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
                                   <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" />
@@ -2590,7 +2590,7 @@ export default function CalendarDrawer({
                                   borderRadius: "999px",
                                   border: `1px solid ${matchStyle.fill}`,
                                   whiteSpace: "nowrap",
-                                  fontFamily: '"Manrope", sans-serif',
+                                  fontFamily: '"Inter", sans-serif',
                                 }}
                               >
                                 {percent}% Match

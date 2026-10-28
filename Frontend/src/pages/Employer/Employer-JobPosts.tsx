@@ -11,6 +11,11 @@ import {
   BSIT_BSCS_SKILLS,
   BSIT_BSCS_QUALIFICATIONS,
   BSIT_BSCS_CERTIFICATIONS,
+  MULTI_INDUSTRY_COURSES,
+  EDUCATION_LEVELS_TAXONOMY,
+  SHS_STRANDS_TAXONOMY,
+  PRACTICAL_TRAINING_TAXONOMY,
+  getQualificationBadge,
   CAVITE_CITIES,
   WORK_ARRANGEMENTS,
   EXP_YEARS_OPTIONS,
@@ -62,7 +67,8 @@ function EmployerIcon({ name }: { name: EmployerIconName }) {
 
 type ItemWithExp = {
   name: string;
-  years: string;
+  years?: string;
+  requirement?: "Required" | "Preferred";
 };
 
 type BranchLocationItem = {
@@ -76,16 +82,24 @@ type BranchLocationItem = {
   is_main?: boolean;
 };
 
-function parseItemsWithExp(raw?: string | null): ItemWithExp[] {
+function parseItemsWithExp(raw?: string | null, defaultYears = ""): ItemWithExp[] {
   if (!raw || !raw.trim()) return [];
   try {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
       return parsed.slice(0, 5).map((p) => {
         if (typeof p === "object" && p !== null && p.name) {
-          return { name: p.name, years: p.years || "1 year" };
+          return {
+            name: p.name,
+            years: p.years || (defaultYears ? defaultYears : ""),
+            requirement: (p.requirement === "Preferred" ? "Preferred" : "Required"),
+          };
         }
-        return { name: String(p), years: "1 year" };
+        return {
+          name: String(p),
+          years: defaultYears ? defaultYears : "",
+          requirement: "Required",
+        };
       });
     }
   } catch {}
@@ -98,9 +112,13 @@ function parseItemsWithExp(raw?: string | null): ItemWithExp[] {
     .map((token) => {
       const match = token.match(/^(.*?)\s*\((.*?)\)$/);
       if (match) {
-        return { name: match[1].trim(), years: match[2].trim() };
+        const parenVal = match[2].trim();
+        if (parenVal === "Required" || parenVal === "Preferred") {
+          return { name: match[1].trim(), years: "", requirement: parenVal as "Required" | "Preferred" };
+        }
+        return { name: match[1].trim(), years: parenVal, requirement: "Required" };
       }
-      return { name: token, years: "1 year" };
+      return { name: token, years: defaultYears ? defaultYears : "", requirement: "Required" };
     });
 }
 
@@ -111,6 +129,7 @@ interface SearchableSelectProps {
   onChange: (value: string) => void;
   onEnterAdd?: () => void;
   disabled?: boolean;
+  getOptionBadge?: (opt: string) => string | null;
 }
 
 function SearchableSelect({
@@ -120,6 +139,7 @@ function SearchableSelect({
   onChange,
   onEnterAdd,
   disabled = false,
+  getOptionBadge,
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
@@ -237,21 +257,37 @@ function SearchableSelect({
             filteredOptions.map((opt, index) => {
               const isHighlighted = index === highlightedIndex;
               const isSelected = opt.toLowerCase() === value.trim().toLowerCase();
+              const badge = getOptionBadge ? getOptionBadge(opt) : null;
+              const badgeClass = badge
+                ? `pill-${badge.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`
+                : "";
+              const prevBadge = index > 0 && getOptionBadge ? getOptionBadge(filteredOptions[index - 1]) : null;
+              const showGroupHeader = !value.trim() && Boolean(badge) && badge !== prevBadge;
+
               return (
-                <li
-                  key={opt}
-                  role="option"
-                  aria-selected={isSelected}
-                  className={`combobox-option ${isHighlighted ? "highlighted" : ""} ${isSelected ? "selected" : ""}`}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    handleSelect(opt);
-                  }}
-                  onMouseEnter={() => setHighlightedIndex(index)}
-                >
-                  <span className="option-text">{opt}</span>
-                  {isSelected && <span className="option-check">✓</span>}
-                </li>
+                <React.Fragment key={opt}>
+                  {showGroupHeader && (
+                    <li className="combobox-group-header" aria-hidden="true">
+                      {badge}
+                    </li>
+                  )}
+                  <li
+                    role="option"
+                    aria-selected={isSelected}
+                    className={`combobox-option ${isHighlighted ? "highlighted" : ""} ${isSelected ? "selected" : ""}`}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSelect(opt);
+                    }}
+                    onMouseEnter={() => setHighlightedIndex(index)}
+                  >
+                    <div className="combobox-option-row">
+                      <span className="option-text">{opt}</span>
+                      {badge && <span className={`option-badge ${badgeClass}`}>{badge}</span>}
+                    </div>
+                    {isSelected && <span className="option-check">✓</span>}
+                  </li>
+                </React.Fragment>
               );
             })
           ) : (
@@ -283,14 +319,18 @@ function SearchableSelect({
   );
 }
 
+type CategoryType = "skills" | "qualifications" | "certifications";
+
 function JobPostCategoryEditor({
   title,
+  categoryType,
   availableOptions,
   items,
   onChange,
   required = false,
 }: {
   title: string;
+  categoryType: CategoryType;
   availableOptions: string[];
   items: ItemWithExp[];
   onChange: (items: ItemWithExp[]) => void;
@@ -298,12 +338,23 @@ function JobPostCategoryEditor({
 }) {
   const [inputValue, setInputValue] = useState("");
   const [selectedYears, setSelectedYears] = useState("1 year");
+  const [selectedRequirement, setSelectedRequirement] = useState<"Required" | "Preferred">("Required");
+  const [qualFilterTab, setQualFilterTab] = useState<"all" | "levels" | "college" | "shs" | "practical">("all");
 
   const isMaxReached = items.length >= 5;
 
+  const currentAvailableOptions = useMemo(() => {
+    if (categoryType !== "qualifications") return availableOptions;
+    if (qualFilterTab === "levels") return Array.from(new Set(EDUCATION_LEVELS_TAXONOMY)).sort();
+    if (qualFilterTab === "college") return Array.from(new Set(MULTI_INDUSTRY_COURSES.filter((c) => c !== "TVL - Technical-Vocational / TESDA Specialization"))).sort();
+    if (qualFilterTab === "shs") return Array.from(new Set(SHS_STRANDS_TAXONOMY)).sort();
+    if (qualFilterTab === "practical") return Array.from(new Set(PRACTICAL_TRAINING_TAXONOMY)).sort();
+    return availableOptions;
+  }, [categoryType, qualFilterTab, availableOptions]);
+
   const selectableOptions = useMemo(
-    () => availableOptions.filter((opt) => !items.some((it) => it.name.toLowerCase() === opt.toLowerCase())),
-    [availableOptions, items]
+    () => currentAvailableOptions.filter((opt) => !items.some((it) => it.name.toLowerCase() === opt.toLowerCase())),
+    [currentAvailableOptions, items]
   );
 
   const handleAddItem = () => {
@@ -316,10 +367,16 @@ function JobPostCategoryEditor({
 
     if (items.length >= 5) return;
 
-    const next = [...items, { name: rawName, years: selectedYears || "1 year" }];
+    const newItem: ItemWithExp =
+      categoryType === "skills"
+        ? { name: rawName, years: selectedYears || "1 year", requirement: "Required" }
+        : { name: rawName, years: "", requirement: selectedRequirement };
+
+    const next = [...items, newItem];
     onChange(next);
     setInputValue("");
     setSelectedYears("1 year");
+    setSelectedRequirement("Required");
   };
 
   const handleRemoveItem = (index: number) => {
@@ -329,6 +386,11 @@ function JobPostCategoryEditor({
 
   const handleUpdateYears = (index: number, newYears: string) => {
     const next = items.map((it, i) => (i === index ? { ...it, years: newYears } : it));
+    onChange(next);
+  };
+
+  const handleUpdateRequirement = (index: number, newReq: "Required" | "Preferred") => {
+    const next = items.map((it, i) => (i === index ? { ...it, requirement: newReq } : it));
     onChange(next);
   };
 
@@ -345,25 +407,43 @@ function JobPostCategoryEditor({
 
       <div className="selected-items-list">
         {items.length === 0 ? (
-          <div className="empty-category-notice">No {title.toLowerCase()} added yet. Type or select up to 5 below.</div>
+          <div className="empty-category-notice">
+            {categoryType === "skills" && "No technical skills added yet. Type or select up to 5 below."}
+            {categoryType === "qualifications" && "No educational qualifications added yet. Select degree, level, or SHS strand below."}
+            {categoryType === "certifications" && "No professional certifications added yet. Type or select up to 5 below."}
+          </div>
         ) : (
           items.map((item, idx) => (
             <div key={`${item.name}-${idx}`} className="exp-item-chip">
               <span className="exp-item-name">{item.name}</span>
-              <div className="exp-badge-group">
-                <span className="exp-label-text">Experience:</span>
-                <select
-                  className="exp-years-select"
-                  value={item.years}
-                  onChange={(e) => handleUpdateYears(idx, e.target.value)}
-                >
-                  {EXP_YEARS_OPTIONS.map((yr) => (
-                    <option key={yr} value={yr}>
-                      {yr}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {categoryType === "skills" ? (
+                <div className="exp-badge-group">
+                  <span className="exp-label-text">Experience:</span>
+                  <select
+                    className="exp-years-select"
+                    value={item.years || "1 year"}
+                    onChange={(e) => handleUpdateYears(idx, e.target.value)}
+                  >
+                    {EXP_YEARS_OPTIONS.map((yr) => (
+                      <option key={yr} value={yr}>
+                        {yr}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="exp-badge-group req-badge-group">
+                  <span className="exp-label-text">Requirement:</span>
+                  <select
+                    className="exp-years-select req-select"
+                    value={item.requirement || "Required"}
+                    onChange={(e) => handleUpdateRequirement(idx, e.target.value as "Required" | "Preferred")}
+                  >
+                    <option value="Required">Required</option>
+                    <option value="Preferred">Preferred</option>
+                  </select>
+                </div>
+              )}
               <button
                 type="button"
                 className="exp-remove-btn"
@@ -378,38 +458,101 @@ function JobPostCategoryEditor({
       </div>
 
       {!isMaxReached ? (
-        <div className="add-item-controls">
-          <SearchableSelect
-            options={selectableOptions}
-            value={inputValue}
-            placeholder={`Type or select ${title.toLowerCase()}...`}
-            onChange={setInputValue}
-            onEnterAdd={handleAddItem}
-          />
+        <div className="category-input-section">
+          {categoryType === "qualifications" && (
+            <div className="qual-filter-tabs">
+              <button
+                type="button"
+                className={`qual-tab-btn ${qualFilterTab === "all" ? "active" : ""}`}
+                onClick={() => setQualFilterTab("all")}
+              >
+                All Qualifications
+              </button>
+              <button
+                type="button"
+                className={`qual-tab-btn ${qualFilterTab === "levels" ? "active" : ""}`}
+                onClick={() => setQualFilterTab("levels")}
+              >
+                Education Levels
+              </button>
+              <button
+                type="button"
+                className={`qual-tab-btn ${qualFilterTab === "college" ? "active" : ""}`}
+                onClick={() => setQualFilterTab("college")}
+              >
+                College Degrees
+              </button>
+              <button
+                type="button"
+                className={`qual-tab-btn ${qualFilterTab === "shs" ? "active" : ""}`}
+                onClick={() => setQualFilterTab("shs")}
+              >
+                SHS Strands
+              </button>
+              <button
+                type="button"
+                className={`qual-tab-btn ${qualFilterTab === "practical" ? "active" : ""}`}
+                onClick={() => setQualFilterTab("practical")}
+              >
+                Practical & Tech-Voc
+              </button>
+            </div>
+          )}
 
-          <div className="add-years-group">
-            <span>Experience:</span>
-            <select
-              className="add-years-select"
-              value={selectedYears}
-              onChange={(e) => setSelectedYears(e.target.value)}
+          <div className="add-item-controls">
+            <SearchableSelect
+              options={selectableOptions}
+              value={inputValue}
+              placeholder={
+                categoryType === "skills"
+                  ? "Type or select technical skill..."
+                  : categoryType === "qualifications"
+                  ? "Select degree, education level, or strand..."
+                  : "Type or select professional certification..."
+              }
+              onChange={setInputValue}
+              onEnterAdd={handleAddItem}
+              getOptionBadge={categoryType === "qualifications" ? getQualificationBadge : undefined}
+            />
+
+            {categoryType === "skills" ? (
+              <div className="add-years-group">
+                <span>Experience:</span>
+                <select
+                  className="add-years-select"
+                  value={selectedYears}
+                  onChange={(e) => setSelectedYears(e.target.value)}
+                >
+                  {EXP_YEARS_OPTIONS.map((yr) => (
+                    <option key={yr} value={yr}>
+                      {yr}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div className="add-years-group req-add-group">
+                <span>Requirement:</span>
+                <select
+                  className="add-years-select req-select"
+                  value={selectedRequirement}
+                  onChange={(e) => setSelectedRequirement(e.target.value as "Required" | "Preferred")}
+                >
+                  <option value="Required">Required</option>
+                  <option value="Preferred">Preferred</option>
+                </select>
+              </div>
+            )}
+
+            <button
+              type="button"
+              className="add-item-btn"
+              onClick={handleAddItem}
+              disabled={!inputValue.trim()}
             >
-              {EXP_YEARS_OPTIONS.map((yr) => (
-                <option key={yr} value={yr}>
-                  {yr}
-                </option>
-              ))}
-            </select>
+              + Add
+            </button>
           </div>
-
-          <button
-            type="button"
-            className="add-item-btn"
-            onClick={handleAddItem}
-            disabled={!inputValue.trim()}
-          >
-            + Add
-          </button>
         </div>
       ) : (
         <div className="max-limit-reached-banner">
@@ -777,6 +920,7 @@ export default function EmployerJobPosts() {
     experience_level: "",
     close_date: "",
     is_urgent: false,
+    hide_salary: false,
     salary_min: "",
     salary_max: "",
     description: "",
@@ -947,11 +1091,13 @@ export default function EmployerJobPosts() {
     if (fieldName === "work_arrangement" && !form.work_arrangement.trim()) return "Work arrangement is required.";
     if (fieldName === "close_date" && !form.close_date.trim()) return "Auto-close date is required.";
     if (fieldName === "salary_min") {
+      if (form.hide_salary && !form.salary_min.trim()) return "";
       if (!form.salary_min.trim()) return "Minimum salary is required.";
       const parsed = Number(toSalaryPayload(form.salary_min));
       if (!Number.isFinite(parsed) || parsed < 0) return "Minimum salary format is incorrect.";
     }
     if (fieldName === "salary_max") {
+      if (form.hide_salary && !form.salary_max.trim()) return "";
       if (!form.salary_max.trim()) return "Maximum salary is required.";
       const parsed = Number(toSalaryPayload(form.salary_max));
       if (!Number.isFinite(parsed) || parsed < 0) return "Maximum salary format is incorrect.";
@@ -985,8 +1131,8 @@ export default function EmployerJobPosts() {
     const hasLocation = selectedLocations.length > 0 || !!form.location.trim();
     const hasWorkArrangement = !!form.work_arrangement.trim();
     const hasCloseDate = !!form.close_date.trim();
-    const hasSalaryMin = !!form.salary_min.trim();
-    const hasSalaryMax = !!form.salary_max.trim();
+    const hasSalaryMin = form.hide_salary ? true : !!form.salary_min.trim();
+    const hasSalaryMax = form.hide_salary ? true : !!form.salary_max.trim();
     const hasDescription = !!form.description.trim();
     const hasSkills = selectedSkills.length > 0;
     const hasQualifications = selectedQualifications.length > 0;
@@ -998,7 +1144,7 @@ export default function EmployerJobPosts() {
       hasWorkArrangement,
       hasCloseDate,
       hasSalaryMin,
-      hasSalaryMax,
+      ...(form.hide_salary ? [] : [hasSalaryMax]),
       hasDescription,
       hasSkills,
       hasQualifications,
@@ -1041,9 +1187,9 @@ export default function EmployerJobPosts() {
           const data = await response.json();
           if (!response.ok) throw new Error(data?.message || "Unable to load job post.");
           const job = data?.jobPost || {};
-          const parsedSkills = parseItemsWithExp(job.required_skills);
-          const parsedQuals = parseItemsWithExp(job.qualifications);
-          const parsedCerts = parseItemsWithExp(job.certifications);
+          const parsedSkills = parseItemsWithExp(job.required_skills, "1 year");
+          const parsedQuals = parseItemsWithExp(job.qualifications, "");
+          const parsedCerts = parseItemsWithExp(job.certifications, "");
           setSelectedSkills(parsedSkills);
           setSelectedQualifications(parsedQuals);
           setSelectedCertifications(parsedCerts);
@@ -1060,6 +1206,7 @@ export default function EmployerJobPosts() {
             experience_level: job.experience_level || "",
             close_date: job.close_date || "",
             is_urgent: !!job.is_urgent,
+            hide_salary: Boolean(Number(job.hide_salary || 0)),
             salary_min: formatSalary(String(job.salary_min ?? "")),
             salary_max: formatSalary(String(job.salary_max ?? "")),
             description: job.description || "",
@@ -1083,6 +1230,13 @@ export default function EmployerJobPosts() {
       close_date: value ? plusDaysAsMmddyyyy(7) : current.close_date,
     }));
     setTouchedFields((current) => ({ ...current, close_date: true }));
+  };
+
+  const setHideSalary = (value: boolean) => {
+    setForm((current) => ({
+      ...current,
+      hide_salary: value,
+    }));
   };
 
   const onFieldFocus = (fieldName: keyof typeof form | "skills" | "qualifications") => {
@@ -1178,6 +1332,7 @@ export default function EmployerJobPosts() {
             experience_level: form.experience_level || null,
             close_date: form.close_date,
             is_urgent: form.is_urgent,
+            hide_salary: form.hide_salary ? 1 : 0,
             salary_min: toSalaryPayload(form.salary_min),
             salary_max: toSalaryPayload(form.salary_max),
             description: form.description,
@@ -1301,8 +1456,8 @@ export default function EmployerJobPosts() {
             <span>{completionChecks.hasLocation ? "◉" : "○"} Company Branches{selectedLocations.length > 0 ? ` (${selectedLocations.length})` : ""}</span>
             <span>{completionChecks.hasWorkArrangement ? "◉" : "○"} Work Arrangement</span>
             <span>{completionChecks.hasCloseDate ? "◉" : "○"} Close Date</span>
-            <span>{completionChecks.hasSalaryMin ? "◉" : "○"} Minimum Salary</span>
-            <span>{completionChecks.hasSalaryMax ? "◉" : "○"} Maximum Salary</span>
+            <span>{completionChecks.hasSalaryMin ? "◉" : "○"} {form.hide_salary ? "Salary (Confidential)" : "Minimum Salary"}</span>
+            {!form.hide_salary && <span>{completionChecks.hasSalaryMax ? "◉" : "○"} Maximum Salary</span>}
             <span>{completionChecks.hasDescription ? "◉" : "○"} Description</span>
             <span>{completionChecks.hasSkills ? "◉" : "○"} Required Skills</span>
             <span>{completionChecks.hasQualifications ? "◉" : "○"} Qualifications</span>
@@ -1414,30 +1569,62 @@ export default function EmployerJobPosts() {
                 {shouldShowFieldError("close_date") && <small className="warning-text">{getFieldError("close_date")}</small>}
               </div>
 
-              <div className="salary-inputs-subrow">
-                <label className={shouldShowFieldError("salary_min") ? "field-error" : ""}>
-                  Min Salary (PHP) *
-                  <input
-                    data-field="salary_min"
-                    value={form.salary_min}
-                    onChange={(event) => setField("salary_min", normalizeSalaryInput(event.target.value))}
-                    onFocus={() => onFieldFocus("salary_min")}
-                    onBlur={() => onFieldBlur("salary_min")}
-                  />
-                  {shouldShowFieldError("salary_min") && <small className="warning-text">{getFieldError("salary_min")}</small>}
+              <div className={`salary-col ${shouldShowFieldError("salary_min") || shouldShowFieldError("salary_max") ? "field-error" : ""}`}>
+                <label className="salary-col-label">
+                  Salary Range (PHP) {form.hide_salary ? <span className="salary-confidential-tag">(Confidential)</span> : "*"}
                 </label>
+                <div className="salary-controls-row">
+                  <button
+                    type="button"
+                    className={`hide-salary-btn ${form.hide_salary ? "active" : ""}`}
+                    aria-label="Hide salary range from applicants"
+                    onClick={() => setHideSalary(!form.hide_salary)}
+                    title={form.hide_salary ? "Salary range is confidential. Click to show to applicants." : "Click to hide salary range from applicants"}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, flexShrink: 0 }}>
+                      {form.hide_salary ? (
+                        <>
+                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                          <line x1="1" y1="1" x2="23" y2="23" />
+                        </>
+                      ) : (
+                        <>
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </>
+                      )}
+                    </svg>
+                    <span>{form.hide_salary ? "Salary Hidden" : "Hide Salary"}</span>
+                  </button>
 
-                <label className={shouldShowFieldError("salary_max") ? "field-error" : ""}>
-                  Max Salary (PHP) *
-                  <input
-                    data-field="salary_max"
-                    value={form.salary_max}
-                    onChange={(event) => setField("salary_max", normalizeSalaryInput(event.target.value))}
-                    onFocus={() => onFieldFocus("salary_max")}
-                    onBlur={() => onFieldBlur("salary_max")}
-                  />
-                  {shouldShowFieldError("salary_max") && <small className="warning-text">{getFieldError("salary_max")}</small>}
-                </label>
+                  <div className="salary-inputs-subrow">
+                    <div className="salary-input-wrap">
+                      <input
+                        data-field="salary_min"
+                        placeholder="Min Salary"
+                        value={form.salary_min}
+                        onChange={(event) => setField("salary_min", normalizeSalaryInput(event.target.value))}
+                        onFocus={() => onFieldFocus("salary_min")}
+                        onBlur={() => onFieldBlur("salary_min")}
+                        aria-label="Minimum Salary (PHP)"
+                      />
+                    </div>
+                    <div className="salary-input-wrap">
+                      <input
+                        data-field="salary_max"
+                        placeholder="Max Salary"
+                        value={form.salary_max}
+                        onChange={(event) => setField("salary_max", normalizeSalaryInput(event.target.value))}
+                        onFocus={() => onFieldFocus("salary_max")}
+                        onBlur={() => onFieldBlur("salary_max")}
+                        aria-label="Maximum Salary (PHP)"
+                      />
+                    </div>
+                  </div>
+                </div>
+                {form.hide_salary && <small className="info-text">Salary is confidential and will be hidden from applicants.</small>}
+                {shouldShowFieldError("salary_min") && <small className="warning-text">{getFieldError("salary_min")}</small>}
+                {shouldShowFieldError("salary_max") && <small className="warning-text">{getFieldError("salary_max")}</small>}
               </div>
             </div>
 
@@ -1447,10 +1634,11 @@ export default function EmployerJobPosts() {
               {shouldShowFieldError("description") && <small className="warning-text">{getFieldError("description")}</small>}
             </label>
 
-            {/* 3 Competency Categories with up to 5 items each and individual experience selectors */}
+            {/* 3 Competency Categories with up to 5 items each */}
             <div className="jobpost-competencies-section">
               <JobPostCategoryEditor
                 title="Technical Skills"
+                categoryType="skills"
                 availableOptions={BSIT_BSCS_SKILLS}
                 items={selectedSkills}
                 onChange={setSelectedSkills}
@@ -1460,6 +1648,7 @@ export default function EmployerJobPosts() {
 
               <JobPostCategoryEditor
                 title="Educational Qualifications"
+                categoryType="qualifications"
                 availableOptions={BSIT_BSCS_QUALIFICATIONS}
                 items={selectedQualifications}
                 onChange={setSelectedQualifications}
@@ -1469,6 +1658,7 @@ export default function EmployerJobPosts() {
 
               <JobPostCategoryEditor
                 title="Professional Certifications"
+                categoryType="certifications"
                 availableOptions={BSIT_BSCS_CERTIFICATIONS}
                 items={selectedCertifications}
                 onChange={setSelectedCertifications}
@@ -1501,9 +1691,9 @@ export default function EmployerJobPosts() {
         isOpen={isLogoutModalOpen}
         title="Confirm Logout"
         message="Are you sure you want to log out of your employer account?"
-        confirmText="Yes, Log Out"
-        cancelText="Cancel"
-        variant="danger"
+        confirmLabel="Yes, Log Out"
+        cancelLabel="Cancel"
+        type="danger"
         onConfirm={() => {
           localStorage.clear();
           sessionStorage.clear();

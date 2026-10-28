@@ -238,3 +238,29 @@
 .applicant-chatbot-action-btn:hover {
   color: #d99914;
 }
+
+/* ==========================================================================
+   PHONE & MOBILE UI ADJUSTMENTS (max-width: 768px)
+   Scope: Applied STRICTLY to phones/mobile screens; desktop/laptop UI is 100% untouched.
+   ========================================================================== */
+@media (max-width: 768px) {
+  .applicant-chatbot-panel-popup {
+    position: fixed !important;
+    top: auto !important;
+    bottom: 16px !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    max-height: 82vh !important;
+    z-index: 2000 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35) !important;
+  }
+
+  .applicant-chatbot-body {
+    max-height: 60vh !important;
+    overflow-y: auto !important;
+  }
+}
+

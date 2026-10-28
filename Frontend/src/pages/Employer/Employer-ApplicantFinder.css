@@ -3653,6 +3653,89 @@
   transform: translateY(-1px);
 }
 
+/* ==========================================================================
+   PHONE & MOBILE UI ADJUSTMENTS (max-width: 768px)
+   Scope: Applied STRICTLY to phones/mobile screens; desktop/laptop UI is 100% untouched.
+   ========================================================================== */
+@media (max-width: 768px) {
+  .employer-page,
+  .finder-shell {
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow-y: auto !important;
+  }
+
+  .finder-main-content {
+    width: 100% !important;
+    padding: 12px 14px 32px !important;
+    box-sizing: border-box !important;
+  }
+
+  .mode-toggle-card .mode-actions {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .mode-toggle-card button {
+    width: 100% !important;
+    min-height: 42px !important;
+  }
+
+  .finder-search-bar-card .search-input-row {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .finder-search-bar-card .search-input-row button {
+    width: 100% !important;
+  }
+
+  .finder-map-container,
+  .finder-map {
+    height: 320px !important;
+    width: 100% !important;
+    border-radius: 12px !important;
+  }
+
+  .jd-modal-backdrop {
+    padding: 10px 8px !important;
+  }
+
+  .jd-modal-container {
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 94vh !important;
+    align-items: stretch !important;
+    overflow-y: auto !important;
+    gap: 12px !important;
+  }
+
+  .jd-panel-outer-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .jd-top-floating-actions {
+    position: relative !important;
+    top: 0 !important;
+    flex-wrap: wrap !important;
+    margin-bottom: 8px !important;
+  }
+
+  .jd-side-comparison-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    max-height: none !important;
+    animation: none !important;
+  }
+}
+
+
 
 
 

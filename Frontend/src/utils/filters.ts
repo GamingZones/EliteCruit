@@ -911,16 +911,51 @@ export const ALL_UNIFIED_SKILLS: string[] = Array.from(
   new Set(Object.values(SKILLS_COURSE_TAXONOMY_MAP).flat())
 ).sort();
 
-export const ALL_UNIFIED_QUALIFICATIONS: string[] = Array.from(
-  new Set([
-    ...MULTI_INDUSTRY_COURSES,
-    ...EDUCATION_LEVELS_TAXONOMY,
-    ...SHS_STRANDS_TAXONOMY,
-    "Internship / OJT Completion",
-    "Capstone / Thesis Project Completion",
-    "Professional Apprenticeship",
-  ])
-).sort();
+export const PRACTICAL_TRAINING_TAXONOMY: string[] = [
+  "Capstone / Thesis Project Completion",
+  "Internship / OJT Completion",
+  "Professional Apprenticeship",
+  "TVL - Technical-Vocational / TESDA Specialization",
+];
+
+/**
+ * Unified list of qualifications ordered by tag group first, and sorted alphabetically within each tag:
+ * 1. Education Levels
+ * 2. College Degrees & Programs
+ * 3. Senior High School Strands
+ * 4. Practical Training & Tech-Voc
+ */
+export const ALL_UNIFIED_QUALIFICATIONS: string[] = [
+  ...Array.from(new Set(EDUCATION_LEVELS_TAXONOMY)).sort(),
+  ...Array.from(new Set(MULTI_INDUSTRY_COURSES.filter((c) => c !== "TVL - Technical-Vocational / TESDA Specialization"))).sort(),
+  ...Array.from(new Set(SHS_STRANDS_TAXONOMY)).sort(),
+  ...Array.from(new Set(PRACTICAL_TRAINING_TAXONOMY)).sort(),
+];
+
+export function getQualificationBadge(opt: string): string {
+  if (EDUCATION_LEVELS_TAXONOMY.includes(opt)) return "Education Level";
+  if (
+    opt === "TVL - Technical-Vocational / TESDA Specialization" ||
+    opt.toLowerCase().includes("tesda") ||
+    opt.toLowerCase().includes("vocational")
+  ) {
+    return "Tech-Voc / TESDA";
+  }
+  if (
+    opt === "Internship / OJT Completion" ||
+    opt === "Capstone / Thesis Project Completion" ||
+    opt === "Professional Apprenticeship" ||
+    PRACTICAL_TRAINING_TAXONOMY.includes(opt) ||
+    opt.toLowerCase().includes("internship") ||
+    opt.toLowerCase().includes("capstone") ||
+    opt.toLowerCase().includes("apprenticeship")
+  ) {
+    return "Practical Training";
+  }
+  if (SHS_STRANDS_TAXONOMY.includes(opt)) return "SHS Strand";
+  if (MULTI_INDUSTRY_COURSES.includes(opt)) return "College Degree";
+  return "College Degree";
+}
 
 export const ALL_UNIFIED_CERTIFICATIONS: string[] = Array.from(
   new Set(MULTI_INDUSTRY_CERTIFICATIONS)
@@ -2026,9 +2061,9 @@ export function calculateCandidateMatch(
     location: job.location || job.city || "Cavite",
     salaryMin: Number(job.salary_min ?? job.min_salary) || 0,
     setup: job.work_arrangement || "On-Site",
-    skillTags: parseCompetencyDisplayTags(job.required_skills ?? job.skills),
-    qualTags: parseCompetencyDisplayTags(job.required_qualifications ?? job.qualifications),
-    certTags: parseCompetencyDisplayTags(job.required_certifications ?? job.certifications),
+    skillTags: parseCompetencyDisplayTags(job.required_skills ?? job.skills, "skills"),
+    qualTags: parseCompetencyDisplayTags(job.required_qualifications ?? job.qualifications, "qualifications"),
+    certTags: parseCompetencyDisplayTags(job.required_certifications ?? job.certifications, "certifications"),
   };
 
   const applicantProfile: ApplicantProfileInput = {
@@ -2037,9 +2072,9 @@ export function calculateCandidateMatch(
     expectedSalary: cand.expected_salary ? parseExpectedSalary(cand.expected_salary) : 0,
     city: cand.city || cand.address || "Cavite",
     preferred_locations: parseCompetencyDisplayTags(cand.preferred_locations),
-    skills: parseCompetencyDisplayTags(cand.skills),
-    qualifications: parseCompetencyDisplayTags(cand.qualifications),
-    certifications: parseCompetencyDisplayTags(cand.certifications),
+    skills: parseCompetencyDisplayTags(cand.skills, "skills"),
+    qualifications: parseCompetencyDisplayTags(cand.qualifications, "qualifications"),
+    certifications: parseCompetencyDisplayTags(cand.certifications, "certifications"),
   };
 
   return calculateJobMatchDetails(jobCard, applicantProfile).score;
@@ -2222,6 +2257,7 @@ export function calculateSkillExperienceYears(rawSkill: string | null | undefine
 }
 
 export const QUALIFICATION_TAXONOMY_MAP: Record<string, string[]> = {
+  // Senior High School Strands
   "tvl - ict": [
     "tvl - ict",
     "tvl-ict",
@@ -2260,6 +2296,23 @@ export const QUALIFICATION_TAXONOMY_MAP: Record<string, string[]> = {
     "gas - general academic strand",
     "gas strand",
   ],
+  "tvl - industrial arts": [
+    "tvl - industrial arts",
+    "industrial arts",
+    "tvl industrial arts",
+  ],
+  "tvl - home economics": [
+    "tvl - home economics",
+    "home economics",
+    "tvl home economics",
+  ],
+  "tvl - agri-fishery": [
+    "tvl - agri-fishery arts",
+    "agri fishery arts",
+    "tvl agri-fishery",
+  ],
+
+  // Tertiary College Degrees
   "bsit": [
     "bsit",
     "bs information technology",
@@ -2267,6 +2320,7 @@ export const QUALIFICATION_TAXONOMY_MAP: Record<string, string[]> = {
     "bs information technology - bsit",
     "bs information technology (bsit)",
     "information technology degree",
+    "information technology",
   ],
   "bscs": [
     "bscs",
@@ -2275,18 +2329,203 @@ export const QUALIFICATION_TAXONOMY_MAP: Record<string, string[]> = {
     "bs computer science - bscs",
     "bs computer science (bscs)",
     "computer science degree",
+    "computer science",
   ],
   "bsis": [
     "bsis",
     "bs information systems",
     "bachelor of science in information systems",
+    "bs information systems - bsis",
+    "information systems",
   ],
   "bscpe": [
     "bscpe",
     "bs computer engineering",
+    "bachelor of science in computer engineering",
     "computer engineering",
   ],
+  "bsba": [
+    "bsba",
+    "bs business administration",
+    "bachelor of science in business administration",
+    "bs business administration - marketing / hr / operations",
+    "business administration",
+    "marketing management",
+    "human resource management",
+  ],
+  "bsa": [
+    "bsa",
+    "bs accountancy",
+    "bachelor of science in accountancy",
+    "bs accountancy - bsa / financial management",
+    "accountancy",
+    "financial management",
+    "accounting",
+  ],
+  "bshm": [
+    "bshm",
+    "bs hospitality management",
+    "bachelor of science in hospitality management",
+    "bs hospitality management - bshm / hotel & restaurant",
+    "hotel and restaurant management",
+    "hospitality management",
+  ],
+  "bstm": [
+    "bstm",
+    "bs tourism management",
+    "bachelor of science in tourism management",
+    "bs tourism management - bstm",
+    "tourism management",
+  ],
+  "bsce": [
+    "bsce",
+    "bs civil engineering",
+    "bachelor of science in civil engineering",
+    "civil engineering",
+  ],
+  "bsee": [
+    "bsee",
+    "bs electrical engineering",
+    "bachelor of science in electrical engineering",
+    "electrical engineering",
+  ],
+  "bsme": [
+    "bsme",
+    "bs mechanical engineering",
+    "bachelor of science in mechanical engineering",
+    "mechanical engineering",
+  ],
+  "bsie": [
+    "bsie",
+    "bs industrial engineering",
+    "bachelor of science in industrial engineering",
+    "industrial engineering",
+  ],
+  "bsece": [
+    "bsece",
+    "bs electronics engineering",
+    "bachelor of science in electronics engineering",
+    "electronics engineering",
+  ],
+  "bsn": [
+    "bsn",
+    "bs nursing",
+    "bachelor of science in nursing",
+    "bs nursing - bsn / healthcare services",
+    "nursing",
+  ],
+  "bs pharmacy": [
+    "bs pharmacy",
+    "bachelor of science in pharmacy",
+    "bs pharmacy / medical technology",
+    "medical technology",
+    "pharmacy",
+  ],
+  "bsed": [
+    "bsed",
+    "bachelor of secondary education",
+    "bachelor of secondary education - bsed / elementary education",
+    "elementary education",
+    "secondary education",
+    "education degree",
+  ],
+  "ba communication": [
+    "ba communication",
+    "bachelor of arts in communication",
+    "bachelor of arts in communication / multimedia arts",
+    "multimedia arts",
+    "communication arts",
+  ],
+  "bs psychology": [
+    "bs psychology",
+    "bachelor of science in psychology",
+    "bs psychology / human resources",
+    "psychology",
+  ],
+  "bs criminology": [
+    "bs criminology",
+    "bachelor of science in criminology",
+    "bs criminology / law enforcement",
+    "criminology",
+  ],
+  "associate computer technology": [
+    "associate in computer technology",
+    "associate in computer technology / polytechnic course",
+    "act",
+    "associate degree",
+    "polytechnic course",
+  ],
 };
+
+/**
+ * Checks whether an educational qualification matches broad educational attainment levels
+ * (e.g. "College Graduate - Bachelor's Degree" vs an applicant's "BS Information Technology" degree,
+ * or "Senior High School Graduate" vs an applicant's "STEM" or "TVL-ICT" strand).
+ */
+export function isEducationLevelMatch(rawA: string, rawB: string): boolean {
+  if (!rawA || !rawB) return false;
+  const a = rawA.toLowerCase();
+  const b = rawB.toLowerCase();
+
+  // 1. College / Bachelor's Degree Attainment Check
+  const isBachelorReq = (text: string) =>
+    text.includes("bachelor") ||
+    text.includes("college graduate") ||
+    text.includes("college degree") ||
+    text.includes("degree holder") ||
+    text.includes("undergraduate / level earner");
+
+  const isBachelorAttainment = (text: string) =>
+    text.includes("[college]") ||
+    text.includes("bachelor") ||
+    text.includes("college graduate") ||
+    text.includes("degree holder") ||
+    /\b(bs|bscs|bsit|bsis|bsba|bsa|bsce|bsee|bsme|bsie|bsece|bsn|bsed|beed|bscpe)\b/i.test(text);
+
+  if (isBachelorReq(a) && isBachelorAttainment(b)) return true;
+  if (isBachelorReq(b) && isBachelorAttainment(a)) return true;
+
+  // 2. Senior High School Attainment Check
+  const isShsReq = (text: string) =>
+    text.includes("senior high") ||
+    text.includes("shs graduate") ||
+    text.includes("high school graduate");
+
+  const isShsAttainment = (text: string) =>
+    text.includes("[shs]") ||
+    text.includes("senior high") ||
+    text.includes("shs") ||
+    /\b(stem|abm|humss|gas|tvl)\b/i.test(text);
+
+  if (isShsReq(a) && isShsAttainment(b)) return true;
+  if (isShsReq(b) && isShsAttainment(a)) return true;
+
+  // 3. Tech-Voc / TESDA Attainment Check
+  const isVocationalReq = (text: string) =>
+    text.includes("vocational") ||
+    text.includes("tesda") ||
+    text.includes("nc ii") ||
+    text.includes("nc iii");
+
+  const isVocationalAttainment = (text: string) =>
+    text.includes("tesda") ||
+    text.includes("nc ii") ||
+    text.includes("nc iii") ||
+    text.includes("vocational") ||
+    text.includes("[tesda]");
+
+  if (isVocationalReq(a) && isVocationalAttainment(b)) return true;
+  if (isVocationalReq(b) && isVocationalAttainment(a)) return true;
+
+  // 4. Associate Degree Attainment Check
+  const isAssociateReq = (text: string) => text.includes("associate");
+  const isAssociateAttainment = (text: string) => text.includes("associate");
+
+  if (isAssociateReq(a) && isAssociateAttainment(b)) return true;
+  if (isAssociateReq(b) && isAssociateAttainment(a)) return true;
+
+  return false;
+}
 
 function normalizeCompetencyText(raw: string): string {
   if (!raw) return "";
@@ -2341,6 +2580,11 @@ export function isSkillMatch(itemA: string, itemB: string): boolean {
     return true;
   }
 
+  // 1.5 Educational Attainment Level matching (e.g. Bachelor's Degree vs BSIT degree)
+  if (isEducationLevelMatch(itemA, itemB)) {
+    return true;
+  }
+
   // 2. Check Qualification / Strand Taxonomy
   for (const [, keywords] of Object.entries(QUALIFICATION_TAXONOMY_MAP)) {
     const matchesA = keywords.some((kw) => slugA === kw || slugA.includes(kw) || kw.includes(slugA));
@@ -2375,6 +2619,284 @@ export function isSkillMatch(itemA: string, itemB: string): boolean {
     if (isCategoryA && matchesKeywordB) return true;
     // Case B: Item B is the broad category and Item A is a subcategory
     if (isCategoryB && matchesKeywordA) return true;
+  }
+
+  return false;
+}
+
+/**
+ * Normalizes certification string by stripping:
+ * - Dates / years in parentheses, e.g. "(2024)", "(Since 2022)"
+ * - Bracketed tags, e.g. "[Verified]", "[IT]"
+ * - School / institution tags after "@"
+ * - Extra punctuation, en-dashes, em-dashes
+ */
+function normalizeCertText(raw: string): string {
+  if (!raw) return "";
+  let text = raw.toLowerCase().trim();
+
+  // Strip dates / years / durations like (2024), (2021 - 2023), (since 2022)
+  text = text.replace(/\s*\((?:\d{4}|\d+\s*years?|since\s*\d+|\d{4}\s*[-–]\s*\d{4})[^)]*\)/gi, "");
+
+  // Strip bracket tags like [Cloud], [IT]
+  text = text.replace(/\s*\[.*?\]/g, "");
+
+  // Extract part before "@" if present
+  if (text.includes("@")) {
+    text = text.split("@")[0].trim();
+  }
+
+  // Normalize en-dash, em-dash to regular hyphen
+  text = text.replace(/[–—]/g, "-");
+
+  return text.trim();
+}
+
+function toCertSlug(text: string): string {
+  return normalizeCertText(text)
+    .replace(/[()[\]{}@]/g, " ")
+    .replace(/[-_/,+&|;:]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Checks whether an applicant's certification satisfies an employer's required certification.
+ * Supports:
+ * 1. Exact & normalized string/token matches (e.g. "AWS Cloud Practitioner" <=> "AWS Certified Cloud Practitioner")
+ * 2. Vendor hierarchical equivalency:
+ *    - AWS: Higher levels (Associate, Professional, Specialty) satisfy Foundational (Cloud Practitioner).
+ *           Professional level satisfies Associate in the same domain.
+ *    - Azure: Associate (AZ-104, AZ-204, etc.) & Expert (AZ-305, AZ-400) satisfy Fundamentals (AZ-900).
+ *    - GCP: Associate & Professional satisfy Foundational (Cloud Digital Leader).
+ *    - Cisco: CCNP & CCIE satisfy CCNA.
+ *    - CompTIA: Higher tiers (Security+, CySA+, CASP+) satisfy entry tiers (A+, Network+, ITF+).
+ *    - TESDA: Higher National Certificate levels (NC III, NC IV) satisfy lower levels (NC I, NC II).
+ */
+export function isCertificationMatch(jobCert: string, candCert: string): boolean {
+  if (!jobCert || !candCert) return false;
+
+  const rawCleanJob = jobCert.toLowerCase().replace(/\s*\(.*?\)/g, "").trim();
+  const rawCleanCand = candCert.toLowerCase().replace(/\s*\(.*?\)/g, "").trim();
+
+  if (rawCleanJob === rawCleanCand) return true;
+
+  const slugJob = toCertSlug(jobCert);
+  const slugCand = toCertSlug(candCert);
+
+  if (!slugJob || !slugCand) return false;
+  if (slugJob === slugCand) return true;
+
+  // Remove common filler words like "certified", "certification", "certificate", "examination", etc.
+  const stripCertFillers = (slug: string) =>
+    slug
+      .replace(/\b(certified|certification|certificate|cert|credential|license|licensure|exam|examination)\b/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const coreJob = stripCertFillers(slugJob);
+  const coreCand = stripCertFillers(slugCand);
+
+  if (coreJob && coreCand) {
+    if (coreJob === coreCand) return true;
+    if (coreJob.length >= 5 && coreCand.includes(coreJob)) return true;
+    if (coreCand.length >= 5 && coreJob.includes(coreCand)) return true;
+  }
+
+  // --- 1. AWS Track ---
+  const isAws = (slug: string) =>
+    slug.includes("aws") || slug.includes("amazon web services");
+
+  if (isAws(slugJob) && isAws(slugCand)) {
+    const isAwsFoundational = (slug: string) =>
+      slug.includes("cloud practitioner") ||
+      slug.includes("clf c01") ||
+      slug.includes("clf c02") ||
+      slug.includes("foundational");
+
+    const isAwsAssociate = (slug: string) =>
+      slug.includes("associate") ||
+      slug.includes("solutions architect") ||
+      slug.includes("developer") ||
+      slug.includes("sysops") ||
+      slug.includes("data engineer") ||
+      slug.includes("saa c0") ||
+      slug.includes("dva c0") ||
+      slug.includes("soa c0") ||
+      slug.includes("dea c0");
+
+    const isAwsProfessional = (slug: string) =>
+      slug.includes("professional") ||
+      slug.includes("devops") ||
+      slug.includes("architect professional") ||
+      slug.includes("sap c0") ||
+      slug.includes("dop c0");
+
+    const isAwsSpecialty = (slug: string) =>
+      slug.includes("specialty") ||
+      slug.includes("advanced networking") ||
+      slug.includes("security specialty") ||
+      slug.includes("machine learning");
+
+    const candIsHigherAws =
+      isAwsAssociate(slugCand) ||
+      isAwsProfessional(slugCand) ||
+      isAwsSpecialty(slugCand) ||
+      isAwsFoundational(slugCand);
+
+    // If job requires Foundational (Cloud Practitioner), ANY valid AWS certification satisfies it!
+    if (isAwsFoundational(slugJob) && candIsHigherAws) {
+      return true;
+    }
+
+    // If job requires Solutions Architect Associate, Professional satisfies it
+    if (slugJob.includes("solutions architect") && (slugCand.includes("solutions architect") || slugCand.includes("architect professional"))) {
+      return true;
+    }
+
+    // If job requires Developer Associate, DevOps Engineer Professional satisfies it
+    if (slugJob.includes("developer") && (slugCand.includes("developer") || slugCand.includes("devops"))) {
+      return true;
+    }
+
+    // If job only asks for generic "aws" or "aws associate"
+    if ((coreJob === "aws" || coreJob === "aws associate") && candIsHigherAws) {
+      return true;
+    }
+  }
+
+  // --- 2. Microsoft Azure Track ---
+  const isAzure = (slug: string) =>
+    slug.includes("azure") || slug.includes("microsoft certified");
+
+  if (isAzure(slugJob) && isAzure(slugCand)) {
+    const isAzureFundamentals = (slug: string) =>
+      slug.includes("fundamentals") ||
+      slug.includes("az 900") ||
+      slug.includes("dp 900") ||
+      slug.includes("ai 900") ||
+      slug.includes("sc 900");
+
+    const isAzureAssociate = (slug: string) =>
+      slug.includes("az 104") ||
+      slug.includes("az 204") ||
+      slug.includes("dp 203") ||
+      slug.includes("ai 102") ||
+      slug.includes("associate") ||
+      slug.includes("administrator") ||
+      slug.includes("developer");
+
+    const isAzureExpert = (slug: string) =>
+      slug.includes("az 305") ||
+      slug.includes("az 400") ||
+      slug.includes("expert") ||
+      slug.includes("solutions architect expert") ||
+      slug.includes("devops engineer expert");
+
+    const candHasHigherAzure =
+      isAzureAssociate(slugCand) || isAzureExpert(slugCand) || isAzureFundamentals(slugCand);
+
+    if (isAzureFundamentals(slugJob) && candHasHigherAzure) {
+      return true;
+    }
+
+    if (slugJob.includes("administrator") && (slugCand.includes("az 305") || slugCand.includes("solutions architect expert"))) {
+      return true;
+    }
+  }
+
+  // --- 3. Google Cloud Platform (GCP) Track ---
+  const isGcp = (slug: string) =>
+    slug.includes("gcp") || slug.includes("google cloud");
+
+  if (isGcp(slugJob) && isGcp(slugCand)) {
+    const isGcpFoundational = (slug: string) =>
+      slug.includes("digital leader") || slug.includes("cloud digital leader");
+
+    const isGcpAssociate = (slug: string) =>
+      slug.includes("associate cloud engineer") || slug.includes("cloud engineer");
+
+    const isGcpProfessional = (slug: string) =>
+      slug.includes("professional cloud architect") ||
+      slug.includes("professional data engineer") ||
+      slug.includes("professional cloud devops") ||
+      slug.includes("professional cloud security") ||
+      slug.includes("cloud architect");
+
+    if (isGcpFoundational(slugJob) && (isGcpAssociate(slugCand) || isGcpProfessional(slugCand) || isGcpFoundational(slugCand))) {
+      return true;
+    }
+
+    if (isGcpAssociate(slugJob) && isGcpProfessional(slugCand)) {
+      return true;
+    }
+  }
+
+  // --- 4. Cisco Track ---
+  const isCisco = (slug: string) =>
+    slug.includes("cisco") || slug.includes("ccna") || slug.includes("ccnp") || slug.includes("ccie");
+
+  if (isCisco(slugJob) && isCisco(slugCand)) {
+    const isCcna = (slug: string) => slug.includes("ccna") || slug.includes("network associate");
+    const isCcnp = (slug: string) => slug.includes("ccnp") || slug.includes("network professional");
+    const isCcie = (slug: string) => slug.includes("ccie") || slug.includes("internetwork expert");
+
+    if (isCcna(slugJob) && (isCcnp(slugCand) || isCcie(slugCand) || isCcna(slugCand))) {
+      return true;
+    }
+    if (isCcnp(slugJob) && (isCcie(slugCand) || isCcnp(slugCand))) {
+      return true;
+    }
+  }
+
+  // --- 5. CompTIA Track ---
+  const isComptia = (slug: string) => slug.includes("comptia");
+
+  if (isComptia(slugJob) && isComptia(slugCand)) {
+    const tier = (slug: string) => {
+      if (slug.includes("casp") || slug.includes("securityx")) return 5;
+      if (slug.includes("cysa") || slug.includes("pentest")) return 4;
+      if (slug.includes("security")) return 3;
+      if (slug.includes("network")) return 2;
+      if (slug.includes("a+")) return 1;
+      if (slug.includes("itf")) return 0;
+      return -1;
+    };
+
+    const jobTier = tier(slugJob);
+    const candTier = tier(slugCand);
+
+    if (jobTier >= 0 && candTier >= 0 && candTier >= jobTier) {
+      return true;
+    }
+  }
+
+  // --- 6. TESDA Track ---
+  const isTesda = (slug: string) =>
+    slug.includes("tesda") || slug.includes("nc i") || slug.includes("nc ii") || slug.includes("nc iii") || slug.includes("nc iv");
+
+  if (isTesda(slugJob) && isTesda(slugCand)) {
+    const getNcLevel = (slug: string) => {
+      if (slug.includes("nc iv") || slug.includes("nc 4")) return 4;
+      if (slug.includes("nc iii") || slug.includes("nc 3")) return 3;
+      if (slug.includes("nc ii") || slug.includes("nc 2")) return 2;
+      if (slug.includes("nc i") || slug.includes("nc 1")) return 1;
+      return 0;
+    };
+
+    const jobLevel = getNcLevel(slugJob);
+    const candLevel = getNcLevel(slugCand);
+
+    // Extract trade domain, e.g. "rac servicing", "computer systems servicing", "smaw"
+    const stripNc = (s: string) =>
+      s.replace(/\b(tesda|nc\s*i{1,3}|nc\s*iv|nc\s*\d|national certificate)\b/gi, "").trim();
+
+    const jobDomain = stripNc(slugJob);
+    const candDomain = stripNc(slugCand);
+
+    if (jobDomain && candDomain && (jobDomain.includes(candDomain) || candDomain.includes(jobDomain))) {
+      if (candLevel >= jobLevel) return true;
+    }
   }
 
   return false;
@@ -2444,9 +2966,7 @@ export function calculateJobMatchDetails(
       profileQuals.find((pq) => isSkillMatch(item, pq)) ||
       profileSkills.find((ps) => isSkillMatch(item, ps));
     if (matchingQual) {
-      const expYears = calculateSkillExperienceYears(matchingQual);
-      const displayLabel = expYears > 1 ? `${item} (${expYears} yrs exp)` : item;
-      matchedQuals.push(displayLabel);
+      matchedQuals.push(item);
     } else {
       missingQuals.push(item);
     }
@@ -2459,13 +2979,11 @@ export function calculateJobMatchDetails(
 
   rawJobCerts.forEach((item) => {
     const matchingCert =
-      profileCerts.find((pc) => isSkillMatch(item, pc)) ||
-      profileSkills.find((ps) => isSkillMatch(item, ps)) ||
-      profileQuals.find((pq) => isSkillMatch(item, pq));
+      profileCerts.find((pc) => isCertificationMatch(item, pc)) ||
+      profileQuals.find((pq) => isCertificationMatch(item, pq)) ||
+      profileSkills.find((ps) => isCertificationMatch(item, ps));
     if (matchingCert) {
-      const expYears = calculateSkillExperienceYears(matchingCert);
-      const displayLabel = expYears > 1 ? `${item} (${expYears} yrs exp)` : item;
-      matchedCerts.push(displayLabel);
+      matchedCerts.push(item);
     } else {
       missingCerts.push(item);
     }
@@ -2555,7 +3073,7 @@ export function calculateJobMatchDetails(
     qualPts,
     certPts,
     maxSkillsPts,
-    maxQualsPts,
+    maxQualPts: maxQualsPts,
     maxCertPts,
     matchedSkills,
     missingSkills,
@@ -2598,7 +3116,10 @@ export function calculateJobMatch(
  * Parses competency items (skills, qualifications, certifications) from JSON or delimited strings
  * and formats them for display with their experience years (e.g. "Web Development (1 year)").
  */
-export function parseCompetencyDisplayTags(raw: string | null | undefined): string[] {
+export function parseCompetencyDisplayTags(
+  raw: string | null | undefined,
+  category?: "skills" | "qualifications" | "certifications"
+): string[] {
   if (!raw || !raw.trim()) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -2606,7 +3127,20 @@ export function parseCompetencyDisplayTags(raw: string | null | undefined): stri
       return parsed
         .map((item) => {
           if (typeof item === "object" && item !== null && item.name) {
-            return item.years ? `${item.name} (${item.years})` : String(item.name);
+            // For qualifications and certifications, do not display artificial "years" of experience
+            if (category === "qualifications" || category === "certifications") {
+              if (item.requirement && item.requirement !== "Required") {
+                return `${item.name} (${item.requirement})`;
+              }
+              return String(item.name);
+            }
+            if (item.years) {
+              return `${item.name} (${item.years})`;
+            }
+            if (item.requirement && item.requirement !== "Required") {
+              return `${item.name} (${item.requirement})`;
+            }
+            return String(item.name);
           }
           return String(item).trim();
         })
@@ -2678,4 +3212,41 @@ export function parsePreferredLocationTags(raw: string | null | undefined): stri
   }
   return [trimmed.replace(/^["']|["']$/g, "").trim()].filter(Boolean);
 }
+
+/**
+ * Determines whether a job posting is closed or expired based on
+ * database status, application limit/count, or close date.
+ */
+export function isJobClosedOrExpired(
+  closeDate?: string | null,
+  dbStatus?: string | null,
+  applicationLimit?: number | null,
+  applicantCount?: number | null
+): boolean {
+  if (typeof dbStatus === "string" && dbStatus.toLowerCase().trim() === "closed") {
+    return true;
+  }
+  if (applicationLimit && applicationLimit > 0 && typeof applicantCount === "number" && applicantCount >= applicationLimit) {
+    return true;
+  }
+  if (!closeDate || closeDate === "-" || !closeDate.trim()) {
+    return false;
+  }
+  const raw = closeDate.trim();
+  const match = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (match) {
+    const month = Number(match[1]);
+    const day = Number(match[2]);
+    const year = Number(match[3]);
+    const closeAt = new Date(year, month - 1, day, 23, 59, 59, 999).getTime();
+    return Date.now() > closeAt;
+  }
+  const parsed = Date.parse(raw);
+  if (!isNaN(parsed)) {
+    const closeAt = new Date(parsed).setHours(23, 59, 59, 999);
+    return Date.now() > closeAt;
+  }
+  return false;
+}
+
 

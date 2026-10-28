@@ -130,7 +130,7 @@ export default function Login() {
       }
 
       if (normalizedUser?.role === "applicant") {
-        window.location.href = "/applicant-dashboard#applicant-overview";
+        window.location.href = "/applicant-dashboard#section-smart-matches";
       } else if (normalizedUser?.role === "employer") {
         window.location.href = "/employer-dashboard";
       } else if (normalizedUser?.role === "admin") {
@@ -192,7 +192,7 @@ export default function Login() {
       }
 
       if (normalizedUser?.role === "applicant") {
-        window.location.href = "/applicant-dashboard#applicant-overview";
+        window.location.href = "/applicant-dashboard#section-smart-matches";
       } else if (normalizedUser?.role === "employer") {
         window.location.href = "/employer-dashboard";
       } else if (normalizedUser?.role === "admin") {

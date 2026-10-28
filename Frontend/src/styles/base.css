@@ -1,6 +1,8 @@
 @import "./applicant-dark-theme.css";
 
 :root {
+  --font-family-base: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color-scheme: light;
   --ink-950: #0b1220;
   --ink-900: #1b263c;
@@ -26,16 +28,31 @@
   box-sizing: border-box;
 }
 
+html {
+  overflow-x: hidden;
+  overflow-y: auto;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
 body {
   margin: 0;
-  font-family: "Manrope", sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: var(--ink-900);
   background: var(--cream);
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
 }
 
 [data-theme="dark"] body {
   background-color: #14151B;
   color: #f1f5f9;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 /* Sidebar bottom navigation styling (Settings button directly above Profile) */
@@ -47,3 +64,70 @@ body {
 .appdash-bottom-nav + .appdash-profile-control {
   margin-top: 0 !important;
 }
+
+/* ==========================================================================
+   GLOBAL STANDARDIZED APPDASH TOPBAR (Offer-Letter Benchmark)
+   ========================================================================== */
+.appdash-topbar {
+  background: #ffffff;
+  border-bottom: 1px solid #d9e2ee;
+  padding: 8px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  min-height: 56px;
+  box-sizing: border-box;
+}
+
+.appdash-top-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.appdash-top-left strong {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #0c2a47;
+}
+
+.appdash-top-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ==========================================================================
+   GLOBAL PHONE & MOBILE RESOLUTION PREPARATION (max-width: 768px)
+   Scope: Applied STRICTLY to phones/mobile screens; desktop/laptop UI is 100% untouched.
+   ========================================================================== */
+@media (max-width: 768px) {
+  html, body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  #root {
+    width: 100%;
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: visible !important;
+  }
+
+  /* Prevent auto-zoom on iOS when tapping inputs on phone */
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+

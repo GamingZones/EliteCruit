@@ -7,6 +7,7 @@ import ApplicantChatbotDrawer from "../../components/ApplicantChatbotDrawer";
 import EmployerChatbotDrawer, { EmployerFAQItem as FAQItem } from "../../components/EmployerChatbotDrawer";
 import CalendarDrawer from "../../components/CalendarDrawer";
 import ConfirmationModal from "../../components/ConfirmationModal";
+import ApplicantDecisionModal from "../../components/ApplicantDecisionModal";
 import {
   calculateCandidateMatch,
   calculateJobMatchDetails,
@@ -14,6 +15,7 @@ import {
   formatLocationWithCavite,
   getMatchColorClass,
   isSkillMatch,
+  isCertificationMatch,
   parseCompetencyDisplayTags,
   parseExpectedSalary,
   parsePreferredLocationTags,
@@ -23,6 +25,7 @@ import "../Employer/Employer-Dashboard.css";
 import "../Employer/Employer-ApplicantFinder.css";
 import "../Applicant/JobSearch.css";
 import "./Messages.css";
+import { EmployerDetailsModal, JobDetailsModal } from "../../components/modals";
 
 type EmployerIconName =
   | "dashboard"
@@ -89,6 +92,8 @@ type JobDetailsModalData = {
   summary: string;
   salary: string;
   salaryMin: number;
+  hideSalary?: boolean;
+  hide_salary?: number | boolean;
   setup: string;
   experienceLevel?: string | null;
   status: "open" | "closed";
@@ -372,7 +377,21 @@ function getInitialApplicantName() {
   }
 }
 
+function MenuIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="chevron-icon" aria-hidden="true">
+      <path d="M5 7h14M5 12h14M5 17h14" />
+    </svg>
+  );
+}
+
 export default function Messages() {
+  const [isSidebarVisible, setIsSidebarVisible] = useState(() => {
+    if (typeof window !== "undefined" && window.innerWidth <= 768) {
+      return false;
+    }
+    return true;
+  });
   const [sessionRole, setSessionRole] = useState<"applicant" | "employer">("applicant");
   const [applicantLabel, setApplicantLabel] = useState(getInitialApplicantName);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
@@ -485,6 +504,13 @@ export default function Messages() {
     type: "chat" | "byJob" | "byDetails";
     jobId?: number;
     title?: string;
+  } | null>(null);
+  const [decisionModalTarget, setDecisionModalTarget] = useState<{
+    type: "chat" | "byJob" | "byDetails";
+    action: "accept" | "decline";
+    jobId?: number;
+    title?: string;
+    companyName?: string;
   } | null>(null);
   const [applyJobTarget, setApplyJobTarget] = useState<{
     jobId: number;
@@ -689,7 +715,13 @@ export default function Messages() {
     }
   };
 
-  const handleRespondInvitationByJob = async (jobId: number, action: "accept" | "decline") => {
+  const handleRespondInvitationByJob = async (
+    jobId: number,
+    action: "accept" | "decline",
+    letter_text?: string,
+    letter_type?: string,
+    start_date?: string
+  ) => {
     if (!currentUserId || !selectedThread) return;
     try {
       const res = await fetch("/api/job-invitations/respond-by-job", {
@@ -699,6 +731,9 @@ export default function Messages() {
           job_post_id: jobId,
           applicant_user_id: currentUserId,
           action,
+          letter_text,
+          letter_type,
+          start_date,
         }),
       });
       if (res.ok) {
@@ -754,10 +789,18 @@ export default function Messages() {
           }
         }
 
-        const formatSalary = (min: number | null, max: number | null) => {
-          if (min && max) return `PHP ${Number(min).toLocaleString()} - ${Number(max).toLocaleString()}`;
-          if (min) return `PHP ${Number(min).toLocaleString()}+`;
-          return "Competitive Salary";
+        const formatSalary = (min: number | null, max: number | null, hide?: boolean | number | string | null) => {
+          const isHidden = Boolean(
+            hide === true ||
+            hide === 1 ||
+            hide === "1" ||
+            hide === "true" ||
+            (typeof hide === "string" && hide.toLowerCase() === "true")
+          );
+          if (isHidden && sessionRole !== "employer") return "Salary Confidential";
+          if (min && max) return `PHP ${Number(min).toLocaleString()} - ${Number(max).toLocaleString()}${isHidden ? " (Confidential)" : ""}`;
+          if (min) return `PHP ${Number(min).toLocaleString()}+${isHidden ? " (Confidential)" : ""}`;
+          return isHidden ? "Salary Confidential" : "Competitive Salary";
         };
 
         const parseSkills = (raw?: string | null) => {
@@ -810,14 +853,29 @@ export default function Messages() {
             } catch {}
           }
 
+          const isHiddenSalary = Boolean(
+            matched.hide_salary === true ||
+            matched.hide_salary === 1 ||
+            matched.hide_salary === "1" ||
+            matched.hide_salary === "true" ||
+            matched.hideSalary === true ||
+            matched.hideSalary === 1 ||
+            matched.hideSalary === "1" ||
+            matched.hideSalary === "true" ||
+            (typeof matched.hide_salary === "string" && matched.hide_salary.toLowerCase() === "true") ||
+            (typeof matched.hideSalary === "string" && matched.hideSalary.toLowerCase() === "true")
+          );
+
           setDetailsJob({
             id: matchedId,
             title: matched.title || "Job Opening",
             company: matched.company_name || effectiveThread?.other_user_name || "Employer",
             location: matched.location || "Cavite",
             summary: matched.description || "No job description provided yet.",
-            salary: formatSalary(matched.salary_min ?? null, matched.salary_max ?? null),
+            salary: formatSalary(matched.salary_min ?? null, matched.salary_max ?? null, isHiddenSalary),
             salaryMin: Number(matched.salary_min) || 0,
+            hideSalary: isHiddenSalary,
+            hide_salary: isHiddenSalary ? 1 : 0,
             setup: matched.work_arrangement || "Flexible",
             experienceLevel: matched.experience_level || null,
             status: matched.status === "closed" ? "closed" : "open",
@@ -897,7 +955,12 @@ export default function Messages() {
     }
   };
 
-  const handleRespondInvitation = async (action: "accept" | "decline") => {
+  const handleRespondInvitation = async (
+    action: "accept" | "decline",
+    letter_text?: string,
+    letter_type?: string,
+    start_date?: string
+  ) => {
     if (!currentUserId || !detailsJob?.id) return;
     setIsRespondingInvitation(true);
     try {
@@ -908,6 +971,9 @@ export default function Messages() {
           job_post_id: detailsJob.id,
           applicant_user_id: currentUserId,
           action,
+          letter_text,
+          letter_type,
+          start_date,
         }),
       });
       if (res.ok) {
@@ -1426,7 +1492,7 @@ export default function Messages() {
   });
 
   return (
-    <div className="messages-page appdash-page sidebar-visible">
+    <div className={`messages-page appdash-page ${isSidebarVisible ? "sidebar-visible" : "sidebar-hidden"}`}>
       {isEmployer ? (
         <aside className="appdash-sidebar" aria-label="Employer Navigation">
           <a href="/" className="appdash-brand">
@@ -1495,7 +1561,20 @@ export default function Messages() {
         </aside>
       ) : (
         <aside className="appdash-sidebar" aria-label="Applicant Navigation">
-          <a href="/" className="appdash-brand"><strong>EliteCruit</strong><span>Candidate Workspace</span></a>
+          <div className="appdash-brand">
+            <a href="/" className="appdash-brand-link">
+              <strong>EliteCruit</strong>
+              <span>Candidate Workspace</span>
+            </a>
+            <button
+              type="button"
+              className="appdash-sidebar-toggle"
+              aria-label="Close sidebar menu"
+              onClick={() => setIsSidebarVisible(false)}
+            >
+              <MenuIcon />
+            </button>
+          </div>
           <ul className="appdash-secondary-list">
             <li className="applicant-workspace-item">
               <a
@@ -1517,7 +1596,6 @@ export default function Messages() {
 
               {isWorkspaceOpen && (
                 <ul className="appdash-menu-list">
-                  <li><a href="/applicant-dashboard#section-overview"><span className="item-icon"><SideIcon name="overview" /></span><span>Overview</span></a></li>
                   <li><a href="/applicant-dashboard#section-smart-matches"><span className="item-icon"><SideIcon name="star" /></span><span>Smart Matches</span></a></li>
                   <li><a href="/applicant-dashboard#section-applications"><span className="item-icon"><SideIcon name="applications" /></span><span>My Applications</span></a></li>
                   <li><a href="/applicant-dashboard#section-invitations"><span className="item-icon"><SideIcon name="notifications" /></span><span>Job Invitations</span></a></li>
@@ -1526,6 +1604,7 @@ export default function Messages() {
             </li>
 
             <li><a href="/job-search"><span className="item-icon"><SideIcon name="search" /></span><span>Job Search</span></a></li>
+            <li><a href="/applicant-offer-letter"><span className="item-icon"><SideIcon name="documents" /></span><span>Offer Letters</span></a></li>
             <li className="active"><a href="/messages"><span className="item-icon"><SideIcon name="messages" /></span><span>Messages</span>{unreadMessagesCount > 0 && <span className="item-badge">{unreadMessagesCount}</span>}</a></li>
             <li><a href="/notifications"><span className="item-icon"><SideIcon name="notifications" /></span><span>Notifications</span>{unreadNotifCount > 0 && <span className="item-badge">{unreadNotifCount}</span>}</a></li>
             <li><a href="/feedback"><span className="item-icon"><SideIcon name="feedback" /></span><span>Feedback</span></a></li>
@@ -1554,9 +1633,28 @@ export default function Messages() {
         </aside>
       )}
 
+      {isSidebarVisible && (
+        <button
+          type="button"
+          className="appdash-backdrop"
+          aria-label="Close sidebar"
+          onClick={() => setIsSidebarVisible(false)}
+        />
+      )}
+
       <main className="appdash-main messages-main">
         <header className="appdash-topbar">
-          <div className="appdash-top-left"><div><strong>Messages</strong></div></div>
+          <div className="appdash-top-left">
+            <button
+              type="button"
+              className="appdash-mobile-nav-toggle"
+              aria-label={isSidebarVisible ? "Close navigation menu" : "Open navigation menu"}
+              onClick={() => setIsSidebarVisible((prev) => !prev)}
+            >
+              <MenuIcon />
+            </button>
+            <div><strong>Messages</strong></div>
+          </div>
           <div className="appdash-top-right">
             <div className="chatbot-wrapper">
               {isEmployer ? (
@@ -1969,11 +2067,15 @@ export default function Messages() {
                                 </div>
 
                                 <div className="chat-info-job-meta">
-                                  {(job.salary_min || job.salary_max) && (
+                                  {Boolean(job.hide_salary === 1 || job.hide_salary === "1" || job.hide_salary === true || job.hide_salary === "true" || job.hideSalary) && sessionRole !== "employer" ? (
                                     <small style={{ color: "#0369a1", fontWeight: 700, display: "block", marginBottom: "2px" }}>
-                                      PHP {Number(job.salary_min || 0).toLocaleString()}{job.salary_max ? ` - ${Number(job.salary_max).toLocaleString()}` : "+"}
+                                      Salary Confidential
                                     </small>
-                                  )}
+                                  ) : (job.salary_min || job.salary_max) ? (
+                                    <small style={{ color: "#0369a1", fontWeight: 700, display: "block", marginBottom: "2px" }}>
+                                      PHP {Number(job.salary_min || 0).toLocaleString()}{job.salary_max ? ` - ${Number(job.salary_max).toLocaleString()}` : "+"} {Boolean(job.hide_salary === 1 || job.hide_salary === "1" || job.hide_salary === true || job.hide_salary === "true" || job.hideSalary) ? "(Confidential)" : ""}
+                                    </small>
+                                  ) : null}
                                   <small style={{ color: "#64748b", display: "block" }}>
                                     Applied: {job.application?.submitted_at ? new Date(job.application.submitted_at).toLocaleDateString() : "Recent"}
                                     {job.application?.decided_at && (
@@ -2063,11 +2165,15 @@ export default function Messages() {
                                   </div>
 
                                   <div className="chat-info-job-meta">
-                                    {(job.salary_min || job.salary_max) && (
+                                    {Boolean(job.hide_salary === 1 || job.hide_salary === "1" || job.hide_salary === true || job.hide_salary === "true" || job.hideSalary) && sessionRole !== "employer" ? (
                                       <small style={{ color: "#0369a1", fontWeight: 700, display: "block" }}>
-                                        PHP {Number(job.salary_min || 0).toLocaleString()}{job.salary_max ? ` - ${Number(job.salary_max).toLocaleString()}` : "+"}
+                                        Salary Confidential
                                       </small>
-                                    )}
+                                    ) : (job.salary_min || job.salary_max) ? (
+                                      <small style={{ color: "#0369a1", fontWeight: 700, display: "block" }}>
+                                        PHP {Number(job.salary_min || 0).toLocaleString()}{job.salary_max ? ` - ${Number(job.salary_max).toLocaleString()}` : "+"} {Boolean(job.hide_salary === 1 || job.hide_salary === "1" || job.hide_salary === true || job.hide_salary === "true" || job.hideSalary) ? "(Confidential)" : ""}
+                                      </small>
+                                    ) : null}
                                     <small style={{ color: "#64748b", display: "block" }}>
                                       Recruited: {job.invitation?.created_at ? new Date(job.invitation.created_at).toLocaleDateString() : "Recent"}
                                     </small>
@@ -2113,11 +2219,15 @@ export default function Messages() {
                                 </div>
 
                                 <div className="chat-info-job-meta">
-                                  {(job.salary_min || job.salary_max) && (
-                                    <small style={{ color: "#0369a1", fontWeight: 700, display: "block" }}>
-                                      PHP {Number(job.salary_min || 0).toLocaleString()}{job.salary_max ? ` - ${Number(job.salary_max).toLocaleString()}` : "+"}
+                                  {Boolean(job.hide_salary === 1 || job.hide_salary === "1" || job.hide_salary === true || job.hide_salary === "true" || job.hideSalary) && sessionRole !== "employer" ? (
+                                    <small style={{ color: "#0369a1", fontWeight: 700, display: "block", marginBottom: "2px" }}>
+                                      Salary Confidential
                                     </small>
-                                  )}
+                                  ) : (job.salary_min || job.salary_max) ? (
+                                    <small style={{ color: "#0369a1", fontWeight: 700, display: "block" }}>
+                                      PHP {Number(job.salary_min || 0).toLocaleString()}{job.salary_max ? ` - ${Number(job.salary_max).toLocaleString()}` : "+"} {Boolean(job.hide_salary === 1 || job.hide_salary === "1" || job.hide_salary === true || job.hide_salary === "true" || job.hideSalary) ? "(Confidential)" : ""}
+                                    </small>
+                                  ) : null}
                                   <small style={{ color: "#64748b", display: "block" }}>
                                     Recruited: {job.invitation?.created_at ? new Date(job.invitation.created_at).toLocaleDateString() : "Recent"}
                                   </small>
@@ -2136,14 +2246,30 @@ export default function Messages() {
                                       <button
                                         type="button"
                                         className="chat-info-sm-btn decline"
-                                        onClick={() => setDeclineInvitationTarget({ type: "byJob", jobId: job.id, title: job.title })}
+                                        onClick={() =>
+                                          setDecisionModalTarget({
+                                            type: "byJob",
+                                            action: "decline",
+                                            jobId: job.id,
+                                            title: job.title,
+                                            companyName: selectedThread?.other_user_name,
+                                          })
+                                        }
                                       >
                                         Decline
                                       </button>
                                       <button
                                         type="button"
                                         className="chat-info-sm-btn accept"
-                                        onClick={() => handleRespondInvitationByJob(job.id, "accept")}
+                                        onClick={() =>
+                                          setDecisionModalTarget({
+                                            type: "byJob",
+                                            action: "accept",
+                                            jobId: job.id,
+                                            title: job.title,
+                                            companyName: selectedThread?.other_user_name,
+                                          })
+                                        }
                                       >
                                         Accept
                                       </button>
@@ -2225,11 +2351,15 @@ export default function Messages() {
                                   </div>
 
                                   <div className="chat-info-job-meta">
-                                    {(job.salary_min || job.salary_max) && (
+                                    {Boolean(job.hide_salary === 1 || job.hide_salary === "1" || job.hide_salary === true || job.hide_salary === "true" || job.hideSalary) && sessionRole !== "employer" ? (
                                       <small style={{ color: "#0369a1", fontWeight: 700, display: "block" }}>
-                                        PHP {Number(job.salary_min || 0).toLocaleString()}{job.salary_max ? ` - ${Number(job.salary_max).toLocaleString()}` : "+"}
+                                        Salary Confidential
                                       </small>
-                                    )}
+                                    ) : (job.salary_min || job.salary_max) ? (
+                                      <small style={{ color: "#0369a1", fontWeight: 700, display: "block" }}>
+                                        PHP {Number(job.salary_min || 0).toLocaleString()}{job.salary_max ? ` - ${Number(job.salary_max).toLocaleString()}` : "+"} {Boolean(job.hide_salary === 1 || job.hide_salary === "1" || job.hide_salary === true || job.hide_salary === "true" || job.hideSalary) ? "(Confidential)" : ""}
+                                      </small>
+                                    ) : null}
                                   </div>
 
                                   <div className="chat-info-job-actions">
@@ -2275,11 +2405,15 @@ export default function Messages() {
                                 </div>
 
                                 <div className="chat-info-job-meta">
-                                  {(job.salary_min || job.salary_max) && (
+                                  {Boolean(job.hide_salary === 1 || job.hide_salary === "1" || job.hide_salary === true || job.hide_salary === "true" || job.hideSalary) && sessionRole !== "employer" ? (
                                     <small style={{ color: "#0369a1", fontWeight: 700, display: "block" }}>
-                                      PHP {Number(job.salary_min || 0).toLocaleString()}{job.salary_max ? ` - ${Number(job.salary_max).toLocaleString()}` : "+"}
+                                      Salary Confidential
                                     </small>
-                                  )}
+                                  ) : (job.salary_min || job.salary_max) ? (
+                                    <small style={{ color: "#0369a1", fontWeight: 700, display: "block" }}>
+                                      PHP {Number(job.salary_min || 0).toLocaleString()}{job.salary_max ? ` - ${Number(job.salary_max).toLocaleString()}` : "+"} {Boolean(job.hide_salary === 1 || job.hide_salary === "1" || job.hide_salary === true || job.hide_salary === "true" || job.hideSalary) ? "(Confidential)" : ""}
+                                    </small>
+                                  ) : null}
                                 </div>
 
                                 <div className="chat-info-job-actions">
@@ -2305,231 +2439,15 @@ export default function Messages() {
         </section>
       </main>
 
-      {/* Employer Company Profile Details Modal (Applicant View) */}
-      {selectedCompanyDetails && (
-        <div
-          className="jd-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Employer Details"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setSelectedCompanyDetails(null);
-              setIsFaqDrawerOpen(false);
-            }
-          }}
-        >
-          <div className="jd-modal-container" style={{ maxWidth: "700px" }}>
-            <div className="jd-panel">
-              {/* Cover banner */}
-              <div className="jd-cover-banner">
-                {selectedCompanyDetails.company_cover_path ? (
-                  <img
-                    src={
-                      selectedCompanyDetails.company_cover_path.startsWith("http") || selectedCompanyDetails.company_cover_path.startsWith("/api")
-                        ? selectedCompanyDetails.company_cover_path
-                        : `/api/employers/${selectedCompanyDetails.user_id}/cover`
-                    }
-                    alt={`${selectedCompanyDetails.business_name} cover`}
-                    onError={(e) => {
-                      (e.currentTarget as HTMLElement).style.display = "none";
-                      const placeholder = e.currentTarget.parentElement?.querySelector(".jd-cover-placeholder") as HTMLElement;
-                      if (placeholder) placeholder.style.display = "flex";
-                    }}
-                  />
-                ) : null}
-                <div className="jd-cover-placeholder" style={{ display: selectedCompanyDetails.company_cover_path ? "none" : "flex" }}>
-                  <span>Company Cover</span>
-                </div>
-              </div>
-
-              {/* Employer strip underneath banner */}
-              <div className="jd-employer-strip">
-                <div className="jd-employer-logo-info">
-                  <div
-                    className="jd-employer-logo"
-                    aria-label="Company logo"
-                    style={{ overflow: "hidden", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}
-                  >
-                    {(() => {
-                      const logoSrc = selectedCompanyDetails.company_logo_path
-                        ? selectedCompanyDetails.company_logo_path.startsWith("http") || selectedCompanyDetails.company_logo_path.startsWith("/api")
-                          ? selectedCompanyDetails.company_logo_path
-                          : `/api/employers/${selectedCompanyDetails.user_id}/logo`
-                        : `/api/employers/${selectedCompanyDetails.user_id}/logo`;
-                      return (
-                        <>
-                          <img
-                            src={logoSrc}
-                            alt={selectedCompanyDetails.business_name}
-                            style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                            onError={(e) => {
-                              (e.currentTarget as HTMLElement).style.display = "none";
-                              if (e.currentTarget.nextElementSibling) {
-                                (e.currentTarget.nextElementSibling as HTMLElement).style.display = "block";
-                              }
-                            }}
-                          />
-                          <svg viewBox="0 0 24 24" aria-hidden="true" style={{ display: "none", width: "32px", height: "32px", stroke: "#0284c7" }}>
-                            <path d="M3 21h18M5 21V7l7-4 7 4v14M9 11h2m2 0h2M9 15h2m2 0h2" />
-                          </svg>
-                        </>
-                      );
-                    })()}
-                  </div>
-                  <div>
-                    <strong className="jd-employer-name">{selectedCompanyDetails.business_name}</strong>
-                    <span className="jd-employer-location">
-                      <svg viewBox="0 0 24 24" aria-hidden="true" width="13" height="13" fill="none" stroke="#5b8ab0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-                      </svg>
-                      {selectedCompanyDetails.industry || "General Industry"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="jd-header-right-actions">
-                  <div className="rating-score-box" title="Company rating">
-                    <span className="star-icon">★</span>
-                    <span>{selectedCompanyDetails.rating ? Number(selectedCompanyDetails.rating).toFixed(1) : "0.0"}</span>
-                  </div>
-                  <button
-                    type="button"
-                    className={`jd-faq-btn ${isFaqDrawerOpen ? "active" : ""}`}
-                    onClick={() => {
-                      if (isFaqDrawerOpen) {
-                        setIsFaqDrawerOpen(false);
-                      } else {
-                        handleOpenCompanyFaqs(selectedCompanyDetails.user_id);
-                      }
-                    }}
-                  >
-                    FAQ's
-                  </button>
-                </div>
-              </div>
-
-              {/* Scrollable body & drawer container */}
-              <div className="jd-body-wrapper" style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-                <div className="jd-body" style={{ maxHeight: "calc(88vh - 280px)", overflowY: "auto", padding: "20px 24px" }}>
-                  {/* Section: Company Overview */}
-                  <div style={{ marginBottom: "24px" }}>
-                    <h3 style={{ fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b", fontWeight: 700, marginBottom: "8px" }}>
-                      About Company
-                    </h3>
-                    <p className="company-modal-about" style={{ fontSize: "0.95rem", lineHeight: 1.6, whiteSpace: "pre-line", margin: 0 }}>
-                      {selectedCompanyDetails.company_description || "No company description provided."}
-                    </p>
-                  </div>
-
-                  {/* Section: Contact & Company Information Cards */}
-                  <div style={{ marginBottom: "24px" }}>
-                    <h3 style={{ fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b", fontWeight: 700, marginBottom: "12px" }}>
-                      Contact Information
-                    </h3>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
-                      <div className="company-info-card" style={{ padding: "12px 14px", borderRadius: "10px" }}>
-                        <small className="company-info-card-label" style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "4px" }}>BUSINESS EMAIL</small>
-                        <span className="company-info-card-val" style={{ fontSize: "0.88rem", fontWeight: 600, wordBreak: "break-all" }}>
-                          {selectedCompanyDetails.business_email || "Not provided"}
-                        </span>
-                      </div>
-
-                      <div className="company-info-card" style={{ padding: "12px 14px", borderRadius: "10px" }}>
-                        <small className="company-info-card-label" style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "4px" }}>CONTACT NUMBER</small>
-                        <span className="company-info-card-val" style={{ fontSize: "0.88rem", fontWeight: 600 }}>
-                          {selectedCompanyDetails.contact_number || "Not provided"}
-                        </span>
-                      </div>
-
-                      {selectedCompanyDetails.website && (
-                        <div className="company-info-card" style={{ padding: "12px 14px", borderRadius: "10px" }}>
-                          <small className="company-info-card-label" style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "4px" }}>WEBSITE</small>
-                          <a
-                            href={selectedCompanyDetails.website.startsWith("http") ? selectedCompanyDetails.website : `https://${selectedCompanyDetails.website}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{ color: "#0284c7", fontSize: "0.88rem", fontWeight: 600, textDecoration: "underline", wordBreak: "break-all" }}
-                          >
-                            {selectedCompanyDetails.website}
-                          </a>
-                        </div>
-                      )}
-
-                      <div className="company-info-card" style={{ padding: "12px 14px", borderRadius: "10px" }}>
-                        <small className="company-info-card-label" style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "4px" }}>HEADQUARTERS</small>
-                        <span className="company-info-card-val" style={{ fontSize: "0.88rem", fontWeight: 600 }}>
-                          {selectedCompanyDetails.company_address || selectedCompanyDetails.city || "Cavite"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Slide-in FAQ Drawer */}
-                <div className={`jd-faq-drawer ${isFaqDrawerOpen ? "open" : ""}`}>
-                  <div className="jd-faq-header">
-                    <h3>Company FAQ's</h3>
-                    <button type="button" className="jd-faq-back-btn" aria-label="Back to company details" onClick={() => setIsFaqDrawerOpen(false)}>
-                      ←
-                    </button>
-                  </div>
-                  <div className="jd-faq-body">
-                    {faqLoading ? (
-                      <p className="jd-faq-loading">Loading FAQ's...</p>
-                    ) : companyFaqs.length === 0 ? (
-                      <p className="jd-faq-empty">No FAQ's created by this company yet.</p>
-                    ) : (
-                      companyFaqs.map((faq) => {
-                        const isExpanded = expandedFaqIds.includes(faq.id);
-                        return (
-                          <div key={faq.id} className={`jd-faq-item ${isExpanded ? "expanded" : ""}`}>
-                            <button
-                              type="button"
-                              className="jd-faq-question-btn"
-                              onClick={() => {
-                                setExpandedFaqIds((prev) =>
-                                  prev.includes(faq.id) ? prev.filter((id) => id !== faq.id) : [...prev, faq.id]
-                                );
-                              }}
-                            >
-                              <div className="jd-faq-q-left">
-                                {faq.question_type && <span className="jd-faq-type-badge">{faq.question_type}</span>}
-                                <span className="jd-faq-question-text">{faq.question}</span>
-                              </div>
-                              <span className="jd-faq-toggle-icon">{isExpanded ? "−" : "+"}</span>
-                            </button>
-                            {isExpanded && (
-                              <div className="jd-faq-answer">
-                                <p>{faq.answer}</p>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Modal Footer */}
-              <div className="jd-footer" style={{ padding: "16px 24px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "flex-end" }}>
-                <button
-                  type="button"
-                  className="cand-details-cancel-btn"
-                  onClick={() => {
-                    setSelectedCompanyDetails(null);
-                    setIsFaqDrawerOpen(false);
-                  }}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Employer Company Profile Details Modal (Applicant View - Clean Base Modal) */}
+      <EmployerDetailsModal
+        isOpen={Boolean(selectedCompanyDetails)}
+        onClose={() => {
+          setSelectedCompanyDetails(null);
+          setIsFaqDrawerOpen(false);
+        }}
+        employer={selectedCompanyDetails}
+      />
 
       {/* Candidate Profile Details Modal (Employer View) */}
       {selectedCandidateDetails && (
@@ -3176,611 +3094,89 @@ export default function Messages() {
         </div>
       )}
 
-      {/* Job Details Modal (Applicant View) */}
-      {detailsJob && (
-        <div className="jd-overlay" role="dialog" aria-modal="true" aria-label="Job Details" onClick={(e) => { if (e.target === e.currentTarget) { setDetailsJob(null); setIsApplicantBreakdownOpen(false); setIsFaqDrawerOpen(false); } }}>
-          <div className={`jd-modal-container ${isApplicantBreakdownOpen ? "with-side-panel" : ""}`}>
-            <div className="jd-panel">
-              {/* Cover banner */}
-              <div className="jd-cover-banner">
-                {detailsJob.companyCoverPath ? (
-                  <img
-                    src={detailsJob.companyCoverPath.startsWith("http") || detailsJob.companyCoverPath.startsWith("/api") ? detailsJob.companyCoverPath : `/api/employers/${detailsJob.employerUserId}/cover`}
-                    alt={`${detailsJob.company} cover`}
-                    onError={(e) => {
-                      (e.currentTarget as HTMLElement).style.display = "none";
-                      const placeholder = e.currentTarget.parentElement?.querySelector(".jd-cover-placeholder") as HTMLElement;
-                      if (placeholder) placeholder.style.display = "flex";
-                    }}
-                  />
-                ) : null}
-                <div className="jd-cover-placeholder" style={{ display: detailsJob.companyCoverPath ? "none" : "flex" }}>
-                  <span>Cover photo</span>
-                </div>
-              </div>
-
-              <div className="jd-employer-strip">
-                  <div className="jd-employer-logo-info">
-                    <div className="jd-employer-logo" aria-label="Company logo" style={{ overflow: "hidden", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      {(() => {
-                        const logoSrc = detailsJob.companyLogoPath
-                          ? (detailsJob.companyLogoPath.startsWith("http") || detailsJob.companyLogoPath.startsWith("/api") ? detailsJob.companyLogoPath : `/api/employers/${detailsJob.employerUserId}/logo`)
-                          : (detailsJob.employerUserId ? `/api/employers/${detailsJob.employerUserId}/logo` : null);
-                        return (
-                          <>
-                            {logoSrc && (
-                              <img
-                                src={logoSrc}
-                                alt={detailsJob.company}
-                                style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                                onError={(e) => {
-                                  (e.currentTarget as HTMLElement).style.display = "none";
-                                  if (e.currentTarget.nextElementSibling) {
-                                    (e.currentTarget.nextElementSibling as HTMLElement).style.display = "block";
-                                  }
-                                }}
-                              />
-                            )}
-                            <svg viewBox="0 0 24 24" aria-hidden="true" style={{ display: logoSrc ? "none" : "block" }}>
-                              <path d="M3 21h18M5 21V7l7-4 7 4v14M9 11h2m2 0h2M9 15h2m2 0h2" />
-                            </svg>
-                          </>
-                        );
-                      })()}
-                    </div>
-                    <div>
-                      <strong className="jd-employer-name">{detailsJob.company}</strong>
-                      <span className="jd-employer-location">
-                        <svg viewBox="0 0 24 24" aria-hidden="true" width="12" height="12" fill="none" stroke="#5b8ab0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                          <circle cx="12" cy="10" r="3" />
-                        </svg>
-                        {detailsJob.location}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="jd-header-right-actions">
-                    <div className="rating-score-box" title="Company rating">
-                      <span className="star-icon">★</span>
-                      <span>{detailsJob.rating ? Number(detailsJob.rating).toFixed(1) : "0.0"}</span>
-                    </div>
-                    {(() => {
-                      const detailsMatchInfo = calculateJobMatchDetails(detailsJob, applicantMatchProfile);
-                      return (
-                        <div className={`match-score-box ${getMatchColorClass(detailsMatchInfo.score)}`} title="Job match score">
-                          <small>MATCH</small>
-                          <b>{detailsMatchInfo.score}%</b>
-                        </div>
-                      );
-                    })()}
-                    <button
-                      type="button"
-                      className={`jd-faq-btn ${isFaqDrawerOpen ? "active" : ""}`}
-                      onClick={() => {
-                        if (isFaqDrawerOpen) {
-                          setIsFaqDrawerOpen(false);
-                        } else {
-                          handleOpenFaqs(detailsJob);
-                        }
-                      }}
-                    >
-                      FAQ's
-                    </button>
-                  </div>
-                </div>
-
-              {/* Scrollable body & drawer container */}
-              <div className="jd-body-wrapper">
-                <div className="jd-body">
-                  {/* Title row */}
-                  <div className="jd-top-section">
-                    <div className="jd-title-row">
-                      <h2 className="jd-title-h2">{detailsJob.title}</h2>
-                    </div>
-                    <div className="jd-chips-inline">
-                      <span className={`status-chip ${detailsJob.status === "open" ? "open" : "closed"}`}>{detailsJob.status === "open" ? "Open" : "Closed"}</span>
-                      {detailsJob.urgent && <span className="status-chip urgent">Urgent</span>}
-                      <span className="setup-pill">{detailsJob.setup}</span>
-                      {detailsJob.experienceLevel && <span className="exp-level-pill">{formatExperienceLevel(detailsJob.experienceLevel)}</span>}
-                      <span className="salary-pill">{detailsJob.salary}</span>
-                    </div>
-                  </div>
-
-                  <div className="jd-section">
-                    <h3>Job Description</h3>
-                    <p>{detailsJob.summary || "No description provided."}</p>
-                  </div>
-
-                  {detailsJob.skillTags.length > 0 && (
-                    <div className="jd-section">
-                      <h3>Required Skills</h3>
-                      <div className="jd-tags-wrap">
-                        {detailsJob.skillTags.map((s) => (
-                          <span className="js-tag-chip js-tag-skill" key={s} title={s}>{s}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {detailsJob.qualTags.length > 0 && (
-                    <div className="jd-section">
-                      <h3>Required Qualifications</h3>
-                      <div className="jd-tags-wrap">
-                        {detailsJob.qualTags.map((q) => (
-                          <span className="js-tag-chip js-tag-qualification" key={q} title={q}>{q}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {(detailsJob.certTags?.length ?? 0) > 0 && (
-                    <div className="jd-section">
-                      <h3>Required Certifications</h3>
-                      <div className="jd-tags-wrap">
-                        {detailsJob.certTags?.map((c) => (
-                          <span className="js-tag-chip js-tag-certification" key={c} title={c}>{c}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Slide-in FAQ Drawer */}
-                <div className={`jd-faq-drawer ${isFaqDrawerOpen ? "open" : ""}`}>
-                  <div className="jd-faq-header">
-                    <h3>Company FAQ's</h3>
-                    <button type="button" className="jd-faq-back-btn" aria-label="Back to job details" onClick={() => setIsFaqDrawerOpen(false)}>
-                      ←
-                    </button>
-                  </div>
-                  <div className="jd-faq-body">
-                    {faqLoading ? (
-                      <p className="jd-faq-loading">Loading FAQ's...</p>
-                    ) : companyFaqs.length === 0 ? (
-                      <p className="jd-faq-empty">No FAQ's created by this company yet.</p>
-                    ) : (
-                      companyFaqs.map((faq) => {
-                        const isExpanded = expandedFaqIds.includes(faq.id);
-                        return (
-                          <div key={faq.id} className={`jd-faq-item ${isExpanded ? "expanded" : ""}`}>
-                            <button
-                              type="button"
-                              className="jd-faq-question-btn"
-                              onClick={() => {
-                                setExpandedFaqIds((prev) =>
-                                  prev.includes(faq.id) ? prev.filter((id) => id !== faq.id) : [...prev, faq.id]
-                                );
-                              }}
-                            >
-                              <div className="jd-faq-q-left">
-                                {faq.question_type && <span className="jd-faq-type-badge">{faq.question_type}</span>}
-                                <span className="jd-faq-question-text">{faq.question}</span>
-                              </div>
-                              <span className="jd-faq-toggle-icon">{isExpanded ? "−" : "+"}</span>
-                            </button>
-                            {isExpanded && (
-                              <div className="jd-faq-answer">
-                                <p>{faq.answer}</p>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="jd-panel-footer">
-                <div className="jd-footer-meta">
-                  <span><strong>Applications:</strong> {detailsJob.applicantCount}</span>
-                  <span><strong>Close Date:</strong> {detailsJob.closeDate}</span>
-                </div>
-                <div className="jd-footer-middle">
-                  <button
-                    type="button"
-                    className={`jd-breakdown-btn ${isApplicantBreakdownOpen ? "active" : ""}`}
-                    onClick={() => setIsApplicantBreakdownOpen((prev) => !prev)}
-                  >
-                    <span>{isApplicantBreakdownOpen ? "Hide Breakdown" : "Match Breakdown"}</span>
-                  </button>
-                </div>
-                <div className="jd-footer-actions">
-                  <button type="button" className="jd-cancel-btn" onClick={() => { setDetailsJob(null); setIsApplicantBreakdownOpen(false); setIsFaqDrawerOpen(false); }}>Close</button>
-                  {invitationStatus === "accepted" ? (
-                    <button type="button" className="solid-btn applied-btn" disabled>
-                      Accepted
-                    </button>
-                  ) : invitationStatus === "declined" ? (
-                    <button type="button" className="solid-btn" style={{ background: "#ef4444", color: "#fff", cursor: "not-allowed", border: "none" }} disabled>
-                      Declined
-                    </button>
-                  ) : invitationStatus === "pending" ? (
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      <button
-                        type="button"
-                        className="solid-btn"
-                        style={{ background: "#fff", border: "1px solid #ef4444", color: "#ef4444", fontWeight: 700 }}
-                        onClick={() => setDeclineInvitationTarget({ type: "byDetails", jobId: detailsJob.id, title: detailsJob.title })}
-                        disabled={isRespondingInvitation}
-                      >
-                        {isRespondingInvitation ? "..." : "Decline"}
-                      </button>
-                      <button
-                        type="button"
-                        className="solid-btn applied-btn"
-                        onClick={() => handleRespondInvitation("accept")}
-                        disabled={isRespondingInvitation}
-                      >
-                        {isRespondingInvitation ? "Processing..." : "Accept Invitation"}
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      className={`solid-btn ${appliedJobIds.includes(detailsJob.id) ? "applied-btn" : ""}`}
-                      onClick={() => setApplyJobTarget({ jobId: detailsJob.id, title: detailsJob.title })}
-                      disabled={appliedJobIds.includes(detailsJob.id) || applyingJobId === detailsJob.id}
-                    >
-                      {appliedJobIds.includes(detailsJob.id) ? "Applied" : applyingJobId === detailsJob.id ? "Applying..." : "Apply Now"}
-                    </button>
-                  )}
-                </div>
-              </div>
+      {/* ── Standardized Job Details Modal (Applicant View - Clean Base Modal) ── */}
+      <JobDetailsModal
+        isOpen={Boolean(detailsJob)}
+        onClose={() => {
+          setDetailsJob(null);
+          setIsApplicantBreakdownOpen(false);
+          setIsFaqDrawerOpen(false);
+        }}
+        job={detailsJob}
+        customFooterActions={
+          invitationStatus === "accepted" ? (
+            <button
+              type="button"
+              className="solid-btn applied-btn status-approved"
+              disabled
+            >
+              Accepted
+            </button>
+          ) : invitationStatus === "declined" ? (
+            <button
+              type="button"
+              className="solid-btn applied-btn status-denied"
+              disabled
+            >
+              Declined
+            </button>
+          ) : invitationStatus === "pending" ? (
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button
+                type="button"
+                className="jd-cancel-btn"
+                style={{ borderColor: "#ef4444", color: "#ef4444", fontWeight: 700 }}
+                onClick={() =>
+                  setDecisionModalTarget({
+                    type: "byDetails",
+                    action: "decline",
+                    jobId: detailsJob?.id,
+                    title: detailsJob?.title,
+                    companyName: detailsJob?.company || selectedThread?.other_user_name,
+                  })
+                }
+                disabled={isRespondingInvitation}
+              >
+                Decline
+              </button>
+              <button
+                type="button"
+                className="solid-btn"
+                style={{ background: "#10b981", borderColor: "#10b981" }}
+                onClick={() =>
+                  setDecisionModalTarget({
+                    type: "byDetails",
+                    action: "accept",
+                    jobId: detailsJob?.id,
+                    title: detailsJob?.title,
+                    companyName: detailsJob?.company || selectedThread?.other_user_name,
+                  })
+                }
+                disabled={isRespondingInvitation}
+              >
+                Accept Invitation
+              </button>
             </div>
-
-            {/* ── Right Side Comparison Panel (Outside Main Modal) ── */}
-            {isApplicantBreakdownOpen && (() => {
-              const matchDetails = calculateJobMatchDetails(detailsJob, applicantMatchProfile);
-              const appSkills = applicantMatchProfile?.skills || [];
-              const appQuals = applicantMatchProfile?.qualifications || [];
-              const appCerts = applicantMatchProfile?.certifications || [];
-
-              const jobSkills = detailsJob.skillTags || [];
-              const jobQuals = detailsJob.qualTags || [];
-              const jobCerts = detailsJob.certTags || [];
-
-              const checkMatch = (jobItem: string, appItems: string[]) => {
-                if (!appItems || appItems.length === 0) return false;
-                return appItems.some((appItem) => isSkillMatch(jobItem, appItem));
-              };
-
-              const isAppRelevant = (appItem: string, jItems: string[]) => {
-                if (!jItems || jItems.length === 0) return false;
-                return jItems.some((jobItem) => isSkillMatch(jobItem, appItem));
-              };
-
-              return (
-                <aside className="jd-side-comparison-panel opening">
-                  <div className="jd-side-panel-header">
-                    <div className="jd-side-title-row">
-                      <h3>Competencies & Requirements</h3>
-                      <span className="jd-side-subtitle">Side-by-side profile match vs employer postings</span>
-                    </div>
-                    <div className="jd-side-header-actions">
-                      <span className={`match-badge-pill ${getMatchColorClass(matchDetails.score)}`}>
-                        {matchDetails.score}% Match
-                      </span>
-                      <button
-                        type="button"
-                        className="jd-side-close-btn"
-                        aria-label="Close comparison panel"
-                        onClick={() => setIsApplicantBreakdownOpen(false)}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="jd-side-panel-body">
-                    {/* Legend strip */}
-                    <div className="jd-compare-legend">
-                      <div className="legend-item">
-                        <span className="legend-dot green"></span>
-                        <span><strong>Green Tag:</strong> Matched with your profile</span>
-                      </div>
-                      <div className="legend-item">
-                        <span className="legend-dot red"></span>
-                        <span><strong>Red Tag:</strong> Required by employer, missing from your profile</span>
-                      </div>
-                    </div>
-
-                    {/* Master 2-Column Unified Container */}
-                    <div className="jd-unified-compare-container">
-                      {/* ── Column 1: Applicant Profile ── */}
-                      <div className="jd-master-col applicant-col">
-                        <div className="jd-master-col-header">
-                          <span>Your Profile</span>
-                        </div>
-                        <div className="jd-master-col-content">
-                          {/* 1. Location */}
-                          <div className="jd-master-row">
-                            <span className="jd-row-label">Location</span>
-                            <div className="jd-col-tags-container">
-                              <span className="jd-comp-tag app-neutral">
-                                <span className="tag-text">{formatLocationWithCavite(applicantMatchProfile?.city || "Cavite")}</span>
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* 2. Work Arrangement */}
-                          <div className="jd-master-row">
-                            <span className="jd-row-label">Work Arrangement</span>
-                            <div className="jd-col-tags-container">
-                              <span className="jd-comp-tag app-neutral">
-                                <span className="tag-text">{applicantMatchProfile?.workArrangement || "Any"}</span>
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* 3. Salary Range */}
-                          <div className="jd-master-row">
-                            <span className="jd-row-label">Salary Range</span>
-                            <div className="jd-col-tags-container">
-                              <span className="jd-comp-tag app-neutral">
-                                <span className="tag-text">
-                                  {applicantMatchProfile?.expectedSalary
-                                    ? `PHP ${Number(applicantMatchProfile.expectedSalary).toLocaleString()}`
-                                    : "Not set"}
-                                </span>
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* 4. Skills */}
-                          <div className="jd-master-row">
-                            <div className="jd-row-label-wrap">
-                              <span className="jd-row-label">Skills</span>
-                              <span className="col-count-text">{appSkills.length} listed</span>
-                            </div>
-                            <div className="jd-col-tags-container">
-                              {appSkills.length > 0 ? (
-                                appSkills.map((item) => {
-                                  const isRel = isAppRelevant(item, jobSkills);
-                                  const isSource = hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.item === item;
-                                  const isLinked = Boolean(hoveredCompareTag?.side === "employer" && hoveredCompareTag?.category === "skills" && isSkillMatch(item, hoveredCompareTag.item));
-                                  return (
-                                    <span
-                                      key={item}
-                                      className={`jd-comp-tag ${isRel ? "app-matched" : "app-neutral"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
-                                      onMouseEnter={() => setHoveredCompareTag({ item, side: "applicant", category: "skills" })}
-                                      onMouseLeave={() => setHoveredCompareTag(null)}
-                                    >
-                                      {isRel && <span className="tag-check">✓ </span>}
-                                      <span className="tag-text">{item}</span>
-                                    </span>
-                                  );
-                                })
-                              ) : (
-                                <span className="jd-no-data-text">No skills in your profile</span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* 5. Qualifications */}
-                          <div className="jd-master-row">
-                            <div className="jd-row-label-wrap">
-                              <span className="jd-row-label">Qualifications</span>
-                              <span className="col-count-text">{appQuals.length} listed</span>
-                            </div>
-                            <div className="jd-col-tags-container">
-                              {appQuals.length > 0 ? (
-                                appQuals.map((item) => {
-                                  const isRel = isAppRelevant(item, jobQuals);
-                                  const isSource = hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.item === item;
-                                  const isLinked = Boolean(hoveredCompareTag?.side === "employer" && hoveredCompareTag?.category === "qualifications" && isSkillMatch(item, hoveredCompareTag.item));
-                                  return (
-                                    <span
-                                      key={item}
-                                      className={`jd-comp-tag ${isRel ? "app-matched" : "app-neutral"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
-                                      onMouseEnter={() => setHoveredCompareTag({ item, side: "applicant", category: "qualifications" })}
-                                      onMouseLeave={() => setHoveredCompareTag(null)}
-                                    >
-                                      {isRel && <span className="tag-check">✓ </span>}
-                                      <span className="tag-text">{item}</span>
-                                    </span>
-                                  );
-                                })
-                              ) : (
-                                <span className="jd-no-data-text">No qualifications in your profile</span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* 6. Certifications */}
-                          <div className="jd-master-row">
-                            <div className="jd-row-label-wrap">
-                              <span className="jd-row-label">Certifications</span>
-                              <span className="col-count-text">{appCerts.length} listed</span>
-                            </div>
-                            <div className="jd-col-tags-container">
-                              {appCerts.length > 0 ? (
-                                appCerts.map((item) => {
-                                  const isRel = isAppRelevant(item, jobCerts);
-                                  const isSource = hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.item === item;
-                                  const isLinked = Boolean(hoveredCompareTag?.side === "employer" && hoveredCompareTag?.category === "certifications" && isSkillMatch(item, hoveredCompareTag.item));
-                                  return (
-                                    <span
-                                      key={item}
-                                      className={`jd-comp-tag ${isRel ? "app-matched" : "app-neutral"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
-                                      onMouseEnter={() => setHoveredCompareTag({ item, side: "applicant", category: "certifications" })}
-                                      onMouseLeave={() => setHoveredCompareTag(null)}
-                                    >
-                                      {isRel && <span className="tag-check">✓ </span>}
-                                      <span className="tag-text">{item}</span>
-                                    </span>
-                                  );
-                                })
-                              ) : (
-                                <span className="jd-no-data-text">No certifications in your profile</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* ── Column 2: Employer Requirements ── */}
-                      <div className="jd-master-col employer-col">
-                        <div className="jd-master-col-header employer">
-                          <span>Employer's Requirements</span>
-                        </div>
-                        <div className="jd-master-col-content">
-                          {/* 1. Location */}
-                          <div className="jd-master-row">
-                            <span className="jd-row-label">Location</span>
-                            <div className="jd-col-tags-container">
-                              {(() => {
-                                const matched = matchDetails.locationPts >= 12;
-                                return (
-                                  <span
-                                    className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"}`}
-                                    title={matched ? "Matched with your location" : "Different location"}
-                                  >
-                                    <span className="tag-icon">{matched ? "✓" : "✗"}</span>
-                                    <span className="tag-text">{formatLocationWithCavite(detailsJob.location)}</span>
-                                  </span>
-                                );
-                              })()}
-                            </div>
-                          </div>
-
-                          {/* 2. Work Arrangement */}
-                          <div className="jd-master-row">
-                            <span className="jd-row-label">Work Arrangement</span>
-                            <div className="jd-col-tags-container">
-                              {(() => {
-                                const matched = matchDetails.setupPts >= 15;
-                                return (
-                                  <span
-                                    className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"}`}
-                                    title={matched ? "Matched with your setup preference" : "Different work arrangement"}
-                                  >
-                                    <span className="tag-icon">{matched ? "✓" : "✗"}</span>
-                                    <span className="tag-text">{detailsJob.setup || "Standard"}</span>
-                                  </span>
-                                );
-                              })()}
-                            </div>
-                          </div>
-
-                          {/* 3. Salary Range */}
-                          <div className="jd-master-row">
-                            <span className="jd-row-label">Salary Range</span>
-                            <div className="jd-col-tags-container">
-                              {(() => {
-                                const matched = matchDetails.salaryPts >= 12;
-                                return (
-                                  <span
-                                    className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"}`}
-                                    title={matched ? "Matches your salary range" : "Different salary range"}
-                                  >
-                                    <span className="tag-icon">{matched ? "✓" : "✗"}</span>
-                                    <span className="tag-text">{detailsJob.salary}</span>
-                                  </span>
-                                );
-                              })()}
-                            </div>
-                          </div>
-
-                          {/* 4. Skills */}
-                          <div className="jd-master-row">
-                            <div className="jd-row-label-wrap">
-                              <span className="jd-row-label">Skills</span>
-                              <span className="col-count-text">{jobSkills.length} required</span>
-                            </div>
-                            <div className="jd-col-tags-container">
-                              {jobSkills.length > 0 ? (
-                                jobSkills.map((item) => {
-                                  const matched = checkMatch(item, appSkills);
-                                  const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
-                                  const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "skills" && isSkillMatch(item, hoveredCompareTag.item));
-                                  return (
-                                    <span
-                                      key={item}
-                                      className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
-                                      onMouseEnter={() => setHoveredCompareTag({ item, side: "employer", category: "skills" })}
-                                      onMouseLeave={() => setHoveredCompareTag(null)}
-                                    >
-                                      <span className="tag-icon">{matched ? "✓" : "✗"}</span>
-                                      <span className="tag-text">{item}</span>
-                                    </span>
-                                  );
-                                })
-                              ) : (
-                                <span className="jd-no-data-text">No specific skills required</span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* 5. Qualifications */}
-                          <div className="jd-master-row">
-                            <div className="jd-row-label-wrap">
-                              <span className="jd-row-label">Qualifications</span>
-                              <span className="col-count-text">{jobQuals.length} required</span>
-                            </div>
-                            <div className="jd-col-tags-container">
-                              {jobQuals.length > 0 ? (
-                                jobQuals.map((item) => {
-                                  const matched = checkMatch(item, appQuals);
-                                  const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
-                                  const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "qualifications" && isSkillMatch(item, hoveredCompareTag.item));
-                                  return (
-                                    <span
-                                      key={item}
-                                      className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
-                                      onMouseEnter={() => setHoveredCompareTag({ item, side: "employer", category: "qualifications" })}
-                                      onMouseLeave={() => setHoveredCompareTag(null)}
-                                    >
-                                      <span className="tag-icon">{matched ? "✓" : "✗"}</span>
-                                      <span className="tag-text">{item}</span>
-                                    </span>
-                                  );
-                                })
-                              ) : (
-                                <span className="jd-no-data-text">No specific qualifications required</span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* 6. Certifications */}
-                          <div className="jd-master-row">
-                            <div className="jd-row-label-wrap">
-                              <span className="jd-row-label">Certifications</span>
-                              <span className="col-count-text">{jobCerts.length} required</span>
-                            </div>
-                            <div className="jd-col-tags-container">
-                              {jobCerts.length > 0 ? (
-                                jobCerts.map((item) => {
-                                  const matched = checkMatch(item, appCerts);
-                                  const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
-                                  const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "certifications" && isSkillMatch(item, hoveredCompareTag.item));
-                                  return (
-                                    <span
-                                      key={item}
-                                      className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
-                                      onMouseEnter={() => setHoveredCompareTag({ item, side: "employer", category: "certifications" })}
-                                      onMouseLeave={() => setHoveredCompareTag(null)}
-                                    >
-                                      <span className="tag-icon">{matched ? "✓" : "✗"}</span>
-                                      <span className="tag-text">{item}</span>
-                                    </span>
-                                  );
-                                })
-                              ) : (
-                                <span className="jd-no-data-text">No certifications required for this position</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </aside>
-              );
-            })()}
-          </div>
-        </div>
-      )}
+          ) : detailsJob && appliedJobIds.includes(detailsJob.id) ? (
+            <button
+              type="button"
+              className="solid-btn applied-btn status-applied"
+              disabled
+            >
+              Applied
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="solid-btn"
+              onClick={() => detailsJob && setApplyJobTarget({ jobId: detailsJob.id, title: detailsJob.title })}
+              disabled={detailsJob ? applyingJobId === detailsJob.id : false}
+            >
+              {detailsJob && applyingJobId === detailsJob.id ? "Applying..." : "Apply Now"}
+            </button>
+          )
+        }
+      />
 
       {/* ── EMPLOYER VIEW: Picture 1 Job Details & Match Breakdown Side-by-Side Overlay ── */}
       {(employerViewingJob || isJobDetailsClosing) && employerViewingJob && (
@@ -3811,7 +3207,7 @@ export default function Messages() {
                 zIndex: 25000,
                 padding: "24px 36px",
                 overflowX: "hidden",
-                fontFamily: '"Manrope", sans-serif',
+                fontFamily: '"Inter", sans-serif',
                 animation: isJobDetailsClosing
                   ? "jdFadeOut 0.2s ease forwards"
                   : "jdFadeIn 0.22s ease forwards",
@@ -3832,7 +3228,7 @@ export default function Messages() {
                   overflow: "hidden",
                   position: "relative",
                   flexShrink: 0,
-                  fontFamily: '"Manrope", sans-serif',
+                  fontFamily: '"Inter", sans-serif',
                   animation: isJobDetailsClosing
                     ? "jdPopOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards"
                     : "jdPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards",
@@ -3850,7 +3246,7 @@ export default function Messages() {
                     background: "#ffffff",
                   }}
                 >
-                  <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
+                  <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800, color: "#01294a", fontFamily: '"Inter", sans-serif' }}>
                     Job Details
                   </h3>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -3864,7 +3260,7 @@ export default function Messages() {
                         borderRadius: "999px",
                         border: `1px solid ${matchStyle.fill}`,
                         whiteSpace: "nowrap",
-                        fontFamily: '"Manrope", sans-serif',
+                        fontFamily: '"Inter", sans-serif',
                       }}
                     >
                       {detailsMatchPct}% Match
@@ -3883,7 +3279,7 @@ export default function Messages() {
                         cursor: "pointer",
                         boxShadow: "0 2px 6px rgba(1, 41, 74, 0.2)",
                         transition: "all 0.15s ease",
-                        fontFamily: '"Manrope", sans-serif',
+                        fontFamily: '"Inter", sans-serif',
                       }}
                       onClick={() => setIsMatchDrawerOpen((prev) => !prev)}
                     >
@@ -3901,7 +3297,7 @@ export default function Messages() {
                 </div>
 
                 {/* Body */}
-                <div style={{ padding: "20px 24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px", flex: 1, fontFamily: '"Manrope", sans-serif' }}>
+                <div style={{ padding: "20px 24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px", flex: 1, fontFamily: '"Inter", sans-serif' }}>
                   {/* Candidate Evaluation Callout Banner */}
                   {targetCandidate && (
                     <div
@@ -3933,27 +3329,27 @@ export default function Messages() {
                   )}
 
                   <div>
-                    <h4 style={{ margin: "0 0 8px 0", fontSize: "1.18rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
+                    <h4 style={{ margin: "0 0 8px 0", fontSize: "1.18rem", fontWeight: 800, color: "#01294a", fontFamily: '"Inter", sans-serif' }}>
                       {employerViewingJob.title}
                     </h4>
                     <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
-                      <span style={{ background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0", padding: "4px 10px", borderRadius: "999px", fontSize: "0.76rem", fontWeight: 700, fontFamily: '"Manrope", sans-serif' }}>
+                      <span style={{ background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0", padding: "4px 10px", borderRadius: "999px", fontSize: "0.76rem", fontWeight: 700, fontFamily: '"Inter", sans-serif' }}>
                         {employerViewingJob.status ? employerViewingJob.status.toUpperCase() : "OPEN"}
                       </span>
                       {(employerViewingJob.is_urgent === 1 || employerViewingJob.is_urgent === true || String(employerViewingJob.is_urgent) === "1") && (
-                        <span style={{ background: "#fef2f2", color: "#b91c1c", border: "1px solid #fca5a5", padding: "4px 10px", borderRadius: "999px", fontSize: "0.76rem", fontWeight: 700, fontFamily: '"Manrope", sans-serif' }}>
+                        <span style={{ background: "#fef2f2", color: "#b91c1c", border: "1px solid #fca5a5", padding: "4px 10px", borderRadius: "999px", fontSize: "0.76rem", fontWeight: 700, fontFamily: '"Inter", sans-serif' }}>
                           Urgent
                         </span>
                       )}
-                      <span style={{ background: "#e0f2fe", color: "#0369a1", padding: "4px 12px", borderRadius: "999px", fontSize: "0.78rem", fontWeight: 700, fontFamily: '"Manrope", sans-serif' }}>
+                      <span style={{ background: "#e0f2fe", color: "#0369a1", padding: "4px 12px", borderRadius: "999px", fontSize: "0.78rem", fontWeight: 700, fontFamily: '"Inter", sans-serif' }}>
                         {employerViewingJob.work_arrangement || "On-Site"}
                       </span>
                       {(jobSalaryMin || jobSalaryMax) ? (
-                        <span style={{ background: "#fef3c7", color: "#b45309", padding: "4px 12px", borderRadius: "999px", fontSize: "0.78rem", fontWeight: 700, fontFamily: '"Manrope", sans-serif' }}>
+                        <span style={{ background: "#fef3c7", color: "#b45309", padding: "4px 12px", borderRadius: "999px", fontSize: "0.78rem", fontWeight: 700, fontFamily: '"Inter", sans-serif' }}>
                           PHP {Number(jobSalaryMin).toLocaleString()} - {Number(jobSalaryMax).toLocaleString()}
                         </span>
                       ) : null}
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "0.8rem", color: "#64748b", fontFamily: '"Manrope", sans-serif' }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "0.8rem", color: "#64748b", fontFamily: '"Inter", sans-serif' }}>
                         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" />
                           <circle cx="12" cy="10" r="2.5" />
@@ -3965,28 +3361,28 @@ export default function Messages() {
 
                   {/* JOB DESCRIPTION */}
                   <div>
-                    <span style={{ fontSize: "0.74rem", fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: "8px", fontFamily: '"Manrope", sans-serif' }}>
+                    <span style={{ fontSize: "0.74rem", fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: "8px", fontFamily: '"Inter", sans-serif' }}>
                       JOB DESCRIPTION
                     </span>
-                    <p style={{ margin: 0, fontSize: "0.86rem", color: "#334155", lineHeight: 1.6, whiteSpace: "pre-line", fontFamily: '"Manrope", sans-serif' }}>
+                    <p style={{ margin: 0, fontSize: "0.86rem", color: "#334155", lineHeight: 1.6, whiteSpace: "pre-line", fontFamily: '"Inter", sans-serif' }}>
                       {employerViewingJob.description || "No job description provided."}
                     </p>
                   </div>
 
                   {/* REQUIRED SKILLS */}
                   <div>
-                    <span style={{ fontSize: "0.74rem", fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: "8px", fontFamily: '"Manrope", sans-serif' }}>
+                    <span style={{ fontSize: "0.74rem", fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: "8px", fontFamily: '"Inter", sans-serif' }}>
                       REQUIRED SKILLS
                     </span>
                     <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                       {parseCompetencyDisplayTags(employerViewingJob.required_skills || employerViewingJob.skills || "").length > 0 ? (
                         parseCompetencyDisplayTags(employerViewingJob.required_skills || employerViewingJob.skills || "").map((sk, idx) => (
-                          <span key={idx} style={{ background: "#f0f9ff", color: "#0369a1", border: "1px solid #bae6fd", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                          <span key={idx} style={{ background: "#f0f9ff", color: "#0369a1", border: "1px solid #bae6fd", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Inter", sans-serif' }}>
                             {sk}
                           </span>
                         ))
                       ) : (
-                        <span style={{ fontSize: "0.82rem", color: "#94a3b8", fontStyle: "italic", fontFamily: '"Manrope", sans-serif' }}>
+                        <span style={{ fontSize: "0.82rem", color: "#94a3b8", fontStyle: "italic", fontFamily: '"Inter", sans-serif' }}>
                           No specific skills required
                         </span>
                       )}
@@ -3995,18 +3391,18 @@ export default function Messages() {
 
                   {/* QUALIFICATIONS */}
                   <div>
-                    <span style={{ fontSize: "0.74rem", fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: "8px", fontFamily: '"Manrope", sans-serif' }}>
+                    <span style={{ fontSize: "0.74rem", fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: "8px", fontFamily: '"Inter", sans-serif' }}>
                       QUALIFICATIONS
                     </span>
                     <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                       {parseCompetencyDisplayTags(employerViewingJob.qualifications || employerViewingJob.required_qualifications || "").length > 0 ? (
                         parseCompetencyDisplayTags(employerViewingJob.qualifications || employerViewingJob.required_qualifications || "").map((qu, idx) => (
-                          <span key={idx} style={{ background: "#faf5ff", color: "#7e22ce", border: "1px solid #e9d5ff", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                          <span key={idx} style={{ background: "#faf5ff", color: "#7e22ce", border: "1px solid #e9d5ff", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Inter", sans-serif' }}>
                             {qu}
                           </span>
                         ))
                       ) : (
-                        <span style={{ fontSize: "0.82rem", color: "#94a3b8", fontStyle: "italic", fontFamily: '"Manrope", sans-serif' }}>
+                        <span style={{ fontSize: "0.82rem", color: "#94a3b8", fontStyle: "italic", fontFamily: '"Inter", sans-serif' }}>
                           No specific qualifications required
                         </span>
                       )}
@@ -4016,12 +3412,12 @@ export default function Messages() {
                   {/* CERTIFICATIONS */}
                   {parseCompetencyDisplayTags(employerViewingJob.certifications || employerViewingJob.required_certifications || "").length > 0 && (
                     <div>
-                      <span style={{ fontSize: "0.74rem", fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: "8px", fontFamily: '"Manrope", sans-serif' }}>
+                      <span style={{ fontSize: "0.74rem", fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: "8px", fontFamily: '"Inter", sans-serif' }}>
                         CERTIFICATIONS
                       </span>
                       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                         {parseCompetencyDisplayTags(employerViewingJob.certifications || employerViewingJob.required_certifications || "").map((cert, idx) => (
-                          <span key={idx} style={{ background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                          <span key={idx} style={{ background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Inter", sans-serif' }}>
                             {cert}
                           </span>
                         ))}
@@ -4045,7 +3441,7 @@ export default function Messages() {
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
                     {employerViewingJob.close_date && (
-                      <span style={{ fontSize: "0.8rem", color: "#64748b", fontFamily: '"Manrope", sans-serif', display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                      <span style={{ fontSize: "0.8rem", color: "#64748b", fontFamily: '"Inter", sans-serif', display: "inline-flex", alignItems: "center", gap: "5px" }}>
                         <strong style={{ color: "#0f172a" }}>Close Date:</strong> {employerViewingJob.close_date}
                       </span>
                     )}
@@ -4077,7 +3473,7 @@ export default function Messages() {
                         alignItems: "center",
                         gap: "6px",
                         transition: "all 0.15s ease",
-                        fontFamily: '"Manrope", sans-serif',
+                        fontFamily: '"Inter", sans-serif',
                       }}
                       onClick={() => {
                         handleOpenInviteModal(employerViewingJob);
@@ -4136,13 +3532,19 @@ export default function Messages() {
                     }
                   );
 
-                  const checkMatch = (jobItem: string, appItems: string[]) => {
+                  const checkMatch = (jobItem: string, appItems: string[], type?: "skills" | "qualifications" | "certifications") => {
                     if (!appItems || appItems.length === 0) return false;
+                    if (type === "certifications") {
+                      return appItems.some((appItem) => isCertificationMatch(jobItem, appItem));
+                    }
                     return appItems.some((appItem) => isSkillMatch(jobItem, appItem));
                   };
 
-                  const isCandRelevant = (appItem: string, jItems: string[]) => {
+                  const isCandRelevant = (appItem: string, jItems: string[], type?: "skills" | "qualifications" | "certifications") => {
                     if (!jItems || jItems.length === 0) return false;
+                    if (type === "certifications") {
+                      return jItems.some((jobItem) => isCertificationMatch(jobItem, appItem));
+                    }
                     return jItems.some((jobItem) => isSkillMatch(jobItem, appItem));
                   };
 
@@ -4161,7 +3563,7 @@ export default function Messages() {
                         boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.35)",
                         overflow: "hidden",
                         flexShrink: 0,
-                        fontFamily: '"Manrope", sans-serif',
+                        fontFamily: '"Inter", sans-serif',
                         animation: isJobDetailsClosing
                           ? "jdSlideOutRight 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards"
                           : "jdSlideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards",
@@ -4180,15 +3582,15 @@ export default function Messages() {
                         }}
                       >
                         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                          <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Manrope", sans-serif' }}>
+                          <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Inter", sans-serif' }}>
                             Match Breakdown
                           </h3>
-                          <span style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Manrope", sans-serif' }}>
+                          <span style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Inter", sans-serif' }}>
                             Side-by-side comparison: {targetCandidate.applicant_name} vs {employerViewingJob.title}
                           </span>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <span className={`match-badge-pill ${bdStyle}`} style={{ fontFamily: '"Manrope", sans-serif' }}>
+                          <span className={`match-badge-pill ${bdStyle}`} style={{ fontFamily: '"Inter", sans-serif' }}>
                             {matchDetails.score}% Match
                           </span>
                           <button
@@ -4202,9 +3604,9 @@ export default function Messages() {
                       </div>
 
                       {/* Body */}
-                      <div style={{ padding: "20px 24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px", flex: 1, fontFamily: '"Manrope", sans-serif' }}>
+                      <div style={{ padding: "20px 24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px", flex: 1, fontFamily: '"Inter", sans-serif' }}>
                         {/* Legend strip */}
-                        <div className="jd-compare-legend" style={{ fontFamily: '"Manrope", sans-serif' }}>
+                        <div className="jd-compare-legend" style={{ fontFamily: '"Inter", sans-serif' }}>
                           <div className="legend-item">
                             <span className="legend-dot green"></span>
                             <span><strong>Green Tag:</strong> Matched candidate competency</span>
@@ -4216,7 +3618,7 @@ export default function Messages() {
                         </div>
 
                         {/* Unified Compare Container */}
-                        <div className="jd-unified-compare-container" style={{ fontFamily: '"Manrope", sans-serif' }}>
+                        <div className="jd-unified-compare-container" style={{ fontFamily: '"Inter", sans-serif' }}>
                           {/* Candidate Column */}
                           <div className="jd-master-col applicant-col">
                             <div className="jd-master-col-header">
@@ -4498,9 +3900,9 @@ export default function Messages() {
                                 <div className="jd-col-tags-container">
                                   {jobCerts.length > 0 ? (
                                     jobCerts.map((item) => {
-                                      const matched = checkMatch(item, candCerts);
+                                      const matched = checkMatch(item, candCerts, "certifications");
                                       const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
-                                      const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "certifications" && isSkillMatch(item, hoveredCompareTag.item));
+                                      const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "certifications" && isCertificationMatch(item, hoveredCompareTag.item));
                                       return (
                                         <span
                                           key={item}
@@ -4653,26 +4055,25 @@ export default function Messages() {
         }}
       />
 
-      {/* DOUBLE VERIFICATION: DECLINE INVITATION MODAL */}
-      <ConfirmationModal
-        isOpen={!!declineInvitationTarget}
-        type="danger"
-        title="Decline Job Invitation"
-        message={
-          <div>
-            <p style={{ margin: "0 0 8px" }}>
-              Are you sure you want to decline the invitation for{" "}
-              <strong>{declineInvitationTarget?.title || "this position"}</strong>?
-            </p>
-            <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>
-              You will not be able to accept this recruitment invitation later.
-            </p>
-          </div>
-        }
-        cancelLabel="Keep Invitation"
-        confirmLabel="Decline Invitation"
-        onCancel={() => setDeclineInvitationTarget(null)}
-        onConfirm={handleConfirmDecline}
+      {/* APPLICANT DECISION MODAL (Accept / Decline Recruitment - Pic 2 & Pic 3 Design) */}
+      <ApplicantDecisionModal
+        isOpen={!!decisionModalTarget}
+        action={decisionModalTarget?.action || null}
+        jobTitle={decisionModalTarget?.title || detailsJob?.title}
+        companyName={decisionModalTarget?.companyName || selectedThread?.other_user_name}
+        candidateName={applicantLabel || "Candidate"}
+        currentUserId={currentUserId || undefined}
+        onClose={() => setDecisionModalTarget(null)}
+        onConfirm={async ({ action, letter_text, letter_type, start_date }) => {
+          if (!decisionModalTarget) return;
+          if (decisionModalTarget.type === "byJob" && decisionModalTarget.jobId) {
+            await handleRespondInvitationByJob(decisionModalTarget.jobId, action, letter_text, letter_type, start_date);
+          } else if (decisionModalTarget.type === "byDetails") {
+            await handleRespondInvitation(action, letter_text, letter_type, start_date);
+          } else if (decisionModalTarget.type === "chat") {
+            await handleRespondInvitationFromChat(action);
+          }
+        }}
       />
 
       {/* DOUBLE VERIFICATION: SUBMIT JOB APPLICATION MODAL */}
