@@ -267,7 +267,7 @@ export default function Login() {
         </a>
 
         <div className="login-left-copy">
-          <span className="login-badge">Cavite Hiring Workspace</span>
+          <span className="login-badge">Philippine Hiring Workspace</span>
           <h1>Get back to the work that moves hiring forward.</h1>
           <p>
             Search opportunities, manage applicants, track applications, and keep
@@ -472,7 +472,7 @@ export default function Login() {
           </form>
         )}
 
-        <p className="region-note">For Cavite Region | Recruitment Platform</p>
+        <p className="region-note">Philippine Nationwide | Digital Recruitment Platform</p>
       </section>
     </div>
   );

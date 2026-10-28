@@ -178,13 +178,13 @@ export default function CreateAccount() {
 
         <div className="left-content">
           <span className="badge">
-            Cavite Recruitment Platform
+            Philippine Recruitment Platform
           </span>
 
           <h1>Create your EliteCruit account.</h1>
 
           <p>
-            Join the Cavite Digital Recruitment Platform.
+            Join the Philippine Digital Recruitment Platform.
             Whether you're searching for a job or hiring
             employees, create your account to begin.
           </p>
