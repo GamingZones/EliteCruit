@@ -7716,6 +7716,303 @@ async function ensureAdminUser() {
   }
 }
 
+async function resetAndSeedZakiAccounts() {
+  const employerEmail = "zakiablando897@gmail.com";
+  const applicantEmail = "zaki_ablando897@yahoo.com";
+
+  try {
+    await run("CREATE TABLE IF NOT EXISTS system_migrations (name TEXT PRIMARY KEY, executed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP)");
+    const alreadyRun = await get("SELECT name FROM system_migrations WHERE name = 'zaki_accounts_reset_v1'");
+    if (alreadyRun) {
+      console.log("[Zaki Accounts] Already seeded previously. Skipping.");
+      return;
+    }
+
+    console.log("[Zaki Accounts] Resetting and recreating accounts for:", employerEmail, "and", applicantEmail);
+
+    // 1. Find existing accounts
+    const existingEmployer = await get("SELECT id FROM users WHERE lower(email) = ?", [employerEmail.toLowerCase()]);
+    const existingApplicant = await get("SELECT id FROM users WHERE lower(email) = ?", [applicantEmail.toLowerCase()]);
+    const targetUserIds = [existingEmployer?.id, existingApplicant?.id].filter(Boolean);
+
+    if (targetUserIds.length > 0) {
+      for (const uid of targetUserIds) {
+        await run("DELETE FROM two_factor_codes WHERE user_id = ?", [uid]).catch(() => {});
+        await run("DELETE FROM notifications WHERE user_id = ? OR related_user_id = ?", [uid, uid]).catch(() => {});
+        await run("DELETE FROM company_ratings WHERE employer_user_id = ? OR applicant_user_id = ?", [uid, uid]).catch(() => {});
+        await run("DELETE FROM candidate_ratings WHERE employer_user_id = ? OR applicant_user_id = ?", [uid, uid]).catch(() => {});
+        await run("DELETE FROM scheduled_interviews WHERE employer_user_id = ? OR applicant_user_id = ?", [uid, uid]).catch(() => {});
+        await run("DELETE FROM job_invitations WHERE employer_user_id = ? OR applicant_user_id = ?", [uid, uid]).catch(() => {});
+        await run("DELETE FROM applications WHERE applicant_user_id = ? OR job_post_id IN (SELECT id FROM job_posts WHERE employer_user_id = ?)", [uid, uid]).catch(() => {});
+        await run("DELETE FROM job_posts WHERE employer_user_id = ?", [uid]).catch(() => {});
+        await run("DELETE FROM company_faq WHERE employer_user_id = ?", [uid]).catch(() => {});
+        await run("DELETE FROM messages WHERE sender_user_id = ?", [uid]).catch(() => {});
+        await run("DELETE FROM message_participants WHERE user_id = ?", [uid]).catch(() => {});
+        await run("DELETE FROM applicant_documents WHERE user_id = ?", [uid]).catch(() => {});
+        await run("DELETE FROM applicant_profiles WHERE user_id = ?", [uid]).catch(() => {});
+        await run("DELETE FROM employer_profiles WHERE user_id = ?", [uid]).catch(() => {});
+        await run("DELETE FROM users WHERE id = ?", [uid]).catch(() => {});
+      }
+      await run("DELETE FROM message_threads WHERE id NOT IN (SELECT DISTINCT thread_id FROM message_participants)").catch(() => {});
+      await run("DELETE FROM registration_email_otps WHERE lower(email) IN (?, ?)", [employerEmail.toLowerCase(), applicantEmail.toLowerCase()]).catch(() => {});
+    }
+
+    // 2. Provision fresh credentials
+    const defaultPassword = "Password123!";
+    const passHash = await bcrypt.hash(defaultPassword, 10);
+
+    // Create Employer: Cebuana Lhuillier
+    const empUserRes = await run(
+      "INSERT INTO users (email, password_hash, role, is_active, is_email_verified, two_factor_enabled) VALUES (?, ?, 'employer', true, true, false)",
+      [employerEmail.toLowerCase(), passHash]
+    );
+    const employerId = empUserRes.lastID;
+
+    await run(
+      `INSERT INTO employer_profiles (
+        user_id, business_name, industry, company_size, company_description, contact_number,
+        province, city, company_address, terms_accepted, terms_accepted_at, branches_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, true, CURRENT_TIMESTAMP, ?)`,
+      [
+        employerId,
+        "Cebuana Lhuillier",
+        "Financial Services & Technology",
+        "501-1000 employees",
+        "Cebuana Lhuillier is one of the Philippines' leading financial services companies, providing micro-loans, insurance, and innovative digital fintech solutions.",
+        "+63 917 123 4567",
+        "Cavite",
+        "Dasmarinas",
+        "Indang - Dasmarinas Tech Hub, Cavite",
+        JSON.stringify([
+          { id: 1, name: "Dasmarinas Financial Tech Hub", city: "Dasmarinas", address: "Aguinaldo Highway, Dasmarinas, Cavite", contact_number: "+63 917 123 4567", email: employerEmail, is_main: true },
+          { id: 2, name: "Indang Poblacion Office", city: "Indang", address: "Indang Main Road, Cavite", contact_number: "+63 917 765 4321", email: employerEmail, is_main: false },
+        ]),
+      ]
+    );
+
+    // Create Applicant: Zaki Ablando
+    const appUserRes = await run(
+      "INSERT INTO users (email, password_hash, role, is_active, is_email_verified, two_factor_enabled) VALUES (?, ?, 'applicant', true, true, false)",
+      [applicantEmail.toLowerCase(), passHash]
+    );
+    const applicantId = appUserRes.lastID;
+
+    await run(
+      `INSERT INTO applicant_profiles (
+        user_id, first_name, middle_name, last_name, phone, city, address,
+        desired_job_title, expected_salary, expected_salary_min, expected_salary_max,
+        work_arrangement, skills, certifications, qualifications,
+        summary, languages, preferred_locations, terms_accepted, terms_accepted_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, true, CURRENT_TIMESTAMP)`,
+      [
+        applicantId,
+        "Zaki",
+        "James",
+        "Ablando",
+        "+63 918 987 6543",
+        "Dasmarinas",
+        "Dasmarinas, Cavite",
+        "Full Stack Web Developer",
+        "PHP 45,000 - 65,000",
+        45000,
+        65000,
+        "Hybrid",
+        JSON.stringify(["React", "Node.js", "TypeScript", "PostgreSQL", "Tailwind CSS", "REST API", "Git"]),
+        JSON.stringify(["AWS Certified Cloud Practitioner", "Meta Full Stack Developer Certificate"]),
+        JSON.stringify(["Bachelor of Science in Information Technology (BSIT)"]),
+        "Experienced Full Stack Web Developer specializing in React, Node.js, and modern cloud technologies with a strong track record of shipping scalable software.",
+        JSON.stringify(["English", "Filipino"]),
+        JSON.stringify(["Dasmarinas", "Indang", "Imus"]),
+      ]
+    );
+
+    // 3. Create Job 1: Full Stack Software Engineer (Accepted Offer / Hired Lifecycle)
+    const job1Res = await run(
+      `INSERT INTO job_posts (
+        employer_user_id, title, location, status, is_urgent, hide_salary,
+        work_arrangement, experience_level, salary_min, salary_max,
+        description, qualifications, certifications, required_skills, close_date
+      ) VALUES (?, ?, ?, 'open', 1, 0, 'Hybrid', 'Mid-Senior Level (3-5 yrs)', 45000, 65000, ?, ?, ?, ?, '2026-12-31')`,
+      [
+        employerId,
+        "Full Stack Software Engineer",
+        "Dasmarinas, Cavite",
+        "Develop and maintain enterprise fintech applications, microservices, and web portals for Cebuana Lhuillier.",
+        JSON.stringify(["Bachelor of Science in Information Technology (BSIT)"]),
+        JSON.stringify(["AWS Certified Cloud Practitioner"]),
+        JSON.stringify(["React", "Node.js", "TypeScript", "PostgreSQL"]),
+      ]
+    );
+    const job1Id = job1Res.lastID;
+
+    // 4. Create Job 2: Frontend UI/UX Developer (Declined Direct Invitation Lifecycle)
+    const job2Res = await run(
+      `INSERT INTO job_posts (
+        employer_user_id, title, location, status, is_urgent, hide_salary,
+        work_arrangement, experience_level, salary_min, salary_max,
+        description, qualifications, certifications, required_skills, close_date
+      ) VALUES (?, ?, ?, 'open', 0, 0, 'On-Site', 'Entry-Mid Level (1-3 yrs)', 35000, 50000, ?, ?, ?, ?, '2026-12-15')`,
+      [
+        employerId,
+        "Frontend UI/UX Developer",
+        "Indang, Cavite",
+        "Design and build intuitive, accessible user interfaces and web layouts for branch terminals and customer onboarding.",
+        JSON.stringify(["Bachelor of Science in Information Technology (BSIT)"]),
+        JSON.stringify(["Meta Full Stack Developer Certificate"]),
+        JSON.stringify(["React", "Tailwind CSS", "UI/UX Design", "Figma"]),
+      ]
+    );
+    const job2Id = job2Res.lastID;
+
+    // 5. Application Record for Job 1: Search -> Applied -> Shortlisted -> Offered -> Accepted
+    const offerLetterText = "Dear Zaki Ablando,\n\nOn behalf of Cebuana Lhuillier, we are delighted to offer you the position of Full Stack Software Engineer. We were extremely impressed by your technical expertise in React and Node.js, your problem-solving abilities, and your collaborative mindset during the evaluation process.\n\nYour compensation package includes a monthly salary of PHP 55,000, comprehensive health coverage (HMO), hybrid work flexibility, and full equipment support.\n\nYour official start date will be November 16, 2026. Please confirm your acceptance through EliteCruit.\n\nSincerely,\nTalent Acquisition Team\nCebuana Lhuillier";
+    const acceptanceLetterText = "Dear Cebuana Lhuillier Hiring Team,\n\nI am thrilled to formally accept the job offer for the Full Stack Software Engineer position. I truly appreciate this wonderful opportunity and am eager to contribute to the innovation and digital fintech initiatives at Cebuana Lhuillier.\n\nI confirm my start date on November 16, 2026.\n\nWarm regards,\nZaki Ablando";
+
+    const submittedDate = new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString();
+    const decidedDate = new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString();
+    const respondedDate = new Date(Date.now() - 12 * 3600 * 1000).toISOString();
+
+    await run(
+      `INSERT INTO applications (
+        job_post_id, applicant_user_id, status, submitted_at, decided_at,
+        decision_message, decision_message_type, response_decision, response_letter, responded_at, start_date
+      ) VALUES (?, ?, 'accepted', ?, ?, ?, 'formal_offer', 'accept', ?, ?, '2026-11-16')`,
+      [job1Id, applicantId, submittedDate, decidedDate, offerLetterText, acceptanceLetterText, respondedDate]
+    );
+
+    // 6. Scheduled Interview for Job 1
+    await run(
+      `INSERT INTO scheduled_interviews (
+        employer_user_id, applicant_user_id, candidate_user_ids, job_post_id,
+        interview_title, interview_stage, interview_type, meeting_link_or_address,
+        interview_date, start_time, end_time, notes, status,
+        job_title, applicant_name, applicant_phone, applicant_city, applicant_email,
+        employer_company_name, employer_phone, employer_address, employer_email
+      ) VALUES (?, ?, ?, ?, ?, 'Final Technical Evaluation', 'Video Conference', 'https://meet.google.com/zaki-interview-cebuana', '2026-11-05', '10:00 AM', '11:00 AM', ?, 'completed', ?, 'Zaki Ablando', '+63 918 987 6543', 'Dasmarinas', ?, 'Cebuana Lhuillier', '+63 917 123 4567', 'Indang - Dasmarinas Tech Hub, Cavite', ?)`,
+      [
+        employerId,
+        applicantId,
+        JSON.stringify([applicantId]),
+        job1Id,
+        "Technical Interview - Full Stack Software Engineer",
+        "Candidate demonstrated strong competency in TypeScript, full stack architecture, and system design.",
+        "Full Stack Software Engineer",
+        applicantEmail,
+        employerEmail,
+      ]
+    );
+
+    // 7. Messaging Thread & Conversation
+    const threadRes = await run(
+      "INSERT INTO message_threads (created_by_user_id, title) VALUES (?, ?)",
+      [employerId, "Full Stack Software Engineer - Zaki Ablando & Cebuana Lhuillier"]
+    );
+    const threadId = threadRes.lastID;
+
+    await run("INSERT INTO message_participants (thread_id, user_id) VALUES (?, ?)", [threadId, employerId]);
+    await run("INSERT INTO message_participants (thread_id, user_id) VALUES (?, ?)", [threadId, applicantId]);
+
+    const convo = [
+      { sender: applicantId, text: "Good day! I have submitted my application for the Full Stack Software Engineer role at Cebuana Lhuillier. Looking forward to hearing from you." },
+      { sender: employerId, text: "Hello Zaki! Thank you for applying. We reviewed your profile and would like to invite you for a technical evaluation and interview on November 5." },
+      { sender: applicantId, text: "Thank you! I have confirmed the interview schedule for November 5 at 10:00 AM. I am excited to discuss the role." },
+      { sender: employerId, text: "It was a pleasure speaking with you during the interview! We are delighted to extend a formal job offer to join our engineering team." },
+      { sender: applicantId, text: "Thank you so much! I have formally reviewed and accepted the offer on EliteCruit. Looking forward to our start date on November 16!" },
+    ];
+
+    for (const msg of convo) {
+      await run(
+        "INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)",
+        [threadId, msg.sender, msg.text]
+      );
+    }
+
+    // 8. Direct Job Invitation for Job 2: Sent -> Received -> Declined
+    const declineLetter = "Dear Cebuana Lhuillier Hiring Team,\n\nThank you for reaching out with this direct invitation for Frontend UI/UX Developer. Having recently accepted the Full Stack Software Engineer position with Cebuana Lhuillier, I will respectfully decline this role at this time.\n\nThank you again for the consideration.\n\nBest regards,\nZaki Ablando";
+    const declineDate = new Date(Date.now() - 6 * 3600 * 1000).toISOString();
+
+    await run(
+      `INSERT INTO job_invitations (
+        employer_user_id, applicant_user_id, job_post_id, status, custom_message, response_letter, responded_at
+      ) VALUES (?, ?, ?, 'declined', ?, ?, ?)`,
+      [
+        employerId,
+        applicantId,
+        job2Id,
+        "Hi Zaki, we found your impressive background on EliteCruit and would like to invite you to apply directly for our Frontend UI/UX Developer position in Indang.",
+        declineLetter,
+        declineDate,
+      ]
+    );
+
+    // 9. Notifications for both parties
+    await run(
+      "INSERT INTO notifications (user_id, type, title, body, related_user_id, related_application_id) VALUES (?, ?, ?, ?, ?, ?)",
+      [applicantId, "application_status_update", "Application Shortlisted: Full Stack Software Engineer", "Cebuana Lhuillier has shortlisted your application for Full Stack Software Engineer.", employerId, job1Id]
+    );
+    await run(
+      "INSERT INTO notifications (user_id, type, title, body, related_user_id, related_application_id) VALUES (?, ?, ?, ?, ?, ?)",
+      [applicantId, "interview_scheduled", "Interview Scheduled: Technical Interview - Full Stack Software Engineer", "Cebuana Lhuillier scheduled an interview with you on 2026-11-05 at 10:00 AM.", employerId, job1Id]
+    );
+    await run(
+      "INSERT INTO notifications (user_id, type, title, body, related_user_id, related_application_id) VALUES (?, ?, ?, ?, ?, ?)",
+      [applicantId, "formal_offer", "Formal Offer Letter Extended: Full Stack Software Engineer", "Cebuana Lhuillier extended a formal job offer letter for Full Stack Software Engineer.", employerId, job1Id]
+    );
+    await run(
+      "INSERT INTO notifications (user_id, type, title, body, related_user_id, related_application_id) VALUES (?, ?, ?, ?, ?, ?)",
+      [applicantId, "job_invitation", "Direct Job Invitation: Frontend UI/UX Developer", "Cebuana Lhuillier invited you directly for Frontend UI/UX Developer.", employerId, job2Id]
+    );
+
+    await run(
+      "INSERT INTO notifications (user_id, type, title, body, related_user_id, related_application_id) VALUES (?, ?, ?, ?, ?, ?)",
+      [employerId, "new_application", "New Application: Zaki Ablando", "Zaki Ablando applied for Full Stack Software Engineer.", applicantId, job1Id]
+    );
+    await run(
+      "INSERT INTO notifications (user_id, type, title, body, related_user_id, related_application_id) VALUES (?, ?, ?, ?, ?, ?)",
+      [employerId, "interview_status_update", "Interview Confirmed: Technical Interview", "Zaki Ablando confirmed the scheduled interview for 2026-11-05 at 10:00 AM.", applicantId, job1Id]
+    );
+    await run(
+      "INSERT INTO notifications (user_id, type, title, body, related_user_id, related_application_id) VALUES (?, ?, ?, ?, ?, ?)",
+      [employerId, "offer_accepted", "Job Offer Accepted: Full Stack Software Engineer", "Zaki Ablando formally accepted the offer for Full Stack Software Engineer.", applicantId, job1Id]
+    );
+    await run(
+      "INSERT INTO notifications (user_id, type, title, body, related_user_id, related_application_id) VALUES (?, ?, ?, ?, ?, ?)",
+      [employerId, "invitation_declined", "Invitation Declined: Frontend UI/UX Developer", "Zaki Ablando declined the direct job invitation for Frontend UI/UX Developer.", applicantId, job2Id]
+    );
+
+    // 10. Ratings
+    await run(
+      `INSERT INTO company_ratings (employer_user_id, applicant_user_id, rating, comments, job_post_id, is_anonymous)
+       VALUES (?, ?, 5, 'Cebuana Lhuillier provided a smooth, professional, and transparent recruitment experience.', ?, 0)
+       ON CONFLICT (employer_user_id, applicant_user_id) DO NOTHING`,
+      [employerId, applicantId, job1Id]
+    ).catch(() => {});
+
+    await run(
+      `INSERT INTO candidate_ratings (employer_user_id, applicant_user_id, rating, comments, job_post_id, is_anonymous)
+       VALUES (?, ?, 5, 'Zaki showed outstanding technical and communication abilities throughout the hiring process.', ?, 0)
+       ON CONFLICT (employer_user_id, applicant_user_id) DO NOTHING`,
+      [employerId, applicantId, job1Id]
+    ).catch(() => {});
+
+    await run("INSERT INTO system_migrations (name) VALUES ('zaki_accounts_reset_v1') ON CONFLICT (name) DO NOTHING");
+
+    console.log("[Zaki Accounts Migration] Successfully completed reset and seeding for Zaki accounts!");
+  } catch (err) {
+    console.error("[Zaki Accounts Migration] Error:", err);
+  }
+}
+
+app.post("/api/admin/reset-zaki-accounts", async (req, res) => {
+  try {
+    await run("DELETE FROM system_migrations WHERE name = 'zaki_accounts_reset_v1'").catch(() => {});
+    await resetAndSeedZakiAccounts();
+    return res.json({ success: true, message: "Zaki accounts reset and full interactions seeded successfully!" });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // In production or full-stack deployment, serve built Frontend files if dist exists
 const distPath = path.resolve(__dirname, "../Frontend/dist");
 if (fs.existsSync(distPath)) {
@@ -7751,6 +8048,7 @@ Promise.resolve()
   .then(() => ensureScheduledInterviewColumns())
   .then(() => syncHistoricalInvitations())
   .then(() => ensureAdminUser())
+  .then(() => resetAndSeedZakiAccounts())
   .then(() => app.listen(PORT, () => {
     console.log(`EliteCruit backend running at http://localhost:${PORT}`);
   }))
