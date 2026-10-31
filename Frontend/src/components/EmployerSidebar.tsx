@@ -3,6 +3,7 @@ import { ChevronIcon, SideIcon } from "./Icons";
 import { useEmployerCompanyLabel } from "../hooks/useEmployerCompanyLabel";
 import { useUnreadNotificationsCount } from "../hooks/useUnreadNotificationsCount";
 import { useUnreadMessagesCount } from "../hooks/useUnreadMessagesCount";
+import { usePendingApplicationsCount } from "../hooks/usePendingApplicationsCount";
 import { clearAuth } from "../utils/auth";
 import "./EmployerSidebar.css";
 
@@ -59,6 +60,7 @@ export default function EmployerSidebar({
   const companyLabel = useEmployerCompanyLabel(companyName || "Employer");
   const unreadNotifCount = useUnreadNotificationsCount();
   const unreadMessagesCount = useUnreadMessagesCount();
+  const pendingApplicantsCount = usePendingApplicationsCount();
   const [isScreeningOpen, setIsScreeningOpen] = useState(
     activePath.includes("applicant-management") || activePath.includes("screening")
   );
@@ -100,6 +102,11 @@ export default function EmployerSidebar({
               <span className="title-main">
                 <span className="item-icon"><EmployerIcon name="applicant" /></span>
                 <span>Applicant Management</span>
+                {pendingApplicantsCount > 0 && (
+                  <span className="item-badge" title={`${pendingApplicantsCount} pending applicant${pendingApplicantsCount > 1 ? "s" : ""}`} style={{ marginLeft: "auto", marginRight: 8 }}>
+                    {pendingApplicantsCount}
+                  </span>
+                )}
               </span>
               <span className="title-caret-btn" title="Toggle sub-menu">
                 <ChevronIcon direction={isScreeningOpen ? "down" : "up"} />
@@ -111,6 +118,7 @@ export default function EmployerSidebar({
                   <a href="/employer-applicant-management#applicant-screening">
                     <span className="item-icon"><EmployerIcon name="screening" /></span>
                     <span>Applicant Screening</span>
+                    {pendingApplicantsCount > 0 && <span className="item-badge">{pendingApplicantsCount}</span>}
                   </a>
                 </li>
                 <li>

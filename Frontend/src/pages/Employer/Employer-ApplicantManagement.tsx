@@ -587,15 +587,21 @@ type DirectInvitation = {
   updated_at: string;
   job_title: string;
   job_location?: string;
+  job_required_skills?: string | null;
+  job_required_qualifications?: string | null;
+  job_required_certifications?: string | null;
   salary_min?: number;
   salary_max?: number;
   work_arrangement?: string;
+  applicant_work_arrangement?: string;
+  expected_salary?: number | string | null;
   first_name?: string;
   last_name?: string;
   phone?: string;
   city?: string;
   skills?: string;
   qualifications?: string;
+  certifications?: string;
   desired_job_title?: string;
   resume_path?: string | null;
   profile_picture_path?: string | null;
@@ -631,22 +637,24 @@ function formatDate(d: string | null) {
 function statusChipClass(status: string) {
   const s = (status || "").toLowerCase();
   if (s === "shortlisted") return "status-chip shortlisted";
-  if (s === "approved" || s === "accepted") return "status-chip approved";
-  if (s === "denied" || s === "rejected") return "status-chip denied";
+  if (s === "approved" || s === "accepted" || s === "recruited") return "status-chip approved";
+  if (s === "denied" || s === "rejected" || s === "withdrawn") return "status-chip denied";
   return "status-chip pending";
 }
 
 function formatStatusLabel(status: string) {
   const s = (status || "").toLowerCase();
+  if (s === "recruited") return "recruited";
   if (s === "shortlisted") return "shortlisted";
   if (s === "approved" || s === "accepted") return "approved";
+  if (s === "withdrawn") return "withdrawn";
   if (s === "denied" || s === "rejected") return "denied";
   return "pending";
 }
 
 function isApprovedStatus(status: string) {
   const s = (status || "").toLowerCase();
-  return s === "approved" || s === "accepted";
+  return s === "approved" || s === "accepted" || s === "recruited";
 }
 
 function isDeniedStatus(status: string) {
@@ -904,8 +912,20 @@ export default function EmployerApplicantManagement() {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [appliedSearchQuery, setAppliedSearchQuery] = useState("");
-  const [jobFilter, setJobFilter] = useState("all");
-  const [boardJobFilter, setBoardJobFilter] = useState("all");
+  const [jobFilter, setJobFilter] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const qJobId = new URLSearchParams(window.location.search).get("jobId");
+      if (qJobId) return qJobId;
+    }
+    return "all";
+  });
+  const [boardJobFilter, setBoardJobFilter] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const qJobId = new URLSearchParams(window.location.search).get("jobId");
+      if (qJobId) return qJobId;
+    }
+    return "all";
+  });
   const [selectedProvince, setSelectedProvince] = useState("All Provinces");
   const [selectedCity, setSelectedCity] = useState("All Cities");
 
@@ -1995,7 +2015,8 @@ export default function EmployerApplicantManagement() {
   };
 
   const triggerLockedDecisionWarning = (app: Application) => {
-    const finalLabel = isApprovedStatus(app.status) ? "Accepted" : "Denied";
+    const s = (app.status || "").toLowerCase();
+    const finalLabel = s === "recruited" ? "Recruited" : isApprovedStatus(app.status) ? "Accepted" : "Denied";
     setWarningPopup(
       `This application for ${app.applicant_name} has already been finalized as "${finalLabel}". Application decisions can only be set once and cannot be modified.`
     );
@@ -3039,14 +3060,15 @@ export default function EmployerApplicantManagement() {
                                         const isFinalized = isFinalizedStatus(app.status);
 
                                         if (isFinalized) {
+                                          const finalizedText = (app.status || "").toLowerCase() === "recruited" ? "Recruited" : isApproved ? "Approved" : "Denied";
                                           return (
                                             <button
                                               type="button"
                                               className={`merged-status-btn ${isApproved ? "approved" : "denied"}`}
-                                              title={`Application decision finalized as ${isApproved ? "Approved" : "Denied"} (cannot be modified)`}
+                                              title={`Application decision finalized as ${finalizedText} (cannot be modified)`}
                                               onClick={() => triggerLockedDecisionWarning(app)}
                                             >
-                                              {isApproved ? "Approved" : "Denied"}
+                                              {finalizedText}
                                             </button>
                                           );
                                         }
@@ -3613,12 +3635,22 @@ export default function EmployerApplicantManagement() {
                   submitted_at: inv.created_at,
                   job_post_id: inv.job_post_id,
                   job_title: inv.job_title,
+                  job_required_skills: inv.job_required_skills,
+                  job_required_qualifications: inv.job_required_qualifications,
+                  job_required_certifications: inv.job_required_certifications,
+                  job_work_arrangement: inv.work_arrangement,
+                  job_location: inv.job_location,
+                  job_salary_min: inv.salary_min,
+                  job_salary_max: inv.salary_max,
                   city: inv.city || "Cavite",
                   applicant_name: candidateName,
                   desired_job_title: inv.desired_job_title || inv.job_title,
+                  work_arrangement: inv.applicant_work_arrangement || inv.work_arrangement,
+                  expected_salary: inv.expected_salary,
                   applicant_user_id: inv.applicant_user_id,
                   skills: inv.skills,
                   qualifications: inv.qualifications,
+                  certifications: inv.certifications,
                 };
                 return (
                   <article
@@ -5202,7 +5234,9 @@ export default function EmployerApplicantManagement() {
         {/* ── 3rd & 4th Floating Containers: Job Details (LEFT) & Match Breakdown (RIGHT) Side-by-Side Overlay ── */}
         {(isJobDetailsOpen || isJobDetailsClosing) && selectedJobDetails && (
           (() => {
-            const detailsMatchPct = reviewModalApp ? calculateCandidateMatch(reviewModalApp, selectedJobDetails) : 0;
+            const detailsMatchPct = reviewModalApp
+              ? calculateCandidateMatch({ ...reviewModalApp, ...(reviewModalProfile || {}) }, selectedJobDetails)
+              : 0;
             const matchStyle = detailsMatchPct >= 85
               ? { track: "#dcfce7", color: "#15803d", fill: "#86efac" }
               : detailsMatchPct >= 70

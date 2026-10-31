@@ -309,6 +309,32 @@
   flex: 1;
 }
 
+.aol-template-studio-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  align-items: stretch;
+  width: 100%;
+}
+
+@media (max-width: 1100px) {
+  .aol-template-studio-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+.aol-template-inputs-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.aol-template-preview-side {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 /* ── Tag Chips Bar ── */
 .aol-template-tags-bar {
   display: flex;

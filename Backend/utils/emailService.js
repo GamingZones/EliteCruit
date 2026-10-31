@@ -25,69 +25,116 @@ function getTransporter() {
 }
 
 /**
- * Sends a 2FA Verification Code to the specified email address.
- * Uses real SMTP if environment variables are set; otherwise cleanly logs to console.
- *
- * @param {string} toEmail - Recipient email address
- * @param {string} code - 6-digit verification code
- * @param {string} [recipientName] - Optional recipient display name
- * @returns {Promise<{ success: boolean, method: string }>}
+ * Shared branded HTML email wrapper for EliteCruit transactional & security emails.
  */
-export async function send2FAEmail(toEmail, code, recipientName = "User") {
-  const brevoApiKey = process.env.BREVO_API_KEY;
-  const transporter = getTransporter();
-
-  // Highlighted console log for development and local testing
-  console.log("\n=======================================================================");
-  console.log(`🔒 [ELITECRUIT 2FA SECURITY CODE]`);
-  console.log(`   Recipient: ${toEmail}`);
-  console.log(`   Verification Code: ${code}`);
-  console.log(`   Valid For: 10 minutes`);
-  console.log("=======================================================================\n");
-
-  const htmlContent = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
-      <div style="text-align: center; margin-bottom: 24px;">
-        <h2 style="margin: 0; color: #0f172a; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">EliteCruit</h2>
-        <span style="color: #64748b; font-size: 13px; font-weight: 600;">Digital Recruitment Platform • Two-Factor Authentication</span>
-      </div>
-
-      <p style="color: #334155; font-size: 15px; line-height: 1.5; margin: 0 0 16px;">
-        Hello ${recipientName || "there"},
-      </p>
-
-      <p style="color: #334155; font-size: 15px; line-height: 1.5; margin: 0 0 24px;">
-        Use the 6-digit verification code below to complete your login to EliteCruit:
-      </p>
-
-      <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; text-align: center; margin: 0 0 24px;">
-        <span style="font-family: monospace; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #1e293b; display: inline-block;">
-          ${code}
-        </span>
-        <div style="color: #64748b; font-size: 12px; margin-top: 8px; font-weight: 500;">
-          This code expires in 10 minutes.
+function buildEliteCruitEmailTemplate({
+  badgeText = "Security Verification",
+  headline = "Verify Your Identity",
+  greetingName = "User",
+  introText = "",
+  code = "",
+  codeSubtext = "This code expires in 10 minutes.",
+  highlightBoxHtml = "",
+  footerNote = "If you did not initiate this request, please ignore this email or update your password immediately to keep your account secure.",
+  actionButtonHtml = "",
+}) {
+  const year = new Date().getFullYear();
+  return `
+    <div style="background-color: #f1f5f9; padding: 32px 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+      <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 14px; overflow: hidden; border: 1px solid #dbe4ef; box-shadow: 0 8px 24px rgba(12, 42, 71, 0.08);">
+        
+        <!-- Navy Brand Header -->
+        <div style="background: linear-gradient(135deg, #1f3a4b 0%, #0f2f4e 50%, #0c2a47 100%); padding: 24px 28px; text-align: left;">
+          <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+            <tr>
+              <td style="width: 42px; vertical-align: middle;">
+                <div style="width: 36px; height: 36px; border-radius: 9px; background: #f6be45; color: #0a2440; font-weight: 800; font-size: 15px; line-height: 36px; text-align: center; display: inline-block;">
+                  EC
+                </div>
+              </td>
+              <td style="vertical-align: middle;">
+                <div style="color: #ffc24b; font-size: 21px; font-weight: 800; letter-spacing: -0.3px; line-height: 1.1;">
+                  EliteCruit
+                </div>
+                <div style="color: rgba(255, 255, 255, 0.78); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.8px; margin-top: 2px;">
+                  Digital Recruitment Platform
+                </div>
+              </td>
+              <td style="text-align: right; vertical-align: middle;">
+                <span style="display: inline-block; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.22); color: #f8fbff; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; letter-spacing: 0.5px;">
+                  ${badgeText}
+                </span>
+              </td>
+            </tr>
+          </table>
         </div>
-      </div>
 
-      <p style="color: #64748b; font-size: 13px; line-height: 1.5; margin: 0 0 24px;">
-        If you did not request this login verification code, please ignore this email or review your account password to ensure your account remains safe.
-      </p>
+        <!-- Main Body -->
+        <div style="padding: 30px 28px 26px;">
+          <h2 style="margin: 0 0 14px; color: #0b2340; font-size: 20px; font-weight: 800; letter-spacing: -0.3px;">
+            ${headline}
+          </h2>
 
-      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0 16px;" />
+          <p style="color: #334155; font-size: 15px; line-height: 1.6; margin: 0 0 14px;">
+            Hello <strong>${greetingName || "there"}</strong>,
+          </p>
 
-      <div style="text-align: center; color: #94a3b8; font-size: 11px;">
-        &copy; ${new Date().getFullYear()} EliteCruit. All rights reserved. • Automated Security System
+          <p style="color: #475569; font-size: 14.5px; line-height: 1.6; margin: 0 0 24px;">
+            ${introText}
+          </p>
+
+          ${
+            code
+              ? `
+          <div style="background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%); border: 2px solid #cbd5e1; border-radius: 12px; padding: 22px 16px; text-align: center; margin: 0 0 24px;">
+            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; color: #05386f; margin-bottom: 8px;">
+              6-Digit Verification Code
+            </div>
+            <span style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 34px; font-weight: 800; letter-spacing: 9px; color: #0b2340; display: inline-block; padding-left: 9px;">
+              ${code}
+            </span>
+            <div style="color: #64748b; font-size: 12px; margin-top: 10px; font-weight: 600;">
+              ⏱ ${codeSubtext}
+            </div>
+          </div>
+          `
+              : ""
+          }
+
+          ${highlightBoxHtml}
+
+          <p style="color: #64748b; font-size: 13px; line-height: 1.55; margin: 0;">
+            ${footerNote}
+          </p>
+
+          ${actionButtonHtml}
+        </div>
+
+        <!-- Footer -->
+        <div style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 16px 28px; text-align: center;">
+          <div style="color: #64748b; font-size: 12px; font-weight: 600; margin-bottom: 4px;">
+            Philippine Nationwide • Digital Recruitment Platform
+          </div>
+          <div style="color: #94a3b8; font-size: 11px;">
+            &copy; ${year} EliteCruit. All rights reserved. • Automated Security Notification
+          </div>
+        </div>
       </div>
     </div>
   `;
+}
 
-  const textContent = `Your EliteCruit 2FA verification code is: ${code}. This code expires in 10 minutes. If you did not request this, please secure your account.`;
+/**
+ * Internal dispatcher that sends via Brevo HTTPS API, SMTP fallback, or console log.
+ */
+async function dispatchEmail({ toEmail, recipientName = "User", subject, htmlContent, textContent, logTag = "EMAIL" }) {
+  const brevoApiKey = process.env.BREVO_API_KEY;
+  const transporter = getTransporter();
 
-  // 1. Primary Production Method: Brevo HTTPS REST API (Port 443 - never blocked by cloud hosts)
+  // 1. Primary Production Method: Brevo HTTPS REST API (Port 443)
   if (brevoApiKey) {
     try {
       const senderEmail = process.env.BREVO_SENDER_EMAIL || process.env.SMTP_FROM || "zakiablando897@gmail.com";
-      // Extract email if wrapped in "Name <email>" format
       const cleanSenderEmail = senderEmail.includes("<") ? senderEmail.match(/<([^>]+)>/)?.[1] || senderEmail : senderEmail;
 
       const response = await fetch("https://api.brevo.com/v3/smtp/email", {
@@ -100,7 +147,7 @@ export async function send2FAEmail(toEmail, code, recipientName = "User") {
         body: JSON.stringify({
           sender: { name: "EliteCruit Security", email: cleanSenderEmail.trim() },
           to: [{ email: toEmail.trim(), name: recipientName || "User" }],
-          subject: `${code} is your EliteCruit verification code`,
+          subject,
           htmlContent,
           textContent,
         }),
@@ -108,14 +155,14 @@ export async function send2FAEmail(toEmail, code, recipientName = "User") {
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error("[2FA Brevo API Error] HTTP status:", response.status, errorData);
+        console.error(`[${logTag} Brevo API Error] HTTP status:`, response.status, errorData);
         return { success: true, method: "brevo_api_failed" };
       }
 
-      console.log(`[2FA Email Success] Verification code sent via Brevo HTTPS API to ${toEmail}`);
+      console.log(`[${logTag} Success] Sent via Brevo HTTPS API to ${toEmail}`);
       return { success: true, method: "brevo_api" };
     } catch (err) {
-      console.error("[2FA Brevo API Error] Network request failed:", err?.message || err);
+      console.error(`[${logTag} Brevo API Error] Network request failed:`, err?.message || err);
     }
   }
 
@@ -127,7 +174,7 @@ export async function send2FAEmail(toEmail, code, recipientName = "User") {
       const sendPromise = transporter.sendMail({
         from: fromAddress,
         to: toEmail,
-        subject: `${code} is your EliteCruit verification code`,
+        subject,
         text: textContent,
         html: htmlContent,
       });
@@ -139,11 +186,139 @@ export async function send2FAEmail(toEmail, code, recipientName = "User") {
       await Promise.race([sendPromise, timeoutPromise]);
       return { success: true, method: "smtp" };
     } catch (err) {
-      console.error("[2FA Email Error] Failed to send email via SMTP transport:", err?.message || err);
-      // Fallback to console logging already occurred above
+      console.error(`[${logTag} SMTP Error] Failed to send email:`, err?.message || err);
       return { success: true, method: "console_fallback" };
     }
   }
 
   return { success: true, method: "console" };
+}
+
+/**
+ * Sends a 2FA / Email Verification Code to the specified email address.
+ */
+export async function send2FAEmail(toEmail, code, recipientName = "User") {
+  console.log("\n=======================================================================");
+  console.log(`🔒 [ELITECRUIT VERIFICATION CODE]`);
+  console.log(`   Recipient: ${toEmail}`);
+  console.log(`   Verification Code: ${code}`);
+  console.log(`   Valid For: 10 minutes`);
+  console.log("=======================================================================\n");
+
+  const htmlContent = buildEliteCruitEmailTemplate({
+    badgeText: "Verification",
+    headline: "Verify Your EliteCruit Account",
+    greetingName: recipientName,
+    introText: "Please use the 6-digit security verification code below to verify your email address and continue securely on EliteCruit:",
+    code,
+    codeSubtext: "Valid for 10 minutes • Do not share this code with anyone",
+  });
+
+  const textContent = `Your EliteCruit verification code is: ${code}. This code expires in 10 minutes. If you did not request this, please secure your account.`;
+
+  return dispatchEmail({
+    toEmail,
+    recipientName,
+    subject: `${code} is your EliteCruit verification code`,
+    htmlContent,
+    textContent,
+    logTag: "2FA Email",
+  });
+}
+
+/**
+ * Sends a 6-digit Password Reset OTP code to the user's registered email address.
+ */
+export async function sendPasswordResetEmail(toEmail, code, recipientName = "User") {
+  console.log("\n=======================================================================");
+  console.log(`🔑 [ELITECRUIT PASSWORD RESET CODE]`);
+  console.log(`   Recipient: ${toEmail}`);
+  console.log(`   Reset Code: ${code}`);
+  console.log(`   Valid For: 10 minutes`);
+  console.log("=======================================================================\n");
+
+  const htmlContent = buildEliteCruitEmailTemplate({
+    badgeText: "Password Reset",
+    headline: "Password Reset Request",
+    greetingName: recipientName,
+    introText: "We received a request to reset the password for your EliteCruit account. Enter the 6-digit security code below on the password recovery screen to set a new password:",
+    code,
+    codeSubtext: "This reset code expires in 10 minutes",
+    footerNote: "If you did not request a password reset, no changes have been made to your account. You can safely ignore this message.",
+  });
+
+  const textContent = `Your EliteCruit password reset code is: ${code}. This code expires in 10 minutes. If you did not request a password reset, you can safely ignore this email.`;
+
+  return dispatchEmail({
+    toEmail,
+    recipientName,
+    subject: `${code} is your EliteCruit password reset code`,
+    htmlContent,
+    textContent,
+    logTag: "Password Reset Email",
+  });
+}
+
+/**
+ * Sends an automated security alert email when a user's account password is changed.
+ */
+export async function sendPasswordChangedNotificationEmail(toEmail, recipientName = "User") {
+  const timestamp = new Date().toLocaleString("en-PH", {
+    timeZone: "Asia/Manila",
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+
+  console.log("\n=======================================================================");
+  console.log(`🛡️ [ELITECRUIT PASSWORD CHANGE ALERT]`);
+  console.log(`   Recipient: ${toEmail}`);
+  console.log(`   Changed At: ${timestamp} (PHT)`);
+  console.log("=======================================================================\n");
+
+  const highlightBoxHtml = `
+    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 16px 18px; margin: 0 0 22px;">
+      <div style="color: #166534; font-size: 13.5px; font-weight: 700; margin-bottom: 6px;">
+        ✓ Password Successfully Updated
+      </div>
+      <div style="color: #15803d; font-size: 12.5px; line-height: 1.5;">
+        <strong>Account:</strong> ${toEmail}<br />
+        <strong>Time:</strong> ${timestamp} (Philippine Standard Time)
+      </div>
+    </div>
+  `;
+
+  const baseUrl = (process.env.FRONTEND_URL || "https://elitecruit.onrender.com")
+    .split(",")[0]
+    .trim()
+    .replace(/\/+$/, "");
+  const resetUrl = `${baseUrl}/login?action=forgot&email=${encodeURIComponent(toEmail)}`;
+
+  const actionButtonHtml = `
+    <div style="text-align: center; margin-top: 22px;">
+      <a href="${resetUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background: linear-gradient(135deg, #1f3a4b 0%, #0b2f53 100%); color: #ffffff; font-size: 14px; font-weight: 700; text-decoration: none; padding: 12px 24px; border-radius: 9px; border: 1px solid #1e4976; box-shadow: 0 4px 12px rgba(11, 47, 83, 0.2);">
+        Reset Password Immediately &rarr;
+      </a>
+    </div>
+  `;
+
+  const htmlContent = buildEliteCruitEmailTemplate({
+    badgeText: "Security Alert",
+    headline: "Your Password Was Changed",
+    greetingName: recipientName,
+    introText: "This is a confirmation that the password for your EliteCruit account was recently changed.",
+    highlightBoxHtml,
+    footerNote: "If you made this change, no further action is needed. If you did NOT authorize this password change, please reset your password immediately using the button below:",
+    actionButtonHtml,
+  });
+
+  const textContent = `Security Alert: Your EliteCruit password for ${toEmail} was changed on ${timestamp} (PHT). If you did not make this change, reset your password immediately at: ${resetUrl}`;
+
+  return dispatchEmail({
+    toEmail,
+    recipientName,
+    subject: "Security Alert: Your EliteCruit password was changed",
+    htmlContent,
+    textContent,
+    logTag: "Password Change Alert",
+  });
 }

@@ -93,7 +93,10 @@ export default function Settings() {
         throw new Error(data.message || "Failed to change password.");
       }
 
-      setPasswordMessage({ text: "Password changed successfully!", type: "success" });
+      setPasswordMessage({
+        text: data.message || "Password changed successfully! A confirmation email has been sent to your inbox.",
+        type: "success",
+      });
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");

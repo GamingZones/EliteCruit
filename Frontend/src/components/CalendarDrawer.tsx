@@ -1115,6 +1115,8 @@ export default function CalendarDrawer({
                       onDeleteInterview={(targetItem) => setInterviewToDelete(targetItem)}
                       schedulableCandidates={schedulableCandidates}
                       onOpenMeetingCandidatesModal={handleOpenMeetingCandidatesModal}
+                      onOpenCancelModal={handleOpenCancelModal}
+                      onOpenRescheduleModal={handleOpenRescheduleModal}
                     />
                   ))
                 )}
@@ -1155,6 +1157,8 @@ export default function CalendarDrawer({
                     onDeleteInterview={(targetItem) => setInterviewToDelete(targetItem)}
                     schedulableCandidates={schedulableCandidates}
                     onOpenMeetingCandidatesModal={handleOpenMeetingCandidatesModal}
+                    onOpenCancelModal={handleOpenCancelModal}
+                    onOpenRescheduleModal={handleOpenRescheduleModal}
                   />
                 ))
               )}
@@ -2844,14 +2848,18 @@ function InterviewItemCard({
   onDeleteInterview,
   schedulableCandidates,
   onOpenMeetingCandidatesModal,
+  onOpenCancelModal,
+  onOpenRescheduleModal,
 }: {
   item: ScheduledInterview;
   isEmployer: boolean;
   currentUserId: number | null;
-  onUpdateStatus: (id: number, status: string) => void;
+  onUpdateStatus: (id: number, status: string, extraData?: any) => void;
   onDeleteInterview?: (item: ScheduledInterview) => void;
   schedulableCandidates: SchedulableCandidate[];
   onOpenMeetingCandidatesModal: (item: ScheduledInterview, candidates: SchedulableCandidate[]) => void;
+  onOpenCancelModal: (item: ScheduledInterview) => void;
+  onOpenRescheduleModal: (item: ScheduledInterview) => void;
 }) {
   const isPending = item.status === "pending";
   const isAccepted = item.status === "accepted";
@@ -3006,24 +3014,53 @@ function InterviewItemCard({
 
           {/* Right side: Action buttons */}
           <div className="interview-card-right-actions">
-            {/* Employer actions */}
-            {isEmployer && (isPending || isAccepted) && (
-              <>
+            {/* Action buttons (Reschedule & Cancel with Reason) */}
+            {(isPending || isAccepted || applicantStatus === "scheduled") && (
+              <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                <button
+                  type="button"
+                  className="int-btn"
+                  onClick={() => onOpenRescheduleModal(item)}
+                  style={{
+                    padding: "5px 11px",
+                    borderRadius: "6px",
+                    border: "1px solid #0284c7",
+                    background: "transparent",
+                    color: "#0284c7",
+                    fontSize: "0.78rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Reschedule
+                </button>
                 <button
                   type="button"
                   className="int-btn int-btn-red"
-                  onClick={() => onUpdateStatus(item.id, "cancelled")}
+                  onClick={() => onOpenCancelModal(item)}
+                  style={{
+                    padding: "5px 11px",
+                    borderRadius: "6px",
+                    border: "1px solid #ef4444",
+                    background: "#fee2e2",
+                    color: "#b91c1c",
+                    fontSize: "0.78rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
                 >
                   Cancel
                 </button>
-                <button
-                  type="button"
-                  className="int-btn int-btn-blue"
-                  onClick={() => onUpdateStatus(item.id, "completed")}
-                >
-                  Mark Completed
-                </button>
-              </>
+                {isEmployer && (
+                  <button
+                    type="button"
+                    className="int-btn int-btn-blue"
+                    onClick={() => onUpdateStatus(item.id, "completed")}
+                  >
+                    Mark Completed
+                  </button>
+                )}
+              </div>
             )}
 
             {isCompleted && (

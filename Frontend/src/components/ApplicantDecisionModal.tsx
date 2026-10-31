@@ -8,6 +8,7 @@ export interface ApplicantDecisionModalProps {
   companyName?: string;
   candidateName?: string;
   currentUserId?: number;
+  title?: string;
   onClose: () => void;
   onConfirm: (payload: {
     action: "accept" | "decline";
@@ -51,9 +52,11 @@ export default function ApplicantDecisionModal({
   companyName = "Employer",
   candidateName = "Candidate",
   currentUserId,
+  title,
   onClose,
   onConfirm,
 }: ApplicantDecisionModalProps) {
+  const [currentAction, setCurrentAction] = useState<"accept" | "decline">(action === "decline" ? "decline" : "accept");
   const [responseType, setResponseType] = useState<"automated" | "manual">("automated");
   const [masterAcceptance, setMasterAcceptance] = useState(DEFAULT_ACCEPTANCE_TEMPLATE);
   const [masterDecline, setMasterDecline] = useState(DEFAULT_DECLINE_TEMPLATE);
@@ -61,6 +64,12 @@ export default function ApplicantDecisionModal({
   const [manualText, setManualText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    if (action) {
+      setCurrentAction(action);
+    }
+  }, [action]);
 
   // Load applicant master templates if available
   useEffect(() => {
@@ -83,14 +92,13 @@ export default function ApplicantDecisionModal({
 
   // Compute automated preview message whenever action, master template, or details change
   useEffect(() => {
-    if (!action) return;
-    const baseTemplate = action === "accept" ? masterAcceptance : masterDecline;
+    const baseTemplate = currentAction === "accept" ? masterAcceptance : masterDecline;
     const rendered = substituteTags(baseTemplate, candidateName, companyName, jobTitle);
     setAutomatedText(rendered);
     if (!manualText) {
       setManualText(rendered);
     }
-  }, [action, masterAcceptance, masterDecline, candidateName, companyName, jobTitle]);
+  }, [currentAction, masterAcceptance, masterDecline, candidateName, companyName, jobTitle]);
 
   // Reset states when opened
   useEffect(() => {
@@ -98,13 +106,14 @@ export default function ApplicantDecisionModal({
       setResponseType("automated");
       setErrorMessage("");
       setIsSubmitting(false);
+      if (action) setCurrentAction(action);
     }
   }, [isOpen, action]);
 
-  if (!isOpen || !action) return null;
+  if (!isOpen) return null;
 
-  const isAccept = action === "accept";
-  const titleText = isAccept ? "Accept Recruitment Invitation" : "Decline Recruitment Invitation";
+  const isAccept = currentAction === "accept";
+  const titleText = title || (isAccept ? "Accept Recruitment Invitation" : "Decline Recruitment Invitation");
 
   const handleSubmit = async () => {
     const finalLetterText = responseType === "automated" ? automatedText : manualText;
@@ -117,7 +126,7 @@ export default function ApplicantDecisionModal({
     setErrorMessage("");
     try {
       await onConfirm({
-        action,
+        action: currentAction,
         letter_text: finalLetterText.trim(),
         letter_type: responseType,
       });
@@ -257,6 +266,25 @@ export default function ApplicantDecisionModal({
           >
             Cancel
           </button>
+          {currentAction === "accept" ? (
+            <button
+              type="button"
+              className="adm-switch-action-btn"
+              onClick={() => setCurrentAction("decline")}
+              style={{ background: "transparent", border: "none", color: "#dc2626", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer", marginRight: "auto", padding: "6px 8px" }}
+            >
+              Switch to Decline
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="adm-switch-action-btn"
+              onClick={() => setCurrentAction("accept")}
+              style={{ background: "transparent", border: "none", color: "#059669", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer", marginRight: "auto", padding: "6px 8px" }}
+            >
+              Switch to Accept
+            </button>
+          )}
           <button
             type="button"
             className={`adm-confirm-btn ${isAccept ? "accept" : "decline"}`}

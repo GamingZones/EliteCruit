@@ -325,7 +325,13 @@ export default function EmployerDetailsModal({
             </svg>
           </div>
           <div>
-            <strong className="jd-employer-name">{companyName}</strong>
+            <div className="jd-employer-name-row">
+              <strong className="jd-employer-name">{companyName}</strong>
+              <span className="company-inline-rating-pill" title="Company rating">
+                <span className="star-icon">★</span>
+                <span>{ratingText}</span>
+              </span>
+            </div>
             <span className="jd-employer-location">
               <svg viewBox="0 0 24 24" aria-hidden="true" width="13" height="13" fill="none" stroke="#5b8ab0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
@@ -337,10 +343,6 @@ export default function EmployerDetailsModal({
         </div>
 
         <div className="jd-header-right-actions">
-          <div className="rating-score-box" title="Company rating">
-            <span className="star-icon">★</span>
-            <span>{ratingText}</span>
-          </div>
           <button
             type="button"
             className={`jd-faq-btn ${isFaqOpen ? "active" : ""}`}

@@ -265,6 +265,9 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+  position: relative;
+  z-index: 30;
+  overflow: visible;
   animation: filterDropdownFade 0.2s ease-out;
 }
 
@@ -352,6 +355,8 @@
 }
 
 .filter-category-box {
+  position: relative;
+  z-index: 10;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -363,6 +368,10 @@
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
+}
+
+.filter-category-box:focus-within {
+  z-index: 60;
 }
 
 .filter-category-box .category-card-header {
@@ -959,6 +968,53 @@
   gap: 5px;
 }
 
+.company-meta-with-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.employer-name-rating-row,
+.jd-employer-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.company-inline-rating-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #fff8e6;
+  color: #b85a06;
+  border: 1px solid #f7d49e;
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.company-inline-rating-pill .star-icon {
+  color: #e39d1f;
+  font-size: 0.82rem;
+  line-height: 1;
+}
+
+[data-theme="dark"] .company-inline-rating-pill {
+  background: rgba(245, 158, 11, 0.16);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+[data-theme="dark"] .company-inline-rating-pill .star-icon {
+  color: #fbbf24;
+}
+
 .match-score-box {
   border-radius: 8px;
   padding: 4px 8px;
@@ -1191,6 +1247,14 @@
 .apply-right-btn.applied-btn.status-recruited {
   background: #1d4ed8 !important;
   border-color: #1d4ed8 !important;
+  color: #ffffff !important;
+}
+
+.applied-btn.status-invited,
+.solid-btn.applied-btn.status-invited,
+.apply-right-btn.applied-btn.status-invited {
+  background: #f59e0b !important;
+  border-color: #f59e0b !important;
   color: #ffffff !important;
 }
 

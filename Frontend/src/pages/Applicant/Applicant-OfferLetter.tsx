@@ -36,6 +36,16 @@ export default function ApplicantOfferLetter() {
   const [acceptanceStatus, setAcceptanceStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [denialStatus, setDenialStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  const [activeOfferContext, setActiveOfferContext] = useState<{
+    id: number;
+    type: "application" | "invitation";
+    jobTitle: string;
+    companyName: string;
+    responseLetter?: string;
+    startDate?: string;
+    status?: string;
+  } | null>(null);
+
   // Read current applicant session
   useEffect(() => {
     const savedUserRaw = localStorage.getItem("elitecruit-user");
@@ -75,6 +85,51 @@ export default function ApplicantOfferLetter() {
         if (data.rejection_template) setDeclineTemplate(data.rejection_template);
       })
       .catch(() => {});
+
+    // Inspect URL query parameters for active application or invitation context
+    const params = new URLSearchParams(window.location.search);
+    const appId = params.get("applicationId");
+    const invId = params.get("invitationId");
+
+    if (appId) {
+      fetch(`/api/applicants/${userId}/applications`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          const list = Array.isArray(d?.applications) ? d.applications : [];
+          const found = list.find((a: any) => String(a.id) === String(appId));
+          if (found) {
+            setActiveOfferContext({
+              id: found.id,
+              type: "application",
+              jobTitle: found.job_title || found.title || "Job Position",
+              companyName: found.company_name || "Employer",
+              responseLetter: found.response_letter,
+              startDate: found.start_date,
+              status: found.status,
+            });
+          }
+        })
+        .catch(() => {});
+    } else if (invId) {
+      fetch(`/api/applicants/${userId}/invitations`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          const list = Array.isArray(d?.invitations) ? d.invitations : [];
+          const found = list.find((i: any) => String(i.id) === String(invId));
+          if (found) {
+            setActiveOfferContext({
+              id: found.id,
+              type: "invitation",
+              jobTitle: found.job_title || "Job Position",
+              companyName: found.business_name || "Employer",
+              responseLetter: found.response_letter,
+              startDate: found.start_date,
+              status: found.status,
+            });
+          }
+        })
+        .catch(() => {});
+    }
   }, [userId]);
 
   // Insert tag into textarea
@@ -88,9 +143,9 @@ export default function ApplicantOfferLetter() {
 
   // Render live preview replacing dynamic tags with realistic sample data
   const renderPreview = (template: string, isAcceptance: boolean) => {
-    const sampleJob = "Financial Data & Business Intelligence Analyst";
-    const sampleCompany = "CEBUANA";
-    const sampleStartDate = "Nov 15, 2026";
+    const sampleJob = activeOfferContext?.jobTitle || "Financial Data & Business Intelligence Analyst";
+    const sampleCompany = activeOfferContext?.companyName || "CEBUANA";
+    const sampleStartDate = activeOfferContext?.startDate || "Nov 15, 2026";
 
     return template
       .replace(/\{applicant_name\}|\{candidate_name\}/g, candidateName)
@@ -176,6 +231,51 @@ export default function ApplicantOfferLetter() {
         </header>
 
         <div className="aol-card-container">
+          {/* Active Context Banner when linked directly from an application or invitation */}
+          {activeOfferContext && (
+            <div
+              className="aol-active-offer-card"
+              style={{
+                marginBottom: "16px",
+                padding: "16px 20px",
+                background: "#f0f9ff",
+                border: "1px solid #bae6fd",
+                borderRadius: "12px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "12px",
+              }}
+            >
+              <div>
+                <span style={{ fontSize: "0.72rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", color: "#0369a1", display: "block" }}>
+                  LINKED FORMAL OFFER RECORD
+                </span>
+                <h3 style={{ margin: "3px 0 2px", fontSize: "1.1rem", color: "#0c2a47" }}>{activeOfferContext.jobTitle}</h3>
+                <p style={{ margin: 0, fontSize: "0.85rem", color: "#475569" }}>
+                  {activeOfferContext.companyName}{" "}
+                  {activeOfferContext.status
+                    ? `• Status: ${
+                        activeOfferContext.type === "invitation" && activeOfferContext.status === "pending"
+                          ? "Invitation Received"
+                          : activeOfferContext.status
+                      }`
+                    : ""}
+                </p>
+              </div>
+              <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                <a
+                  href="/applicant-dashboard#section-applications"
+                  className="ghost-btn"
+                  style={{ textDecoration: "none", fontSize: "0.84rem", padding: "8px 14px" }}
+                >
+                  ← Back to Applications
+                </a>
+              </div>
+            </div>
+          )}
+
           {/* Notices Main Card (Pic 1 Match) */}
           <section className="aol-notices-page-card">
           {/* Navigation Tab Bar */}
@@ -210,60 +310,66 @@ export default function ApplicantOfferLetter() {
               </div>
 
               <div className="aol-template-card-body">
-                <div className="aol-template-tags-bar">
-                  <span>Insert tag:</span>
-                  <button
-                    type="button"
-                    className="aol-template-tag-chip"
-                    onClick={() => insertTag("acceptance", "{applicant_name}")}
-                    title="Your full name"
-                  >
-                    + &#123;applicant_name&#125;
-                  </button>
-                  <button
-                    type="button"
-                    className="aol-template-tag-chip"
-                    onClick={() => insertTag("acceptance", "{job_title}")}
-                    title="Position offered"
-                  >
-                    + &#123;job_title&#125;
-                  </button>
-                  <button
-                    type="button"
-                    className="aol-template-tag-chip"
-                    onClick={() => insertTag("acceptance", "{company_name}")}
-                    title="Employer company name"
-                  >
-                    + &#123;company_name&#125;
-                  </button>
-                  <button
-                    type="button"
-                    className="aol-template-tag-chip"
-                    onClick={() => insertTag("acceptance", "{start_date}")}
-                    title="Target onboarding start date"
-                  >
-                    + &#123;start_date&#125;
-                  </button>
-                </div>
+                <div className="aol-template-studio-split">
+                  <div className="aol-template-inputs-side">
+                    <div className="aol-template-tags-bar">
+                      <span>Insert tag:</span>
+                      <button
+                        type="button"
+                        className="aol-template-tag-chip"
+                        onClick={() => insertTag("acceptance", "{applicant_name}")}
+                        title="Your full name"
+                      >
+                        + &#123;applicant_name&#125;
+                      </button>
+                      <button
+                        type="button"
+                        className="aol-template-tag-chip"
+                        onClick={() => insertTag("acceptance", "{job_title}")}
+                        title="Position offered"
+                      >
+                        + &#123;job_title&#125;
+                      </button>
+                      <button
+                        type="button"
+                        className="aol-template-tag-chip"
+                        onClick={() => insertTag("acceptance", "{company_name}")}
+                        title="Employer company name"
+                      >
+                        + &#123;company_name&#125;
+                      </button>
+                      <button
+                        type="button"
+                        className="aol-template-tag-chip"
+                        onClick={() => insertTag("acceptance", "{start_date}")}
+                        title="Target onboarding start date"
+                      >
+                        + &#123;start_date&#125;
+                      </button>
+                    </div>
 
-                <textarea
-                  className="aol-template-textarea"
-                  rows={9}
-                  value={acceptanceTemplate}
-                  onChange={(e) => setAcceptanceTemplate(e.target.value)}
-                  placeholder="Write your formal acceptance message..."
-                />
+                    <textarea
+                      className="aol-template-textarea"
+                      rows={9}
+                      value={acceptanceTemplate}
+                      onChange={(e) => setAcceptanceTemplate(e.target.value)}
+                      placeholder="Write your formal acceptance message..."
+                    />
+                  </div>
 
-                <div className="aol-template-preview-box">
-                  <span className="aol-template-preview-label">
-                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                    Employer Preview
-                  </span>
-                  <div className="aol-template-preview-content">
-                    {renderPreview(acceptanceTemplate || SYSTEM_DEFAULT_ACCEPTANCE, true)}
+                  <div className="aol-template-preview-side">
+                    <div className="aol-template-preview-box">
+                      <span className="aol-template-preview-label">
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        Employer Preview
+                      </span>
+                      <div className="aol-template-preview-content">
+                        {renderPreview(acceptanceTemplate || SYSTEM_DEFAULT_ACCEPTANCE, true)}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -304,52 +410,58 @@ export default function ApplicantOfferLetter() {
               </div>
 
               <div className="aol-template-card-body">
-                <div className="aol-template-tags-bar">
-                  <span>Insert tag:</span>
-                  <button
-                    type="button"
-                    className="aol-template-tag-chip"
-                    onClick={() => insertTag("denial", "{applicant_name}")}
-                    title="Your full name"
-                  >
-                    + &#123;applicant_name&#125;
-                  </button>
-                  <button
-                    type="button"
-                    className="aol-template-tag-chip"
-                    onClick={() => insertTag("denial", "{job_title}")}
-                    title="Position offered"
-                  >
-                    + &#123;job_title&#125;
-                  </button>
-                  <button
-                    type="button"
-                    className="aol-template-tag-chip"
-                    onClick={() => insertTag("denial", "{company_name}")}
-                    title="Employer company name"
-                  >
-                    + &#123;company_name&#125;
-                  </button>
-                </div>
+                <div className="aol-template-studio-split">
+                  <div className="aol-template-inputs-side">
+                    <div className="aol-template-tags-bar">
+                      <span>Insert tag:</span>
+                      <button
+                        type="button"
+                        className="aol-template-tag-chip"
+                        onClick={() => insertTag("denial", "{applicant_name}")}
+                        title="Your full name"
+                      >
+                        + &#123;applicant_name&#125;
+                      </button>
+                      <button
+                        type="button"
+                        className="aol-template-tag-chip"
+                        onClick={() => insertTag("denial", "{job_title}")}
+                        title="Position offered"
+                      >
+                        + &#123;job_title&#125;
+                      </button>
+                      <button
+                        type="button"
+                        className="aol-template-tag-chip"
+                        onClick={() => insertTag("denial", "{company_name}")}
+                        title="Employer company name"
+                      >
+                        + &#123;company_name&#125;
+                      </button>
+                    </div>
 
-                <textarea
-                  className="aol-template-textarea"
-                  rows={9}
-                  value={declineTemplate}
-                  onChange={(e) => setDeclineTemplate(e.target.value)}
-                  placeholder="Write your formal decline message..."
-                />
+                    <textarea
+                      className="aol-template-textarea"
+                      rows={9}
+                      value={declineTemplate}
+                      onChange={(e) => setDeclineTemplate(e.target.value)}
+                      placeholder="Write your formal decline message..."
+                    />
+                  </div>
 
-                <div className="aol-template-preview-box">
-                  <span className="aol-template-preview-label">
-                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                    Employer Preview
-                  </span>
-                  <div className="aol-template-preview-content">
-                    {renderPreview(declineTemplate || SYSTEM_DEFAULT_DECLINE, false)}
+                  <div className="aol-template-preview-side">
+                    <div className="aol-template-preview-box">
+                      <span className="aol-template-preview-label">
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        Employer Preview
+                      </span>
+                      <div className="aol-template-preview-content">
+                        {renderPreview(declineTemplate || SYSTEM_DEFAULT_DECLINE, false)}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

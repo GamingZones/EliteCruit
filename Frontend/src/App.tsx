@@ -34,7 +34,7 @@ function ProtectedRoute({
   allowedRoles?: Role[];
 }) {
   const token = getAuthToken();
-  const user = getStoredUser<{ id: number; role: Role; email: string }>();
+  const user = getStoredUser<{ id: number; role: Role; email: string; isProfileComplete?: boolean }>();
 
   // Fallback 1: Unauthenticated -> Redirect immediately to /login
   if (!token || !user) {
@@ -50,12 +50,25 @@ function ProtectedRoute({
       if (user.role === "admin") {
         window.location.replace("/admin-dashboard");
       } else if (user.role === "employer") {
-        window.location.replace("/employer-dashboard");
+        window.location.replace(user.isProfileComplete === false ? "/employer-company-profile?setup=required" : "/employer-dashboard");
       } else {
-        window.location.replace("/applicant-dashboard");
+        window.location.replace(user.isProfileComplete === false ? "/my-profile?setup=required" : "/applicant-dashboard");
       }
     }
     return null;
+  }
+
+  // Fallback 3: Mandatory Initial Profile Setup Gate
+  if (typeof window !== "undefined" && user.isProfileComplete === false) {
+    const currentPath = window.location.pathname.toLowerCase();
+    if (user.role === "applicant" && currentPath !== "/my-profile" && currentPath !== "/applicant-profile") {
+      window.location.replace("/my-profile?setup=required");
+      return null;
+    }
+    if (user.role === "employer" && currentPath !== "/employer-company-profile" && currentPath !== "/employer/company-profile") {
+      window.location.replace("/employer-company-profile?setup=required");
+      return null;
+    }
   }
 
   return element;
@@ -63,17 +76,21 @@ function ProtectedRoute({
 
 function PublicOnlyRoute({ element }: { element: React.ReactElement }) {
   const token = getAuthToken();
-  const user = getStoredUser<{ id: number; role: Role; email: string }>();
+  const user = getStoredUser<{ id: number; role: Role; email: string; isProfileComplete?: boolean }>();
+  const isPasswordResetRedirect =
+    typeof window !== "undefined" &&
+    (new URLSearchParams(window.location.search).get("action") === "forgot" ||
+      new URLSearchParams(window.location.search).get("reset") === "true");
 
-  // If already authenticated and navigating to login/register, smoothly redirect to dashboard
-  if (token && user) {
+  // If already authenticated and navigating to login/register (unless resetting password via email link), smoothly redirect to dashboard
+  if (token && user && !isPasswordResetRedirect) {
     if (typeof window !== "undefined") {
       if (user.role === "admin") {
         window.location.replace("/admin-dashboard");
       } else if (user.role === "employer") {
-        window.location.replace("/employer-dashboard");
+        window.location.replace(user.isProfileComplete === false ? "/employer-company-profile?setup=required" : "/employer-dashboard");
       } else {
-        window.location.replace("/applicant-dashboard");
+        window.location.replace(user.isProfileComplete === false ? "/my-profile?setup=required" : "/applicant-dashboard");
       }
     }
     return null;

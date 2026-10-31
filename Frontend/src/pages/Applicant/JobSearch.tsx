@@ -1286,7 +1286,8 @@ export default function JobSearch() {
             data.invitations.forEach((inv: any) => {
               const jobId = Number(inv?.job_post_id);
               if (jobId > 0 && !next[jobId]) {
-                next[jobId] = "shortlisted";
+                const invStatus = (inv?.status || "pending").toLowerCase();
+                next[jobId] = invStatus === "accepted" ? "recruited" : invStatus === "declined" ? "denied" : "invited";
               }
             });
             return next;
@@ -2051,8 +2052,8 @@ export default function JobSearch() {
   };
 
   const getJobApplicationStatus = (jobId: number): {
-    label: "Applied" | "Recruited" | "Approved" | "Denied";
-    statusClass: "applied" | "recruited" | "approved" | "denied";
+    label: "Applied" | "Recruited" | "Approved" | "Denied" | "Invitation Received";
+    statusClass: "applied" | "recruited" | "approved" | "denied" | "invited";
   } | null => {
     const rawStatus = applicationStatusByJobId[jobId];
     if (rawStatus) {
@@ -2063,8 +2064,11 @@ export default function JobSearch() {
       if (s === "denied" || s === "rejected") {
         return { label: "Denied", statusClass: "denied" };
       }
-      if (s === "shortlisted" || s === "recruited") {
+      if (s === "recruited") {
         return { label: "Recruited", statusClass: "recruited" };
+      }
+      if (s === "invited" || s === "invitation") {
+        return { label: "Invitation Received", statusClass: "invited" };
       }
       return { label: "Applied", statusClass: "applied" };
     }
@@ -2978,18 +2982,24 @@ export default function JobSearch() {
                     </svg>
                   </div>
                   <div>
-                    <strong
-                      className={`jd-employer-name ${empUserId ? "clickable" : ""}`}
-                      onClick={() => {
-                        if (empUserId) {
-                          setIsEmployerModalOnTop(true);
-                          handleOpenEmployerDetailsById(empUserId);
-                        }
-                      }}
-                      style={{ cursor: empUserId ? "pointer" : "default" }}
-                    >
-                      {companyName}
-                    </strong>
+                    <div className="jd-employer-name-row">
+                      <strong
+                        className={`jd-employer-name ${empUserId ? "clickable" : ""}`}
+                        onClick={() => {
+                          if (empUserId) {
+                            setIsEmployerModalOnTop(true);
+                            handleOpenEmployerDetailsById(empUserId);
+                          }
+                        }}
+                        style={{ cursor: empUserId ? "pointer" : "default" }}
+                      >
+                        {companyName}
+                      </strong>
+                      <span className="company-inline-rating-pill" title="Company rating">
+                        <span className="star-icon">★</span>
+                        <span>{ratingText}</span>
+                      </span>
+                    </div>
                     <span className="jd-employer-location">
                       <svg viewBox="0 0 24 24" aria-hidden="true" width="12" height="12" fill="none" stroke="#5b8ab0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
@@ -3001,10 +3011,6 @@ export default function JobSearch() {
                 </div>
 
                 <div className="jd-header-right-actions">
-                  <div className="rating-score-box" title="Company rating">
-                    <span className="star-icon">★</span>
-                    <span>{ratingText}</span>
-                  </div>
                   <div
                     className={`match-score-box ${getMatchColorClass(matchInfo.score)}`}
                     title="Match Score"
@@ -3509,7 +3515,14 @@ export default function JobSearch() {
                           <h3 title={job.title}>{job.title}</h3>
                         </div>
                         <p className="meta-line">
-                          <span><MiniIcon name="company" />{job.company}</span>
+                          <span className="company-meta-with-rating">
+                            <MiniIcon name="company" />
+                            <span>{job.company}</span>
+                            <span className="company-inline-rating-pill" title="Company rating">
+                              <span className="star-icon">★</span>
+                              <span>{job.rating ? Number(job.rating).toFixed(1) : "0.0"}</span>
+                            </span>
+                          </span>
                           <RenderLocationMeta location={job.location} />
                         </p>
                         <p className="result-summary">{job.summary || "No job description provided yet."}</p>
@@ -3540,10 +3553,6 @@ export default function JobSearch() {
 
                       <div className="result-right-col">
                         <div className="card-top-actions">
-                          <div className="rating-score-box" title="Company rating">
-                            <span className="star-icon">★</span>
-                            <span>{job.rating ? Number(job.rating).toFixed(1) : "0.0"}</span>
-                          </div>
                           {(() => {
                             const matchInfo = calculateJobMatchDetails(job, applicantMatchProfile);
                             return (
@@ -3844,9 +3853,15 @@ export default function JobSearch() {
                             {employer.company_name?.charAt(0)?.toUpperCase() || "E"}
                           </div>
                           <div>
-                            <h3 title={employer.company_name} style={{ margin: 0, fontSize: "1.1rem" }}>
-                              {employer.company_name}
-                            </h3>
+                            <div className="employer-name-rating-row">
+                              <h3 title={employer.company_name} style={{ margin: 0, fontSize: "1.1rem" }}>
+                                {employer.company_name}
+                              </h3>
+                              <span className="company-inline-rating-pill" title="Employer rating">
+                                <span className="star-icon">★</span>
+                                <span>{employer.rating ? Number(employer.rating).toFixed(1) : "0.0"}</span>
+                              </span>
+                            </div>
                             <p className="meta-line" style={{ marginTop: "4px", marginBottom: 0 }}>
                               <RenderLocationMeta location={formatLocationWithCavite(employer.location || employer.city)} />
                               {employer.industry && (
@@ -3874,14 +3889,7 @@ export default function JobSearch() {
                         </div>
                       </div>
 
-                      <div className="result-right-col">
-                        <div className="card-top-actions">
-                          <div className="rating-score-box" title="Employer rating">
-                            <span className="star-icon">★</span>
-                            <span>{employer.rating ? Number(employer.rating).toFixed(1) : "0.0"}</span>
-                          </div>
-                        </div>
-
+                      <div className="result-right-col" style={{ justifyContent: "center" }}>
                         <button
                           type="button"
                           className="details-btn"

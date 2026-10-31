@@ -245,26 +245,100 @@ function parseExpectedSalary(raw: string | null | undefined) {
 
 function statusChipBadgeClass(status: string) {
   const s = (status || "").toLowerCase();
-  if (s === "shortlisted") return "chip-shortlisted";
+  if (s === "recruited") return "chip-recruited";
   if (s === "approved" || s === "accepted") return "chip-approved";
-  if (s === "denied" || s === "rejected") return "chip-denied";
+  if (s === "shortlisted") return "chip-shortlisted";
+  if (s === "denied" || s === "rejected" || s === "withdrawn") return "chip-denied";
   return "chip-pending";
 }
 
 function statusChipClass(status: string) {
   const s = (status || "").toLowerCase();
+  if (s === "recruited" || s === "approved" || s === "accepted") return "match-chip chip-green";
   if (s === "shortlisted") return "match-chip chip-amber";
-  if (s === "approved" || s === "accepted") return "match-chip chip-green";
-  if (s === "denied" || s === "rejected") return "match-chip chip-amber";
+  if (s === "denied" || s === "rejected" || s === "withdrawn") return "match-chip chip-amber";
   return "match-chip chip-green";
 }
 
 function formatStatusLabel(status: string) {
   const s = (status || "").toLowerCase();
-  if (s === "shortlisted") return "Shortlisted";
+  if (s === "recruited") return "Recruited";
   if (s === "approved" || s === "accepted") return "Approved";
+  if (s === "shortlisted") return "Shortlisted";
+  if (s === "withdrawn") return "Withdrawn";
   if (s === "denied" || s === "rejected") return "Denied";
   return "Pending";
+}
+
+function getApplicationTimelineSteps(app: any) {
+  const status = (app?.status || "submitted").toLowerCase();
+  const submittedDate = app?.submitted_at ? formatDate(app.submitted_at) : "Submitted";
+  const decidedDate = app?.decided_at ? formatDate(app.decided_at) : (app?.responded_at ? formatDate(app.responded_at) : null);
+  const interview = app?.scheduled_interview;
+
+  const isReviewed = ["reviewed", "under_review", "shortlisted", "recruited", "approved", "accepted", "denied", "rejected"].includes(status);
+  const isFinalDecision = ["approved", "accepted", "recruited", "denied", "rejected", "withdrawn"].includes(status);
+
+  return [
+    {
+      title: "Application Submitted",
+      description: "Application and profile details submitted to employer.",
+      timestamp: submittedDate,
+      state: "completed" as const,
+    },
+    {
+      title: "Candidate Screening & Review",
+      description: isReviewed
+        ? (["shortlisted", "recruited", "approved", "accepted"].includes(status)
+          ? "Profile screened and candidate shortlisted by recruitment team."
+          : "Application is under active candidate screening.")
+        : "Pending initial profile review by hiring manager.",
+      timestamp: isReviewed ? (app.updated_at ? formatDate(app.updated_at) : "Completed") : null,
+      state: isReviewed ? ("completed" as const) : ("active" as const),
+    },
+    {
+      title: "Interview Scheduled",
+      description: interview
+        ? `${interview.interview_stage || "Interview"} (${interview.interview_type || "On-Site"})${interview.interview_date ? ` scheduled for ${interview.interview_date} ${interview.start_time ? `at ${interview.start_time}` : ""}` : ""}`
+        : (isFinalDecision && !interview
+          ? "Proceeded directly to formal evaluation."
+          : "Awaiting interview invitation from hiring team."),
+      timestamp: interview?.interview_date ? formatDate(interview.interview_date) : null,
+      state: interview
+        ? ("completed" as const)
+        : isFinalDecision
+        ? ("completed" as const)
+        : isReviewed
+        ? ("active" as const)
+        : ("upcoming" as const),
+    },
+    {
+      title: status === "withdrawn"
+        ? "Application Withdrawn"
+        : status === "denied" || status === "rejected"
+        ? "Application Concluded"
+        : status === "recruited"
+        ? "Candidate Recruited"
+        : status === "accepted" || status === "approved"
+        ? "Formal Offer Extended"
+        : "Final Hiring Decision",
+      description: status === "withdrawn"
+        ? "You have withdrawn your application for this position."
+        : status === "denied" || status === "rejected"
+        ? "Employer decided to pursue other applicants for this role."
+        : status === "recruited"
+        ? "Congratulations! You have been successfully recruited for this role."
+        : status === "accepted"
+        ? "Offer accepted! Onboarding details will be communicated shortly."
+        : status === "approved"
+        ? "Offer extended! Please review and respond to the formal offer letter."
+        : "Pending final review and formal employment offer.",
+      timestamp: decidedDate,
+      state: isFinalDecision
+        ? (status === "denied" || status === "rejected" || status === "withdrawn" ? "concluded" as const : "completed" as const)
+        : ("upcoming" as const),
+    },
+  ];
 }
 
 function formatDate(d: string | null) {
@@ -422,7 +496,56 @@ export default function ApplicantDashboard() {
     inv: JobInvitationItem;
     action: "accept" | "decline";
   } | null>(null);
+  const [appDecisionModalTarget, setAppDecisionModalTarget] = useState<{
+    app: any;
+    action: "accept" | "decline";
+  } | null>(null);
+  const [viewLetterModalTarget, setViewLetterModalTarget] = useState<{
+    title: string;
+    company: string;
+    letterText: string;
+    startDate?: string;
+    respondedAt?: string;
+    decision?: string;
+  } | null>(null);
   const [applyJobTarget, setApplyJobTarget] = useState<{ jobId: number; title: string } | null>(null);
+  const [timelineModalApp, setTimelineModalApp] = useState<any | null>(null);
+  const [withdrawTargetApp, setWithdrawTargetApp] = useState<any | null>(null);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [withdrawMessage, setWithdrawMessage] = useState<string | null>(null);
+
+  const handleConfirmWithdraw = async () => {
+    if (!withdrawTargetApp) return;
+    setIsWithdrawing(true);
+    try {
+      const savedUserRaw = localStorage.getItem("elitecruit-user");
+      const token = localStorage.getItem("elitecruit-token");
+      const savedUser = savedUserRaw ? JSON.parse(savedUserRaw) : null;
+      const userId = savedUser?.id || applicantUserId;
+
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const res = await fetch(`/api/applicants/${userId}/applications/${withdrawTargetApp.id}/withdraw`, {
+        method: "POST",
+        headers,
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setMyApplicationsList((prev) =>
+          prev.map((a) => (a.id === withdrawTargetApp.id ? { ...a, status: "withdrawn" } : a))
+        );
+        window.dispatchEvent(new CustomEvent("elitecruit_application_update"));
+        setWithdrawMessage(data?.message || "Application withdrawn successfully.");
+      } else {
+        setWithdrawMessage(data?.message || "Failed to withdraw application.");
+      }
+    } catch {
+      setWithdrawMessage("Network error: Unable to withdraw application.");
+    } finally {
+      setIsWithdrawing(false);
+    }
+  };
 
   const handleConfirmApply = async () => {
     if (!applyJobTarget) return;
@@ -602,7 +725,17 @@ export default function ApplicantDashboard() {
       if (res.ok) {
         const data = await res.json();
         setInvitationsList((prev) =>
-          prev.map((inv) => (inv.id === invitationId ? { ...inv, status: data.status } : inv))
+          prev.map((inv) =>
+            inv.id === invitationId
+              ? {
+                  ...inv,
+                  status: data.status || (action === "accept" ? "accepted" : "declined"),
+                  response_letter: letter_text || inv.response_letter,
+                  start_date: start_date || inv.start_date,
+                  responded_at: new Date().toISOString(),
+                }
+              : inv
+          )
         );
         if (action === "accept" && applicantUserId) {
           fetch(`/api/applicants/${applicantUserId}/applications`)
@@ -617,6 +750,47 @@ export default function ApplicantDashboard() {
       console.error("Error responding to invitation:", err);
     } finally {
       setIsRespondingInvId(null);
+    }
+  };
+
+  const handleRespondApplication = async (
+    applicationId: number,
+    action: "accept" | "decline",
+    letter_text?: string,
+    letter_type?: string,
+    start_date?: string
+  ) => {
+    if (!applicantUserId) return;
+    try {
+      const res = await fetch(`/api/applicants/${applicantUserId}/applications/${applicationId}/offer-response`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("elitecruit-token") || ""}`,
+        },
+        body: JSON.stringify({ decision: action, letter_text, letter_type, start_date }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to submit formal offer response.");
+      }
+      setMyApplicationsList((prev: any[]) =>
+        prev.map((a: any) =>
+          a.id === applicationId
+            ? {
+                ...a,
+                status: action === "accept" ? "accepted" : "declined",
+                response_letter: letter_text,
+                response_decision: action,
+                start_date: start_date || a.start_date,
+                responded_at: new Date().toISOString(),
+              }
+            : a
+        )
+      );
+      setAppDecisionModalTarget(null);
+    } catch (err: any) {
+      alert(err.message || "Error submitting formal offer response.");
     }
   };
 
@@ -635,10 +809,11 @@ export default function ApplicantDashboard() {
       applicationLimit: Number(inv.application_limit) || 10,
       applicantCount: 1,
       qualifications: inv.job_qualifications || "Not provided",
+      certifications: (inv as any).certifications || (inv as any).job_certifications || "Not provided",
       responsibilities: "Not provided",
       skillTags: parseCompetencyDisplayTags(inv.required_skills),
       qualTags: parseCompetencyDisplayTags(inv.job_qualifications),
-      certTags: parseCompetencyDisplayTags((inv as any).certifications),
+      certTags: parseCompetencyDisplayTags((inv as any).certifications || (inv as any).job_certifications),
       jobType: inv.work_arrangement === "Remote" ? "Remote" : "Full-time",
       functionGroup: "General",
       distance: "Cavite",
@@ -728,7 +903,7 @@ export default function ApplicantDashboard() {
     },
     {
       label: "Smart Matches",
-      value: String(sortedSmartMatches.length),
+      value: String(sortedSmartMatches.filter((job) => calculateJobMatch(job, applicantMatchProfile) > 0).length),
       hint: "High compatibility",
       icon: "search",
     },
@@ -831,6 +1006,13 @@ export default function ApplicantDashboard() {
 
   const currentTabIndex = WORKSPACE_TABS.findIndex((tab) => tab.id === activeSection);
   const safeTabIndex = currentTabIndex >= 0 ? currentTabIndex : 0;
+
+  const getTabBadgeCount = (tabId: string) => {
+    if (tabId === "section-smart-matches") return sortedSmartMatches.length;
+    if (tabId === "section-applications") return myApplicationsList.length;
+    if (tabId === "section-invitations") return invitationsList.length;
+    return 0;
+  };
 
   const handlePrevTab = () => {
     const prev = (safeTabIndex - 1 + WORKSPACE_TABS.length) % WORKSPACE_TABS.length;
@@ -989,16 +1171,20 @@ export default function ApplicantDashboard() {
         <div className="dash-nav-container">
           {/* Desktop Tab Row (Hidden on mobile screens <= 768px) */}
           <nav className="profile-section-nav dash-section-nav dash-desktop-tabs" aria-label="Workspace Sections">
-            {WORKSPACE_TABS.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                className={`section-nav-btn ${activeSection === tab.id ? "active" : ""}`}
-                onClick={() => handleTabClick(tab.id)}
-              >
-                <span>{tab.label}</span>
-              </button>
-            ))}
+            {WORKSPACE_TABS.map((tab) => {
+              const count = getTabBadgeCount(tab.id);
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  className={`section-nav-btn ${activeSection === tab.id ? "active" : ""}`}
+                  onClick={() => handleTabClick(tab.id)}
+                >
+                  <span>{tab.label}</span>
+                  {count > 0 && <span className="tab-count-pill">{count}</span>}
+                </button>
+              );
+            })}
           </nav>
 
           {/* Mobile Single Item Switcher with Swap Arrows (Visible on mobile <= 768px) */}
@@ -1012,7 +1198,12 @@ export default function ApplicantDashboard() {
               <ChevronIcon direction="left" />
             </button>
             <div className="dash-switcher-center">
-              <span className="dash-switcher-title">{WORKSPACE_TABS[safeTabIndex].label}</span>
+              <span className="dash-switcher-title">
+                {WORKSPACE_TABS[safeTabIndex].label}
+                {getTabBadgeCount(WORKSPACE_TABS[safeTabIndex].id) > 0 && (
+                  <span className="tab-count-pill">{getTabBadgeCount(WORKSPACE_TABS[safeTabIndex].id)}</span>
+                )}
+              </span>
               <div className="dash-switcher-dots" aria-hidden="true">
                 {WORKSPACE_TABS.map((tab, idx) => (
                   <button
@@ -1041,11 +1232,14 @@ export default function ApplicantDashboard() {
         <section className="matches-card section-anchor" id="section-smart-matches">
           <div className="matches-head">
             <div>
-              <small>Dashboard Section</small>
+              <small className="matches-head-eyebrow">AI-POWERED RECOMMENDATIONS</small>
               <h2>Smart Matches</h2>
-              <p>Ranked by skills, qualifications, location, salary, and work arrangement.</p>
+              <p>Ranked by skills, qualifications, location, salary, and work arrangement compatibility.</p>
             </div>
-            <a href="/job-search">View All</a>
+            <a href="/job-search" className="matches-head-action-btn">
+              <span>View All Jobs</span>
+              <span className="action-arrow">→</span>
+            </a>
           </div>
 
           {sortedSmartMatches.length === 0 ? (
@@ -1059,14 +1253,22 @@ export default function ApplicantDashboard() {
             </article>
           ) : (
             sortedSmartMatches.slice(0, 5).map((job) => (
-              <article key={job.id} className="result-card" style={{ marginBottom: "12px" }}>
+              <article key={job.id} className="result-card">
                 <div className="result-card-main">
                   <div className="result-left-col">
                     <div className="result-title-row">
                       <h3 title={job.title}>{job.title}</h3>
                     </div>
                     <p className="meta-line">
-                      <span><MiniIcon name="company" />{job.company}</span>
+                      <span className="company-meta-with-rating">
+                        <MiniIcon name="company" />
+                        <strong>{job.company}</strong>
+                        <span className="company-inline-rating-pill" title="Company rating">
+                          <span className="star-icon">★</span>
+                          <span>{job.rating ? Number(job.rating).toFixed(1) : "0.0"}</span>
+                        </span>
+                      </span>
+                      <span className="meta-divider">•</span>
                       <RenderLocationMeta location={job.location} />
                     </p>
                     <p className="result-summary">{job.summary || "No job description provided yet."}</p>
@@ -1097,10 +1299,6 @@ export default function ApplicantDashboard() {
 
                   <div className="result-right-col">
                     <div className="card-top-actions">
-                      <div className="rating-score-box" title="Company rating">
-                        <span className="star-icon">★</span>
-                        <span>{job.rating ? Number(job.rating).toFixed(1) : "0.0"}</span>
-                      </div>
                       {(() => {
                         const matchInfo = calculateJobMatchDetails(job, applicantMatchProfile);
                         return (
@@ -1140,14 +1338,17 @@ export default function ApplicantDashboard() {
 
         {/* ── SECTION 2: MY APPLICATIONS ── */}
         {activeSection === "section-applications" && (
-        <section className="matches-card section-anchor" id="section-applications" style={{ marginTop: "24px" }}>
+        <section className="matches-card section-anchor" id="section-applications">
           <div className="matches-head">
             <div>
-              <small>Dashboard Section</small>
+              <small className="matches-head-eyebrow">APPLICATION TRACKER</small>
               <h2>My Applications</h2>
               <p>Positions you have applied for and their real-time application status.</p>
             </div>
-            <a href="/job-search">Find More Jobs</a>
+            <a href="/job-search" className="matches-head-action-btn">
+              <span>Find More Jobs</span>
+              <span className="action-arrow">→</span>
+            </a>
           </div>
 
           {myApplicationsList.length === 0 ? (
@@ -1165,9 +1366,21 @@ export default function ApplicantDashboard() {
               <article key={app.id || app.job_post_id} className="job-card">
                 <div className="job-card-left">
                   <h3>{app.job_title || app.title || "Applied Role"}</h3>
-                  <p>{app.company_name ? `${app.company_name} · ` : ""}{app.location || app.city || "Location not set"}</p>
-                  <p style={{ marginTop: "4px", fontSize: "0.82rem", color: "#355172" }}>
-                    Submitted on: {formatDate(app.submitted_at)}
+                  <p className="app-company-loc-line">
+                    {app.company_name ? (
+                      <span className="company-meta-with-rating">
+                        <strong>{app.company_name}</strong>
+                        <span className="company-inline-rating-pill" title="Company rating">
+                          <span className="star-icon">★</span>
+                          <span>{app.rating ? Number(app.rating).toFixed(1) : "0.0"}</span>
+                        </span>
+                      </span>
+                    ) : null}
+                    <span className="meta-divider">•</span>
+                    <span>{app.location || app.city || "Location not set"}</span>
+                  </p>
+                  <p className="app-submitted-date">
+                    <span>Submitted on: {formatDate(app.submitted_at)}</span>
                   </p>
                 </div>
                 <div className="job-card-middle">
@@ -1176,19 +1389,55 @@ export default function ApplicantDashboard() {
                   </span>
                 </div>
                 <div className="job-actions">
-                  {["approved", "accepted", "shortlisted"].includes((app.status || "").toLowerCase()) || app.response_letter ? (
-                    <a
-                      href={`/applicant-offer-letter?applicationId=${app.id}&action=accept`}
-                      className="solid-btn"
-                      style={{ background: "#059669", borderColor: "#059669", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "5px" }}
+                  {["approved", "accepted", "recruited", "shortlisted"].includes((app.status || "").toLowerCase()) || app.response_letter ? (
+                    <button
+                      type="button"
+                      className="solid-btn offer-letter-action-btn"
+                      onClick={() => {
+                        if (app.response_letter) {
+                          setViewLetterModalTarget({
+                            title: app.job_title || app.title || "Applied Role",
+                            company: app.company_name || "Employer",
+                            letterText: app.response_letter,
+                            startDate: app.start_date,
+                            respondedAt: app.responded_at,
+                            decision: app.response_decision || (app.status === "declined" ? "declined" : "accepted"),
+                          });
+                        } else {
+                          setAppDecisionModalTarget({
+                            app,
+                            action: "accept",
+                          });
+                        }
+                      }}
                     >
-                      {app.response_letter ? "View Letter ✉" : "Formal Offer Letter ✉"}
-                    </a>
+                      <span>{app.response_letter ? "View Letter" : "Formal Offer Letter"}</span>
+                    </button>
                   ) : null}
-                  <button type="button" className="solid-btn" onClick={() => handleReviewApplication(app)}>
+                  <button
+                    type="button"
+                    className="solid-btn track-timeline-btn"
+                    onClick={() => setTimelineModalApp(app)}
+                    title="Track application progress and milestone timeline"
+                    style={{ background: "#0284c7", color: "#ffffff" }}
+                  >
+                    Timeline
+                  </button>
+                  <button type="button" className="solid-btn review-app-btn" onClick={() => handleReviewApplication(app)}>
                     Review
                   </button>
-                  <button type="button" className="ghost-btn" onClick={() => { window.location.href = "/messages"; }}>Message</button>
+                  <button type="button" className="ghost-btn message-app-btn" onClick={() => { window.location.href = "/messages"; }}>Message</button>
+                  {!["approved", "accepted", "recruited", "denied", "rejected", "withdrawn"].includes((app.status || "").toLowerCase()) && (
+                    <button
+                      type="button"
+                      className="ghost-btn withdraw-app-btn"
+                      onClick={() => setWithdrawTargetApp(app)}
+                      title="Withdraw application"
+                      style={{ color: "#ef4444", borderColor: "#fecaca" }}
+                    >
+                      Withdraw
+                    </button>
+                  )}
                 </div>
               </article>
             ))
@@ -1198,14 +1447,14 @@ export default function ApplicantDashboard() {
 
         {/* ── SECTION 3: JOB INVITATIONS ── */}
         {activeSection === "section-invitations" && (
-        <section className="matches-card section-anchor" id="section-invitations" style={{ marginTop: "24px" }}>
-          <div className="matches-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+        <section className="matches-card section-anchor" id="section-invitations">
+          <div className="matches-head inv-matches-head">
             <div>
-              <small>Direct Invitations</small>
+              <small className="matches-head-eyebrow">DIRECT INVITATIONS</small>
               <h2>Job Invitations</h2>
               <p>Positions where employers reviewed your profile and directly invited you.</p>
             </div>
-            <div style={{ display: "flex", gap: "8px" }}>
+            <div className="inv-filters-pill-group">
               {(["all", "pending", "accepted", "declined"] as const).map((key) => {
                 const count = key === "all"
                   ? invitationsList.length
@@ -1216,19 +1465,9 @@ export default function ApplicantDashboard() {
                     type="button"
                     className={`inv-filter-btn ${invitationFilter === key ? "active" : ""}`}
                     onClick={() => setInvitationFilter(key)}
-                    style={{
-                      padding: "6px 14px",
-                      borderRadius: "999px",
-                      fontSize: "0.82rem",
-                      fontWeight: 700,
-                      border: invitationFilter === key ? "1px solid #0284c7" : "1px solid #cbd5e1",
-                      background: invitationFilter === key ? "#e0f2fe" : "#f8fafc",
-                      color: invitationFilter === key ? "#0369a1" : "#475569",
-                      cursor: "pointer",
-                      textTransform: "capitalize",
-                    }}
                   >
-                    {key} ({count})
+                    <span>{key}</span>
+                    <span className="inv-filter-count">{count}</span>
                   </button>
                 );
               })}
@@ -1255,25 +1494,41 @@ export default function ApplicantDashboard() {
               .map((inv) => {
                 const status = (inv.status || "pending").toLowerCase();
                 return (
-                  <article key={inv.id} className="job-card" style={{ gap: "16px", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center" }}>
-                    <div className="job-card-left" style={{ flex: 1, minWidth: "260px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                        <h3 style={{ margin: 0 }}>{inv.job_title}</h3>
-                        <span style={{ fontSize: "0.75rem", background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a", padding: "2px 8px", borderRadius: "999px", fontWeight: 700 }}>
+                  <article key={inv.id} className="job-card invitation-job-card">
+                    <div className="job-card-left">
+                      <div className="inv-title-badge-row">
+                        <h3>{inv.job_title}</h3>
+                        <span className="inv-badge-direct">
                           Direct Invitation
                         </span>
                       </div>
-                      <p style={{ margin: "4px 0" }}>
-                        <strong>{inv.business_name || "Employer"}</strong> • {inv.job_location || "Cavite"} • {inv.work_arrangement || "On-Site"}
+                      <p className="app-company-loc-line">
+                        <span className="company-meta-with-rating">
+                          <strong>{inv.business_name || "Employer"}</strong>
+                          <span className="company-inline-rating-pill" title="Company rating">
+                            <span className="star-icon">★</span>
+                            <span>{(inv as any).rating ? Number((inv as any).rating).toFixed(1) : "0.0"}</span>
+                          </span>
+                        </span>
+                        <span className="meta-divider">•</span>
+                        <span>{inv.job_location || "Cavite"}</span>
+                        <span className="meta-divider">•</span>
+                        <span>{inv.work_arrangement || "On-Site"}</span>
                       </p>
                       {(inv.hide_salary || inv.salary_min) && (
-                        <p style={{ margin: "2px 0", color: "#0284c7", fontWeight: 600, fontSize: "0.86rem" }}>
+                        <p className="inv-salary-text">
                           {formatSalaryRange(inv.salary_min ?? null, inv.salary_max ?? null, inv.hide_salary)}
                         </p>
                       )}
-                      <small style={{ color: "#64748b" }}>
-                        Invited on: {formatDate(inv.created_at)}
-                      </small>
+                      <p className="app-submitted-date">
+                        <span>Invited on: {formatDate(inv.created_at)}</span>
+                      </p>
+                    </div>
+
+                    <div className="job-card-middle">
+                      <span className={`status-badge-chip ${status === "accepted" ? "chip-approved" : status === "declined" ? "chip-denied" : "chip-pending"}`}>
+                        {status === "accepted" ? "Accepted" : status === "declined" ? "Declined" : "Invitation Received"}
+                      </span>
                     </div>
 
                     <div className="job-actions invitation-card-actions">
@@ -1300,13 +1555,23 @@ export default function ApplicantDashboard() {
                           </button>
                         </>
                       ) : (
-                        <a
-                          href={`/applicant-offer-letter?invitationId=${inv.id}`}
+                        <button
+                          type="button"
                           className={`inv-action-btn ${status === "accepted" ? "inv-accepted-status-btn" : "inv-declined-status-btn"}`}
-                          style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                          onClick={() => {
+                            setViewLetterModalTarget({
+                              title: inv.job_title || "Job Position",
+                              company: inv.business_name || "Employer",
+                              letterText: (inv as any).response_letter || (status === "accepted" ? "Recruitment invitation accepted." : "Recruitment invitation declined."),
+                              startDate: (inv as any).start_date,
+                              respondedAt: (inv as any).responded_at,
+                              decision: status === "accepted" ? "accepted" : "declined",
+                            });
+                          }}
+                          style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", pointerEvents: "auto" }}
                         >
-                          {status === "accepted" ? "Accepted · View Letter" : "Declined · View Letter"}
-                        </a>
+                          {status === "accepted" ? "Accepted • View Letter" : "Declined • View Letter"}
+                        </button>
                       )}
                       <a href="/messages" className="inv-action-btn inv-message-btn">
                         Message
@@ -1408,6 +1673,151 @@ export default function ApplicantDashboard() {
         }}
       />
 
+      {/* APPLICANT DECISION MODAL FOR APPLICATIONS (Formal Offer Letter Acceptance / Denial) */}
+      <ApplicantDecisionModal
+        isOpen={!!appDecisionModalTarget}
+        action={appDecisionModalTarget?.action || "accept"}
+        title="Respond to Formal Employment Offer"
+        jobTitle={appDecisionModalTarget?.app.job_title || appDecisionModalTarget?.app.title}
+        companyName={appDecisionModalTarget?.app.company_name}
+        candidateName={applicantLabel}
+        currentUserId={applicantUserId || undefined}
+        onClose={() => setAppDecisionModalTarget(null)}
+        onConfirm={async ({ action, letter_text, letter_type, start_date }) => {
+          if (!appDecisionModalTarget) return;
+          await handleRespondApplication(
+            appDecisionModalTarget.app.id,
+            action,
+            letter_text,
+            letter_type,
+            start_date
+          );
+        }}
+      />
+
+      {/* FORMAL RESPONSE LETTER VIEW MODAL */}
+      {viewLetterModalTarget && (
+        <div className="view-letter-backdrop" onClick={() => setViewLetterModalTarget(null)}>
+          <div className="view-letter-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="view-letter-header">
+              <div>
+                <span className="view-letter-eyebrow">FORMAL DECISION LETTER</span>
+                <h3 className="view-letter-title">{viewLetterModalTarget.title}</h3>
+                <p className="view-letter-company">{viewLetterModalTarget.company}</p>
+              </div>
+              <button
+                type="button"
+                className="view-letter-close-btn"
+                onClick={() => setViewLetterModalTarget(null)}
+                aria-label="Close modal"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="view-letter-meta-row">
+              <span className={`view-letter-badge ${viewLetterModalTarget.decision === "declined" ? "declined" : "accepted"}`}>
+                {viewLetterModalTarget.decision === "declined" ? "Offer Declined" : "Offer Accepted"}
+              </span>
+              {viewLetterModalTarget.startDate && (
+                <span className="view-letter-start-date">
+                  📅 Target Start Date: <strong>{viewLetterModalTarget.startDate}</strong>
+                </span>
+              )}
+              {viewLetterModalTarget.respondedAt && (
+                <span className="view-letter-timestamp">
+                  Submitted: {formatDate(viewLetterModalTarget.respondedAt)}
+                </span>
+              )}
+            </div>
+
+            <div className="view-letter-body-box">
+              <pre className="view-letter-pre-text">{viewLetterModalTarget.letterText}</pre>
+            </div>
+
+            <div className="view-letter-footer">
+              <button
+                type="button"
+                className="solid-btn view-letter-done-btn"
+                onClick={() => setViewLetterModalTarget(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── APPLICATION TIMELINE TRACKER MODAL ── */}
+      {timelineModalApp && (
+        <div className="timeline-modal-backdrop" onClick={() => setTimelineModalApp(null)}>
+          <div className="timeline-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="timeline-modal-header">
+              <div>
+                <span className="timeline-eyebrow">APPLICATION MILESTONE TRACKER</span>
+                <h3 className="timeline-modal-title">{timelineModalApp.job_title || timelineModalApp.title || "Applied Role"}</h3>
+                <div className="timeline-modal-meta">
+                  <span className="timeline-modal-company">{timelineModalApp.company_name || "Employer"}</span>
+                  <span className="meta-sep">•</span>
+                  <span className={`status-badge-chip ${statusChipBadgeClass(timelineModalApp.status)}`}>
+                    {formatStatusLabel(timelineModalApp.status)}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="timeline-close-btn"
+                onClick={() => setTimelineModalApp(null)}
+                aria-label="Close timeline"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="timeline-stepper">
+              {getApplicationTimelineSteps(timelineModalApp).map((step, idx, arr) => (
+                <div key={step.title} className={`timeline-step-item ${step.state}`}>
+                  <div className="timeline-step-line-col">
+                    <div className="timeline-step-dot">
+                      {step.state === "completed" ? (
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      ) : step.state === "concluded" ? (
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      ) : (
+                        <span className="step-num">{idx + 1}</span>
+                      )}
+                    </div>
+                    {idx < arr.length - 1 && <div className="timeline-connecting-bar" />}
+                  </div>
+                  <div className="timeline-step-content">
+                    <div className="timeline-step-head">
+                      <h4>{step.title}</h4>
+                      {step.timestamp && <span className="timeline-step-time">{step.timestamp}</span>}
+                    </div>
+                    <p className="timeline-step-desc">{step.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="timeline-modal-footer">
+              <button
+                type="button"
+                className="solid-btn timeline-done-btn"
+                onClick={() => setTimelineModalApp(null)}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* DOUBLE VERIFICATION: APPLY TO JOB MODAL */}
       <ConfirmationModal
         isOpen={!!applyJobTarget}
@@ -1428,6 +1838,58 @@ export default function ApplicantDashboard() {
         onCancel={() => setApplyJobTarget(null)}
         onConfirm={handleConfirmApply}
       />
+
+      {/* DOUBLE VERIFICATION: WITHDRAW APPLICATION MODAL */}
+      <ConfirmationModal
+        isOpen={!!withdrawTargetApp && !withdrawMessage}
+        type="warning"
+        title="Withdraw Application"
+        message={
+          <div>
+            <p style={{ margin: "0 0 8px" }}>
+              Are you sure you want to withdraw your application for{" "}
+              <strong>{withdrawTargetApp?.job_title || withdrawTargetApp?.title || "this position"}</strong>?
+            </p>
+            <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>
+              The employer will be notified that you have withdrawn from consideration. This action cannot be undone.
+            </p>
+          </div>
+        }
+        cancelLabel="Cancel"
+        confirmLabel={isWithdrawing ? "Withdrawing..." : "Confirm Withdraw"}
+        isConfirming={isWithdrawing}
+        onCancel={() => setWithdrawTargetApp(null)}
+        onConfirm={handleConfirmWithdraw}
+      />
+
+      {/* WITHDRAW FEEDBACK ALERT MODAL */}
+      {withdrawMessage && (
+        <div className="system-popup-overlay" onClick={() => setWithdrawMessage(null)} role="dialog" aria-modal="true">
+          <div className="system-popup-card" onClick={(e) => e.stopPropagation()}>
+            <div className="system-popup-icon-wrap success">
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#16a34a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+              </svg>
+            </div>
+            <h3 className="system-popup-title">Application Status</h3>
+            <div className="system-popup-message">{withdrawMessage}</div>
+            <div className="system-popup-actions" style={{ justifyContent: "center" }}>
+              <button
+                type="button"
+                className="system-popup-btn confirm"
+                style={{ background: "#103f65", color: "#fff", padding: "10px 24px", minWidth: 120 }}
+                onClick={() => {
+                  setWithdrawMessage(null);
+                  setWithdrawTargetApp(null);
+                }}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

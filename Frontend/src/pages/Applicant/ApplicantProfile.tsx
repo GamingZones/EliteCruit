@@ -13,6 +13,7 @@ import UndoToast from "../../components/UndoToast";
 import { resolveLocalGeocodeDetailed } from "../../data/mapData";
 import {
   BSIT_BSCS_JOB_TITLES,
+  CATEGORIZED_JOB_ROLES,
   BSIT_BSCS_SKILLS,
   BSIT_BSCS_QUALIFICATIONS,
   BSIT_BSCS_CERTIFICATIONS,
@@ -56,6 +57,19 @@ const MONTHS_LIST = [
 ];
 
 const YEARS_LIST = Array.from({ length: 47 }, (_, i) => String(2026 - i));
+
+const GRADUATE_DEGREE_OPTIONS = [
+  "Doctor of Philosophy (PhD) in Computer Science",
+  "Doctor in Information Technology (DIT)",
+  "Doctor of Engineering (DEng)",
+  "Master of Science in Information Technology (MSIT)",
+  "Master of Science in Computer Science (MSCS)",
+  "Master in Information Technology (MIT)",
+  "Master of Business Administration (MBA)",
+  "Master of Science in Data Science",
+  "Master of Science in Cybersecurity",
+  "Master of Engineering in Computer Engineering (MEng)"
+];
 
 export interface WorkExpItem {
   id: string;
@@ -273,7 +287,7 @@ function Field({
       : strVal;
 
   return (
-    <label className={`${wide ? "profile-field wide" : "profile-field"} ${isMissing || hasError ? "missing-field" : ""}`}>
+    <label className={`${wide ? "profile-field wide" : "profile-field"} ${hasError ? "missing-field" : ""}`}>
       <span>{label}</span>
       <div className={prefix ? "input-prefix-wrap" : ""}>
         {prefix && <b>{prefix}</b>}
@@ -779,6 +793,7 @@ function StartEndYearCardEditor({
               ))}
             </select>
           </div>
+          {yearError && <p className="edu-year-error" style={{ color: "#ef4444", fontSize: "0.82rem", margin: "4px 0 0", width: "100%" }}>{yearError}</p>}
 
           <button
             type="button"
@@ -803,7 +818,7 @@ type EduItemWithSchool = {
   school: string;
   startYear: string;
   endYear: string;
-  level: "college" | "shs";
+  level: "graduate" | "college" | "shs";
 };
 
 function parseEduSchoolItems(raw?: string | null): EduItemWithSchool[] {
@@ -887,7 +902,7 @@ function EduSchoolCardEditor({
   placeholderSchool = "Type or select school name...",
 }: {
   title: string;
-  level: "college" | "shs";
+  level: "graduate" | "college" | "shs";
   qualificationOptions: string[];
   schoolOptions: string[];
   rawString: string | null;
@@ -904,10 +919,19 @@ function EduSchoolCardEditor({
   const [schoolInput, setSchoolInput] = useState("");
   const [selectedStart, setSelectedStart] = useState("2010");
   const [selectedEnd, setSelectedEnd] = useState("2026");
+  const [yearError, setYearError] = useState("");
 
   const handleAddItem = async () => {
     const nameToAdd = degreeInput.trim();
     if (!nameToAdd) return;
+
+    const startNum = parseInt(selectedStart, 10);
+    const endNum = parseInt(selectedEnd, 10);
+    if (!isNaN(startNum) && !isNaN(endNum) && endNum < startNum) {
+      setYearError("End year cannot be earlier than start year.");
+      return;
+    }
+    setYearError("");
 
     const schoolToAdd = schoolInput.trim();
     const newItem: EduItemWithSchool = {
@@ -920,16 +944,18 @@ function EduSchoolCardEditor({
 
     const updatedLevelItems = [...levelItems, newItem];
     const combined = [...otherLevelItems, ...updatedLevelItems];
-    const formatted = combined.map((it) =>
-      it.school
-        ? `${it.name} @ ${it.school} (${it.startYear} - ${it.endYear}) [${it.level === "shs" ? "SHS" : "College"}]`
-        : `${it.name} (${it.startYear} - ${it.endYear}) [${it.level === "shs" ? "SHS" : "College"}]`
-    );
+    const formatted = combined.map((it) => {
+      const levelTag = it.level === "graduate" ? "Graduate" : it.level === "shs" ? "SHS" : "College";
+      return it.school
+        ? `${it.name} @ ${it.school} (${it.startYear} - ${it.endYear}) [${levelTag}]`
+        : `${it.name} (${it.startYear} - ${it.endYear}) [${levelTag}]`;
+    });
 
     const ok = await onSaveAll(formatted);
     if (ok) {
       setDegreeInput("");
       setSchoolInput("");
+      setYearError("");
     }
   };
 
@@ -1058,7 +1084,7 @@ function EduSchoolCardEditor({
             className="add-years-select"
             value={selectedStart}
             disabled={disabled}
-            onChange={(e) => setSelectedStart(e.target.value)}
+            onChange={(e) => { setSelectedStart(e.target.value); setYearError(""); }}
           >
             {YEAR_OPTIONS.map((yr) => (
               <option key={yr} value={yr}>
@@ -1072,7 +1098,7 @@ function EduSchoolCardEditor({
             className="add-years-select"
             value={selectedEnd}
             disabled={disabled}
-            onChange={(e) => setSelectedEnd(e.target.value)}
+            onChange={(e) => { setSelectedEnd(e.target.value); setYearError(""); }}
           >
             {YEAR_OPTIONS.map((yr) => (
               <option key={yr} value={yr}>
@@ -2694,6 +2720,7 @@ export default function ApplicantProfile() {
   };
 
   const [isUpdatingParticipation, setIsUpdatingParticipation] = useState(false);
+  const [isUnsavedExpWarningOpen, setIsUnsavedExpWarningOpen] = useState(false);
 
   const handleToggleParticipation = async () => {
     if (!userId) return;
@@ -2756,6 +2783,102 @@ export default function ApplicantProfile() {
 
   const [preferredLocProvince, setPreferredLocProvince] = useState("Cavite");
   const [preferredLocCity, setPreferredLocCity] = useState("");
+  const [hasLoadedProfile, setHasLoadedProfile] = useState(false);
+  const [setupWarningModalMsg, setSetupWarningModalMsg] = useState("");
+  const hasShownInitialSetupPromptRef = useRef(false);
+
+  const missingFieldItems = useMemo(() => {
+    const p = isEditing ? draft : profile;
+    const list: { key: string; label: string; section: "preferences" | "competencies"; sectionName: string }[] = [];
+    if (!p.desired_job_title || !String(p.desired_job_title).trim()) {
+      list.push({ key: "jobTitle", label: "Job / Target Role", section: "preferences", sectionName: "Career Preferences" });
+    }
+    if (!p.work_arrangement || !String(p.work_arrangement).trim()) {
+      list.push({ key: "workArrangement", label: "Work Arrangement", section: "preferences", sectionName: "Career Preferences" });
+    }
+    const hasSalaryMin =
+      (p.expected_salary_min !== null && p.expected_salary_min !== undefined && String(p.expected_salary_min).trim() !== "") ||
+      Boolean(p.expected_salary && String(p.expected_salary).trim());
+    const hasSalaryMax =
+      (p.expected_salary_max !== null && p.expected_salary_max !== undefined && String(p.expected_salary_max).trim() !== "") ||
+      Boolean(p.expected_salary && String(p.expected_salary).trim());
+    if (!hasSalaryMin) {
+      list.push({ key: "salaryMin", label: "Minimum Salary", section: "preferences", sectionName: "Career Preferences" });
+    }
+    if (!hasSalaryMax) {
+      list.push({ key: "salaryMax", label: "Maximum Salary", section: "preferences", sectionName: "Career Preferences" });
+    }
+    if (!p.qualifications || !String(p.qualifications).trim()) {
+      list.push({ key: "education", label: "Qualifications / Education", section: "competencies", sectionName: "Skills & Credentials" });
+    }
+    if (!p.skills || !String(p.skills).trim()) {
+      list.push({ key: "skills", label: "Technical Skills", section: "competencies", sectionName: "Skills & Credentials" });
+    }
+    return list;
+  }, [profile, draft, isEditing]);
+
+  const missingMandatedFields = useMemo(() => missingFieldItems.map((item) => item.label), [missingFieldItems]);
+
+  const completionChecks = useMemo(() => {
+    const p = isEditing ? draft : profile;
+    const hasJobTitle = Boolean(p.desired_job_title && String(p.desired_job_title).trim());
+    const hasWorkArrangement = Boolean(p.work_arrangement && String(p.work_arrangement).trim());
+    const hasSalaryMin =
+      (p.expected_salary_min !== null && p.expected_salary_min !== undefined && String(p.expected_salary_min).trim() !== "") ||
+      Boolean(p.expected_salary && String(p.expected_salary).trim());
+    const hasSalaryMax =
+      (p.expected_salary_max !== null && p.expected_salary_max !== undefined && String(p.expected_salary_max).trim() !== "") ||
+      Boolean(p.expected_salary && String(p.expected_salary).trim());
+    const hasEducation = Boolean(p.qualifications && String(p.qualifications).trim());
+    const hasSkills = Boolean(p.skills && String(p.skills).trim());
+
+    const allChecks = [hasJobTitle, hasWorkArrangement, hasSalaryMin, hasSalaryMax, hasEducation, hasSkills];
+    const done = allChecks.filter(Boolean).length;
+    const percent = Math.round((done / allChecks.length) * 100);
+    const colorBand = percent <= 50 ? "red" : percent <= 80 ? "yellow" : "green";
+
+    return {
+      hasJobTitle,
+      hasWorkArrangement,
+      hasSalaryMin,
+      hasSalaryMax,
+      hasEducation,
+      hasSkills,
+      percent,
+      colorBand,
+    };
+  }, [profile, draft, isEditing]);
+
+  const isProfileComplete = hasLoadedProfile && (completionChecks.percent >= 100 || missingFieldItems.length === 0);
+  const isProfileSetupIncomplete = hasLoadedProfile && !isProfileComplete;
+
+  useEffect(() => {
+    if (!hasLoadedProfile) return;
+    try {
+      const rawUser = localStorage.getItem("elitecruit-user");
+      if (rawUser) {
+        const parsed = JSON.parse(rawUser);
+        const updated = {
+          ...parsed,
+          isProfileComplete: missingMandatedFields.length === 0,
+          missingProfileFields: missingMandatedFields,
+        };
+        localStorage.setItem("elitecruit-user", JSON.stringify(updated));
+      }
+    } catch {}
+
+    if (
+      missingMandatedFields.length > 0 &&
+      !hasShownInitialSetupPromptRef.current &&
+      typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).get("setup") === "required"
+    ) {
+      hasShownInitialSetupPromptRef.current = true;
+      setSetupWarningModalMsg(
+        `Welcome to EliteCruit! Please complete your required profile details (${missingMandatedFields.join(", ")}) before navigating to other pages.`
+      );
+    }
+  }, [hasLoadedProfile, missingMandatedFields]);
 
   const uploadedFiles = useMemo(
     () => [
@@ -2831,6 +2954,7 @@ export default function ApplicantProfile() {
       };
       setProfile(loaded);
       setDraft(loaded);
+      setHasLoadedProfile(true);
 
       if (data.profile?.work_experience_json) {
         try {
@@ -2986,8 +3110,12 @@ export default function ApplicantProfile() {
     }
     if (name === "email") {
       const cleanEmail = String(value).trim().toLowerCase();
-      const isMatch = isEmailVerified && verifiedEmailAddress && cleanEmail === verifiedEmailAddress;
-      setIsEmailVerified(Boolean(isMatch));
+      const origEmail = profile.is_email_verified && profile.email ? String(profile.email).trim().toLowerCase() : "";
+      const isMatch = Boolean(
+        (verifiedEmailAddress && cleanEmail === verifiedEmailAddress) ||
+        (origEmail && cleanEmail === origEmail)
+      );
+      setIsEmailVerified(isMatch);
       setDraft((current) => ({ ...current, email: value }));
       return;
     }
@@ -3125,7 +3253,15 @@ export default function ApplicantProfile() {
       setDraft(savedProfile);
       setIsEmailVerified(true);
       if (savedProfile.email) {
-        setVerifiedEmailAddress(savedProfile.email.trim().toLowerCase());
+        const cleanSavedEmail = savedProfile.email.trim().toLowerCase();
+        setVerifiedEmailAddress(cleanSavedEmail);
+        try {
+          const rawUser = localStorage.getItem("elitecruit-user");
+          if (rawUser) {
+            const parsed = JSON.parse(rawUser);
+            localStorage.setItem("elitecruit-user", JSON.stringify({ ...parsed, email: savedProfile.email.trim() }));
+          }
+        } catch {}
       }
       setIsEditing(false);
       setProfileMessageType("success");
@@ -3230,11 +3366,13 @@ export default function ApplicantProfile() {
       }
       setIsEmailVerified(true);
       setVerifiedEmailAddress(targetEmail.toLowerCase());
-      setProfile((prev) => ({ ...prev, is_email_verified: true, email: targetEmail }));
       setDraft((prev) => ({ ...prev, is_email_verified: true, email: targetEmail }));
+      if (profile.email && profile.email.trim().toLowerCase() === targetEmail.toLowerCase()) {
+        setProfile((prev) => ({ ...prev, is_email_verified: true }));
+      }
       setIsOtpModalOpen(false);
       setProfileMessageType("success");
-      setProfileMessage("Email address verified successfully! You can now save your profile.");
+      setProfileMessage("Email address verified successfully! Click 'Save Profile' to save your changes.");
     } catch (err: any) {
       setOtpError(err.message || "Verification failed. Please check the code and try again.");
     } finally {
@@ -3495,7 +3633,22 @@ export default function ApplicantProfile() {
   return (
     <div className={`profile-shell appdash-page ${isSidebarVisible ? "sidebar-visible" : "sidebar-hidden"}`}>
       {/* APPLICANT SIDEBAR - Standardized 274px */}
-      <aside className="appdash-sidebar" aria-label="Applicant Navigation">
+      <aside
+        className="appdash-sidebar"
+        aria-label="Applicant Navigation"
+        onClickCapture={(e) => {
+          if (!isProfileSetupIncomplete) return;
+          const anchor = (e.target as HTMLElement).closest("a");
+          if (!anchor) return;
+          const href = (anchor.getAttribute("href") || "").toLowerCase();
+          if (!href || href === "/my-profile" || href === "/applicant-profile" || href.startsWith("#")) return;
+          e.preventDefault();
+          e.stopPropagation();
+          setSetupWarningModalMsg(
+            `Please complete and save your required profile information before leaving this page: ${missingMandatedFields.join(", ")}.`
+          );
+        }}
+      >
         <div className="appdash-brand">
           <a href="/" className="appdash-brand-link">
             <strong>EliteCruit</strong>
@@ -3620,6 +3773,42 @@ export default function ApplicantProfile() {
               )}
               <span>{profileMessage}</span>
             </p>
+          )}
+
+          {/* PROFILE COMPLETENESS CARD (Disappears when finished; lists only incomplete items) */}
+          {isProfileSetupIncomplete && missingFieldItems.length > 0 && (
+            <section className="posting-complete-card" aria-label="Profile Completeness">
+              <div className="complete-head">
+                <h2>Profile Completeness</h2>
+                <span className={`complete-percent ${completionChecks.colorBand}`}>
+                  {completionChecks.percent}% Complete
+                </span>
+              </div>
+              <p>Complete required profile details to unlock job matching and applications.</p>
+              <div className="complete-bar">
+                <i className={completionChecks.colorBand} style={{ width: `${completionChecks.percent}%` }} />
+              </div>
+              <div className="complete-checks list-layout">
+                <ul className="completeness-list">
+                  {missingFieldItems.map((item) => (
+                    <li key={item.key} className="completeness-item">
+                      <span className="completeness-bullet">○</span>
+                      <span className="completeness-text">{item.label}</span>
+                      <button
+                        type="button"
+                        className="completeness-jump-btn"
+                        onClick={() => {
+                          setActiveSection(item.section);
+                          if (!isEditing) setIsEditing(true);
+                        }}
+                      >
+                        Set in {item.sectionName} →
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </section>
           )}
 
           {/* STICKY 3-SECTION NAVIGATION TABS */}
@@ -4126,35 +4315,58 @@ export default function ApplicantProfile() {
                 )}
 
                 <div className="fields-grid">
-                  <label className={`profile-field ${!visibleProfile.desired_job_title ? "missing-field" : ""}`}>
-                    <span>Desired Job Title</span>
+                  <label className="profile-field">
+                    <span>Job / Target Role</span>
                     <select
                       value={visibleProfile.desired_job_title || ""}
                       disabled={!isEditing}
                       onChange={(event) => updateDraft("desired_job_title", event.target.value)}
                     >
-                      <option value="">Select desired job title</option>
-                      {DESIRED_JOB_TITLES.map((title) => (
-                        <option key={title} value={title}>
-                          {title}
-                        </option>
+                      <option value="">Select desired job role</option>
+                      {Object.entries(CATEGORIZED_JOB_ROLES).map(([category, roles]) => (
+                        <optgroup key={category} label={category}>
+                          {roles.map((title) => (
+                            <option key={title} value={title}>
+                              {title}
+                            </option>
+                          ))}
+                        </optgroup>
                       ))}
                     </select>
                   </label>
 
-                  <label className={`profile-field ${!visibleProfile.work_arrangement ? "missing-field" : ""}`}>
-                    <span>Work Arrangement</span>
-                    <select
-                      value={visibleProfile.work_arrangement || ""}
-                      disabled={!isEditing}
-                      onChange={(event) => updateDraft("work_arrangement", event.target.value)}
-                    >
-                      <option value="">Select arrangement</option>
-                      <option value="Remote">Remote</option>
-                      <option value="On-Site">On-Site</option>
-                      <option value="Hybrid">Hybrid</option>
-                    </select>
-                  </label>
+                  <div className="profile-field work-arrangements-field">
+                    <span>Work Arrangement Preferences</span>
+                    <div className="work-arrangement-pill-group">
+                      {["Remote", "On-Site", "Hybrid"].map((arr) => {
+                        const currentArrangements = (visibleProfile.work_arrangement || "")
+                          .split(",")
+                          .map((s) => s.trim())
+                          .filter(Boolean);
+                        const isSelected = currentArrangements.includes(arr);
+                        return (
+                          <button
+                            key={arr}
+                            type="button"
+                            disabled={!isEditing}
+                            className={`arr-toggle-pill ${isSelected ? "selected" : ""}`}
+                            onClick={() => {
+                              if (!isEditing) return;
+                              let updated: string[];
+                              if (isSelected) {
+                                updated = currentArrangements.filter((a) => a !== arr);
+                              } else {
+                                updated = [...currentArrangements, arr];
+                              }
+                              updateDraft("work_arrangement", updated.join(", "));
+                            }}
+                          >
+                            {isSelected ? "✓ " : "+ "}{arr}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
                   <Field
                     label="Minimum Expected Salary"
@@ -4217,6 +4429,19 @@ export default function ApplicantProfile() {
                     disabled={isSavingTags}
                     placeholderDegree="Select or type degree / course (e.g. BSIT)..."
                     placeholderSchool="Select or type college / university name..."
+                  />
+
+                  {/* 3. Graduate Studies & Post-Graduate Education */}
+                  <EduSchoolCardEditor
+                    title="Graduate Studies (Master's & Doctorate Degrees)"
+                    level="graduate"
+                    qualificationOptions={GRADUATE_DEGREE_OPTIONS}
+                    schoolOptions={universityList}
+                    rawString={profile.qualifications}
+                    onSaveAll={(items) => saveTagList("qualifications", items)}
+                    disabled={isSavingTags}
+                    placeholderDegree="Select or type master's or PhD program..."
+                    placeholderSchool="Select or type university / institute name..."
                   />
 
                   {/* 3. Core Technical Skills */}
@@ -4394,6 +4619,9 @@ export default function ApplicantProfile() {
 
                       <label className="profile-field wide">
                         <span>Key Responsibilities & Quantifiable Achievements (ATS Bullet Points)</span>
+                        <small style={{ display: "block", color: "#64748b", margin: "4px 0 6px", fontSize: "0.84rem" }}>
+                          Itemize each key responsibility or achievement by pressing Enter for a new line.
+                        </small>
                         <textarea
                           rows={3}
                           placeholder="• Engineered scalable microservices...&#10;• Led agile sprint reviews..."
@@ -4470,8 +4698,13 @@ export default function ApplicantProfile() {
                         type="button"
                         className="cancel-profile-button"
                         onClick={() => {
-                          setIsAddingExp(false);
-                          resetExpForm();
+                          const hasUnsaved = Boolean(expTitle.trim() || expCompany.trim() || expResponsibilities.trim() || expSkills.length > 0);
+                          if (hasUnsaved) {
+                            setIsUnsavedExpWarningOpen(true);
+                          } else {
+                            setIsAddingExp(false);
+                            resetExpForm();
+                          }
                         }}
                       >
                         Cancel
@@ -5332,6 +5565,71 @@ export default function ApplicantProfile() {
                 style={{ flex: 1, background: "#0284c7", color: "#ffffff" }}
               >
                 {isVerifyingOtp ? "Verifying..." : "Verify Code"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* UNSAVED WORK EXPERIENCE WARNING MODAL (Rule 6 Compliant) */}
+      {isUnsavedExpWarningOpen && (
+        <div className="system-popup-overlay" onClick={() => setIsUnsavedExpWarningOpen(false)}>
+          <div className="system-popup-card" onClick={(e) => e.stopPropagation()}>
+            <div className="system-popup-icon-wrap warning" style={{ background: "#fef9c3" }}>
+              <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#ca8a04" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </div>
+            <h3 className="system-popup-title">Warning</h3>
+            <p className="system-popup-message">You have unsaved changes in your work experience draft. Discard changes?</p>
+            <div className="system-popup-actions" style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+              <button
+                type="button"
+                className="system-popup-btn secondary"
+                onClick={() => setIsUnsavedExpWarningOpen(false)}
+                style={{ padding: "8px 18px", borderRadius: "6px", background: "#f1f5f9", color: "#334155", border: "1px solid #cbd5e1", fontWeight: 600, cursor: "pointer" }}
+              >
+                Keep Editing
+              </button>
+              <button
+                type="button"
+                className="system-popup-btn primary"
+                onClick={() => {
+                  setIsAddingExp(false);
+                  resetExpForm();
+                  setIsUnsavedExpWarningOpen(false);
+                }}
+                style={{ padding: "8px 18px", borderRadius: "6px", background: "#103f65", color: "#ffffff", border: "none", fontWeight: 600, cursor: "pointer" }}
+              >
+                Discard Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MANDATORY PROFILE SETUP WARNING POPUP MODAL (Rule 6 Compliant) */}
+      {setupWarningModalMsg && (
+        <div className="system-popup-overlay" onClick={() => setSetupWarningModalMsg("")}>
+          <div className="system-popup-card" onClick={(e) => e.stopPropagation()}>
+            <div className="system-popup-icon-wrap warning" style={{ background: "#fef9c3" }}>
+              <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#ca8a04" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </div>
+            <h3 className="system-popup-title">Warning</h3>
+            <p className="system-popup-message">{setupWarningModalMsg}</p>
+            <div className="system-popup-actions">
+              <button
+                type="button"
+                className="system-popup-btn"
+                onClick={() => setSetupWarningModalMsg("")}
+              >
+                OK
               </button>
             </div>
           </div>

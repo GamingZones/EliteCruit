@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "build": "npm --prefix Frontend install --include=dev && npm --prefix Frontend run build && npm --prefix Backend install",
     "start": "node Backend/server.js",
-    "backend": "node Backend/server.js",
-    "dev:backend": "cd Backend && node server.js",
+    "backend": "node --watch Backend/server.js",
+    "dev:backend": "cd Backend && node --watch server.js",
     "dev:frontend": "npm --prefix Frontend run dev",
     "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"blue,green\" \"npm run dev:backend\" \"npm run dev:frontend\""
   },

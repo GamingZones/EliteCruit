@@ -1751,15 +1751,7 @@ export default function EmployerApplicantFinder() {
   };
 
   const openCandidateRecruit = (cand: Candidate) => {
-    setSelectedCandidate(cand);
-    setIsDocsDrawerOpen(false);
-    setIsPreviewingDoc(false);
-    setIsMessagePanelOpen(false);
-    setIsMessagePanelClosing(false);
-    setIsOtherJobsOpen(true);
-    setIsOtherJobsClosing(false);
-    setCandMessages([]);
-    setCandMsgThread(null);
+    openInviteCandidate(cand, typeof selectedJobId === "number" ? selectedJobId : undefined);
   };
 
   const handleSendCandidateMessage = async (e?: React.FormEvent) => {
@@ -3463,6 +3455,67 @@ export default function EmployerApplicantFinder() {
           {searchMode === "manual" && (
             <>
 
+                {/* ACTIVE JOB POST CONTEXT SELECTOR (Item 6.1) */}
+                <div
+                  className="finder-active-job-context-banner"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "12px 18px",
+                    background: "#f0fdf4",
+                    border: "1px solid #bbf7d0",
+                    borderRadius: "10px",
+                    marginBottom: "16px",
+                    flexWrap: "wrap",
+                    gap: "10px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#dcfce7", display: "flex", alignItems: "center", justifyContent: "center", color: "#16a34a" }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                      </svg>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: "0.72rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#15803d", display: "block" }}>
+                        Matching Candidates Against Active Vacancy
+                      </span>
+                      <strong style={{ fontSize: "1rem", color: "#0c2a47" }}>
+                        {activeJobs.find((j) => j.id === selectedJobId)?.title || "All Active Openings / General Match"}
+                      </strong>
+                    </div>
+                  </div>
+                  {activeJobs.length > 0 && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#374151" }}>Evaluate Role:</label>
+                      <select
+                        value={selectedJobId || ""}
+                        onChange={(e) => {
+                          const val = e.target.value ? Number(e.target.value) : "";
+                          setSelectedJobId(val);
+                        }}
+                        style={{
+                          padding: "6px 12px",
+                          borderRadius: "6px",
+                          border: "1px solid #cbd5e1",
+                          fontSize: "0.86rem",
+                          fontWeight: 600,
+                          color: "#0f172a",
+                          background: "#ffffff",
+                        }}
+                      >
+                        <option value="">General Candidate Pool</option>
+                        {activeJobs.map((j) => (
+                          <option key={j.id} value={j.id}>
+                            {j.title} ({j.city || "Cavite"})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+
                 {/* RESULTS HEADER */}
                 <div className="finder-results-header">
                   <h2>
@@ -3597,13 +3650,33 @@ export default function EmployerApplicantFinder() {
                                 Details
                               </button>
 
-                              <button
-                                type="button"
-                                className="finder-card-btn btn-invite"
-                                onClick={() => openCandidateRecruit(cand)}
-                              >
-                                Recruit
-                              </button>
+                              {invitedCandidateIds.includes(cand.user_id) || cand.invitation_status === "accepted" || cand.application_status === "recruited" || cand.invitation_status === "recruited" ? (
+                                <button
+                                  type="button"
+                                  className="finder-card-btn btn-invite"
+                                  disabled
+                                  style={{ background: "#e2e8f0", color: "#64748b", border: "1px solid #cbd5e1", cursor: "not-allowed" }}
+                                >
+                                  ✓ Recruited
+                                </button>
+                              ) : cand.invitation_status === "pending" ? (
+                                <button
+                                  type="button"
+                                  className="finder-card-btn btn-invite"
+                                  disabled
+                                  style={{ background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a", cursor: "not-allowed" }}
+                                >
+                                  Invitation Sent
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="finder-card-btn btn-invite"
+                                  onClick={() => openCandidateRecruit(cand)}
+                                >
+                                  Recruit
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>

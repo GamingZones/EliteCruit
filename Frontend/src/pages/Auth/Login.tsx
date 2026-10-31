@@ -18,6 +18,8 @@ function EyeIcon({ open }: { open: boolean }) {
   );
 }
 
+type ForgotStep = "none" | "request" | "verify" | "reset";
+
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,6 +37,36 @@ export default function Login() {
   const [isResending, setIsResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
+  // Forgot Password States
+  const [forgotStep, setForgotStep] = useState<ForgotStep>(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("action") === "forgot" || params.get("reset") === "true") {
+        return "request";
+      }
+    }
+    return "none";
+  });
+  const [resetEmail, setResetEmail] = useState(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("email")?.trim() || "";
+    }
+    return "";
+  });
+  const [resetMaskedEmail, setResetMaskedEmail] = useState("");
+  const [resetOtpCode, setResetOtpCode] = useState("");
+  const [resetDevCode, setResetDevCode] = useState("");
+  const [resetToken, setResetToken] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+  const [isRequestingReset, setIsRequestingReset] = useState(false);
+  const [isVerifyingReset, setIsVerifyingReset] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [resetCooldown, setResetCooldown] = useState(0);
+
   const [submitError, setSubmitError] = useState(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -47,7 +79,15 @@ export default function Login() {
     }
     return "";
   });
-  const [submitSuccess, setSubmitSuccess] = useState("");
+  const [submitSuccess, setSubmitSuccess] = useState(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("verified") === "1") {
+        return "Email verified! Your account is now active. Please sign in.";
+      }
+    }
+    return "";
+  });
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
@@ -62,6 +102,20 @@ export default function Login() {
     }, 1000);
     return () => clearInterval(timer);
   }, [resendCooldown]);
+
+  useEffect(() => {
+    if (resetCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResetCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resetCooldown]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -130,9 +184,15 @@ export default function Login() {
       }
 
       if (normalizedUser?.role === "applicant") {
-        window.location.href = "/applicant-dashboard#section-smart-matches";
+        window.location.href =
+          normalizedUser.isProfileComplete === false
+            ? "/my-profile?setup=required"
+            : "/applicant-dashboard#section-smart-matches";
       } else if (normalizedUser?.role === "employer") {
-        window.location.href = "/employer-dashboard";
+        window.location.href =
+          normalizedUser.isProfileComplete === false
+            ? "/employer-company-profile?setup=required"
+            : "/employer-dashboard";
       } else if (normalizedUser?.role === "admin") {
         window.location.href = "/admin-dashboard";
       }
@@ -192,9 +252,15 @@ export default function Login() {
       }
 
       if (normalizedUser?.role === "applicant") {
-        window.location.href = "/applicant-dashboard#section-smart-matches";
+        window.location.href =
+          normalizedUser.isProfileComplete === false
+            ? "/my-profile?setup=required"
+            : "/applicant-dashboard#section-smart-matches";
       } else if (normalizedUser?.role === "employer") {
-        window.location.href = "/employer-dashboard";
+        window.location.href =
+          normalizedUser.isProfileComplete === false
+            ? "/employer-company-profile?setup=required"
+            : "/employer-dashboard";
       } else if (normalizedUser?.role === "admin") {
         window.location.href = "/admin-dashboard";
       }
@@ -245,13 +311,185 @@ export default function Login() {
 
   const handleBackToLogin = () => {
     setMfaRequired(false);
+    setForgotStep("none");
     setTempToken("");
     setOtpCode("");
     setDevCode("");
+    setResetOtpCode("");
+    setResetDevCode("");
+    setResetToken("");
+    setNewPassword("");
+    setConfirmNewPassword("");
     setSubmitError("");
     setSubmitSuccess("");
     setResendCooldown(0);
+    setResetCooldown(0);
   };
+
+  const handleOpenForgotPassword = () => {
+    setResetEmail(email.trim());
+    setResetOtpCode("");
+    setResetDevCode("");
+    setResetToken("");
+    setNewPassword("");
+    setConfirmNewPassword("");
+    setSubmitError("");
+    setSubmitSuccess("");
+    setForgotStep("request");
+  };
+
+  const handleRequestResetCode = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setSubmitError("");
+    setSubmitSuccess("");
+
+    const cleanEmail = resetEmail.trim();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      setSubmitError("Please enter your valid registered email address.");
+      return;
+    }
+
+    setIsRequestingReset(true);
+
+    try {
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleanEmail }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setSubmitError(
+          data?.message ??
+            (response.status === 404
+              ? "Password reset service not found. Please ensure the backend server is restarted."
+              : "Unable to send password reset code.")
+        );
+        if (data?.retryAfter) {
+          setResetCooldown(data.retryAfter);
+        }
+        return;
+      }
+
+      setResetMaskedEmail(data.maskedEmail || cleanEmail);
+      setResetDevCode(data.devCode || "");
+      setResetOtpCode("");
+      setResetCooldown(45);
+      setForgotStep("verify");
+      setSubmitSuccess(data?.message ?? "A 6-digit password reset code has been sent to your email.");
+    } catch {
+      setSubmitError("Unable to connect to server. Please try again.");
+    } finally {
+      setIsRequestingReset(false);
+    }
+  };
+
+  const handleVerifyResetCode = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setSubmitError("");
+    setSubmitSuccess("");
+
+    const cleanCode = resetOtpCode.replace(/\D/g, "");
+    if (cleanCode.length !== 6) {
+      setSubmitError("Please enter the complete 6-digit reset code.");
+      return;
+    }
+
+    setIsVerifyingReset(true);
+
+    try {
+      const response = await fetch("/api/auth/verify-reset-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: resetEmail.trim(),
+          code: cleanCode,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setSubmitError(data?.message ?? "Invalid reset code.");
+        return;
+      }
+
+      setResetToken(data.resetToken || "");
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setForgotStep("reset");
+      setSubmitSuccess("Code verified! Please create your new password below.");
+    } catch {
+      setSubmitError("Unable to connect to server. Please try again.");
+    } finally {
+      setIsVerifyingReset(false);
+    }
+  };
+
+  const handleResetPasswordSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setSubmitError("");
+    setSubmitSuccess("");
+
+    if (!newPassword) {
+      setSubmitError("Please enter a new password.");
+      return;
+    }
+
+    const hasMinLen = newPassword.length >= 8;
+    const hasUpper = /[A-Z]/.test(newPassword);
+    const hasLower = /[a-z]/.test(newPassword);
+    const hasNum = /\d/.test(newPassword);
+
+    if (!hasMinLen || !hasUpper || !hasLower || !hasNum) {
+      setSubmitError("Password must be at least 8 characters and include uppercase, lowercase, and numbers.");
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setSubmitError("New password and confirmation do not match.");
+      return;
+    }
+
+    setIsResettingPassword(true);
+
+    try {
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          resetToken,
+          newPassword,
+          confirmPassword: confirmNewPassword,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setSubmitError(data?.message ?? "Failed to reset password.");
+        return;
+      }
+
+      const targetEmail = resetEmail.trim();
+      handleBackToLogin();
+      setEmail(targetEmail);
+      setPassword("");
+      setSubmitSuccess(data?.message ?? "Password reset successful! You can now sign in with your new password.");
+    } catch {
+      setSubmitError("Unable to connect to server. Please try again.");
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
+  // Password validation flags for Forgot Password step 3
+  const pwHasMinLen = newPassword.length >= 8;
+  const pwHasUpperLower = /[A-Z]/.test(newPassword) && /[a-z]/.test(newPassword);
+  const pwHasNumber = /\d/.test(newPassword);
+  const pwMatches = newPassword.length > 0 && newPassword === confirmNewPassword;
 
   return (
     <div className="login-page">
@@ -389,6 +627,264 @@ export default function Login() {
               </button>
             </div>
           </form>
+        ) : forgotStep === "request" ? (
+          <form
+            className="login-card mfa-card"
+            onSubmit={handleRequestResetCode}
+            noValidate
+          >
+            <div className="mfa-header">
+              <div className="mfa-icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </div>
+              <h2 className="login-title">Forgot Password?</h2>
+              <p className="login-sub">
+                Enter the email address associated with your EliteCruit account and we&apos;ll send you a 6-digit password reset code.
+              </p>
+            </div>
+
+            <label className="field-label" htmlFor="resetEmail">
+              Registered Email Address
+            </label>
+            <div className="input-row">
+              <span className="input-icon input-icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <rect x="4" y="6" width="16" height="12" rx="2" ry="2" />
+                  <path d="M5 8l7 5 7-5" />
+                </svg>
+              </span>
+              <input
+                id="resetEmail"
+                type="email"
+                placeholder="your.email@example.com"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                autoFocus
+              />
+            </div>
+
+            {submitError && <p className="login-message login-error">{submitError}</p>}
+            {submitSuccess && <p className="login-message login-success">{submitSuccess}</p>}
+
+            <button
+              className="login-submit mfa-submit-btn"
+              type="submit"
+              disabled={isRequestingReset || !resetEmail.trim()}
+            >
+              {isRequestingReset ? "Sending Reset Code..." : "Send Reset Code"}
+            </button>
+
+            <div className="mfa-footer-actions">
+              <button
+                type="button"
+                className="mfa-back-link"
+                onClick={handleBackToLogin}
+              >
+                ← Back to Login
+              </button>
+            </div>
+          </form>
+        ) : forgotStep === "verify" ? (
+          <form
+            className="login-card mfa-card"
+            onSubmit={handleVerifyResetCode}
+            noValidate
+          >
+            <div className="mfa-header">
+              <div className="mfa-icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  <path d="m9 12 2 2 4-4" />
+                </svg>
+              </div>
+              <h2 className="login-title">Verify Reset Code</h2>
+              <p className="login-sub">
+                We sent a 6-digit password reset code to{" "}
+                <strong className="mfa-highlight-email">{resetMaskedEmail}</strong>.
+                Enter the code below to continue.
+              </p>
+            </div>
+
+            {resetDevCode && (
+              <div className="dev-otp-callout" role="note" aria-label="Development reset code">
+                <div className="dev-otp-header">
+                  <span className="dev-otp-badge">DEV ENVIRONMENT</span>
+                  <span className="dev-otp-note">Code logged to console</span>
+                </div>
+                <div className="dev-otp-code-display">{resetDevCode}</div>
+              </div>
+            )}
+
+            <div className="mfa-code-group">
+              <label className="field-label" htmlFor="resetOtpCode">
+                6-Digit Reset Code
+              </label>
+              <div className="mfa-input-container">
+                <input
+                  id="resetOtpCode"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  placeholder="000000"
+                  value={resetOtpCode}
+                  onChange={(e) => setResetOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  className="mfa-digit-input"
+                  autoFocus
+                />
+              </div>
+              <span className="mfa-hint-text">This reset code expires in 10 minutes.</span>
+            </div>
+
+            {submitError && <p className="login-message login-error">{submitError}</p>}
+            {submitSuccess && <p className="login-message login-success">{submitSuccess}</p>}
+
+            <button
+              className="login-submit mfa-submit-btn"
+              type="submit"
+              disabled={isVerifyingReset || resetOtpCode.replace(/\D/g, "").length !== 6}
+            >
+              {isVerifyingReset ? "Verifying Code..." : "Verify Code"}
+            </button>
+
+            <div className="mfa-footer-actions">
+              <button
+                type="button"
+                className="mfa-resend-btn"
+                onClick={() => handleRequestResetCode()}
+                disabled={resetCooldown > 0 || isRequestingReset}
+              >
+                {resetCooldown > 0
+                  ? `Resend code in ${resetCooldown}s`
+                  : isRequestingReset
+                  ? "Sending new code..."
+                  : "Resend Reset Code"}
+              </button>
+
+              <button
+                type="button"
+                className="mfa-back-link"
+                onClick={handleBackToLogin}
+              >
+                ← Back to Login
+              </button>
+            </div>
+          </form>
+        ) : forgotStep === "reset" ? (
+          <form
+            className="login-card mfa-card"
+            onSubmit={handleResetPasswordSubmit}
+            noValidate
+          >
+            <div className="mfa-header">
+              <div className="mfa-icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+                </svg>
+              </div>
+              <h2 className="login-title">Create New Password</h2>
+              <p className="login-sub">
+                Choose a strong password for{" "}
+                <strong className="mfa-highlight-email">{resetEmail}</strong>.
+              </p>
+            </div>
+
+            <label className="field-label" htmlFor="newPassword">
+              New Password
+            </label>
+            <div className="input-row">
+              <span className="input-icon input-icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <rect x="6.5" y="10" width="11" height="9" rx="1.8" ry="1.8" />
+                  <path d="M9 10V7.8a3 3 0 1 1 6 0V10" />
+                  <circle cx="12" cy="14.5" r="0.9" />
+                </svg>
+              </span>
+              <input
+                id="newPassword"
+                type={showNewPassword ? "text" : "password"}
+                placeholder="At least 8 characters"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                autoFocus
+              />
+              <button
+                className="peek-btn"
+                type="button"
+                aria-label="Toggle new password visibility"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+              >
+                <EyeIcon open={showNewPassword} />
+              </button>
+            </div>
+
+            <label className="field-label" htmlFor="confirmNewPassword">
+              Confirm New Password
+            </label>
+            <div className="input-row">
+              <span className="input-icon input-icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <rect x="6.5" y="10" width="11" height="9" rx="1.8" ry="1.8" />
+                  <path d="M9 10V7.8a3 3 0 1 1 6 0V10" />
+                  <circle cx="12" cy="14.5" r="0.9" />
+                </svg>
+              </span>
+              <input
+                id="confirmNewPassword"
+                type={showConfirmNewPassword ? "text" : "password"}
+                placeholder="Re-enter your new password"
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+              />
+              <button
+                className="peek-btn"
+                type="button"
+                aria-label="Toggle confirm password visibility"
+                onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
+              >
+                <EyeIcon open={showConfirmNewPassword} />
+              </button>
+            </div>
+
+            <div className="pw-reset-checklist">
+              <span className={`pw-check-item ${pwHasMinLen ? "met" : ""}`}>
+                {pwHasMinLen ? "✓" : "•"} 8+ characters
+              </span>
+              <span className={`pw-check-item ${pwHasUpperLower ? "met" : ""}`}>
+                {pwHasUpperLower ? "✓" : "•"} Upper &amp; lowercase
+              </span>
+              <span className={`pw-check-item ${pwHasNumber ? "met" : ""}`}>
+                {pwHasNumber ? "✓" : "•"} At least 1 number
+              </span>
+              <span className={`pw-check-item ${pwMatches ? "met" : ""}`}>
+                {pwMatches ? "✓" : "•"} Passwords match
+              </span>
+            </div>
+
+            {submitError && <p className="login-message login-error">{submitError}</p>}
+            {submitSuccess && <p className="login-message login-success">{submitSuccess}</p>}
+
+            <button
+              className="login-submit mfa-submit-btn"
+              type="submit"
+              disabled={isResettingPassword || !pwHasMinLen || !pwHasUpperLower || !pwHasNumber || !pwMatches}
+            >
+              {isResettingPassword ? "Updating Password..." : "Reset Password"}
+            </button>
+
+            <div className="mfa-footer-actions">
+              <button
+                type="button"
+                className="mfa-back-link"
+                onClick={handleBackToLogin}
+              >
+                ← Cancel &amp; Back to Login
+              </button>
+            </div>
+          </form>
         ) : (
           <form
             className="login-card"
@@ -456,7 +952,13 @@ export default function Login() {
                 />
                 <span>Remember me</span>
               </label>
-              <a href="/login">Forgot password?</a>
+              <button
+                type="button"
+                className="forgot-password-btn"
+                onClick={handleOpenForgotPassword}
+              >
+                Forgot password?
+              </button>
             </div>
 
             {submitError && <p className="login-message login-error">{submitError}</p>}

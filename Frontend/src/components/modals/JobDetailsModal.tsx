@@ -1472,13 +1472,19 @@ export default function JobDetailsModal({
             </svg>
           </div>
           <div>
-            <strong
-              className={`jd-employer-name ${onEmployerClick ? "clickable" : ""}`}
-              onClick={() => onEmployerClick && (onEmployerClick as any)(empUserId)}
-              style={{ cursor: onEmployerClick ? "pointer" : "default" }}
-            >
-              {companyName}
-            </strong>
+            <div className="jd-employer-name-row">
+              <strong
+                className={`jd-employer-name ${onEmployerClick ? "clickable" : ""}`}
+                onClick={() => onEmployerClick && (onEmployerClick as any)(empUserId)}
+                style={{ cursor: onEmployerClick ? "pointer" : "default" }}
+              >
+                {companyName}
+              </strong>
+              <span className="company-inline-rating-pill" title="Company rating">
+                <span className="star-icon">★</span>
+                <span>{ratingText}</span>
+              </span>
+            </div>
             <span className="jd-employer-location">
               <svg viewBox="0 0 24 24" aria-hidden="true" width="12" height="12" fill="none" stroke="#5b8ab0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
@@ -1490,10 +1496,6 @@ export default function JobDetailsModal({
         </div>
 
         <div className="jd-header-right-actions">
-          <div className="rating-score-box" title="Company rating">
-            <span className="star-icon">★</span>
-            <span>{ratingText}</span>
-          </div>
           {matchScore !== undefined && (
             <div
               className={`match-score-box ${getMatchColorClass(matchScore)}`}

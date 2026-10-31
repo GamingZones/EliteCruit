@@ -1174,4 +1174,451 @@
   }
 }
 
+/* ==========================================================================
+   PROFILE COMPLETENESS CARD (Matching Posting Completeness Design)
+   ========================================================================== */
+.posting-complete-card {
+  margin: 12px 10px 0;
+  border: 1px solid #d7dfeb;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 16px;
+}
+
+.complete-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.complete-head h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  color: #092540;
+}
+
+.complete-percent {
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.96rem;
+  font-weight: 700;
+}
+
+.complete-percent.red {
+  background: #ffe8e8;
+  color: #b02a2a;
+}
+
+.complete-percent.yellow {
+  background: #fff4da;
+  color: #a66a05;
+}
+
+.complete-percent.green {
+  background: #e9f8ef;
+  color: #1f7a44;
+}
+
+.posting-complete-card p {
+  margin: 5px 0 0;
+  color: #4f6e8d;
+  font-size: 0.92rem;
+}
+
+.complete-bar {
+  margin-top: 8px;
+  height: 7px;
+  border-radius: 999px;
+  background: #dbe4ef;
+  overflow: hidden;
+}
+
+.complete-bar i {
+  display: block;
+  height: 100%;
+  background: #f0b23a;
+  transition: width 0.25s ease;
+}
+
+.complete-bar i.red {
+  background: #e35050;
+}
+
+.complete-bar i.yellow {
+  background: #f0b23a;
+}
+
+.complete-bar i.green {
+  background: #2fa764;
+}
+
+.complete-checks {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  color: #244768;
+  font-size: 0.86rem;
+}
+
+.complete-checks.list-layout {
+  display: block;
+  margin-top: 12px;
+}
+
+.completeness-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.completeness-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #1e293b;
+  font-size: 0.88rem;
+  transition: all 0.2s ease;
+}
+
+.completeness-item:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.completeness-bullet {
+  color: #eab308;
+  font-weight: 800;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.completeness-text {
+  font-weight: 600;
+  color: #0f172a;
+  flex: 1;
+}
+
+.completeness-jump-btn {
+  background: none;
+  border: 1px solid #0284c7;
+  color: #0284c7;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.completeness-jump-btn:hover {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+@media (max-width: 1020px) {
+  .complete-checks {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+[data-theme="dark"] .posting-complete-card {
+  background: #1c1e27;
+  border: 1px solid #2e3244;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .complete-head h2 {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .posting-complete-card p {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .complete-bar {
+  background: #242735;
+}
+
+[data-theme="dark"] .complete-checks {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .complete-percent.red {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+[data-theme="dark"] .complete-percent.yellow {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .complete-percent.green {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+}
+
+[data-theme="dark"] .completeness-item {
+  background: #181b24;
+  border-color: #2e3244;
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .completeness-item:hover {
+  background: #202433;
+  border-color: #3b4259;
+}
+
+[data-theme="dark"] .completeness-text {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .completeness-jump-btn {
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .completeness-jump-btn:hover {
+  background: #38bdf8;
+  color: #0f172a;
+}
+
+[data-theme="dark"] .system-popup-card {
+  background: #0f1e32;
+  border-color: rgba(148, 163, 184, 0.22);
+}
+
+[data-theme="dark"] .system-popup-title {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .system-popup-message {
+  color: #cbd5e1;
+}
+
+/* ==========================================================================
+   Email Verification & OTP Modal Styles (Employer Company Profile)
+   ========================================================================== */
+.email-field-block {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #092a49;
+}
+
+[data-theme="dark"] .email-field-block {
+  color: #cbd5e1;
+}
+
+.email-field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.email-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  line-height: 1.2;
+}
+
+.email-status-badge.verified {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.email-status-badge.unverified {
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+
+[data-theme="dark"] .email-status-badge.verified {
+  background: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+[data-theme="dark"] .email-status-badge.unverified {
+  background: rgba(245, 158, 11, 0.16);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.email-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.email-input-wrapper input {
+  width: 100%;
+  height: 33px;
+  border: 1px solid #c2cedc;
+  border-radius: 7px;
+  background: #f2f5f9;
+  padding: 6px 85px 6px 9px !important;
+  font-family: inherit;
+  font-size: 0.77rem;
+  color: #20374f;
+  box-sizing: border-box;
+}
+
+[data-theme="dark"] .email-input-wrapper input {
+  background: #14161d;
+  border-color: #2e3244;
+  color: #f8fafc;
+}
+
+.email-verify-btn {
+  position: absolute;
+  right: 6px;
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 4px !important;
+  padding: 5px 12px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.email-verify-btn:hover:not(:disabled) {
+  background: #0369a1 !important;
+}
+
+.email-verify-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.section-head button.disabled-btn {
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+  border-color: #94a3b8 !important;
+  color: #94a3b8 !important;
+}
+
+.section-head button.cancel-contact-btn {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+}
+
+[data-theme="dark"] .section-head button.cancel-contact-btn {
+  background: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+.otp-input-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.otp-code-input {
+  width: 220px !important;
+  height: 48px !important;
+  text-align: center !important;
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  letter-spacing: 8px !important;
+  padding-left: 8px !important;
+  border: 2px solid #0284c7 !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+}
+
+[data-theme="dark"] .otp-code-input {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+.otp-resend-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.otp-resend-btn {
+  background: none;
+  border: none;
+  color: #0284c7;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.otp-resend-btn:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.otp-dev-hint {
+  font-size: 11px;
+  color: #0284c7;
+  background: #e0f2fe;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-top: 6px;
+  display: inline-block;
+  font-weight: 600;
+}
+
+.otp-error-msg {
+  font-size: 12px;
+  color: #dc2626;
+  font-weight: 600;
+  margin-top: 4px;
+  text-align: center;
+}
+
+.system-popup-btn.secondary {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+[data-theme="dark"] .system-popup-btn.secondary {
+  background: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+
 

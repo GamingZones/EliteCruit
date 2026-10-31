@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ALL_PHILIPPINES_PROVINCES, getCitiesByProvince } from "../../utils/filters";
 import "./Create-Account.css";
 
@@ -9,6 +9,30 @@ export default function CreateAccount() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState("");
+
+  // Email OTP Verification Modal States
+  const [verifiedEmail, setVerifiedEmail] = useState("");
+  const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+  const [otpCodeInput, setOtpCodeInput] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [otpDevHint, setOtpDevHint] = useState<string | null>(null);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [otpCooldown, setOtpCooldown] = useState(0);
+
+  useEffect(() => {
+    if (otpCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setOtpCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [otpCooldown]);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -22,6 +46,9 @@ export default function CreateAccount() {
     password: "",
     confirmPassword: "",
   });
+
+  const cleanCurrentEmail = formData.email.trim().toLowerCase();
+  const isEmailVerified = Boolean(cleanCurrentEmail && verifiedEmail === cleanCurrentEmail);
 
   const hasMinLength = formData.password.length >= 8;
   const hasUppercase = /[A-Z]/.test(formData.password);
@@ -72,6 +99,89 @@ export default function CreateAccount() {
 
   const isApplicant = role === "applicant";
 
+  const handleSendEmailOtp = async () => {
+    const targetEmail = formData.email.trim();
+    setSubmitError("");
+    setSubmitSuccess("");
+
+    if (!targetEmail || !targetEmail.includes("@")) {
+      setSubmitError("Please enter a valid email address before clicking Verify.");
+      return;
+    }
+
+    setIsSendingOtp(true);
+    setOtpError("");
+    setOtpDevHint(null);
+
+    try {
+      const displayName = isApplicant
+        ? [formData.firstName.trim(), formData.lastName.trim()].filter(Boolean).join(" ")
+        : formData.businessName.trim();
+
+      const res = await fetch("/api/auth/send-registration-email-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: targetEmail,
+          name: displayName || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setSubmitError(data?.message || "Failed to send verification code.");
+        return;
+      }
+
+      if (data?.devCode) {
+        setOtpDevHint(data.devCode);
+      }
+      setIsOtpModalOpen(true);
+      setOtpCodeInput("");
+      setOtpCooldown(45);
+    } catch {
+      setSubmitError("Unable to send verification code. Please try again.");
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyEmailOtp = async () => {
+    const targetEmail = formData.email.trim();
+    const cleanCode = otpCodeInput.replace(/\D/g, "");
+    if (cleanCode.length !== 6) {
+      setOtpError("Please enter the complete 6-digit verification code.");
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    setOtpError("");
+
+    try {
+      const res = await fetch("/api/auth/verify-registration-email-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: targetEmail,
+          code: cleanCode,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setOtpError(data?.message || "Invalid verification code.");
+        return;
+      }
+
+      setVerifiedEmail(targetEmail.toLowerCase());
+      setIsOtpModalOpen(false);
+      setSubmitError("");
+      setSubmitSuccess("Email address verified!");
+    } catch {
+      setOtpError("Verification failed. Please check the code and try again.");
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitError("");
@@ -79,6 +189,11 @@ export default function CreateAccount() {
 
     if (!formData.email.trim()) {
       setSubmitError("Email is required.");
+      return;
+    }
+
+    if (!isEmailVerified) {
+      setSubmitError("Please verify your email address first by clicking the Verify button.");
       return;
     }
 
@@ -150,10 +265,11 @@ export default function CreateAccount() {
         password: "",
         confirmPassword: "",
       });
+      setVerifiedEmail("");
       setAgreeTerms(false);
 
       setTimeout(() => {
-        window.location.href = "/login";
+        window.location.href = "/login?verified=1";
       }, 900);
     } catch {
       setSubmitError("Unable to connect to server. Please try again.");
@@ -345,15 +461,35 @@ export default function CreateAccount() {
 
                 <div className="form-field">
                   <label htmlFor="email">Email Address</label>
-                  <input
-                    id="email"
-                    type="email"
-                    name="email"
-                    placeholder="your@email.com"
-                    required
-                    value={formData.email}
-                    onChange={handleChange}
-                  />
+                  <div className="email-input-wrapper">
+                    <input
+                      id="email"
+                      type="email"
+                      name="email"
+                      placeholder="your@email.com"
+                      required
+                      value={formData.email}
+                      onChange={handleChange}
+                    />
+                    {isEmailVerified ? (
+                      <span className="email-verified-pill" title="Email address verified">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Verified
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="email-verify-btn"
+                        onClick={handleSendEmailOtp}
+                        disabled={isSendingOtp}
+                        title="Verify email address with OTP"
+                      >
+                        {isSendingOtp ? "Sending..." : "Verify"}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </>
@@ -376,15 +512,35 @@ export default function CreateAccount() {
               <div className="form-row two-col">
                 <div className="form-field">
                   <label htmlFor="employerEmail">Primary Business Email</label>
-                  <input
-                    id="employerEmail"
-                    type="email"
-                    name="email"
-                    placeholder="company@example.com"
-                    required
-                    value={formData.email}
-                    onChange={handleChange}
-                  />
+                  <div className="email-input-wrapper">
+                    <input
+                      id="employerEmail"
+                      type="email"
+                      name="email"
+                      placeholder="company@example.com"
+                      required
+                      value={formData.email}
+                      onChange={handleChange}
+                    />
+                    {isEmailVerified ? (
+                      <span className="email-verified-pill" title="Email address verified">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Verified
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="email-verify-btn"
+                        onClick={handleSendEmailOtp}
+                        disabled={isSendingOtp}
+                        title="Verify email address with OTP"
+                      >
+                        {isSendingOtp ? "Sending..." : "Verify"}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="form-field">
@@ -545,6 +701,92 @@ export default function CreateAccount() {
         </form>
 
       </section>
+
+      {/* CENTERED EMAIL OTP VERIFICATION POPUP MODAL */}
+      {isOtpModalOpen && (
+        <div
+          className="create-otp-modal-overlay"
+          onClick={() => !isVerifyingOtp && setIsOtpModalOpen(false)}
+        >
+          <div className="create-otp-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="create-otp-modal-icon" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                <polyline points="22,6 12,13 2,6" />
+              </svg>
+            </div>
+
+            <h3 className="create-otp-modal-title">Verify Email Address</h3>
+            <p className="create-otp-modal-subtitle">
+              A 6-digit OTP code has been sent to:
+              <br />
+              <strong>{formData.email.trim()}</strong>
+            </p>
+
+            <div className="create-otp-input-wrap">
+              <input
+                type="text"
+                inputMode="numeric"
+                className="create-otp-code-input"
+                maxLength={6}
+                value={otpCodeInput}
+                autoFocus
+                onChange={(e) => {
+                  const numOnly = e.target.value.replace(/\D/g, "").slice(0, 6);
+                  setOtpCodeInput(numOnly);
+                  if (otpError) setOtpError("");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && otpCodeInput.length === 6) {
+                    e.preventDefault();
+                    handleVerifyEmailOtp();
+                  }
+                }}
+                placeholder="••••••"
+              />
+
+              {otpError && <div className="create-otp-error">{otpError}</div>}
+
+              {otpDevHint && (
+                <div className="create-otp-dev-hint">
+                  Dev Code: <strong>{otpDevHint}</strong>
+                </div>
+              )}
+
+              <div className="create-otp-resend-row">
+                <span>Didn't receive the code?</span>
+                <button
+                  type="button"
+                  className="create-otp-resend-btn"
+                  onClick={handleSendEmailOtp}
+                  disabled={otpCooldown > 0 || isSendingOtp}
+                >
+                  {otpCooldown > 0 ? `Resend in ${otpCooldown}s` : "Resend Code"}
+                </button>
+              </div>
+            </div>
+
+            <div className="create-otp-modal-actions">
+              <button
+                type="button"
+                className="create-otp-btn secondary"
+                onClick={() => setIsOtpModalOpen(false)}
+                disabled={isVerifyingOtp}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="create-otp-btn primary"
+                onClick={handleVerifyEmailOtp}
+                disabled={isVerifyingOtp || otpCodeInput.length !== 6}
+              >
+                {isVerifyingOtp ? "Verifying..." : "Verify Code"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

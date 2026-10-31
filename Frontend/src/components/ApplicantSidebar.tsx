@@ -4,6 +4,7 @@ import { clearAuth } from "../utils/auth";
 import { SideIcon, ChevronIcon, type SideNavItem } from "./Icons";
 import { useUnreadNotificationsCount } from "../hooks/useUnreadNotificationsCount";
 import { useUnreadMessagesCount } from "../hooks/useUnreadMessagesCount";
+import { usePendingInvitationsCount } from "../hooks/usePendingInvitationsCount";
 
 export interface ApplicantNavItem {
   label: string;
@@ -34,6 +35,7 @@ export default function ApplicantSidebar({
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const unreadNotifCount = useUnreadNotificationsCount();
   const unreadMessagesCount = useUnreadMessagesCount();
+  const pendingInvitesCount = usePendingInvitationsCount();
 
   // Dynamically resolve real logged-in applicant name if available
   const resolvedApplicantName = useMemo(() => {
@@ -109,6 +111,11 @@ export default function ApplicantSidebar({
                 <SideIcon name="overview" />
               </span>
               <span>Applicant Workspace</span>
+              {pendingInvitesCount > 0 && (
+                <span className="item-badge" title={`${pendingInvitesCount} pending job invitation${pendingInvitesCount > 1 ? "s" : ""}`} style={{ marginLeft: "auto", marginRight: 8 }}>
+                  {pendingInvitesCount}
+                </span>
+              )}
             </span>
             <span className="title-caret-btn" title="Toggle sub-menu">
               <ChevronIcon direction={isWorkspaceOpen ? "down" : "up"} />
@@ -119,6 +126,7 @@ export default function ApplicantSidebar({
             <ul id="workspace-links" className="appdash-menu-list">
               {workspaceNav.map((item) => {
                 const isActive = isWorkspaceActivePage && item.sectionId === activeSection;
+                const itemBadge = item.sectionId === "section-invitations" && pendingInvitesCount > 0 ? pendingInvitesCount : null;
                 return (
                   <li key={item.label} className={isActive ? "active" : ""}>
                     <a
@@ -134,6 +142,7 @@ export default function ApplicantSidebar({
                         <SideIcon name={item.icon} />
                       </span>
                       <span>{item.label}</span>
+                      {itemBadge ? <span className="item-badge">{itemBadge}</span> : null}
                     </a>
                   </li>
                 );

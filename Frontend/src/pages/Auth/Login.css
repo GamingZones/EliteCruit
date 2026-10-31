@@ -359,10 +359,24 @@
   font-weight: 600;
 }
 
-.auth-row a {
+.auth-row a,
+.forgot-password-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 0.9rem;
   color: #0a3260;
   text-decoration: none;
   font-weight: 700;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.auth-row a:hover,
+.forgot-password-btn:hover {
+  color: #0284c7;
+  text-decoration: underline;
 }
 
 .login-submit {
@@ -588,6 +602,31 @@
 .mfa-back-link:hover {
   color: #334155;
   text-decoration: underline;
+}
+
+.pw-reset-checklist {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.pw-check-item {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pw-check-item.met {
+  color: #15803d;
+  font-weight: 700;
 }
 
 @media (max-width: 1150px) {

@@ -22,6 +22,48 @@ export const BSIT_BSCS_JOB_TITLES = [
   "IT Project Coordinator",
 ] as const;
 
+export const CATEGORIZED_JOB_ROLES: Record<string, string[]> = {
+  "Software Development": [
+    "Frontend Developer",
+    "Backend Developer",
+    "Full-Stack Developer",
+    "Software Engineer",
+    "Mobile App Developer (iOS/Android)",
+    "Web Developer",
+    "DevOps Engineer",
+  ],
+  "Data & Analytics": [
+    "Data Analyst",
+    "Data Scientist",
+    "Database Administrator",
+    "Business Intelligence (BI) Developer",
+    "Data Engineer",
+  ],
+  "IT & Infrastructure": [
+    "Network Engineer",
+    "System Administrator",
+    "Cloud Solutions Architect / Support",
+    "Cybersecurity Analyst",
+    "IT Support Specialist / Staff",
+    "Helpdesk Technician",
+  ],
+  "Quality Assurance": [
+    "Quality Assurance (QA) Tester",
+    "Software QA Automation Engineer",
+  ],
+  "Product & Design": [
+    "UI/UX Designer",
+    "Product Designer",
+    "IT Project Coordinator",
+    "Business/Systems Analyst",
+  ],
+  "Operations & Support": [
+    "Technical Support Associate",
+    "Customer Support Representative",
+    "Administrative Assistant",
+  ],
+};
+
 export const CAVITE_CITIES = [
   "Alfonso",
   "Amadeo",
@@ -533,6 +575,8 @@ export const SHS_STRANDS_TAXONOMY = [
 ];
 
 export const EDUCATION_LEVELS_TAXONOMY = [
+  "Doctorate / PhD Degree",
+  "Master's Degree / Post-Graduate Studies",
   "College Graduate - Bachelor's Degree",
   "College Undergraduate / Level Earner",
   "Vocational / Technical Course Graduate - TESDA NC II / NC III",
@@ -543,6 +587,11 @@ export const EDUCATION_LEVELS_TAXONOMY = [
 ];
 
 export const MULTI_INDUSTRY_COURSES = [
+  "Doctor of Philosophy in Computer Science - PhD CS",
+  "Doctor of Information Technology - DIT",
+  "Master of Science in Information Technology - MSIT",
+  "Master of Science in Computer Science - MSCS",
+  "Master in Business Administration - MBA",
   "BS Information Technology - BSIT",
   "BS Computer Science - BSCS",
   "BS Information Systems - BSIS",
