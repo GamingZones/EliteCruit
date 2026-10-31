@@ -467,6 +467,76 @@ export default function CalendarDrawer({
   // System Delete Confirmation Modal state (Employer only)
   const [interviewToDelete, setInterviewToDelete] = useState<ScheduledInterview | null>(null);
 
+  // Cancel Interview Modal state (Matches UI 867402159 / 877549441)
+  const [interviewToCancel, setInterviewToCancel] = useState<ScheduledInterview | null>(null);
+  const [cancelReason, setCancelReason] = useState("Interviewer unavailable");
+  const [cancelMessage, setCancelMessage] = useState(
+    "We need to cancel this interview because the interviewer is unavailable. We apologize for the inconvenience."
+  );
+  const [notifyOnCancel, setNotifyOnCancel] = useState(true);
+
+  const handleOpenCancelModal = (item: ScheduledInterview) => {
+    setInterviewToCancel(item);
+    setCancelReason("Interviewer unavailable");
+    setCancelMessage(
+      "We need to cancel this interview because the interviewer is unavailable. We apologize for the inconvenience."
+    );
+    setNotifyOnCancel(true);
+  };
+
+  const handleConfirmCancelInterview = () => {
+    if (!interviewToCancel) return;
+    handleUpdateStatus(interviewToCancel.id, "cancelled");
+    setInterviewToCancel(null);
+  };
+
+  // Reschedule Interview Modal state (Matches UI 864653198 / 872246452 / 875598777)
+  const [interviewToReschedule, setInterviewToReschedule] = useState<ScheduledInterview | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState("");
+  const [rescheduleTime, setRescheduleTime] = useState("10:00 AM");
+  const [rescheduleAltTime, setRescheduleAltTime] = useState("2:00 PM");
+  const [rescheduleReason, setRescheduleReason] = useState(
+    "I have a prior commitment at the original interview time. I'm available at either suggested time."
+  );
+  const [notifyOnReschedule, setNotifyOnReschedule] = useState(true);
+
+  const handleOpenRescheduleModal = (item: ScheduledInterview) => {
+    setInterviewToReschedule(item);
+    setRescheduleDate(item.interview_date || "");
+    setRescheduleTime(item.start_time || "10:00 AM");
+    setRescheduleAltTime("2:00 PM");
+    setRescheduleReason(
+      "I have a prior commitment at the original interview time. I'm available at either suggested time."
+    );
+    setNotifyOnReschedule(true);
+  };
+
+  const handleConfirmReschedule = () => {
+    if (!interviewToReschedule) return;
+    if (rescheduleDate && rescheduleTime) {
+      setInterviews((prev) =>
+        prev.map((it) =>
+          it.id === interviewToReschedule.id
+            ? { ...it, interview_date: rescheduleDate, start_time: rescheduleTime, status: isEmployer ? "rescheduled" : "pending" }
+            : it
+        )
+      );
+      try {
+        fetch(`/api/interviews/${interviewToReschedule.id}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: isEmployer ? "rescheduled" : "pending",
+            interview_date: rescheduleDate,
+            start_time: rescheduleTime,
+            updated_by_user_id: currentUserId,
+          }),
+        }).catch(() => {});
+      } catch {}
+    }
+    setInterviewToReschedule(null);
+  };
+
   const handleOpenMeetingCandidatesModal = (item: ScheduledInterview) => {
     if (!isEmployer) return;
     setActiveMeetingCandidatesModal(item);
@@ -2828,6 +2898,340 @@ export default function CalendarDrawer({
                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                 </svg>
                 Delete Interview
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ── CANCEL INTERVIEW MODAL (PORTALED TO BODY - PIC MATCH 867402159 / 877549441) ── */}
+      {typeof document !== "undefined" && interviewToCancel && createPortal(
+        <div className="applicant-modal-backdrop" onClick={() => setInterviewToCancel(null)}>
+          <div
+            className="applicant-modal-container cancel-interview-modal-container"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: "480px", width: "100%", padding: "24px", borderRadius: "16px" }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#0c2a47" }}>Cancel interview?</h3>
+                <p style={{ margin: "4px 0 0", fontSize: "0.86rem", color: "#64748b" }}>
+                  The applicant will be notified and shown the reason.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="applicant-modal-close-btn"
+                onClick={() => setInterviewToCancel(null)}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "16px" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#0f172a", marginBottom: "6px" }}>
+                  Reason for cancellation
+                </label>
+                <select
+                  value={cancelReason}
+                  onChange={(e) => {
+                    setCancelReason(e.target.value);
+                    if (e.target.value === "Interviewer unavailable") {
+                      setCancelMessage("We need to cancel this interview because the interviewer is unavailable. We apologize for the inconvenience.");
+                    } else if (e.target.value === "Schedule conflict") {
+                      setCancelMessage("Due to an unexpected scheduling conflict, we need to cancel this interview session.");
+                    } else if (e.target.value === "Position already filled") {
+                      setCancelMessage("Thank you for your interest. This position has already been filled.");
+                    }
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "0.88rem",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <option value="Interviewer unavailable">Interviewer unavailable</option>
+                  <option value="Schedule conflict">Schedule conflict</option>
+                  <option value="Position already filled">Position already filled</option>
+                  <option value="Candidate requested cancellation">Candidate requested cancellation</option>
+                  <option value="Technical issue">Technical issue</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#0f172a", marginBottom: "6px" }}>
+                  Message to applicant
+                </label>
+                <textarea
+                  rows={3}
+                  value={cancelMessage}
+                  onChange={(e) => setCancelMessage(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "0.88rem",
+                    boxSizing: "border-box",
+                    resize: "vertical",
+                  }}
+                />
+              </div>
+
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.86rem", color: "#334155", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={notifyOnCancel}
+                  onChange={(e) => setNotifyOnCancel(e.target.checked)}
+                />
+                <span>Notify applicant by in-app notification and email</span>
+              </label>
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "10px 14px",
+                  borderRadius: "8px",
+                  background: "#f0f9ff",
+                  border: "1px solid #bae6fd",
+                  color: "#0369a1",
+                  fontSize: "0.82rem",
+                }}
+              >
+                <span>ℹ</span>
+                <span>A cancellation notification will be added to the applicant&apos;s Notifications page.</span>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "20px" }}>
+              <button
+                type="button"
+                onClick={() => setInterviewToCancel(null)}
+                style={{
+                  width: "100%",
+                  padding: "11px",
+                  borderRadius: "8px",
+                  border: "1.5px solid #cbd5e1",
+                  background: "#ffffff",
+                  color: "#0f172a",
+                  fontWeight: 700,
+                  fontSize: "0.9rem",
+                  cursor: "pointer",
+                }}
+              >
+                Keep Interview
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCancelInterview}
+                style={{
+                  width: "100%",
+                  padding: "11px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "#dc2626",
+                  color: "#ffffff",
+                  fontWeight: 700,
+                  fontSize: "0.9rem",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel Interview
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ── RESCHEDULE INTERVIEW MODAL (PORTALED TO BODY - PIC MATCH 864653198 / 872246452 / 875598777) ── */}
+      {typeof document !== "undefined" && interviewToReschedule && createPortal(
+        <div className="applicant-modal-backdrop" onClick={() => setInterviewToReschedule(null)}>
+          <div
+            className="applicant-modal-container reschedule-modal-container"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: "480px", width: "100%", padding: "24px", borderRadius: "16px" }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#0c2a47" }}>
+                  {isEmployer ? "Reschedule Interview" : "Request a new interview time"}
+                </h3>
+                <p style={{ margin: "4px 0 0", fontSize: "0.86rem", color: "#64748b" }}>
+                  Your current interview remains confirmed until the employer approves a new time.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="applicant-modal-close-btn"
+                onClick={() => setInterviewToReschedule(null)}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginTop: "16px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#0f172a", marginBottom: "6px" }}>
+                    Preferred date
+                  </label>
+                  <input
+                    type="date"
+                    value={rescheduleDate}
+                    onChange={(e) => setRescheduleDate(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "9px 12px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: "0.86rem",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#0f172a", marginBottom: "6px" }}>
+                    Preferred time
+                  </label>
+                  <select
+                    value={rescheduleTime}
+                    onChange={(e) => setRescheduleTime(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "9px 12px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: "0.86rem",
+                      boxSizing: "border-box",
+                    }}
+                  >
+                    <option value="9:00 AM">9:00 AM</option>
+                    <option value="10:00 AM">10:00 AM</option>
+                    <option value="11:00 AM">11:00 AM</option>
+                    <option value="1:00 PM">1:00 PM</option>
+                    <option value="2:00 PM">2:00 PM</option>
+                    <option value="3:30 PM">3:30 PM</option>
+                    <option value="4:00 PM">4:00 PM</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#0f172a", marginBottom: "6px" }}>
+                  Alternative time <span style={{ fontWeight: 400, color: "#64748b" }}>(optional)</span>
+                </label>
+                <select
+                  value={rescheduleAltTime}
+                  onChange={(e) => setRescheduleAltTime(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "0.86rem",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <option value="2:00 PM">2:00 PM</option>
+                  <option value="3:30 PM">3:30 PM</option>
+                  <option value="4:00 PM">4:00 PM</option>
+                  <option value="5:00 PM">5:00 PM</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#0f172a", marginBottom: "6px" }}>
+                  Reason for rescheduling <span style={{ color: "#ef4444" }}>*</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={rescheduleReason}
+                  onChange={(e) => setRescheduleReason(e.target.value)}
+                  placeholder="Provide reason for request..."
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "0.88rem",
+                    boxSizing: "border-box",
+                    resize: "vertical",
+                  }}
+                />
+              </div>
+
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.86rem", color: "#334155", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={notifyOnReschedule}
+                  onChange={(e) => setNotifyOnReschedule(e.target.checked)}
+                />
+                <span>Notify the employer and send me status updates</span>
+              </label>
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "10px 14px",
+                  borderRadius: "8px",
+                  background: "#fffbeb",
+                  border: "1px solid #fde68a",
+                  color: "#92400e",
+                  fontSize: "0.82rem",
+                }}
+              >
+                <span>⚠️</span>
+                <span>Submitting this request does not automatically change your interview.</span>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "20px" }}>
+              <button
+                type="button"
+                onClick={() => setInterviewToReschedule(null)}
+                style={{
+                  width: "100%",
+                  padding: "11px",
+                  borderRadius: "8px",
+                  border: "1.5px solid #cbd5e1",
+                  background: "#ffffff",
+                  color: "#0f172a",
+                  fontWeight: 700,
+                  fontSize: "0.9rem",
+                  cursor: "pointer",
+                }}
+              >
+                Keep Current Schedule
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReschedule}
+                style={{
+                  width: "100%",
+                  padding: "11px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "#00385e",
+                  color: "#ffffff",
+                  fontWeight: 700,
+                  fontSize: "0.9rem",
+                  cursor: "pointer",
+                }}
+              >
+                Send Request
               </button>
             </div>
           </div>

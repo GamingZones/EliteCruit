@@ -1187,20 +1187,87 @@ export default function EmployerCompanyProfile() {
               </div>
             </section>
 
+            {/* Company Details matching 873598157 / 873500981 */}
             <section className="company-card company-section">
               <div className="section-head">
-                <h2>Company Details</h2>
-                <button type="button" onClick={() => isEditingProfile ? saveProfile() : setIsEditingProfile(true)}>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#0c2a47" }}>Company Details</h2>
+                  <p style={{ margin: "4px 0 0", fontSize: "0.86rem", color: "#64748b" }}>Public information shown to applicants.</p>
+                </div>
+                <button
+                  type="button"
+                  style={{
+                    background: "#00385e",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "8px 18px",
+                    fontWeight: 700,
+                    fontSize: "0.86rem",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => isEditingProfile ? saveProfile() : setIsEditingProfile(true)}
+                >
                   {isEditingProfile ? (isSaving ? "Saving..." : "Save") : "Edit"}
                 </button>
               </div>
-              <p>Company-owned public profile identity data.</p>
-              <div className="form-grid two-col">
-                <label>Company Name<input value={draft.business_name} onChange={(e) => updateDraft("business_name", e.target.value)} readOnly={!isEditingProfile} /></label>
-                <label>Industry<input value={draft.industry} onChange={(e) => updateDraft("industry", e.target.value)} readOnly={!isEditingProfile} /></label>
-                <label>
-                  Company Size
-                  <select value={draft.company_size || ""} onChange={(e) => updateDraft("company_size", e.target.value)} disabled={!isEditingProfile}>
+
+              <div className="form-grid" style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "16px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.84rem", fontWeight: 700, color: "#0f172a", marginBottom: "4px" }}>
+                    Company name <span style={{ color: "#ef4444" }}>*</span>
+                  </label>
+                  <input
+                    value={draft.business_name}
+                    onChange={(e) => updateDraft("business_name", e.target.value)}
+                    readOnly={!isEditingProfile}
+                    placeholder="e.g. Doe's Store"
+                    style={{ width: "100%", boxSizing: "border-box" }}
+                  />
+                  <small style={{ display: "block", fontSize: "0.75rem", color: "#64748b", marginTop: "4px" }}>
+                    Use your registered business or trading name.
+                  </small>
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: "0.84rem", fontWeight: 700, color: "#0f172a", marginBottom: "4px" }}>
+                    Industry <span style={{ color: "#ef4444" }}>*</span>
+                  </label>
+                  <select
+                    value={draft.industry || ""}
+                    onChange={(e) => updateDraft("industry", e.target.value)}
+                    disabled={!isEditingProfile}
+                    style={{ width: "100%", boxSizing: "border-box" }}
+                  >
+                    <option value="">Select industry</option>
+                    <option value="Retail">Retail</option>
+                    <option value="Information Technology">Information Technology</option>
+                    <option value="Software & Computer Services">Software & Computer Services</option>
+                    <option value="Telecommunications">Telecommunications</option>
+                    <option value="BPO & Customer Operations">BPO & Customer Operations</option>
+                    <option value="Financial Services & Banking">Financial Services & Banking</option>
+                    <option value="Healthcare & Pharmaceuticals">Healthcare & Pharmaceuticals</option>
+                    <option value="Manufacturing & Production">Manufacturing & Production</option>
+                    <option value="Education & Training">Education & Training</option>
+                    <option value="Logistics & Supply Chain">Logistics & Supply Chain</option>
+                    <option value="Hospitality & Tourism">Hospitality & Tourism</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  <small style={{ display: "block", fontSize: "0.75rem", color: "#64748b", marginTop: "4px" }}>
+                    Select the category that best describes your company.
+                  </small>
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: "0.84rem", fontWeight: 700, color: "#0f172a", marginBottom: "4px" }}>
+                    Company size
+                  </label>
+                  <select
+                    value={draft.company_size || ""}
+                    onChange={(e) => updateDraft("company_size", e.target.value)}
+                    disabled={!isEditingProfile}
+                    style={{ width: "100%", boxSizing: "border-box" }}
+                  >
                     <option value="">Select company size</option>
                     <option value="1-10 employees">1-10 employees</option>
                     <option value="11-50 employees">11-50 employees</option>
@@ -1208,8 +1275,257 @@ export default function EmployerCompanyProfile() {
                     <option value="201-500 employees">201-500 employees</option>
                     <option value="500+ employees">500+ employees</option>
                   </select>
-                </label>
-                <div className="ownership-box"><small>Ownership</small><p>This profile belongs to {effectiveCompanyLabel}, not to an individual employer account.</p></div>
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: "0.84rem", fontWeight: 700, color: "#0f172a", marginBottom: "4px" }}>
+                    Company email
+                  </label>
+                  <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                    <input
+                      value={draft.business_email || "contact@doesstore.test"}
+                      readOnly
+                      style={{ width: "100%", boxSizing: "border-box", paddingRight: "100px" }}
+                    />
+                    <span
+                      style={{
+                        position: "absolute",
+                        right: "10px",
+                        background: "#dcfce7",
+                        color: "#15803d",
+                        fontSize: "0.75rem",
+                        fontWeight: 700,
+                        padding: "3px 10px",
+                        borderRadius: "9999px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                      }}
+                    >
+                      ✔ Verified
+                    </span>
+                  </div>
+                  <small style={{ display: "block", fontSize: "0.75rem", color: "#64748b", marginTop: "4px" }}>
+                    Changing this email requires verification.
+                  </small>
+                  <button
+                    type="button"
+                    style={{
+                      marginTop: "8px",
+                      background: "transparent",
+                      border: "1.5px solid #cbd5e1",
+                      borderRadius: "6px",
+                      padding: "8px 16px",
+                      fontSize: "0.84rem",
+                      fontWeight: 700,
+                      color: "#0c2a47",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => {
+                      setActiveSection("overview");
+                      setIsEditingContact(true);
+                    }}
+                  >
+                    Change email
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            {/* Brand Assets Section matching 873598157 */}
+            <section className="company-card company-section">
+              <div className="section-head">
+                <div>
+                  <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#0c2a47" }}>Brand assets</h2>
+                  <p style={{ margin: "4px 0 0", fontSize: "0.86rem", color: "#64748b" }}>
+                    Add your company logo and cover image. These will be displayed on your public profile.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "16px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "14px 18px",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "10px",
+                    background: "#f8fafc",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                    <div
+                      style={{
+                        width: "42px",
+                        height: "42px",
+                        borderRadius: "8px",
+                        border: "1px solid #cbd5e1",
+                        background: "#ffffff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#64748b",
+                      }}
+                    >
+                      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                      </svg>
+                    </div>
+                    <div>
+                      <strong style={{ display: "block", fontSize: "0.92rem", color: "#0f172a" }}>Company logo</strong>
+                      <small style={{ fontSize: "0.78rem", color: "#64748b" }}>PNG, JPG, SVG up to 5 MB.</small>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    style={{
+                      background: "#ffffff",
+                      border: "1.5px solid #cbd5e1",
+                      borderRadius: "6px",
+                      padding: "8px 16px",
+                      fontSize: "0.84rem",
+                      fontWeight: 700,
+                      color: "#0c2a47",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => logoInputRef.current?.click()}
+                  >
+                    Upload
+                  </button>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "14px 18px",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "10px",
+                    background: "#f8fafc",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                    <div
+                      style={{
+                        width: "42px",
+                        height: "42px",
+                        borderRadius: "8px",
+                        border: "1px solid #cbd5e1",
+                        background: "#ffffff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#64748b",
+                      }}
+                    >
+                      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                      </svg>
+                    </div>
+                    <div>
+                      <strong style={{ display: "block", fontSize: "0.92rem", color: "#0f172a" }}>Company cover image</strong>
+                      <small style={{ fontSize: "0.78rem", color: "#64748b" }}>PNG, JPG up to 5 MB.</small>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    style={{
+                      background: "#ffffff",
+                      border: "1.5px solid #cbd5e1",
+                      borderRadius: "6px",
+                      padding: "8px 16px",
+                      fontSize: "0.84rem",
+                      fontWeight: 700,
+                      color: "#0c2a47",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => coverInputRef.current?.click()}
+                  >
+                    Upload
+                  </button>
+                </div>
+
+                {/* Info Callout Banner */}
+                <div
+                  style={{
+                    padding: "12px 16px",
+                    borderRadius: "8px",
+                    background: "#eff6ff",
+                    border: "1px solid #bfdbfe",
+                    color: "#1e40af",
+                    fontSize: "0.86rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    fontWeight: 500,
+                  }}
+                >
+                  <span style={{ fontSize: "1.1rem" }}>ℹ</span>
+                  <span>This profile belongs to <strong>{effectiveCompanyLabel || "Doe's Store"}</strong>, not to an individual employer account.</span>
+                </div>
+
+                {/* Warning Callout Banner */}
+                <div
+                  style={{
+                    padding: "12px 16px",
+                    borderRadius: "8px",
+                    background: "#fffbeb",
+                    border: "1px solid #fde68a",
+                    color: "#92400e",
+                    fontSize: "0.86rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    fontWeight: 500,
+                  }}
+                >
+                  <span style={{ fontSize: "1.1rem" }}>⚠️</span>
+                  <span>Complete all required fields before continuing to Overview &amp; Contact.</span>
+                </div>
+
+                {/* Footer Action Buttons */}
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "10px" }}>
+                  <button
+                    type="button"
+                    style={{
+                      background: "transparent",
+                      border: "1.5px solid #cbd5e1",
+                      borderRadius: "8px",
+                      padding: "10px 20px",
+                      fontSize: "0.9rem",
+                      fontWeight: 700,
+                      color: "#0f172a",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => setDraft(profile)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    style={{
+                      background: "#00385e",
+                      border: "none",
+                      borderRadius: "8px",
+                      padding: "10px 24px",
+                      fontSize: "0.9rem",
+                      fontWeight: 700,
+                      color: "#ffffff",
+                      cursor: "pointer",
+                    }}
+                    onClick={saveProfile}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? "Saving..." : "Save Changes"}
+                  </button>
+                </div>
               </div>
             </section>
           </>

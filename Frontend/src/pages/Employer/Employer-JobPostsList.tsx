@@ -315,6 +315,34 @@ export default function EmployerJobPostsList() {
   const [jobToStatusChange, setJobToStatusChange] = useState<{ job: JobPost; targetStatus: "open" | "closed" } | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [reopenCloseDate, setReopenCloseDate] = useState("");
+  const [reviewingJob, setReviewingJob] = useState<JobPost | null>(null);
+  const [isListingPreviewOpen, setIsListingPreviewOpen] = useState(false);
+
+  // Check URL query param for review ID on initial load
+  useEffect(() => {
+    if (jobs.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const rId = params.get("review");
+      if (rId) {
+        const found = jobs.find((j) => String(j.id) === String(rId));
+        if (found) {
+          setReviewingJob(found);
+        }
+      }
+    }
+  }, [jobs]);
+
+  const handleOpenReview = (job: JobPost) => {
+    setReviewingJob(job);
+    window.history.pushState({}, "", `/employer-job-posts?review=${job.id}`);
+    scrollToTop();
+  };
+
+  const handleCloseReview = () => {
+    setReviewingJob(null);
+    window.history.pushState({}, "", "/employer-job-posts");
+    scrollToTop();
+  };
 
   useEffect(() => {
     const handleOutsideClick = () => setOpenActionsJobId(null);
@@ -480,7 +508,252 @@ export default function EmployerJobPostsList() {
           </div>
         </header>
 
-        <section className="joblist-head">
+        {reviewingJob ? (
+          <div className="review-job-container">
+            {/* Breadcrumb matching 841282631 / 873547492 */}
+            <nav className="review-breadcrumbs" aria-label="Breadcrumb">
+              <button type="button" className="breadcrumb-link" onClick={handleCloseReview}>
+                All Job Posts
+              </button>
+              <span className="breadcrumb-separator">/</span>
+              <span className="breadcrumb-current">{reviewingJob.title}</span>
+              <span className="breadcrumb-separator">/</span>
+              <span className="breadcrumb-active">Review</span>
+            </nav>
+
+            {/* Top Review Header */}
+            <div className="review-job-top-bar">
+              <div className="review-job-title-group">
+                <h1 className="review-job-page-title">Review Job Post</h1>
+                <p className="review-job-subtitle">Review the selected posting before publishing or making changes.</p>
+              </div>
+
+              <div className="review-job-header-actions">
+                <button type="button" className="review-back-btn" onClick={handleCloseReview}>
+                  ← Back to all posts
+                </button>
+                <a className="review-edit-btn" href={`/employer-job-posts/create?edit=${reviewingJob.id}`}>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                  Edit post
+                </a>
+                <button type="button" className="review-preview-listing-btn" onClick={() => setIsListingPreviewOpen(true)}>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    <polyline points="15 3 21 3 21 9" />
+                    <line x1="10" y1="14" x2="21" y2="3" />
+                  </svg>
+                  Preview public listing
+                </button>
+              </div>
+            </div>
+
+            {/* Job Summary Banner & 4-Stat Metric Strip */}
+            <div className="review-job-summary-card">
+              <div className="review-job-summary-head">
+                <div className="review-job-title-row">
+                  <h2 className="review-job-heading">{reviewingJob.title}</h2>
+                  <span className={`review-status-pill ${reviewingJob.status === "open" ? "open" : "closed"}`}>
+                    ● {reviewingJob.status === "open" ? "Open" : "Closed"}
+                  </span>
+                </div>
+                <div className="review-job-company-row">
+                  <span className="review-company-name">{companyLabel || "Doe's Store"}</span>
+                  <span className="review-date-meta">
+                    Posted Oct 12, 2026 • Updated Oct 18, 2026
+                  </span>
+                </div>
+              </div>
+
+              <div className="review-metrics-strip">
+                <div className="review-metric-item">
+                  <strong>{reviewingJob.applicant_count || 12}</strong>
+                  <span>Applicants</span>
+                </div>
+                <div className="review-metric-item">
+                  <strong>{Math.max(1, Math.round((reviewingJob.applicant_count || 12) * 0.65))}</strong>
+                  <span>Under review</span>
+                </div>
+                <div className="review-metric-item">
+                  <strong>{Math.max(1, Math.round((reviewingJob.applicant_count || 12) * 0.25))}</strong>
+                  <span>Shortlisted</span>
+                </div>
+                <div className="review-metric-item">
+                  <strong>1</strong>
+                  <span>Interview scheduled</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 2-Column Content Body (Desktop) / Stacked (Mobile) */}
+            <div className="review-job-body-grid">
+              {/* Left Column: Job Details Cards */}
+              <div className="review-job-main-col">
+                {/* Job Description */}
+                <section className="review-card">
+                  <h3 className="review-card-title">Job Description</h3>
+                  <p className="review-card-paragraph">
+                    {reviewingJob.description ||
+                      "We are looking for a Software Engineer to join our growing team. You will be responsible for designing, developing, and maintaining web applications that deliver exceptional user experiences. You will work closely with product, design, and other engineers to build scalable and reliable solutions that support our business goals."}
+                  </p>
+                </section>
+
+                {/* Key Responsibilities */}
+                <section className="review-card">
+                  <h3 className="review-card-title">Key Responsibilities</h3>
+                  <ul className="review-bullet-list">
+                    {reviewingJob.responsibilities ? (
+                      reviewingJob.responsibilities
+                        .split(/[\n•]+/)
+                        .map((r) => r.trim())
+                        .filter(Boolean)
+                        .map((resp, i) => <li key={i}>{resp}</li>)
+                    ) : (
+                      <>
+                        <li>Develop and maintain web applications using modern technologies.</li>
+                        <li>Collaborate with cross-functional teams to define, design, and ship new features.</li>
+                        <li>Write clean, maintainable, and well-documented code.</li>
+                      </>
+                    )}
+                  </ul>
+                </section>
+
+                {/* Required Skills */}
+                <section className="review-card">
+                  <h3 className="review-card-title">Required Skills</h3>
+                  <div className="review-skills-chips-row">
+                    {parseTags(reviewingJob.required_skills).length > 0 ? (
+                      parseTags(reviewingJob.required_skills).map((skill) => (
+                        <span className="review-skill-chip" key={skill}>
+                          {skill}
+                        </span>
+                      ))
+                    ) : (
+                      <>
+                        <span className="review-skill-chip">JavaScript</span>
+                        <span className="review-skill-chip">React</span>
+                        <span className="review-skill-chip">Node.js</span>
+                      </>
+                    )}
+                  </div>
+                </section>
+
+                {/* Qualifications */}
+                <section className="review-card">
+                  <h3 className="review-card-title">Qualifications</h3>
+                  <p className="review-card-paragraph">
+                    {reviewingJob.qualifications ||
+                      "Bachelor's degree in Computer Science, Information Technology, or a related field. At least 3 years of experience in web development. Strong problem-solving skills and a passion for building high-quality software."}
+                  </p>
+                </section>
+
+                {/* Benefits */}
+                <section className="review-card">
+                  <h3 className="review-card-title">Benefits</h3>
+                  <p className="review-card-paragraph">
+                    {(reviewingJob as any).benefits ||
+                      "Competitive salary, health insurance, paid time off, flexible work arrangements, professional development opportunities, and a supportive and collaborative work environment."}
+                  </p>
+                </section>
+              </div>
+
+              {/* Right Column: Posting Details Sidebar */}
+              <div className="review-job-side-col">
+                <div className="review-card posting-details-card">
+                  <h3 className="review-card-title">Posting Details</h3>
+                  <div className="review-details-table">
+                    <div className="review-detail-row">
+                      <span className="review-detail-label">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                        </svg>
+                        Employment Type
+                      </span>
+                      <span className="review-detail-value">{(reviewingJob as any).employment_type || "Full-time"}</span>
+                    </div>
+
+                    <div className="review-detail-row">
+                      <span className="review-detail-label">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                          <polyline points="9 22 9 12 15 12 15 22" />
+                        </svg>
+                        Work Arrangement
+                      </span>
+                      <span className="review-detail-value">{reviewingJob.work_arrangement || "Hybrid"}</span>
+                    </div>
+
+                    <div className="review-detail-row">
+                      <span className="review-detail-label">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M12 22s7-6 7-12a7 7 0 1 0-14 0c0 6 7 12 7 12Zm0-9a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z" />
+                        </svg>
+                        Location
+                      </span>
+                      <span className="review-detail-value">{cleanBranchLocation(reviewingJob.location) || "Naga, Camarines Sur"}</span>
+                    </div>
+
+                    <div className="review-detail-row">
+                      <span className="review-detail-label">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                          <line x1="18" y1="20" x2="18" y2="10" />
+                          <line x1="12" y1="20" x2="12" y2="4" />
+                          <line x1="6" y1="20" x2="6" y2="14" />
+                        </svg>
+                        Experience
+                      </span>
+                      <span className="review-detail-value">{reviewingJob.experience_level || "Mid-Level"}</span>
+                    </div>
+
+                    <div className="review-detail-row">
+                      <span className="review-detail-label">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="2" y="6" width="20" height="12" rx="2" />
+                          <circle cx="12" cy="12" r="2" />
+                          <path d="M6 12h.01M18 12h.01" />
+                        </svg>
+                        Salary
+                      </span>
+                      <span className="review-detail-value">
+                        {reviewingJob.hide_salary
+                          ? "Confidential"
+                          : reviewingJob.salary_min && reviewingJob.salary_max
+                          ? `PHP ${formatSalary(reviewingJob.salary_min)}–${formatSalary(reviewingJob.salary_max)}`
+                          : "PHP 35,000–50,000"}
+                      </span>
+                    </div>
+
+                    <div className="review-detail-row">
+                      <span className="review-detail-label">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                          <line x1="16" y1="2" x2="16" y2="6" />
+                          <line x1="8" y1="2" x2="8" y2="6" />
+                          <line x1="3" y1="10" x2="21" y2="10" />
+                        </svg>
+                        Application deadline
+                      </span>
+                      <span className="review-detail-value">{reviewingJob.close_date || "Nov 15, 2026"}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Bar matching screenshot */}
+            <div className="review-job-footer-bar">
+              <span>Viewing 1 selected job post.</span>
+              <button type="button" className="review-return-link" onClick={handleCloseReview}>
+                ← Return to All Job Posts
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <section className="joblist-head">
           <div>
             <h1>All Job Posts</h1>
             <p>
@@ -573,7 +846,7 @@ export default function EmployerJobPostsList() {
                     </div>
                     <div className="job-card-actions-col">
                       <div className="job-actions">
-                        <button type="button" onClick={() => { window.location.href = `/employer-applicant-management?jobId=${job.id}`; }}>Review</button>
+                        <button type="button" onClick={() => handleOpenReview(job)}>Review</button>
                         <a className="job-action-link" href={`/employer-job-posts/create?edit=${job.id}`}>Edit</a>
                         <div className="job-actions-dropdown">
                           <button
@@ -707,6 +980,49 @@ export default function EmployerJobPostsList() {
             >
               Next &rarr;
             </button>
+          </div>
+        )}
+          </>
+        )}
+
+        {/* PREVIEW PUBLIC LISTING MODAL */}
+        {isListingPreviewOpen && reviewingJob && (
+          <div className="review-preview-modal-backdrop" onClick={() => setIsListingPreviewOpen(false)}>
+            <div className="review-preview-modal-card" onClick={(e) => e.stopPropagation()}>
+              <div className="review-preview-modal-head">
+                <div>
+                  <span className="review-preview-tag">Candidate View Preview</span>
+                  <h2>{reviewingJob.title}</h2>
+                  <p>{companyLabel || "Doe's Store"} • {cleanBranchLocation(reviewingJob.location) || "Cavite, Philippines"}</p>
+                </div>
+                <button type="button" className="review-modal-close-btn" onClick={() => setIsListingPreviewOpen(false)}>✕</button>
+              </div>
+              <div className="review-preview-modal-body">
+                <div className="review-preview-pills">
+                  <span>💼 {reviewingJob.work_arrangement || "Hybrid"}</span>
+                  <span>📶 {reviewingJob.experience_level || "Mid-Level"}</span>
+                  <span>💵 {reviewingJob.hide_salary ? "Salary Confidential" : `PHP ${formatSalary(reviewingJob.salary_min)} - ${formatSalary(reviewingJob.salary_max)}`}</span>
+                </div>
+                <hr style={{ border: "none", borderTop: "1px solid #e2e8f0", margin: "14px 0" }} />
+                <h4>Description</h4>
+                <p style={{ lineHeight: 1.6, color: "#334155" }}>{reviewingJob.description || "No description provided."}</p>
+                {reviewingJob.required_skills && (
+                  <>
+                    <h4 style={{ marginTop: "14px" }}>Skills</h4>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "6px" }}>
+                      {parseTags(reviewingJob.required_skills).map((s) => (
+                        <span key={s} style={{ background: "#e0f2fe", color: "#0369a1", padding: "4px 10px", borderRadius: "6px", fontSize: "0.82rem", fontWeight: 600 }}>{s}</span>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="review-preview-modal-footer">
+                <button type="button" className="review-modal-primary-btn" onClick={() => setIsListingPreviewOpen(false)}>
+                  Close Preview
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

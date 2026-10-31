@@ -1620,5 +1620,28 @@
   color: #e2e8f0;
 }
 
+/* ── Dark theme isolation for brand assets & details ── */
+[data-theme="dark"] .company-card.company-section {
+  background: #1c1e27 !important;
+  border-color: #2e3244 !important;
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .company-card.company-section label {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .company-card.company-section small {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .company-card.company-section input,
+[data-theme="dark"] .company-card.company-section select {
+  background: #14151b !important;
+  border-color: #2e3244 !important;
+  color: #f1f5f9 !important;
+}
+
+
 
 
