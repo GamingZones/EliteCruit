@@ -7540,7 +7540,7 @@ app.patch("/api/interviews/:id/status", async (req, res) => {
     const isApplicantUpdating = updaterId === existing.applicant_user_id;
     const recipientUserId = isApplicantUpdating ? existing.employer_user_id : existing.applicant_user_id;
 
-    if (recipientUserId && recipientUserId < 100) {
+    if (recipientUserId && recipientUserId > 0) {
       let notifTitle = `Interview Update: ${existing.interview_title}`;
       let notifBody = `The interview scheduled for ${existing.interview_date} at ${existing.start_time} has been updated to "${targetStatus}".`;
 

@@ -34,6 +34,19 @@ export function usePendingInvitationsCount(): number {
             setPendingCount(pending);
           }
         } else {
+          try {
+            const localInvRaw = localStorage.getItem("elitecruit_applicant_invitations");
+            if (localInvRaw) {
+              const list = JSON.parse(localInvRaw);
+              if (Array.isArray(list) && isMounted) {
+                const pending = list.filter(
+                  (inv: any) => (inv.status || "pending").toLowerCase() === "pending"
+                ).length;
+                setPendingCount(pending);
+                return;
+              }
+            }
+          } catch {}
           if (isMounted) setPendingCount(0);
         }
       } catch {

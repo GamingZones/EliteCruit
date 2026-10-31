@@ -327,9 +327,13 @@ function parseBreakdownSkillItems(raw?: string | null, fallbackTags: string[] = 
 function parseBreakdownCertItems(raw?: string | null, fallbackTags: string[] = []): Record<string, BreakdownCertItem[]> {
   const items: BreakdownCertItem[] = [];
 
-  const parseToken = (token: string): BreakdownCertItem => {
+  const parseToken = (token: string): BreakdownCertItem | null => {
+    if (!token || !token.trim()) return null;
+    const trimmed = token.trim();
+    if (trimmed === "[]" || trimmed === "()" || trimmed === "null" || trimmed === '""') return null;
+
     let category = "General";
-    const catMatch = token.match(/\[([^\[\]]+)\]/);
+    const catMatch = trimmed.match(/\[([^\[\]]+)\]/);
     if (catMatch && catMatch[1].trim()) {
       category = catMatch[1].trim();
     }
@@ -337,7 +341,7 @@ function parseBreakdownCertItems(raw?: string | null, fallbackTags: string[] = [
     let acquiredYear = "2010";
     let expiry = "2026";
 
-    const lastParen = token.match(/\(([^()]+)\)$/);
+    const lastParen = trimmed.match(/\(([^()]+)\)$/);
     if (lastParen) {
       const inside = lastParen[1].trim();
       const acqMatch = inside.match(/Acquired\s*([0-9]{4})/i);
@@ -350,56 +354,66 @@ function parseBreakdownCertItems(raw?: string | null, fallbackTags: string[] = [
       }
     }
 
-    let cleanName = token.replace(/\s*\[[^\[\]]*\]/g, "").replace(/\s*\([^()]*\)$/, "").trim();
+    let cleanName = trimmed.replace(/\s*\[[^\[\]]*\]/g, "").replace(/\s*\([^()]*\)$/, "").trim();
     const openCount = (cleanName.match(/\(/g) || []).length;
     const closeCount = (cleanName.match(/\)/g) || []).length;
     if (openCount > closeCount) cleanName = cleanName + ")".repeat(openCount - closeCount);
     else if (closeCount > openCount) cleanName = cleanName.replace(/\)+$/, "");
 
+    cleanName = cleanName.trim();
+    if (!cleanName || cleanName === "[]" || cleanName === "()") return null;
+
     return {
-      name: cleanName || token.trim(),
+      name: cleanName,
       category,
       acquiredYear,
       expiry,
     };
   };
 
-  if (raw && raw.trim()) {
+  if (raw && raw.trim() && raw.trim() !== "[]" && raw.trim() !== "{}") {
+    let wasJsonArray = false;
     try {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
+        wasJsonArray = true;
         parsed.forEach((p) => {
-          if (typeof p === "object" && p !== null && p.name) {
+          if (typeof p === "object" && p !== null && p.name && String(p.name).trim() && String(p.name).trim() !== "[]") {
             items.push({
               name: String(p.name).trim(),
               category: p.category || "General",
               acquiredYear: p.acquiredYear || p.acquired || "2010",
               expiry: p.expiry || p.years || "2026",
             });
-          } else if (p) {
-            items.push(parseToken(String(p)));
+          } else if (p && typeof p === "string" && p.trim() && p.trim() !== "[]") {
+            const parsedTok = parseToken(p);
+            if (parsedTok) items.push(parsedTok);
           }
         });
       }
     } catch {}
 
-    if (items.length === 0) {
+    if (!wasJsonArray && items.length === 0) {
       const rawTokens = raw.includes(")")
         ? raw.split(/(?<=\))\s*,\s*/)
         : raw.split(/[\n,;•|]+/);
       rawTokens.forEach((tok) => {
-        if (tok.trim()) items.push(parseToken(tok));
+        const parsedTok = parseToken(tok);
+        if (parsedTok) items.push(parsedTok);
       });
     }
   }
 
   if (items.length === 0 && fallbackTags.length > 0) {
-    fallbackTags.forEach((tok) => items.push(parseToken(tok)));
+    fallbackTags.forEach((tok) => {
+      const parsedTok = parseToken(tok);
+      if (parsedTok) items.push(parsedTok);
+    });
   }
 
   const grouped: Record<string, BreakdownCertItem[]> = {};
   items.forEach((item) => {
-    if (!item.name) return;
+    if (!item || !item.name || item.name === "[]") return;
     const cat = item.category && item.category.trim() ? item.category.trim() : "General";
     if (!grouped[cat]) grouped[cat] = [];
     if (!grouped[cat].some((existing) => existing.name.toLowerCase() === item.name.toLowerCase())) {
@@ -1467,20 +1481,30 @@ export default function JobSearch() {
           selectedKeyword
         );
 
-      const byRole =
-        selectedRole === "All roles" ||
-        job.title.toLowerCase().includes(selectedRole.toLowerCase()) ||
-        selectedRole.toLowerCase().includes(job.title.toLowerCase()) ||
-        matchesJobWithTaxonomy(
-          {
-            title: job.title,
-            description: `${job.summary} ${job.responsibilities}`,
-            qualifications: job.qualifications,
-            required_skills: [job.skillTags.join(", "), job.badges.join(", ")].join(", "),
-            badges: job.badges,
-          },
-          selectedRole
+      const byRole = (() => {
+        if (selectedRole === "All roles") return true;
+        const roleLower = selectedRole.toLowerCase();
+        const titleLower = job.title.toLowerCase();
+        if (titleLower.includes(roleLower) || roleLower.includes(titleLower)) return true;
+
+        // Check against known role aliases
+        const relatedRoles = getRelatedJobRolesForKeyword(selectedRole);
+        if (
+          relatedRoles.some(
+            (r) =>
+              titleLower.includes(r.title.toLowerCase()) ||
+              r.aliases.some((a) => titleLower.includes(a.toLowerCase()))
+          )
+        ) {
+          return true;
+        }
+
+        // Direct matching on job skill tags or badges
+        return (
+          job.skillTags.some((st) => isSkillMatch(selectedRole, st)) ||
+          job.badges.some((b) => isSkillMatch(selectedRole, b))
         );
+      })();
 
       const byProvince =
         selectedProvince === "All provinces" ||

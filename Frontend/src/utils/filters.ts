@@ -770,7 +770,7 @@ export const CERTIFICATION_CATEGORIES_MAP: Record<string, string[]> = {
 export const CERTIFICATION_CATEGORIES = Object.keys(CERTIFICATION_CATEGORIES_MAP);
 
 export const SKILLS_COURSE_TAXONOMY_MAP: Record<string, string[]> = {
-  "BS Information Technology": [
+  "Web & Software Development": [
     "Web Development",
     "Frontend Development",
     "React",
@@ -799,7 +799,7 @@ export const SKILLS_COURSE_TAXONOMY_MAP: Record<string, string[]> = {
     "Adobe XD",
     "Technical Support & Helpdesk Operations",
   ],
-  "BS Computer Science": [
+  "Programming & Algorithms": [
     "Data Structures and Algorithms",
     "Software Architecture & Design Patterns",
     "Quality Assurance & Software Testing - QA",
@@ -1937,7 +1937,7 @@ export function matchesJobWithTaxonomy(
     ...(job.badges || []),
   ].join(" ").toLowerCase();
 
-  if (textHaystack.includes(q)) return true;
+  if (q.length <= 3 ? new RegExp(`\\b${q}\\b`, "i").test(textHaystack) : textHaystack.includes(q)) return true;
 
   // 2. Keyword-to-Role Expansion:
   const rolesMatchingQuery = getRelatedJobRolesForKeyword(q);
@@ -1951,10 +1951,21 @@ export function matchesJobWithTaxonomy(
     }
   }
 
-  // 3. Role-to-Keyword Expansion:
+  // 3. Role-to-Keyword Expansion (match against title, required skills, and badges with word boundary safety):
   const roleKeywords = getKeywordsForJobRole(q);
   if (roleKeywords.length > 0) {
-    const hasAnyKeyword = roleKeywords.some((kw) => textHaystack.includes(kw.toLowerCase()));
+    const skillsHaystack = [
+      job.title,
+      job.required_skills || "",
+      ...(job.badges || []),
+    ].join(" ").toLowerCase();
+    const hasAnyKeyword = roleKeywords.some((kw) => {
+      const kwLower = kw.toLowerCase();
+      if (kwLower.length <= 4) {
+        return new RegExp(`\\b${kwLower.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&")}\\b`, "i").test(skillsHaystack);
+      }
+      return skillsHaystack.includes(kwLower);
+    });
     if (hasAnyKeyword) return true;
   }
 
@@ -2610,6 +2621,21 @@ function toNormalizedSlug(text: string): string {
 export function isSkillMatch(itemA: string, itemB: string): boolean {
   if (!itemA || !itemB) return false;
 
+  const normA = normalizeCompetencyText(itemA);
+  const normB = normalizeCompetencyText(itemB);
+  if (!normA || !normB) return false;
+
+  // Strict guard: Never match non-IT High School TVL strands (e.g. Home Economics, Agri-Fishery)
+  // against College/Tertiary degrees or Computer Science/IT qualifications
+  const isHighSchoolTvlNonIT = (text: string) =>
+    /\b(home economics|agri-fishery|industrial arts)\b/i.test(text);
+  const isCollegeDegreeOrITReq = (text: string) =>
+    /\b(computer science|information technology|bachelor|bscs|bsit|bsce|degree|college)\b/i.test(text);
+
+  if ((isHighSchoolTvlNonIT(normA) && isCollegeDegreeOrITReq(normB)) || (isHighSchoolTvlNonIT(normB) && isCollegeDegreeOrITReq(normA))) {
+    return false;
+  }
+
   // Direct raw equality
   const rawCleanA = itemA.toLowerCase().replace(/\s*\(.*?\)/g, "").trim();
   const rawCleanB = itemB.toLowerCase().replace(/\s*\(.*?\)/g, "").trim();
@@ -2617,15 +2643,11 @@ export function isSkillMatch(itemA: string, itemB: string): boolean {
     return true;
   }
 
-  const normA = normalizeCompetencyText(itemA);
-  const normB = normalizeCompetencyText(itemB);
-  if (!normA || !normB) return false;
-
   const slugA = toNormalizedSlug(normA);
   const slugB = toNormalizedSlug(normB);
 
   // 1. Direct equality or substring match on normalized slugs
-  if (slugA === slugB || (slugA.length >= 3 && slugB.includes(slugA)) || (slugB.length >= 3 && slugA.includes(slugB))) {
+  if (slugA === slugB || (slugA.length >= 4 && slugB.includes(slugA)) || (slugB.length >= 4 && slugA.includes(slugB))) {
     return true;
   }
 
@@ -2650,7 +2672,7 @@ export function isSkillMatch(itemA: string, itemB: string): boolean {
 
   for (const tA of tokensA) {
     for (const tB of tokensB) {
-      if (tA === tB || (tA.length >= 3 && tB.includes(tA)) || (tB.length >= 3 && tA.includes(tB))) {
+      if (tA === tB || (tA.length >= 4 && tB.includes(tA)) || (tB.length >= 4 && tA.includes(tB))) {
         return true;
       }
     }
@@ -2661,8 +2683,20 @@ export function isSkillMatch(itemA: string, itemB: string): boolean {
     const isCategoryA = slugA === category || slugA.includes(category) || category.includes(slugA) || tokensA.some((t) => t === category || category.includes(t));
     const isCategoryB = slugB === category || slugB.includes(category) || category.includes(slugB) || tokensB.some((t) => t === category || category.includes(t));
 
-    const matchesKeywordA = keywords.some((kw) => slugA === kw || slugA.includes(kw) || kw.includes(slugA) || tokensA.some((t) => t === kw || kw.includes(t)));
-    const matchesKeywordB = keywords.some((kw) => slugB === kw || slugB.includes(kw) || kw.includes(slugB) || tokensB.some((t) => t === kw || kw.includes(t)));
+    const matchesKeywordA = keywords.some((kw) => {
+      const kwLower = kw.toLowerCase();
+      if (kwLower.length <= 3) {
+        return slugA === kwLower || tokensA.includes(kwLower) || new RegExp(`\\b${kwLower}\\b`, "i").test(slugA);
+      }
+      return slugA === kwLower || slugA.includes(kwLower) || kwLower.includes(slugA) || tokensA.some((t) => t === kwLower || (t.length >= 4 && kwLower.includes(t)) || (kwLower.length >= 4 && t.includes(kwLower)));
+    });
+    const matchesKeywordB = keywords.some((kw) => {
+      const kwLower = kw.toLowerCase();
+      if (kwLower.length <= 3) {
+        return slugB === kwLower || tokensB.includes(kwLower) || new RegExp(`\\b${kwLower}\\b`, "i").test(slugB);
+      }
+      return slugB === kwLower || slugB.includes(kwLower) || kwLower.includes(slugB) || tokensB.some((t) => t === kwLower || (t.length >= 4 && kwLower.includes(t)) || (kwLower.length >= 4 && t.includes(kwLower)));
+    });
 
     // Case A: Item A is the broad category (e.g. "Web Development") and Item B is a subcategory (e.g. "HTML")
     if (isCategoryA && matchesKeywordB) return true;

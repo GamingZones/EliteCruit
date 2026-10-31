@@ -1751,7 +1751,7 @@ export default function EmployerApplicantFinder() {
   };
 
   const openCandidateRecruit = (cand: Candidate) => {
-    openInviteCandidate(cand, typeof selectedJobId === "number" ? selectedJobId : undefined);
+    openInviteModal(cand, typeof selectedJobId === "number" ? selectedJobId : undefined);
   };
 
   const handleSendCandidateMessage = async (e?: React.FormEvent) => {
@@ -2244,6 +2244,12 @@ export default function EmployerApplicantFinder() {
 
   const filteredCandidates = useMemo(() => {
     const list = candidates.filter((cand) => {
+      // Exclude candidates already approved or recruited by this employer
+      const candStatus = (cand.application_status || cand.latest_application_status || (cand as any).status || "").toLowerCase();
+      if (candStatus === "approved" || candStatus === "recruited" || candStatus === "hired") {
+        return false;
+      }
+
       // In Nearby Finder mode, only show applicants who have Nearby Employer Discovery ACTIVE
       if (searchMode === "nearby") {
         const isNearbyDiscoveryActive = Boolean(
@@ -3560,6 +3566,34 @@ export default function EmployerApplicantFinder() {
                     const isInvited = invitedCandidateIds.includes(cand.user_id) || Number(cand.invited_count || 0) > 0;
                     const hasApplied = (cand.applied_count ?? 0) > 0;
 
+                    const currentActiveJob = (selectedJobId && activeJobs.find((j) => j.id === selectedJobId)) || activeJobs[0] || null;
+                    const matchPercent = (() => {
+                      if (currentActiveJob) {
+                        return calculateCandidateMatch(
+                          {
+                            desired_job_title: cand.desired_job_title || "",
+                            work_arrangement: cand.work_arrangement || "",
+                            expected_salary: cand.expected_salary || 0,
+                            skills: cand.skills || "",
+                            qualifications: cand.qualifications || "",
+                            certifications: cand.certifications || "",
+                            city: cand.city || cand.address || "",
+                          },
+                          currentActiveJob
+                        );
+                      }
+                      let score = 75;
+                      if (cand.profile_picture_path) score += 5;
+                      if (cand.resume_path) score += 5;
+                      if (cand.rating) score += Math.round(Number(cand.rating) * 2);
+                      const qL = parseItemList(cand.qualifications, []);
+                      if (qL.length > 0) score += 5;
+                      const sL = parseItemList(cand.skills, []);
+                      if (sL.length >= 3) score += 5;
+                      return Math.min(99, Math.max(60, score));
+                    })();
+                    const matchClass = matchPercent >= 85 ? "high" : matchPercent >= 70 ? "med" : "low";
+
                     return (
                       <article key={cand.user_id} className="finder-card">
                         <div className="finder-card-main">
@@ -3585,6 +3619,9 @@ export default function EmployerApplicantFinder() {
                                   <h3 className="finder-candidate-name">{cand.applicant_name}</h3>
                                   <span className="finder-star-pill">
                                     <span className="star-icon">★</span> {cand.rating ? Number(cand.rating).toFixed(1) : "0.0"}
+                                  </span>
+                                  <span className={`finder-match-pill ${matchClass}`}>
+                                    {matchPercent}% Match
                                   </span>
                                 </div>
                                 <div className="finder-candidate-meta-inline">
@@ -3998,13 +4035,33 @@ export default function EmployerApplicantFinder() {
                               Details
                             </button>
 
-                            <button
-                              type="button"
-                              className="finder-card-btn btn-invite"
-                              onClick={() => openCandidateRecruit(cand)}
-                            >
-                              Recruit
-                            </button>
+                            {invitedCandidateIds.includes(cand.user_id) || cand.invitation_status === "accepted" || cand.application_status === "recruited" || cand.invitation_status === "recruited" ? (
+                              <button
+                                type="button"
+                                className="finder-card-btn btn-invite"
+                                disabled
+                                style={{ background: "#e2e8f0", color: "#64748b", border: "1px solid #cbd5e1", cursor: "not-allowed" }}
+                              >
+                                ✓ Recruited
+                              </button>
+                            ) : cand.invitation_status === "pending" ? (
+                              <button
+                                type="button"
+                                className="finder-card-btn btn-invite"
+                                disabled
+                                style={{ background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a", cursor: "not-allowed" }}
+                              >
+                                Invitation Sent
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="finder-card-btn btn-invite"
+                                onClick={() => openCandidateRecruit(cand)}
+                              >
+                                Recruit
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>

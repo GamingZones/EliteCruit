@@ -27,10 +27,21 @@ export function usePendingApplicationsCount(): number {
         if (res.ok) {
           const data = await res.json();
           if (isMounted) {
-            const pending = Number(data?.stats?.pending || 0);
+            const pending = Number(data?.stats?.pending ?? (Array.isArray(data?.applications) ? data.applications.filter((a: any) => !["denied", "rejected"].includes((a.status || "").toLowerCase())).length : (data?.stats?.total || 0)));
             setPendingCount(pending);
           }
         } else {
+          try {
+            const localAppsRaw = localStorage.getItem("elitecruit_employer_applications");
+            if (localAppsRaw) {
+              const localApps = JSON.parse(localAppsRaw);
+              if (Array.isArray(localApps) && isMounted) {
+                const count = localApps.filter((a: any) => !["denied", "rejected"].includes((a.status || "").toLowerCase())).length;
+                setPendingCount(count);
+                return;
+              }
+            }
+          } catch {}
           if (isMounted) setPendingCount(0);
         }
       } catch {

@@ -365,9 +365,22 @@ export default function CalendarDrawer({
       loadInterviewsFromApi();
     };
 
+    const handleScheduleCandidateEvent = (e: Event) => {
+      const customDetail = (e as CustomEvent)?.detail;
+      setInternalOpen(true);
+      setActiveTab("schedule");
+      if (customDetail?.candidateUserId) {
+        setSelectedCandidateUserIds([Number(customDetail.candidateUserId)]);
+      }
+    };
+
     window.addEventListener("elitecruit-interviews-updated", handleSync);
+    window.addEventListener("elitecruit-schedule-candidate", handleScheduleCandidateEvent);
+    window.addEventListener("elitecruit-open-calendar", handleScheduleCandidateEvent);
     return () => {
       window.removeEventListener("elitecruit-interviews-updated", handleSync);
+      window.removeEventListener("elitecruit-schedule-candidate", handleScheduleCandidateEvent);
+      window.removeEventListener("elitecruit-open-calendar", handleScheduleCandidateEvent);
     };
   }, [currentUserId, currentRole]);
 
@@ -486,7 +499,10 @@ export default function CalendarDrawer({
 
   const handleConfirmCancelInterview = () => {
     if (!interviewToCancel) return;
-    handleUpdateStatus(interviewToCancel.id, "cancelled");
+    const reasonText = cancelReason
+      ? `${cancelReason}${cancelMessage ? `: ${cancelMessage}` : ""}`
+      : (cancelMessage || "Interviewer unavailable");
+    handleUpdateStatus(interviewToCancel.id, "cancelled", reasonText);
     setInterviewToCancel(null);
   };
 
@@ -762,7 +778,7 @@ export default function CalendarDrawer({
   };
 
   // Update interview status (Accept, Decline, Complete, Cancel - client-side state + database sync)
-  const handleUpdateStatus = (interviewId: number, newStatus: string) => {
+  const handleUpdateStatus = (interviewId: number, newStatus: string, cancellationReason?: string) => {
     setInterviews((prev) => {
       const updated = prev.map((item) =>
         item.id === interviewId ? { ...item, status: newStatus } : item
@@ -777,7 +793,11 @@ export default function CalendarDrawer({
       fetch(`/api/interviews/${interviewId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus, updated_by_user_id: currentUserId }),
+        body: JSON.stringify({
+          status: newStatus,
+          updated_by_user_id: currentUserId,
+          cancellation_reason: cancellationReason,
+        }),
       }).catch(() => {});
     } catch {}
   };

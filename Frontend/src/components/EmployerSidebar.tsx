@@ -68,10 +68,28 @@ export default function EmployerSidebar({
 
   return (
     <aside className="appdash-sidebar" aria-label="Employer Navigation">
-      <a href="/employer-dashboard" className="appdash-brand">
-        <strong>EliteCruit</strong>
-        <span>Employer Workspace</span>
-      </a>
+      <div className="appdash-brand">
+        <a href="/employer-dashboard" className="appdash-brand-link">
+          <strong>EliteCruit</strong>
+          <span>Employer Workspace</span>
+        </a>
+        <button
+          type="button"
+          className="appdash-sidebar-toggle"
+          aria-label="Close sidebar menu"
+          onClick={() => {
+            const page = document.querySelector('.appdash-page, .employer-page, .employer-dashboard-page, .messages-page, .settings-page-shell');
+            if (page) {
+              page.classList.remove('sidebar-visible');
+              page.classList.add('sidebar-hidden');
+            }
+          }}
+        >
+          <svg viewBox="0 0 24 24" style={{ width: 18, height: 18, fill: "none", stroke: "currentColor", strokeWidth: 2.2, strokeLinecap: "round", strokeLinejoin: "round" }} aria-hidden="true">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
 
       <div className="employer-links-wrap">
         <ul className="appdash-secondary-list">

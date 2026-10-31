@@ -971,27 +971,49 @@ function EduSchoolCardEditor({
   };
 
   const handleUpdateStart = async (indexToUpdate: number, newStart: string) => {
+    const item = levelItems[indexToUpdate];
+    if (item) {
+      const sNum = parseInt(newStart, 10);
+      const eNum = parseInt(item.endYear, 10);
+      if (!isNaN(sNum) && !isNaN(eNum) && sNum > eNum) {
+        setYearError("Start year cannot be later than end year.");
+        return;
+      }
+    }
+    setYearError("");
+
     const updatedLevelItems = levelItems.map((it, idx) =>
       idx === indexToUpdate ? { ...it, startYear: newStart } : it
     );
     const combined = [...otherLevelItems, ...updatedLevelItems];
     const formatted = combined.map((it) =>
       it.school
-        ? `${it.name} @ ${it.school} (${it.startYear} - ${it.endYear}) [${it.level === "shs" ? "SHS" : "College"}]`
-        : `${it.name} (${it.startYear} - ${it.endYear}) [${it.level === "shs" ? "SHS" : "College"}]`
+        ? `${it.name} @ ${it.school} (${it.startYear} - ${it.endYear}) [${it.level === "graduate" ? "Graduate" : it.level === "shs" ? "SHS" : "College"}]`
+        : `${it.name} (${it.startYear} - ${it.endYear}) [${it.level === "graduate" ? "Graduate" : it.level === "shs" ? "SHS" : "College"}]`
     );
     await onSaveAll(formatted);
   };
 
   const handleUpdateEnd = async (indexToUpdate: number, newEnd: string) => {
+    const item = levelItems[indexToUpdate];
+    if (item) {
+      const sNum = parseInt(item.startYear, 10);
+      const eNum = parseInt(newEnd, 10);
+      if (!isNaN(sNum) && !isNaN(eNum) && eNum < sNum) {
+        setYearError("End year cannot be earlier than start year.");
+        return;
+      }
+    }
+    setYearError("");
+
     const updatedLevelItems = levelItems.map((it, idx) =>
       idx === indexToUpdate ? { ...it, endYear: newEnd } : it
     );
     const combined = [...otherLevelItems, ...updatedLevelItems];
     const formatted = combined.map((it) =>
       it.school
-        ? `${it.name} @ ${it.school} (${it.startYear} - ${it.endYear}) [${it.level === "shs" ? "SHS" : "College"}]`
-        : `${it.name} (${it.startYear} - ${it.endYear}) [${it.level === "shs" ? "SHS" : "College"}]`
+        ? `${it.name} @ ${it.school} (${it.startYear} - ${it.endYear}) [${it.level === "graduate" ? "Graduate" : it.level === "shs" ? "SHS" : "College"}]`
+        : `${it.name} (${it.startYear} - ${it.endYear}) [${it.level === "graduate" ? "Graduate" : it.level === "shs" ? "SHS" : "College"}]`
     );
     await onSaveAll(formatted);
   };
@@ -1117,6 +1139,11 @@ function EduSchoolCardEditor({
           + Add
         </button>
       </div>
+      {yearError && (
+        <div style={{ color: "#dc2626", fontSize: "0.82rem", fontWeight: 600, marginTop: "6px", padding: "0 4px" }}>
+          ⚠ {yearError}
+        </div>
+      )}
     </article>
   );
 }
@@ -1212,7 +1239,9 @@ function CourseSkillsEditor({
   const groupedSkills = useMemo(() => {
     const groups: { [cat: string]: { item: CourseSkillItem; originalIndex: number }[] } = {};
     items.forEach((item, originalIndex) => {
-      const cat = item.course && item.course.trim() ? item.course.trim() : "General IT";
+      let cat = item.course && item.course.trim() ? item.course.trim() : "General IT";
+      if (cat === "BS Information Technology") cat = "Web & Software Development";
+      if (cat === "BS Computer Science") cat = "Programming & Algorithms";
       if (!groups[cat]) {
         groups[cat] = [];
       }
@@ -2580,6 +2609,30 @@ export default function ApplicantProfile() {
   const [expEndYear, setExpEndYear] = useState("");
   const [expSkills, setExpSkills] = useState<string[]>([]);
   const [expSkillInput, setExpSkillInput] = useState("");
+
+  const expDateError = useMemo(() => {
+    if (expIsCurrent) return "";
+    if (!expEndYear) return "";
+    const sYear = parseInt(expStartYear, 10);
+    const eYear = parseInt(expEndYear, 10);
+    if (!isNaN(sYear) && !isNaN(eYear)) {
+      if (eYear < sYear) {
+        return "End date cannot be earlier than start date.";
+      }
+      if (eYear === sYear && expStartMonth && expEndMonth) {
+        const MONTH_ORDER = [
+          "January", "February", "March", "April", "May", "June",
+          "July", "August", "September", "October", "November", "December"
+        ];
+        const sMonth = MONTH_ORDER.indexOf(expStartMonth);
+        const eMonth = MONTH_ORDER.indexOf(expEndMonth);
+        if (sMonth !== -1 && eMonth !== -1 && eMonth < sMonth) {
+          return "End date cannot be earlier than start date.";
+        }
+      }
+    }
+    return "";
+  }, [expIsCurrent, expStartYear, expStartMonth, expEndYear, expEndMonth]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const profilePhotoInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingResume, setIsUploadingResume] = useState(false);
@@ -3016,6 +3069,11 @@ export default function ApplicantProfile() {
   const handleSaveWorkExperienceEntry = async () => {
     if (!expTitle.trim() || !expCompany.trim()) {
       setProfileMessage("Job title and company name are required.");
+      return;
+    }
+
+    if (expDateError) {
+      setProfileMessage(expDateError);
       return;
     }
 
@@ -4315,25 +4373,98 @@ export default function ApplicantProfile() {
                 )}
 
                 <div className="fields-grid">
-                  <label className="profile-field">
-                    <span>Job / Target Role</span>
-                    <select
-                      value={visibleProfile.desired_job_title || ""}
-                      disabled={!isEditing}
-                      onChange={(event) => updateDraft("desired_job_title", event.target.value)}
-                    >
-                      <option value="">Select desired job role</option>
-                      {Object.entries(CATEGORIZED_JOB_ROLES).map(([category, roles]) => (
-                        <optgroup key={category} label={category}>
-                          {roles.map((title) => (
-                            <option key={title} value={title}>
-                              {title}
-                            </option>
-                          ))}
-                        </optgroup>
-                      ))}
-                    </select>
-                  </label>
+                  <div className="profile-field" style={{ gridColumn: "1 / -1" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                      <span>Target Roles & Job Specializations</span>
+                      <small style={{ color: "#64748b", fontSize: "0.8rem" }}>Select one or more job roles across industries</small>
+                    </div>
+
+                    <div className="target-roles-pill-container" style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "8px", minHeight: "36px", padding: "6px", background: "var(--field-bg, #f8fafc)", border: "1px solid #cbd5e1", borderRadius: "8px" }}>
+                      {(() => {
+                        const currentRoles = (visibleProfile.desired_job_title || "")
+                          .split(",")
+                          .map((r) => r.trim())
+                          .filter(Boolean);
+                        if (currentRoles.length === 0) {
+                          return (
+                            <span style={{ fontSize: "0.84rem", color: "#94a3b8", padding: "4px 8px" }}>
+                              No target roles selected yet. Add roles from the categorized dropdown below.
+                            </span>
+                          );
+                        }
+                        return currentRoles.map((role) => (
+                          <span
+                            key={role}
+                            className="target-role-pill"
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              padding: "4px 10px",
+                              background: "#00385e",
+                              color: "#ffffff",
+                              borderRadius: "16px",
+                              fontSize: "0.82rem",
+                              fontWeight: 600,
+                            }}
+                          >
+                            <span>{role}</span>
+                            {isEditing && (
+                              <button
+                                type="button"
+                                style={{
+                                  background: "none",
+                                  border: "none",
+                                  color: "#ffffff",
+                                  cursor: "pointer",
+                                  padding: 0,
+                                  fontSize: "0.85rem",
+                                  lineHeight: 1,
+                                }}
+                                onClick={() => {
+                                  const updated = currentRoles.filter((r) => r !== role);
+                                  updateDraft("desired_job_title", updated.join(", "));
+                                }}
+                                title={`Remove ${role}`}
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </span>
+                        ));
+                      })()}
+                    </div>
+
+                    {isEditing && (
+                      <select
+                        value=""
+                        disabled={!isEditing}
+                        onChange={(event) => {
+                          const val = event.target.value;
+                          if (!val) return;
+                          const currentRoles = (visibleProfile.desired_job_title || "")
+                            .split(",")
+                            .map((r) => r.trim())
+                            .filter(Boolean);
+                          if (!currentRoles.includes(val)) {
+                            const updated = [...currentRoles, val];
+                            updateDraft("desired_job_title", updated.join(", "));
+                          }
+                        }}
+                      >
+                        <option value="">+ Add target job role from category...</option>
+                        {Object.entries(CATEGORIZED_JOB_ROLES).map(([category, roles]) => (
+                          <optgroup key={category} label={category}>
+                            {roles.map((title) => (
+                              <option key={title} value={title}>
+                                {title}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ))}
+                      </select>
+                    )}
+                  </div>
 
                   <div className="profile-field work-arrangements-field">
                     <span>Work Arrangement Preferences</span>
@@ -4480,8 +4611,13 @@ export default function ApplicantProfile() {
                     className="edit-profile-button"
                     onClick={() => {
                       if (isAddingExp) {
-                        setIsAddingExp(false);
-                        resetExpForm();
+                        const hasUnsaved = Boolean(expTitle.trim() || expCompany.trim() || expResponsibilities.trim() || expSkills.length > 0 || editingExpId);
+                        if (hasUnsaved) {
+                          setIsUnsavedExpWarningOpen(true);
+                        } else {
+                          setIsAddingExp(false);
+                          resetExpForm();
+                        }
                       } else {
                         resetExpForm();
                         setIsAddingExp(true);
@@ -4601,6 +4737,12 @@ export default function ApplicantProfile() {
                             </select>
                           </div>
                         </div>
+                        {expDateError && (
+                          <div style={{ gridColumn: "1 / -1", color: "#dc2626", fontSize: "0.82rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            <span>{expDateError}</span>
+                          </div>
+                        )}
                       </div>
 
                       <label className="profile-field">
@@ -4682,6 +4824,12 @@ export default function ApplicantProfile() {
                             </div>
                           </div>
                         </div>
+                        {expDateError && (
+                          <div style={{ gridColumn: "1 / -1", color: "#dc2626", fontSize: "0.82rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            <span>{expDateError}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 

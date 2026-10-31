@@ -3,6 +3,7 @@ import { ChevronIcon, SideIcon } from "../../components/Icons";
 import { useEmployerCompanyLabel } from "../../hooks/useEmployerCompanyLabel";
 import { useUnreadNotificationsCount } from "../../hooks/useUnreadNotificationsCount";
 import { useUnreadMessagesCount } from "../../hooks/useUnreadMessagesCount";
+import { usePendingApplicationsCount } from "../../hooks/usePendingApplicationsCount";
 import EmployerChatbotDrawer, { EmployerFAQItem as FAQItem } from "../../components/EmployerChatbotDrawer";
 import CalendarDrawer from "../../components/CalendarDrawer";
 import ConfirmationModal from "../../components/ConfirmationModal";
@@ -893,6 +894,7 @@ export default function EmployerJobPosts() {
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   const unreadNotifCount = useUnreadNotificationsCount();
   const unreadMessagesCount = useUnreadMessagesCount();
+  const pendingApplicantsCount = usePendingApplicationsCount();
   const [profileMessage, setProfileMessage] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
 
@@ -1377,6 +1379,11 @@ export default function EmployerJobPosts() {
                 <span className="title-main">
                   <span className="item-icon"><EmployerIcon name="applicant" /></span>
                   <span>Applicant Management</span>
+                  {pendingApplicantsCount > 0 && (
+                    <span className="item-badge" title={`${pendingApplicantsCount} pending applicant${pendingApplicantsCount > 1 ? "s" : ""}`} style={{ marginLeft: "auto", marginRight: 8 }}>
+                      {pendingApplicantsCount}
+                    </span>
+                  )}
                 </span>
                 <span className="title-caret-btn" title="Toggle sub-menu">
                   <ChevronIcon direction={isScreeningOpen ? "down" : "up"} />
@@ -1384,7 +1391,7 @@ export default function EmployerJobPosts() {
               </a>
               {isScreeningOpen && (
                 <ul className="appdash-menu-list">
-                  <li><a href="/employer-applicant-management#applicant-screening"><span className="item-icon"><EmployerIcon name="screening" /></span><span>Applicant Screening</span></a></li>
+                  <li><a href="/employer-applicant-management#applicant-screening"><span className="item-icon"><EmployerIcon name="screening" /></span><span>Applicant Screening</span>{pendingApplicantsCount > 0 && <span className="item-badge">{pendingApplicantsCount}</span>}</a></li>
                   <li><a href="/employer-applicant-management#shortlisted-candidates"><span className="item-icon"><EmployerIcon name="shortlisted" /></span><span>Shortlisted Candidates</span></a></li>
                   <li><a href="/employer-applicant-management#direct-invitations"><span className="item-icon"><EmployerIcon name="discovery" /></span><span>Recruitment List</span></a></li>
                 </ul>
@@ -1461,7 +1468,7 @@ export default function EmployerJobPosts() {
             <span>{completionChecks.hasDescription ? "◉" : "○"} Description</span>
             <span>{completionChecks.hasSkills ? "◉" : "○"} Required Skills</span>
             <span>{completionChecks.hasQualifications ? "◉" : "○"} Qualifications</span>
-            <span>{completionChecks.hasCertifications ? "◉" : "○"} Certifications</span>
+            <span>{completionChecks.hasCertifications ? "◉" : "○"} Certifications (Optional)</span>
           </div>
         </section>
 

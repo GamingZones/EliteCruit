@@ -320,10 +320,11 @@
 }
 
 /* ==========================================================================
-   PHONE & MOBILE UI ADJUSTMENTS (max-width: 768px)
-   Scope: Applied STRICTLY to phones/mobile screens; desktop/laptop UI is 100% untouched.
+   PHONE & TABLET RESPONSIVE UI ADJUSTMENTS (max-width: 900px)
+   Scope: Collapses sidebar into overlay drawer on mobile and tablets (~768px)
+   to ensure ample room for forms and prevent content clipping. Desktop is 100% untouched.
    ========================================================================== */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .employer-sidebar,
   .appdash-sidebar {
     width: 280px !important;

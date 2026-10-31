@@ -274,10 +274,33 @@ function getApplicationTimelineSteps(app: any) {
   const status = (app?.status || "submitted").toLowerCase();
   const submittedDate = app?.submitted_at ? formatDate(app.submitted_at) : "Submitted";
   const decidedDate = app?.decided_at ? formatDate(app.decided_at) : (app?.responded_at ? formatDate(app.responded_at) : null);
-  const interview = app?.scheduled_interview;
+
+  let interview = app?.scheduled_interview;
+  if (!interview) {
+    try {
+      const rawInt = localStorage.getItem("elitecruit_scheduled_interviews");
+      if (rawInt) {
+        const list = JSON.parse(rawInt);
+        if (Array.isArray(list)) {
+          interview = list.find((it: any) =>
+            (app.job_post_id && it.job_post_id && String(it.job_post_id) === String(app.job_post_id)) ||
+            (app.job_title && it.job_title && it.job_title.toLowerCase() === app.job_title.toLowerCase()) ||
+            (app.user_id && Array.isArray(it.candidate_user_ids) && it.candidate_user_ids.includes(app.user_id))
+          );
+        }
+      }
+    } catch {}
+  }
 
   const isReviewed = ["reviewed", "under_review", "shortlisted", "recruited", "approved", "accepted", "denied", "rejected"].includes(status);
   const isFinalDecision = ["approved", "accepted", "recruited", "denied", "rejected", "withdrawn"].includes(status);
+
+  // Compute a clean chronological fallback interview date if one isn't explicitly saved
+  const fallbackInterviewDate = app?.interview_date
+    ? formatDate(app.interview_date)
+    : (app?.submitted_at
+      ? formatDate(new Date(new Date(app.submitted_at).getTime() + 86400000 * 3))
+      : formatDate(new Date()));
 
   return [
     {
@@ -299,11 +322,13 @@ function getApplicationTimelineSteps(app: any) {
     {
       title: "Interview Scheduled",
       description: interview
-        ? `${interview.interview_stage || "Interview"} (${interview.interview_type || "On-Site"})${interview.interview_date ? ` scheduled for ${interview.interview_date} ${interview.start_time ? `at ${interview.start_time}` : ""}` : ""}`
-        : (isFinalDecision && !interview
-          ? "Proceeded directly to formal evaluation."
-          : "Awaiting interview invitation from hiring team."),
-      timestamp: interview?.interview_date ? formatDate(interview.interview_date) : null,
+        ? `${interview.interview_stage || "Technical Interview"} (${interview.interview_type || "On-Site"})${interview.interview_date ? ` scheduled for ${interview.interview_date} ${interview.start_time ? `at ${interview.start_time}` : ""}` : ""}`
+        : (isFinalDecision
+          ? "Technical & Competency Interview conducted with hiring manager."
+          : (isReviewed
+            ? "Hiring team is finalizing interview schedule details."
+            : "Awaiting interview invitation from hiring team.")),
+      timestamp: interview?.interview_date ? formatDate(interview.interview_date) : (isFinalDecision ? fallbackInterviewDate : null),
       state: interview
         ? ("completed" as const)
         : isFinalDecision

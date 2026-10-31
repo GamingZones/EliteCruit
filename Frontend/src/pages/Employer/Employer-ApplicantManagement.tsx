@@ -1545,6 +1545,11 @@ export default function EmployerApplicantManagement() {
 
   const filteredApplications = useMemo(() => {
     const list = applications.filter((app) => {
+      // Denied applicants are moved out of active screening into Shortlist Board / Archive
+      if (isDeniedStatus(app.status)) {
+        return false;
+      }
+
       // 1. Search Query
       if (appliedSearchQuery) {
         const q = appliedSearchQuery.toLowerCase();
@@ -3492,7 +3497,7 @@ export default function EmployerApplicantManagement() {
                     <button
                       type="button"
                       className="solid-btn preview-message-btn view-docs-btn"
-                      onClick={() => { handleOpenReview(app, false, false, false, true); }}
+                      onClick={() => { handleOpenReview(currentApp, false, false, false, true); }}
                       title="Message Candidate"
                     >
                       Message
