@@ -1912,6 +1912,22 @@ export function getRelatedJobRolesForKeyword(keyword: string): JobRoleDefinition
   });
 }
 
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function safeWordBoundaryRegex(word: string): RegExp | null {
+  if (!word) return null;
+  try {
+    const escaped = escapeRegex(word);
+    const leftBound = /^[a-zA-Z0-9_]/.test(word) ? "\\b" : "(?:^|[^a-zA-Z0-9_])";
+    const rightBound = /[a-zA-Z0-9_]$/.test(word) ? "\\b" : "(?:[^a-zA-Z0-9_]|$)";
+    return new RegExp(`${leftBound}${escaped}${rightBound}`, "i");
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Checks if a job listing matches a search query using direct text match AND semantic role keyword matching.
  */
@@ -1937,7 +1953,12 @@ export function matchesJobWithTaxonomy(
     ...(job.badges || []),
   ].join(" ").toLowerCase();
 
-  if (q.length <= 3 ? new RegExp(`\\b${q}\\b`, "i").test(textHaystack) : textHaystack.includes(q)) return true;
+  if (q.length <= 3) {
+    const re = safeWordBoundaryRegex(q);
+    if (re ? re.test(textHaystack) : textHaystack.includes(q)) return true;
+  } else {
+    if (textHaystack.includes(q)) return true;
+  }
 
   // 2. Keyword-to-Role Expansion:
   const rolesMatchingQuery = getRelatedJobRolesForKeyword(q);
@@ -1962,7 +1983,8 @@ export function matchesJobWithTaxonomy(
     const hasAnyKeyword = roleKeywords.some((kw) => {
       const kwLower = kw.toLowerCase();
       if (kwLower.length <= 4) {
-        return new RegExp(`\\b${kwLower.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&")}\\b`, "i").test(skillsHaystack);
+        const re = safeWordBoundaryRegex(kwLower);
+        return re ? re.test(skillsHaystack) : skillsHaystack.includes(kwLower);
       }
       return skillsHaystack.includes(kwLower);
     });
@@ -2686,14 +2708,16 @@ export function isSkillMatch(itemA: string, itemB: string): boolean {
     const matchesKeywordA = keywords.some((kw) => {
       const kwLower = kw.toLowerCase();
       if (kwLower.length <= 3) {
-        return slugA === kwLower || tokensA.includes(kwLower) || new RegExp(`\\b${kwLower}\\b`, "i").test(slugA);
+        const re = safeWordBoundaryRegex(kwLower);
+        return slugA === kwLower || tokensA.includes(kwLower) || (re ? re.test(slugA) : slugA.includes(kwLower));
       }
       return slugA === kwLower || slugA.includes(kwLower) || kwLower.includes(slugA) || tokensA.some((t) => t === kwLower || (t.length >= 4 && kwLower.includes(t)) || (kwLower.length >= 4 && t.includes(kwLower)));
     });
     const matchesKeywordB = keywords.some((kw) => {
       const kwLower = kw.toLowerCase();
       if (kwLower.length <= 3) {
-        return slugB === kwLower || tokensB.includes(kwLower) || new RegExp(`\\b${kwLower}\\b`, "i").test(slugB);
+        const re = safeWordBoundaryRegex(kwLower);
+        return slugB === kwLower || tokensB.includes(kwLower) || (re ? re.test(slugB) : slugB.includes(kwLower));
       }
       return slugB === kwLower || slugB.includes(kwLower) || kwLower.includes(slugB) || tokensB.some((t) => t === kwLower || (t.length >= 4 && kwLower.includes(t)) || (kwLower.length >= 4 && t.includes(kwLower)));
     });
