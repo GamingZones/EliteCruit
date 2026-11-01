@@ -227,6 +227,10 @@ export default function EmployerCompanyProfile() {
   const [otpCooldown, setOtpCooldown] = useState(0);
   const [otpDevHint, setOtpDevHint] = useState<string | null>(null);
 
+  // Inline Field Edit States for Company Details
+  const [savingField, setSavingField] = useState<string | null>(null);
+  const [fieldSuccess, setFieldSuccess] = useState<string | null>(null);
+
   useEffect(() => {
     if (otpCooldown <= 0) return;
     const timer = setInterval(() => {
@@ -552,6 +556,81 @@ export default function EmployerCompanyProfile() {
       setPageMessage(error instanceof Error ? error.message : "Unable to save employer profile.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const cancelField = (fieldName: keyof EmployerProfileData) => {
+    setDraft((prev) => ({
+      ...prev,
+      [fieldName]: profile[fieldName] ?? "",
+    }));
+    if (fieldName === "business_email") {
+      setIsEmailVerified(true);
+      setVerifiedEmailAddress(profile.business_email?.trim().toLowerCase() || "");
+    }
+  };
+
+  const saveSingleField = async (fieldName: string, value: any) => {
+    if (!userId) return;
+    setSavingField(fieldName);
+    setPageMessage("");
+    try {
+      const nextDraft = { ...draft, [fieldName]: value };
+      const resolvedProvince = nextDraft.province || profile.province || "Cavite";
+      const resolvedCity = nextDraft.city || profile.city || "Indang";
+
+      let syncedBranches = [...(nextDraft.branches || profile.branches || [])];
+      const mainIdx = syncedBranches.findIndex((b) => b.is_main);
+      if (mainIdx >= 0) {
+        syncedBranches[mainIdx] = {
+          ...syncedBranches[mainIdx],
+          province: resolvedProvince,
+          city: resolvedCity,
+          address: `${resolvedCity}, ${resolvedProvince}`,
+          contact_number: nextDraft.contact_number || syncedBranches[mainIdx].contact_number,
+          email: nextDraft.business_email || syncedBranches[mainIdx].email,
+        };
+      }
+
+      const payload = {
+        ...nextDraft,
+        province: resolvedProvince,
+        city: resolvedCity,
+        company_address: `${resolvedCity}, ${resolvedProvince}`,
+        branches: syncedBranches,
+      };
+
+      const response = await fetch(`/api/employers/${userId}/profile`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.message || "Unable to save profile change.");
+
+      const saved = normalizeEmployerProfile(data?.profile, payload);
+      setProfile(saved);
+      setDraft(saved);
+
+      if (fieldName === "business_email" && saved.business_email) {
+        setIsEmailVerified(true);
+        setVerifiedEmailAddress(saved.business_email.trim().toLowerCase());
+        try {
+          const rawUser = localStorage.getItem("elitecruit-user");
+          if (rawUser) {
+            const parsed = JSON.parse(rawUser);
+            localStorage.setItem("elitecruit-user", JSON.stringify({ ...parsed, email: saved.business_email.trim() }));
+          }
+        } catch {}
+      }
+
+      setFieldSuccess(fieldName);
+      setTimeout(() => setFieldSuccess(null), 3000);
+      setPageMessage("Company details updated successfully.");
+    } catch (err: any) {
+      setPageMessage(err.message || "Failed to save change.");
+    } finally {
+      setSavingField(null);
     }
   };
 
@@ -1187,150 +1266,266 @@ export default function EmployerCompanyProfile() {
               </div>
             </section>
 
-            {/* Company Details matching 873598157 / 873500981 */}
-            <section className="company-card company-section">
-              <div className="section-head">
-                <div>
-                  <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#0c2a47" }}>Company Details</h2>
-                  <p style={{ margin: "4px 0 0", fontSize: "0.86rem", color: "#64748b" }}>Public information shown to applicants.</p>
-                </div>
-                <button
-                  type="button"
-                  style={{
-                    background: "#00385e",
-                    color: "#ffffff",
-                    border: "none",
-                    borderRadius: "6px",
-                    padding: "8px 18px",
-                    fontWeight: 700,
-                    fontSize: "0.86rem",
-                    cursor: "pointer",
-                  }}
-                  onClick={() => isEditingProfile ? saveProfile() : setIsEditingProfile(true)}
-                >
-                  {isEditingProfile ? (isSaving ? "Saving..." : "Save") : "Edit"}
-                </button>
-              </div>
+            {/* Company Details with Inline Field-Level Edit & Action Popups */}
+            {(() => {
+              const isNameDirty = (draft.business_name || "").trim() !== (profile.business_name || "").trim();
+              const isIndustryDirty = (draft.industry || "") !== (profile.industry || "");
+              const isSizeDirty = (draft.company_size || "") !== (profile.company_size || "");
+              const isEmailDirty = (draft.business_email || "").trim().toLowerCase() !== (profile.business_email || "").trim().toLowerCase();
+              const isEmailVerifiedForDraft = isEmailDirty
+                ? verifiedEmailAddress.trim().toLowerCase() === (draft.business_email || "").trim().toLowerCase()
+                : true;
 
-              <div className="form-grid" style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "16px" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "0.84rem", fontWeight: 700, color: "#0f172a", marginBottom: "4px" }}>
-                    Company name <span style={{ color: "#ef4444" }}>*</span>
-                  </label>
-                  <input
-                    value={draft.business_name}
-                    onChange={(e) => updateDraft("business_name", e.target.value)}
-                    readOnly={!isEditingProfile}
-                    placeholder="e.g. Doe's Store"
-                    style={{ width: "100%", boxSizing: "border-box" }}
-                  />
-                  <small style={{ display: "block", fontSize: "0.75rem", color: "#64748b", marginTop: "4px" }}>
-                    Use your registered business or trading name.
-                  </small>
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "0.84rem", fontWeight: 700, color: "#0f172a", marginBottom: "4px" }}>
-                    Industry <span style={{ color: "#ef4444" }}>*</span>
-                  </label>
-                  <select
-                    value={draft.industry || ""}
-                    onChange={(e) => updateDraft("industry", e.target.value)}
-                    disabled={!isEditingProfile}
-                    style={{ width: "100%", boxSizing: "border-box" }}
-                  >
-                    <option value="">Select industry</option>
-                    <option value="Retail">Retail</option>
-                    <option value="Information Technology">Information Technology</option>
-                    <option value="Software & Computer Services">Software & Computer Services</option>
-                    <option value="Telecommunications">Telecommunications</option>
-                    <option value="BPO & Customer Operations">BPO & Customer Operations</option>
-                    <option value="Financial Services & Banking">Financial Services & Banking</option>
-                    <option value="Healthcare & Pharmaceuticals">Healthcare & Pharmaceuticals</option>
-                    <option value="Manufacturing & Production">Manufacturing & Production</option>
-                    <option value="Education & Training">Education & Training</option>
-                    <option value="Logistics & Supply Chain">Logistics & Supply Chain</option>
-                    <option value="Hospitality & Tourism">Hospitality & Tourism</option>
-                    <option value="Other">Other</option>
-                  </select>
-                  <small style={{ display: "block", fontSize: "0.75rem", color: "#64748b", marginTop: "4px" }}>
-                    Select the category that best describes your company.
-                  </small>
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "0.84rem", fontWeight: 700, color: "#0f172a", marginBottom: "4px" }}>
-                    Company size
-                  </label>
-                  <select
-                    value={draft.company_size || ""}
-                    onChange={(e) => updateDraft("company_size", e.target.value)}
-                    disabled={!isEditingProfile}
-                    style={{ width: "100%", boxSizing: "border-box" }}
-                  >
-                    <option value="">Select company size</option>
-                    <option value="1-10 employees">1-10 employees</option>
-                    <option value="11-50 employees">11-50 employees</option>
-                    <option value="50-200 employees">50-200 employees</option>
-                    <option value="201-500 employees">201-500 employees</option>
-                    <option value="500+ employees">500+ employees</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "0.84rem", fontWeight: 700, color: "#0f172a", marginBottom: "4px" }}>
-                    Company email
-                  </label>
-                  <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-                    <input
-                      value={draft.business_email || "contact@doesstore.test"}
-                      readOnly
-                      style={{ width: "100%", boxSizing: "border-box", paddingRight: "100px" }}
-                    />
-                    <span
-                      style={{
-                        position: "absolute",
-                        right: "10px",
-                        background: "#dcfce7",
-                        color: "#15803d",
-                        fontSize: "0.75rem",
-                        fontWeight: 700,
-                        padding: "3px 10px",
-                        borderRadius: "9999px",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "4px",
-                      }}
-                    >
-                      ✔ Verified
-                    </span>
+              return (
+                <section className="company-card company-section">
+                  <div className="section-head">
+                    <div>
+                      <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#0c2a47" }}>Company Details</h2>
+                      <p style={{ margin: "4px 0 0", fontSize: "0.86rem", color: "#64748b" }}>Public information shown to applicants.</p>
+                    </div>
                   </div>
-                  <small style={{ display: "block", fontSize: "0.75rem", color: "#64748b", marginTop: "4px" }}>
-                    Changing this email requires verification.
-                  </small>
-                  <button
-                    type="button"
-                    style={{
-                      marginTop: "8px",
-                      background: "transparent",
-                      border: "1.5px solid #cbd5e1",
-                      borderRadius: "6px",
-                      padding: "8px 16px",
-                      fontSize: "0.84rem",
-                      fontWeight: 700,
-                      color: "#0c2a47",
-                      cursor: "pointer",
-                    }}
-                    onClick={() => {
-                      setActiveSection("overview");
-                      setIsEditingContact(true);
-                    }}
-                  >
-                    Change email
-                  </button>
-                </div>
-              </div>
-            </section>
+
+                  <div className="form-grid" style={{ display: "flex", flexDirection: "column", gap: "18px", marginTop: "16px" }}>
+                    {/* 1. Company Name */}
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                        <label style={{ fontSize: "0.84rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>
+                          Company name <span style={{ color: "#ef4444" }}>*</span>
+                        </label>
+                        {fieldSuccess === "business_name" && (
+                          <span className="inline-field-saved-badge">✔ Saved</span>
+                        )}
+                      </div>
+                      <div className="inline-field-row">
+                        <input
+                          className="inline-field-control"
+                          value={draft.business_name || ""}
+                          onChange={(e) => updateDraft("business_name", e.target.value)}
+                          placeholder="e.g. Doe's Store"
+                        />
+                        {isNameDirty && (
+                          <div className="inline-field-actions">
+                            <button
+                              type="button"
+                              className="inline-field-btn inline-field-cancel-btn"
+                              onClick={() => cancelField("business_name")}
+                              disabled={savingField === "business_name"}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              className="inline-field-btn inline-field-save-btn"
+                              onClick={() => saveSingleField("business_name", draft.business_name)}
+                              disabled={savingField === "business_name" || !draft.business_name?.trim()}
+                            >
+                              {savingField === "business_name" ? "Saving..." : "Save"}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <small style={{ display: "block", fontSize: "0.75rem", color: "#64748b", marginTop: "4px" }}>
+                        Use your registered business or trading name.
+                      </small>
+                    </div>
+
+                    {/* 2. Industry */}
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                        <label style={{ fontSize: "0.84rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>
+                          Industry <span style={{ color: "#ef4444" }}>*</span>
+                        </label>
+                        {fieldSuccess === "industry" && (
+                          <span className="inline-field-saved-badge">✔ Saved</span>
+                        )}
+                      </div>
+                      <div className="inline-field-row">
+                        <select
+                          className="inline-field-control"
+                          value={draft.industry || ""}
+                          onChange={(e) => updateDraft("industry", e.target.value)}
+                        >
+                          <option value="">Select industry</option>
+                          <option value="Retail">Retail</option>
+                          <option value="Information Technology">Information Technology</option>
+                          <option value="Software & Computer Services">Software & Computer Services</option>
+                          <option value="Telecommunications">Telecommunications</option>
+                          <option value="BPO & Customer Operations">BPO & Customer Operations</option>
+                          <option value="Financial Services & Banking">Financial Services & Banking</option>
+                          <option value="Healthcare & Pharmaceuticals">Healthcare & Pharmaceuticals</option>
+                          <option value="Manufacturing & Production">Manufacturing & Production</option>
+                          <option value="Education & Training">Education & Training</option>
+                          <option value="Logistics & Supply Chain">Logistics & Supply Chain</option>
+                          <option value="Hospitality & Tourism">Hospitality & Tourism</option>
+                          <option value="Other">Other</option>
+                        </select>
+                        {isIndustryDirty && (
+                          <div className="inline-field-actions">
+                            <button
+                              type="button"
+                              className="inline-field-btn inline-field-cancel-btn"
+                              onClick={() => cancelField("industry")}
+                              disabled={savingField === "industry"}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              className="inline-field-btn inline-field-save-btn"
+                              onClick={() => saveSingleField("industry", draft.industry)}
+                              disabled={savingField === "industry" || !draft.industry}
+                            >
+                              {savingField === "industry" ? "Saving..." : "Save"}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <small style={{ display: "block", fontSize: "0.75rem", color: "#64748b", marginTop: "4px" }}>
+                        Select the category that best describes your company.
+                      </small>
+                    </div>
+
+                    {/* 3. Company Size */}
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                        <label style={{ fontSize: "0.84rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>
+                          Company size
+                        </label>
+                        {fieldSuccess === "company_size" && (
+                          <span className="inline-field-saved-badge">✔ Saved</span>
+                        )}
+                      </div>
+                      <div className="inline-field-row">
+                        <select
+                          className="inline-field-control"
+                          value={draft.company_size || ""}
+                          onChange={(e) => updateDraft("company_size", e.target.value)}
+                        >
+                          <option value="">Select company size</option>
+                          <option value="1-10 employees">1-10 employees</option>
+                          <option value="11-50 employees">11-50 employees</option>
+                          <option value="50-200 employees">50-200 employees</option>
+                          <option value="201-500 employees">201-500 employees</option>
+                          <option value="500+ employees">500+ employees</option>
+                        </select>
+                        {isSizeDirty && (
+                          <div className="inline-field-actions">
+                            <button
+                              type="button"
+                              className="inline-field-btn inline-field-cancel-btn"
+                              onClick={() => cancelField("company_size")}
+                              disabled={savingField === "company_size"}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              className="inline-field-btn inline-field-save-btn"
+                              onClick={() => saveSingleField("company_size", draft.company_size)}
+                              disabled={savingField === "company_size"}
+                            >
+                              {savingField === "company_size" ? "Saving..." : "Save"}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 4. Company Email */}
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                        <label style={{ fontSize: "0.84rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>
+                          Company email
+                        </label>
+                        {fieldSuccess === "business_email" && (
+                          <span className="inline-field-saved-badge">✔ Saved</span>
+                        )}
+                      </div>
+                      <div className="inline-field-row">
+                        <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", alignItems: "center" }}>
+                          <input
+                            className="inline-field-control"
+                            value={draft.business_email || ""}
+                            onChange={(e) => updateDraft("business_email", e.target.value)}
+                            placeholder="e.g. contact@company.com"
+                            style={{ width: "100%", paddingRight: !isEmailDirty ? "95px" : "14px" }}
+                          />
+                          {!isEmailDirty && (
+                            <span
+                              style={{
+                                position: "absolute",
+                                right: "10px",
+                                background: "#dcfce7",
+                                color: "#15803d",
+                                fontSize: "0.75rem",
+                                fontWeight: 700,
+                                padding: "3px 10px",
+                                borderRadius: "9999px",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                pointerEvents: "none",
+                              }}
+                            >
+                              ✔ Verified
+                            </span>
+                          )}
+                        </div>
+                        {isEmailDirty && (
+                          <div className="inline-field-actions">
+                            <button
+                              type="button"
+                              className="inline-field-btn inline-field-cancel-btn"
+                              onClick={() => cancelField("business_email")}
+                              disabled={savingField === "business_email"}
+                            >
+                              Cancel
+                            </button>
+                            {!isEmailVerifiedForDraft ? (
+                              <>
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-verify-btn"
+                                  onClick={handleSendEmailOtp}
+                                  disabled={isSendingOtp || !draft.business_email?.trim() || !draft.business_email.includes("@")}
+                                >
+                                  {isSendingOtp ? "Sending Code..." : "Verify Email"}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-save-btn"
+                                  disabled
+                                  title="Please click 'Verify Email' and enter OTP before saving."
+                                >
+                                  Save
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <span className="inline-field-saved-badge">✔ Verified</span>
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-save-btn"
+                                  onClick={() => saveSingleField("business_email", draft.business_email)}
+                                  disabled={savingField === "business_email"}
+                                >
+                                  {savingField === "business_email" ? "Saving..." : "Save"}
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <small style={{ display: "block", fontSize: "0.75rem", color: "#64748b", marginTop: "4px" }}>
+                        {isEmailDirty && !isEmailVerifiedForDraft
+                          ? "⚠️ Changing your email requires verifying the new address before saving."
+                          : "Official business email used for communications and login."}
+                      </small>
+                    </div>
+                  </div>
+                </section>
+              );
+            })()}
           </>
         )}
 
