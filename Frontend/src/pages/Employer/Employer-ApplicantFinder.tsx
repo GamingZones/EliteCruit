@@ -3356,102 +3356,175 @@ export default function EmployerApplicantFinder() {
             </div>
 
             {isFiltersOpen && (
-              <div className="search-filters-dropdown">
-                <div className="filters-grid">
-                  <div className="filter-field">
-                    <label>Target Role</label>
-                    <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)}>
-                      <option>All roles</option>
-                      {BSIT_BSCS_JOB_TITLES.map((role) => (
-                        <option key={role} value={role}>{role}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="filter-field">
-                    <label>Work Arrangement</label>
-                    <select value={selectedArrangement} onChange={(e) => setSelectedArrangement(e.target.value)}>
-                      <option>Any arrangement</option>
-                      {WORK_ARRANGEMENTS.map((wa) => (
-                        <option key={wa} value={wa}>{wa}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="filter-field">
-                    <label>Experience Level</label>
-                    <select value={selectedExperience} onChange={(e) => setSelectedExperience(e.target.value)}>
-                      <option>Any experience</option>
-                      {EXPERIENCE_LEVELS.map((lvl) => (
-                        <option key={lvl} value={lvl}>{lvl}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="filter-field">
-                    <label>Expected Salary</label>
-                    <select value={selectedMinSalary} onChange={(e) => setSelectedMinSalary(e.target.value)}>
-                      <option>Any salary</option>
-                      {SALARY_RANGES.map((sal) => (
-                        <option key={sal} value={sal}>{sal}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="filter-field">
-                    <label>Sort By</label>
-                    <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)}>
-                      <option value="Best Match">Best Match</option>
-                      <option value="Rating">Highest Rating</option>
-                      <option value="Newest">Newest Candidates</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Province & Cities Card - Placed on top of skills */}
-                <div className="filter-location-card-row">
-                  <FilterLocationCategoryEditor
-                    items={filterLocations}
-                    onChange={setFilterLocations}
-                  />
-                </div>
-
-                {/* 3 Selection Boxes with up to 5 items and years of experience */}
-                <div className="filter-competencies-grid">
-                  <FilterCategoryEditor
-                    title="Technical Skills"
-                    availableOptions={BSIT_BSCS_SKILLS}
-                    items={filterSkills}
-                    onChange={setFilterSkills}
-                  />
-                  <FilterCategoryEditor
-                    title="Qualifications"
-                    availableOptions={BSIT_BSCS_QUALIFICATIONS}
-                    items={filterQualifications}
-                    onChange={setFilterQualifications}
-                  />
-                  <FilterCategoryEditor
-                    title="Certifications"
-                    availableOptions={BSIT_BSCS_CERTIFICATIONS}
-                    items={filterCertifications}
-                    onChange={setFilterCertifications}
-                  />
-                </div>
-
-                <div className="filters-footer-row">
-                  <div className="active-filters-summary">
-                    {activeFilterCount > 0 ? (
-                      <span>{activeFilterCount} active filter{activeFilterCount > 1 ? "s" : ""} applied</span>
-                    ) : (
-                      <span>Showing all standard results</span>
-                    )}
-                  </div>
-                  {activeFilterCount > 0 && (
-                    <button type="button" className="reset-filters-btn" onClick={clearAllFilters}>
-                      Reset Filters
+              <div className="filter-drawer-backdrop" onClick={() => setIsFiltersOpen(false)}>
+                <aside className="filter-drawer-panel" onClick={(e) => e.stopPropagation()} aria-label="Filter Candidates">
+                  {/* Drawer Header */}
+                  <div className="filter-drawer-header">
+                    <h2 className="filter-drawer-title">Filter Candidates</h2>
+                    <button
+                      type="button"
+                      className="filter-drawer-close-btn"
+                      onClick={() => setIsFiltersOpen(false)}
+                      aria-label="Close filters"
+                    >
+                      ✕
                     </button>
-                  )}
-                </div>
+                  </div>
+
+                  {/* Drawer Body (Scrollable) */}
+                  <div className="filter-drawer-body">
+                    {/* Roles & Job Titles */}
+                    <div className="filter-drawer-group">
+                      <label className="filter-group-label">Roles & Job Titles</label>
+                      <select
+                        className="filter-drawer-select"
+                        value={selectedRole}
+                        onChange={(e) => setSelectedRole(e.target.value)}
+                      >
+                        <option>All roles</option>
+                        {BSIT_BSCS_JOB_TITLES.map((role) => (
+                          <option key={role} value={role}>{role}</option>
+                        ))}
+                      </select>
+                      {/* Popular Role Quick Chips */}
+                      <div className="filter-role-quick-chips">
+                        {["Software Engineer", "Web Developer", "Data Analyst", "IT Support", "Database Administrator"].map((r) => (
+                          <button
+                            key={r}
+                            type="button"
+                            className={`filter-quick-chip ${selectedRole === r ? "active" : ""}`}
+                            onClick={() => setSelectedRole(selectedRole === r ? "All roles" : r)}
+                          >
+                            {r}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Work Arrangement Segmented Control */}
+                    <div className="filter-drawer-group">
+                      <label className="filter-group-label">Work Arrangement</label>
+                      <div className="filter-segmented-control">
+                        {["Any arrangement", "On-site", "Remote", "Hybrid"].map((wa) => (
+                          <button
+                            key={wa}
+                            type="button"
+                            className={`filter-segment-btn ${selectedArrangement === wa ? "active" : ""}`}
+                            onClick={() => setSelectedArrangement(wa)}
+                          >
+                            {wa === "Any arrangement" ? "All" : wa}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Experience Level */}
+                    <div className="filter-drawer-group">
+                      <label className="filter-group-label">Experience Level</label>
+                      <select
+                        className="filter-drawer-select"
+                        value={selectedExperience}
+                        onChange={(e) => setSelectedExperience(e.target.value)}
+                      >
+                        <option>Any experience</option>
+                        {EXPERIENCE_LEVELS.map((lvl) => (
+                          <option key={lvl} value={lvl}>{lvl}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Expected Salary */}
+                    <div className="filter-drawer-group">
+                      <label className="filter-group-label">Expected Salary</label>
+                      <select
+                        className="filter-drawer-select"
+                        value={selectedMinSalary}
+                        onChange={(e) => setSelectedMinSalary(e.target.value)}
+                      >
+                        <option>Any salary</option>
+                        {SALARY_RANGES.map((sal) => (
+                          <option key={sal} value={sal}>{sal}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Sort By */}
+                    <div className="filter-drawer-group">
+                      <label className="filter-group-label">Sort By</label>
+                      <select
+                        className="filter-drawer-select"
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as any)}
+                      >
+                        <option value="Best Match">Best Match</option>
+                        <option value="Rating">Highest Rating</option>
+                        <option value="Newest">Newest Candidates</option>
+                      </select>
+                    </div>
+
+                    {/* Work Location */}
+                    <div className="filter-drawer-group">
+                      <label className="filter-group-label">Work Location</label>
+                      <div className="filter-location-card-row">
+                        <FilterLocationCategoryEditor
+                          items={filterLocations}
+                          onChange={setFilterLocations}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Technical Skills */}
+                    <div className="filter-drawer-group">
+                      <FilterCategoryEditor
+                        title="Technical Skills"
+                        availableOptions={BSIT_BSCS_SKILLS}
+                        items={filterSkills}
+                        onChange={setFilterSkills}
+                      />
+                    </div>
+
+                    {/* Qualifications */}
+                    <div className="filter-drawer-group">
+                      <FilterCategoryEditor
+                        title="Qualifications"
+                        availableOptions={BSIT_BSCS_QUALIFICATIONS}
+                        items={filterQualifications}
+                        onChange={setFilterQualifications}
+                      />
+                    </div>
+
+                    {/* Certifications */}
+                    <div className="filter-drawer-group">
+                      <FilterCategoryEditor
+                        title="Certifications"
+                        availableOptions={BSIT_BSCS_CERTIFICATIONS}
+                        items={filterCertifications}
+                        onChange={setFilterCertifications}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Sticky Drawer Footer */}
+                  <div className="filter-drawer-footer">
+                    <button
+                      type="button"
+                      className="filter-drawer-clear-btn"
+                      onClick={clearAllFilters}
+                    >
+                      Clear All
+                    </button>
+                    <button
+                      type="button"
+                      className="filter-drawer-apply-btn"
+                      onClick={() => {
+                        applySearch();
+                        setIsFiltersOpen(false);
+                      }}
+                    >
+                      Apply Filters {activeFilterCount > 0 ? `(${activeFilterCount})` : ""}
+                    </button>
+                  </div>
+                </aside>
               </div>
             )}
           </section>
