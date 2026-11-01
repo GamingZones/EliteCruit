@@ -567,28 +567,33 @@ export default function EmployerJobPostsList() {
                   </span>
                 </div>
                 <div className="review-job-company-row">
-                  <span className="review-company-name">{companyLabel || "Doe's Store"}</span>
+                  <span className="review-company-name">{companyLabel || "Company"}</span>
                   <span className="review-date-meta">
-                    Posted Oct 12, 2026 • Updated Oct 18, 2026
+                    {reviewingJob.created_at
+                      ? `Posted ${new Date(reviewingJob.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+                      : "Recently Posted"}
+                    {reviewingJob.updated_at && reviewingJob.updated_at !== reviewingJob.created_at
+                      ? ` • Updated ${new Date(reviewingJob.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+                      : ""}
                   </span>
                 </div>
               </div>
 
               <div className="review-metrics-strip">
                 <div className="review-metric-item">
-                  <strong>{reviewingJob.applicant_count || 12}</strong>
+                  <strong>{reviewingJob.applicant_count || 0}</strong>
                   <span>Applicants</span>
                 </div>
                 <div className="review-metric-item">
-                  <strong>{Math.max(1, Math.round((reviewingJob.applicant_count || 12) * 0.65))}</strong>
+                  <strong>{reviewingJob.applicant_count ? Math.round(reviewingJob.applicant_count * 0.65) : 0}</strong>
                   <span>Under review</span>
                 </div>
                 <div className="review-metric-item">
-                  <strong>{Math.max(1, Math.round((reviewingJob.applicant_count || 12) * 0.25))}</strong>
+                  <strong>{reviewingJob.applicant_count ? Math.round(reviewingJob.applicant_count * 0.25) : 0}</strong>
                   <span>Shortlisted</span>
                 </div>
                 <div className="review-metric-item">
-                  <strong>1</strong>
+                  <strong>0</strong>
                   <span>Interview scheduled</span>
                 </div>
               </div>
@@ -1000,7 +1005,7 @@ export default function EmployerJobPostsList() {
                 <div>
                   <span className="review-preview-tag">Candidate View Preview</span>
                   <h2>{reviewingJob.title}</h2>
-                  <p>{companyLabel || "Doe's Store"} • {cleanBranchLocation(reviewingJob.location) || "Cavite, Philippines"}</p>
+                  <p>{companyLabel || "Company"} • {cleanBranchLocation(reviewingJob.location) || "Cavite, Philippines"}</p>
                 </div>
                 <button type="button" className="review-modal-close-btn" onClick={() => setIsListingPreviewOpen(false)}>✕</button>
               </div>

@@ -1468,7 +1468,7 @@ export default function EmployerCompanyProfile() {
                   }}
                 >
                   <span style={{ fontSize: "1.1rem" }}>ℹ</span>
-                  <span>This profile belongs to <strong>{effectiveCompanyLabel || "Doe's Store"}</strong>, not to an individual employer account.</span>
+                  <span>This profile belongs to <strong>{effectiveCompanyLabel || "this company"}</strong>, not to an individual employer account.</span>
                 </div>
 
                 {/* Warning Callout Banner */}

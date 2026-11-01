@@ -416,8 +416,8 @@ export default function CalendarDrawer({
   const [formFeedback, setFormFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
   // Load employer active jobs and schedulable candidates dynamically from database
   useEffect(() => {
-    if (!isEmployer) return;
-    const empId = currentUserId || 5;
+    if (!isEmployer || !currentUserId) return;
+    const empId = currentUserId;
 
     fetch(`/api/employers/${empId}/active-job-posts`)
       .then((r) => r.json())
@@ -686,9 +686,18 @@ export default function CalendarDrawer({
         ? `${formStage} - ${singleCand?.full_name || "Candidate"}`
         : `${formStage} - ${chosenJob?.title || "Applicants"} (${selectedCands.length} Candidates)`);
 
+    let employerCompanyName = "";
+    try {
+      const raw = localStorage.getItem("elitecruit-user");
+      if (raw) {
+        const u = JSON.parse(raw);
+        employerCompanyName = u.business_name || u.company_name || u.name || "";
+      }
+    } catch {}
+
     const newMeeting: ScheduledInterview = {
       id: Date.now(),
-      employer_user_id: currentUserId || 1,
+      employer_user_id: currentUserId || 0,
       applicant_user_id: singleCand?.user_id || 0,
       candidate_user_ids: selectedCandidateUserIds,
       candidates: selectedCands,
@@ -707,10 +716,10 @@ export default function CalendarDrawer({
         selectedCands.length === 1
           ? singleCand?.full_name || "Candidate"
           : `${singleCand?.full_name || "Candidate"} (+${selectedCands.length - 1} more)`,
-      applicant_phone: singleCand?.phone || "+63 917 000 0000",
-      applicant_city: singleCand?.city || "Cavite",
-      applicant_email: singleCand?.email || "candidate@example.com",
-      employer_company_name: "Cebuana Lhuillier",
+      applicant_phone: singleCand?.phone || "",
+      applicant_city: singleCand?.city || "",
+      applicant_email: singleCand?.email || "",
+      employer_company_name: employerCompanyName,
       created_at: new Date().toISOString(),
     };
 
@@ -728,7 +737,7 @@ export default function CalendarDrawer({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          employer_user_id: currentUserId || 5,
+          employer_user_id: currentUserId || 0,
           applicant_user_id: singleCand?.user_id || 0,
           candidate_user_ids: selectedCandidateUserIds,
           job_post_id: Number(formJobId),
@@ -745,9 +754,10 @@ export default function CalendarDrawer({
             selectedCands.length === 1
               ? singleCand?.full_name || "Candidate"
               : `${singleCand?.full_name || "Candidate"} (+${selectedCands.length - 1} more)`,
-          applicant_phone: singleCand?.phone || "+63 917 000 0000",
-          applicant_city: singleCand?.city || "Cavite",
-          applicant_email: singleCand?.email || "candidate@example.com",
+          applicant_phone: singleCand?.phone || "",
+          applicant_city: singleCand?.city || "",
+          applicant_email: singleCand?.email || "",
+          employer_company_name: employerCompanyName,
         }),
       })
         .then((r) => r.json())

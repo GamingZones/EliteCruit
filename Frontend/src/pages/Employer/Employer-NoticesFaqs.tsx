@@ -248,7 +248,7 @@ export default function EmployerNoticesFaqs() {
     return template
       .replace(/\{applicant_name\}/g, "Juan Dela Cruz")
       .replace(/\{job_title\}/g, "Software Engineer")
-      .replace(/\{company_name\}/g, companyLabel || "Cebuana");
+      .replace(/\{company_name\}/g, companyLabel || "Company");
   };
 
   const addFaq = async () => {

@@ -39,40 +39,17 @@ export interface OfferRecord {
   letterContent: string;
 }
 
-const DEFAULT_SAMPLE_OFFER: OfferRecord = {
-  id: "offer-cebuana-1",
-  type: "application",
-  title: "Financial Data & Business Intelligence Analyst",
-  company: "CEBUANA",
-  status: "Pending response",
-  receivedDate: "Oct 12, 2026",
-  respondByDate: "Oct 19, 2026",
-  startDate: "Nov 3, 2026",
-  workSetup: "Hybrid",
-  salary: "PHP 45,000 / month",
-  letterContent: `Dear John Doe,
-
-We are pleased to offer you the position of Financial Data & Business Intelligence Analyst at CEBUANA.
-
-Your start date will be November 3, 2026. This is a hybrid work setup, and your monthly salary will be PHP 45,000, subject to applicable taxes and company benefits. Additional details regarding your employment terms, benefits, and onboarding requirements are included in the attached offer letter.
-
-We are excited about the possibility of you joining our team and believe your skills and experience will be a valuable addition to CEBUANA.
-
-Sincerely,
-CEBUANA Hiring Team`,
-};
-
 export default function ApplicantOfferLetter() {
   const [userId, setUserId] = useState<number | null>(null);
-  const [candidateName, setCandidateName] = useState("John Doe");
+  const [candidateName, setCandidateName] = useState("");
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
 
   // Tab state: "received" (Received Offers) vs "templates" (Response Templates)
   const [activeTab, setActiveTab] = useState<"received" | "templates">("received");
 
   // Offers state
-  const [offers, setOffers] = useState<OfferRecord[]>([DEFAULT_SAMPLE_OFFER]);
-  const [selectedOfferId, setSelectedOfferId] = useState<string | number>(DEFAULT_SAMPLE_OFFER.id);
+  const [offers, setOffers] = useState<OfferRecord[]>([]);
+  const [selectedOfferId, setSelectedOfferId] = useState<string | number | null>(null);
   // Collapsible dropdown state for received offers (closed by default)
   const [expandedOfferId, setExpandedOfferId] = useState<string | number | null>(null);
 
@@ -109,7 +86,7 @@ export default function ApplicantOfferLetter() {
       const savedUser = JSON.parse(savedUserRaw) as { id?: number; role?: string; name?: string; first_name?: string; last_name?: string };
       if (savedUser.id) {
         setUserId(savedUser.id);
-        const fullName = [savedUser.first_name, savedUser.last_name].filter(Boolean).join(" ") || savedUser.name || "John Doe";
+        const fullName = [savedUser.first_name, savedUser.last_name].filter(Boolean).join(" ") || savedUser.name || "";
         setCandidateName(fullName);
 
         // Fetch candidate profile for accurate name
@@ -165,12 +142,15 @@ export default function ApplicantOfferLetter() {
             receivedDate: a.updated_at ? new Date(a.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Recent",
             respondByDate: "Within 7 days",
             startDate: a.start_date || "Nov 3, 2026",
-            workSetup: a.work_arrangement || "Hybrid",
-            salary: a.salary ? `PHP ${a.salary}` : "PHP 45,000 / month",
-            letterContent: a.offer_letter || a.response_letter || `Dear ${candidateName},\n\nWe are pleased to offer you the position of ${a.job_title || a.title || "Position"} at ${a.company_name || "CEBUANA"}.\n\nYour start date will be ${a.start_date || "Nov 3, 2026"}. This is a ${a.work_arrangement || "Hybrid"} work setup, and your monthly salary will be PHP 45,000, subject to applicable taxes and company benefits.\n\nSincerely,\n${a.company_name || "CEBUANA"} Hiring Team`,
+            workSetup: a.work_arrangement || "Not specified",
+            salary: a.salary ? `PHP ${a.salary}` : "Not specified",
+            letterContent: a.offer_letter || a.response_letter || `Dear ${candidateName || "Candidate"},\n\nWe are pleased to offer you the position of ${a.job_title || a.title || "Position"} at ${a.company_name || "the company"}.\n\nYour start date will be ${a.start_date || "To be determined"}.${a.work_arrangement ? ` This is a ${a.work_arrangement} work setup.` : ""}${a.salary ? ` Your compensation will be PHP ${a.salary}.` : ""}\n\nSincerely,\n${a.company_name || "Hiring Team"}`,
           }));
           setOffers(mapped);
           setSelectedOfferId(mapped[0].id);
+        } else {
+          setOffers([]);
+          setSelectedOfferId(null);
         }
 
         const found = list.find((a: any) => String(a.id) === String(appId));
@@ -215,7 +195,7 @@ export default function ApplicantOfferLetter() {
   }, [userId, candidateName]);
 
   // Selected Offer
-  const currentOffer = offers.find((o) => String(o.id) === String(selectedOfferId)) || offers[0] || DEFAULT_SAMPLE_OFFER;
+  const currentOffer = offers.find((o) => String(o.id) === String(selectedOfferId)) || (offers.length > 0 ? offers[0] : null);
 
   // Load draft response if any
   useEffect(() => {
@@ -228,7 +208,7 @@ export default function ApplicantOfferLetter() {
         if (parsed.message) setCustomMessage(parsed.message);
       }
     } catch {}
-  }, [currentOffer.id]);
+  }, [currentOffer?.id]);
 
   // Handle Download Letter
   const handleDownloadLetter = () => {
@@ -328,12 +308,12 @@ Document Timestamp: ${new Date().toLocaleString()}
 
   // Render live preview replacing dynamic tags with realistic sample data
   const renderPreview = (template: string, isAcceptance: boolean) => {
-    const sampleJob = activeOfferContext?.jobTitle || currentOffer.title || "Financial Data & Business Intelligence Analyst";
-    const sampleCompany = activeOfferContext?.companyName || currentOffer.company || "CEBUANA";
-    const sampleStartDate = activeOfferContext?.startDate || currentOffer.startDate || "Nov 3, 2026";
+    const sampleJob = activeOfferContext?.jobTitle || currentOffer?.title || "{job_title}";
+    const sampleCompany = activeOfferContext?.companyName || currentOffer?.company || "{company_name}";
+    const sampleStartDate = activeOfferContext?.startDate || currentOffer?.startDate || "{start_date}";
 
     return template
-      .replace(/\{applicant_name\}|\{candidate_name\}/g, candidateName)
+      .replace(/\{applicant_name\}|\{candidate_name\}/g, candidateName || "{applicant_name}")
       .replace(/\{job_title\}|\{position\}/g, sampleJob)
       .replace(/\{company_name\}|\{employer_name\}/g, sampleCompany)
       .replace(/\{start_date\}/g, sampleStartDate);
@@ -986,7 +966,7 @@ Document Timestamp: ${new Date().toLocaleString()}
               </h3>
               <p className="aol-modal-desc">
                 You are about to <strong>{selectedDecision.toUpperCase()}</strong> the formal employment offer from{" "}
-                <strong>{currentOffer.company}</strong> for the position of <strong>{currentOffer.title}</strong>.
+                <strong>{currentOffer?.company}</strong> for the position of <strong>{currentOffer?.title}</strong>.
               </p>
               {customMessage.trim() && (
                 <div className="aol-modal-message-preview">

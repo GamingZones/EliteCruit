@@ -121,55 +121,8 @@ type FeedbackRecord = {
   location?: string;
   companyLogoPath?: string | null;
   companyCoverPath?: string | null;
-};
-
-const FALLBACK_FEEDBACK_JOBS: Record<string, Partial<TargetOption>> = {
-  "301": {
-    id: 301,
-    jobPostId: 301,
-    employerUserId: 501,
-    name: "Apex Global Solutions Inc.",
-    jobTitle: "Full Stack Web Developer",
-    location: "Silang, Cavite",
-    workSetup: "Hybrid",
-    salary: "PHP 45,000 - 65,000",
-    salary_min: 45000,
-    salary_max: 65000,
-    hide_salary: 0,
-    rating: "4.8",
-    description: "Build robust, scalable web applications with React, Node.js, and PostgreSQL.",
-    requiredSkills: ["React", "Node.js", "TypeScript"],
-    qualifications: ["Bachelor's Degree in IT or Computer Science"],
-    certifications: ["AWS Cloud Practitioner"],
-    closeDate: "11/30/2026",
-    applicationLimit: 15,
-    applicantCount: 7,
-    companyLogoPath: null,
-    companyCoverPath: null,
-  },
-  "302": {
-    id: 302,
-    jobPostId: 302,
-    employerUserId: 502,
-    name: "Vanguard Tech Innovations",
-    jobTitle: "Frontend Software Engineer",
-    location: "Dasmariñas, Cavite",
-    workSetup: "On-Site",
-    salary: "PHP 35,000 - 50,000",
-    salary_min: 35000,
-    salary_max: 50000,
-    hide_salary: 0,
-    rating: "4.6",
-    description: "Develop high-performing user interfaces with Tailwind CSS and Next.js.",
-    requiredSkills: ["React", "Next.js", "Tailwind CSS"],
-    qualifications: ["Bachelor's Degree in Computer Science"],
-    certifications: ["Meta Frontend Developer Certificate"],
-    closeDate: "11/15/2026",
-    applicationLimit: 10,
-    applicantCount: 5,
-    companyLogoPath: null,
-    companyCoverPath: null,
-  },
+  email?: string;
+  phone?: string;
 };
 
 type CompanyReviewItem = {
@@ -516,20 +469,20 @@ export default function Feedback() {
       }
     } catch {}
 
-    // Fallback if employer profile route fails (e.g. sample employer 501 / Apex Global Solutions)
+    // Fallback if employer profile route returns empty
     if (detailsJob) {
       setSelectedCompanyDetails({
         employer_user_id: empUserId,
-        company_name: detailsJob.name || "Apex Global Solutions Inc.",
-        business_name: detailsJob.name || "Apex Global Solutions Inc.",
-        company_description: detailsJob.description || "Apex Global Solutions Inc. is a premier digital technology solutions provider specializing in enterprise web applications, cloud infrastructure, and modern engineering practices across the Cavite province.",
-        company_address: detailsJob.location || "Silang, Cavite",
-        address: detailsJob.location || "Silang, Cavite",
-        contact_number: "+63 46 414 8899",
-        business_email: "contact@apexsolutions.ph",
-        industry: "Information Technology & Software Services",
-        company_size: "50-249 Employees",
-        rating: detailsJob.rating || "4.8",
+        company_name: detailsJob.name || "",
+        business_name: detailsJob.name || "",
+        company_description: detailsJob.description || "",
+        company_address: detailsJob.location || "",
+        address: detailsJob.location || "",
+        contact_number: "",
+        business_email: "",
+        industry: "",
+        company_size: "",
+        rating: detailsJob.rating || "0.0",
         company_logo_path: detailsJob.companyLogoPath || null,
         company_cover_path: detailsJob.companyCoverPath || null,
       });
@@ -965,11 +918,11 @@ export default function Feedback() {
                 jobPostId: a.job_post_id ? Number(a.job_post_id) : undefined,
                 name: a.candidate_name || a.applicant_name || "Applicant",
                 status: ["approved", "accepted", "recruited"].includes(String(a.application_status || a.status || "").toLowerCase()) ? "Recruited" : "Denied",
-                jobTitle: a.job_title || "Full Stack Web Developer",
-                location: formatLocationWithCavite(a.city || "Silang, Cavite"),
+                jobTitle: a.job_title || "Job Position",
+                location: a.city ? formatLocationWithCavite(a.city) : "",
                 workSetup: a.work_arrangement || "On-Site",
                 salary: "—",
-                rating: a.rating ? String(a.rating) : "5.0",
+                rating: a.rating ? String(a.rating) : "0.0",
                 email: a.email || "",
                 phone: a.phone || "",
                 requiredSkills: parseCompetencyDisplayTags(a.skills),
@@ -1400,39 +1353,7 @@ export default function Feedback() {
       (t.name && item.targetName && t.name.trim().toLowerCase() === item.targetName.trim().toLowerCase())
     );
 
-    // 2. Fallback to predefined sample jobs if not in targetOptions
-    if (!matched) {
-      const fallbackKey = String(item.jobPostId || (item.targetName.includes("Apex") ? "301" : item.targetName.includes("Vanguard") ? "302" : ""));
-      const fallback = FALLBACK_FEEDBACK_JOBS[fallbackKey];
-      if (fallback) {
-        matched = {
-          id: fallback.id || item.jobPostId || 301,
-          jobPostId: fallback.jobPostId || 301,
-          employerUserId: fallback.employerUserId || 501,
-          name: fallback.name || item.targetName,
-          status: item.status,
-          jobTitle: item.jobTitle || fallback.jobTitle || "Full Stack Web Developer",
-          location: fallback.location || item.location || "Silang, Cavite",
-          workSetup: fallback.workSetup || "Hybrid",
-          salary: fallback.salary || "PHP 45,000 - 65,000",
-          salary_min: fallback.salary_min || 45000,
-          salary_max: fallback.salary_max || 65000,
-          hide_salary: fallback.hide_salary || 0,
-          rating: String(fallback.rating || "4.8"),
-          description: fallback.description || "Build robust, scalable web applications with React, Node.js, and PostgreSQL.",
-          requiredSkills: fallback.requiredSkills || ["React", "Node.js", "TypeScript"],
-          qualifications: fallback.qualifications || ["Bachelor's Degree in IT or Computer Science"],
-          certifications: fallback.certifications || ["AWS Cloud Practitioner"],
-          closeDate: fallback.closeDate || "11/30/2026",
-          applicationLimit: fallback.applicationLimit || 15,
-          applicantCount: fallback.applicantCount || 7,
-          companyLogoPath: fallback.companyLogoPath || null,
-          companyCoverPath: fallback.companyCoverPath || null,
-        };
-      }
-    }
-
-    // 3. If item carries its own job post details from the API
+    // 2. If item carries its own job post details from the API
     if (!matched && (item.description || item.requiredSkills)) {
       matched = {
         id: item.jobPostId || item.id,
@@ -2407,28 +2328,38 @@ export default function Feedback() {
                       <div>
                         <strong className="jd-employer-name">{detailsJob.name}</strong>
                         <span className="jd-employer-location" style={{ display: "inline-flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginTop: "3px" }}>
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" />
-                              <circle cx="12" cy="10" r="2.5" />
-                            </svg>
-                            {detailsJob.location || "Cavite"}
-                          </span>
-                          <span style={{ color: "#cbd5e1" }}>•</span>
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                              <polyline points="22,6 12,13 2,6" />
-                            </svg>
-                            candidate@example.com
-                          </span>
-                          <span style={{ color: "#cbd5e1" }}>•</span>
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                            </svg>
-                            09682944632
-                          </span>
+                          {detailsJob.location && (
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" />
+                                <circle cx="12" cy="10" r="2.5" />
+                              </svg>
+                              {detailsJob.location}
+                            </span>
+                          )}
+                          {detailsJob.email && (
+                            <>
+                              {detailsJob.location && <span style={{ color: "#cbd5e1" }}>•</span>}
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                                  <polyline points="22,6 12,13 2,6" />
+                                </svg>
+                                {detailsJob.email}
+                              </span>
+                            </>
+                          )}
+                          {detailsJob.phone && (
+                            <>
+                              {(detailsJob.location || detailsJob.email) && <span style={{ color: "#cbd5e1" }}>•</span>}
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                                </svg>
+                                {detailsJob.phone}
+                              </span>
+                            </>
+                          )}
                         </span>
                       </div>
                     </div>
@@ -2460,33 +2391,48 @@ export default function Feedback() {
                         </div>
                         <div className="jd-chips-inline">
                           <span className="setup-pill">{detailsJob.workSetup || "On-Site"}</span>
-                          <span className="salary-pill">{detailsJob.salary || "PHP 10,000 - 15,000"}</span>
+                          <span className="salary-pill">{detailsJob.salary && detailsJob.salary !== "—" ? detailsJob.salary : "Salary Confidential"}</span>
                         </div>
                       </div>
 
                       <div className="jd-section">
                         <h3>SKILLS</h3>
                         <div className="jd-tags-wrap">
-                          <span className="js-tag-chip js-tag-skill">Web Development</span>
-                          <span className="js-tag-chip js-tag-skill">Data Structures and Algorithms</span>
-                          <span className="js-tag-chip js-tag-skill">TypeScript</span>
+                          {detailsJob.requiredSkills && detailsJob.requiredSkills.length > 0 ? (
+                            detailsJob.requiredSkills.map((s, idx) => (
+                              <span key={idx} className="js-tag-chip js-tag-skill">{s}</span>
+                            ))
+                          ) : (
+                            <span style={{ fontSize: "0.82rem", color: "#64748b" }}>None listed</span>
+                          )}
                         </div>
                       </div>
 
                       <div className="jd-section">
                         <h3>QUALIFICATIONS</h3>
                         <div className="jd-tags-wrap">
-                          <span className="js-tag-chip js-tag-qualification">BS Computer Science (BSCS)</span>
-                          <span className="js-tag-chip js-tag-qualification">Software Engineering Fundamentals</span>
+                          {detailsJob.qualifications && detailsJob.qualifications.length > 0 ? (
+                            detailsJob.qualifications.map((q, idx) => (
+                              <span key={idx} className="js-tag-chip js-tag-qualification">{q}</span>
+                            ))
+                          ) : (
+                            <span style={{ fontSize: "0.82rem", color: "#64748b" }}>None listed</span>
+                          )}
                         </div>
                       </div>
 
                       <div className="jd-section">
                         <h3>CERTIFICATIONS</h3>
                         <div className="jd-tags-wrap">
-                          <span className="js-tag-chip" style={{ background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a" }}>
-                            Google IT Support Professional Certificate
-                          </span>
+                          {detailsJob.certifications && detailsJob.certifications.length > 0 ? (
+                            detailsJob.certifications.map((c, idx) => (
+                              <span key={idx} className="js-tag-chip" style={{ background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a" }}>
+                                {c}
+                              </span>
+                            ))
+                          ) : (
+                            <span style={{ fontSize: "0.82rem", color: "#64748b" }}>None listed</span>
+                          )}
                         </div>
                       </div>
                     </div>

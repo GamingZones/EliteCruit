@@ -589,8 +589,8 @@ async function ensureExtendedTables() {
       applicant_phone TEXT,
       applicant_city TEXT,
       applicant_email TEXT,
-      employer_company_name TEXT DEFAULT 'Cebuana Lhuillier',
-      employer_phone TEXT DEFAULT '+63 917 123 4567',
+      employer_company_name TEXT,
+      employer_phone TEXT,
       employer_address TEXT,
       employer_email TEXT,
       deleted_by_employer BOOLEAN NOT NULL DEFAULT FALSE,
@@ -658,8 +658,8 @@ async function ensureScheduledInterviewColumns() {
   await run("ALTER TABLE scheduled_interviews ADD COLUMN IF NOT EXISTS applicant_phone TEXT");
   await run("ALTER TABLE scheduled_interviews ADD COLUMN IF NOT EXISTS applicant_city TEXT");
   await run("ALTER TABLE scheduled_interviews ADD COLUMN IF NOT EXISTS applicant_email TEXT");
-  await run("ALTER TABLE scheduled_interviews ADD COLUMN IF NOT EXISTS employer_company_name TEXT DEFAULT 'Cebuana Lhuillier'");
-  await run("ALTER TABLE scheduled_interviews ADD COLUMN IF NOT EXISTS employer_phone TEXT DEFAULT '+63 917 123 4567'");
+  await run("ALTER TABLE scheduled_interviews ADD COLUMN IF NOT EXISTS employer_company_name TEXT");
+  await run("ALTER TABLE scheduled_interviews ADD COLUMN IF NOT EXISTS employer_phone TEXT");
   await run("ALTER TABLE scheduled_interviews ADD COLUMN IF NOT EXISTS employer_address TEXT");
   await run("ALTER TABLE scheduled_interviews ADD COLUMN IF NOT EXISTS employer_email TEXT");
 }
@@ -2486,52 +2486,6 @@ app.get("/api/employers/:userId/profile", async (req, res) => {
     );
 
     if (!profile) {
-      if (userId === 501) {
-        return res.json({
-          profile: {
-            user_id: 501,
-            employer_user_id: 501,
-            business_name: "Apex Global Solutions Inc.",
-            company_name: "Apex Global Solutions Inc.",
-            business_email: "contact@apexsolutions.ph",
-            is_email_verified: true,
-            contact_number: "+63 46 414 8899",
-            industry: "Information Technology & Software Services",
-            company_size: "50-249 Employees",
-            province: "Cavite",
-            city: "Silang",
-            company_address: "Silang, Cavite",
-            company_description: "Apex Global Solutions Inc. is a premier digital technology solutions provider specializing in enterprise web applications, cloud infrastructure, and modern engineering practices across the Cavite province.",
-            rating: "4.8",
-            total_reviews: 12,
-            company_logo_path: null,
-            company_cover_path: null,
-          }
-        });
-      }
-      if (userId === 502) {
-        return res.json({
-          profile: {
-            user_id: 502,
-            employer_user_id: 502,
-            business_name: "Vanguard Tech Innovations",
-            company_name: "Vanguard Tech Innovations",
-            business_email: "hr@vanguardtech.ph",
-            is_email_verified: true,
-            contact_number: "+63 46 852 3344",
-            industry: "Information Technology & Software Services",
-            company_size: "20-49 Employees",
-            province: "Cavite",
-            city: "Dasmariñas",
-            company_address: "Dasmariñas, Cavite",
-            company_description: "Vanguard Tech Innovations delivers modern web applications, scalable cloud microservices, and high-performance digital platforms.",
-            rating: "4.6",
-            total_reviews: 8,
-            company_logo_path: null,
-            company_cover_path: null,
-          }
-        });
-      }
       res.status(404).json({ message: "Employer profile not found." });
       return;
     }
@@ -6510,57 +6464,6 @@ app.get("/api/applicants/:userId/eligible-feedback-employers", optionalAuthentic
       [userId]
     );
 
-    if (rows.length === 0) {
-      rows = [
-        {
-          application_id: "sample-app-1",
-          application_status: "Accepted",
-          job_post_id: 301,
-          job_title: "Full Stack Web Developer",
-          description: "Build robust, scalable web applications with React, Node.js, and PostgreSQL.",
-          required_skills: "React, Node.js, TypeScript",
-          qualifications: "Bachelor's Degree in IT or Computer Science",
-          certifications: "AWS Cloud Practitioner",
-          close_date: "2026-11-30",
-          application_limit: 15,
-          applicant_count: 7,
-          location: "Silang, Cavite",
-          work_arrangement: "Hybrid",
-          salary_min: 45000,
-          salary_max: 65000,
-          hide_salary: 0,
-          employer_user_id: 501,
-          company_name: "Apex Global Solutions Inc.",
-          company_logo_path: null,
-          company_cover_path: null,
-          rating: 4.8,
-        },
-        {
-          application_id: "sample-app-2",
-          application_status: "Denied",
-          job_post_id: 302,
-          job_title: "Frontend Software Engineer",
-          description: "Develop high-performing user interfaces with Tailwind CSS and Next.js.",
-          required_skills: "React, Next.js, Tailwind CSS",
-          qualifications: "Bachelor's Degree in Computer Science",
-          certifications: "Meta Frontend Developer Certificate",
-          close_date: "2026-11-15",
-          application_limit: 10,
-          applicant_count: 5,
-          location: "Dasmariñas, Cavite",
-          work_arrangement: "On-Site",
-          salary_min: 35000,
-          salary_max: 50000,
-          hide_salary: 0,
-          employer_user_id: 502,
-          company_name: "Vanguard Tech Innovations",
-          company_logo_path: null,
-          company_cover_path: null,
-          rating: 4.6,
-        },
-      ];
-    }
-
     res.json({ employers: rows });
   } catch (err) {
     console.error("Load eligible feedback employers error:", err);
@@ -6614,39 +6517,6 @@ app.get("/api/applicants/:userId/company-feedbacks", optionalAuthenticateToken, 
       [userId]
     );
 
-    if (rows.length === 0) {
-      rows = [
-        {
-          id: "sample-afb-1",
-          rating: 5,
-          comments: "Fast recruitment response and professional interview atmosphere. Highly recommended for software developers.",
-          is_anonymous: 1,
-          job_post_id: 301,
-          employer_user_id: 501,
-          created_at: new Date(Date.now() - 4 * 86400000).toISOString(),
-          updated_at: new Date(Date.now() - 4 * 86400000).toISOString(),
-          job_title: "Full Stack Web Developer",
-          target_name: "Apex Global Solutions Inc.",
-          location: "Silang, Cavite",
-          description: "Build robust, scalable web applications with React, Node.js, and PostgreSQL.",
-          required_skills: "React, Node.js, TypeScript",
-          qualifications: "Bachelor's Degree in IT or Computer Science",
-          certifications: "AWS Cloud Practitioner",
-          work_arrangement: "Hybrid",
-          salary_min: 45000,
-          salary_max: 65000,
-          hide_salary: 0,
-          close_date: "2026-11-30",
-          application_limit: 15,
-          applicant_count: 7,
-          company_logo_path: null,
-          company_cover_path: null,
-          company_rating: 4.8,
-          status: "Accepted",
-        },
-      ];
-    }
-
     res.json({ feedbacks: rows });
   } catch (err) {
     console.error("Get applicant feedbacks error:", err);
@@ -6683,47 +6553,6 @@ app.get("/api/applicants/:userId/received-feedbacks", optionalAuthenticateToken,
          ORDER BY datetime(cr.updated_at) DESC`,
         [userId]
       );
-    }
-
-    if (rows.length === 0) {
-      rows = [
-        {
-          id: "sample-er-1",
-          rating: 5,
-          comments: "Exceptional candidate during the technical screening. Showed strong full-stack proficiency, deep problem-solving abilities, and remarkable team communication.",
-          is_anonymous: 0,
-          job_post_id: 201,
-          created_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-          updated_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-          job_title: "Full Stack Web Developer",
-          company_name: "Apex Global Solutions Inc.",
-          company_logo_path: null,
-        },
-        {
-          id: "sample-er-2",
-          rating: 5,
-          comments: "Very impressive background and portfolio. Handled all system design and scenario-based questions with ease. Highly recommended professional.",
-          is_anonymous: 0,
-          job_post_id: 202,
-          created_at: new Date(Date.now() - 7 * 86400000).toISOString(),
-          updated_at: new Date(Date.now() - 7 * 86400000).toISOString(),
-          job_title: "Frontend React Specialist",
-          company_name: "Cebuana Lhuillier Recruitment",
-          company_logo_path: null,
-        },
-        {
-          id: "sample-er-3",
-          rating: 4,
-          comments: "Solid technical background, prompt responses throughout the recruitment loop, and great culture fit for our engineering division.",
-          is_anonymous: 1,
-          job_post_id: 203,
-          created_at: new Date(Date.now() - 14 * 86400000).toISOString(),
-          updated_at: new Date(Date.now() - 14 * 86400000).toISOString(),
-          job_title: "Software Engineer",
-          company_name: "Anonymous Employer",
-          company_logo_path: null,
-        },
-      ];
     }
 
     res.json({ feedbacks: rows });
@@ -6788,59 +6617,6 @@ app.get("/api/employers/:userId/company-feedbacks", optionalAuthenticateToken, a
       );
     }
 
-    if (rows.length === 0) {
-      rows = [
-        {
-          id: "sample-cf-1",
-          rating: 5,
-          comments: "The technical interview and recruitment team were incredibly transparent about the salary range and company culture. Onboarding expectations were communicated promptly.",
-          is_anonymous: 0,
-          job_post_id: 101,
-          created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-          updated_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-          job_title: "Senior Full-Stack Web Developer",
-          candidate_name: "Alyssa Valdez",
-          profile_picture_path: null,
-        },
-        {
-          id: "sample-cf-2",
-          rating: 4,
-          comments: "Great company with high engineering standards. The interview was comprehensive with practical problem-solving questions. Constructive feedback was given within 3 business days.",
-          is_anonymous: 1,
-          job_post_id: 102,
-          created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-          updated_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-          job_title: "Cloud Systems DevOps Engineer",
-          candidate_name: "Anonymous Candidate",
-          profile_picture_path: null,
-        },
-        {
-          id: "sample-cf-3",
-          rating: 5,
-          comments: "Very accommodating HR and engineering managers. Even though the position was competitive, the feedback received during the final interview was very encouraging and professional.",
-          is_anonymous: 0,
-          job_post_id: 103,
-          created_at: new Date(Date.now() - 8 * 86400000).toISOString(),
-          updated_at: new Date(Date.now() - 8 * 86400000).toISOString(),
-          job_title: "UI/UX Product Designer",
-          candidate_name: "Mark Anthony Reyes",
-          profile_picture_path: null,
-        },
-        {
-          id: "sample-cf-4",
-          rating: 3,
-          comments: "The interview stages were professional, but communication after the initial screening exam took a bit longer than expected. Overall a positive interaction with the team.",
-          is_anonymous: 1,
-          job_post_id: 104,
-          created_at: new Date(Date.now() - 12 * 86400000).toISOString(),
-          updated_at: new Date(Date.now() - 12 * 86400000).toISOString(),
-          job_title: "Data Analyst & Business Intelligence",
-          candidate_name: "Anonymous Candidate",
-          profile_picture_path: null,
-        },
-      ];
-    }
-
     res.json({ feedbacks: rows });
   } catch (err) {
     console.error("Get employer feedbacks error:", err);
@@ -6877,25 +6653,6 @@ app.get("/api/employers/:userId/candidate-feedbacks", optionalAuthenticateToken,
          ORDER BY datetime(cr.updated_at) DESC`,
         [userId]
       );
-    }
-
-    if (rows.length === 0) {
-      rows = [
-        {
-          id: "sample-cr-1",
-          rating: 5,
-          comments: "Outstanding technical performance during the coding challenge and clear communication throughout the interview loop. Highly recommended for the team.",
-          is_anonymous: 0,
-          job_post_id: 101,
-          applicant_user_id: 201,
-          created_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-          updated_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-          job_title: "Full Stack Web Developer",
-          target_name: "Christian Kyle Santos",
-          profile_picture_path: null,
-          status: "Recruited",
-        },
-      ];
     }
 
     res.json({ feedbacks: rows });
@@ -6942,10 +6699,10 @@ app.get("/api/employers/:userId/eligible-feedback-candidates", optionalAuthentic
                 a.status AS application_status,
                 a.applicant_user_id,
                 a.job_post_id,
-                COALESCE(jp.title, 'Full Stack Web Developer') AS job_title,
+                COALESCE(jp.title, 'Job Opening') AS job_title,
                 COALESCE(NULLIF(TRIM(COALESCE(ap.first_name, '') || ' ' || COALESCE(ap.last_name, '')), ''), u.email, 'Applicant') AS candidate_name,
-                COALESCE(ap.city, 'Silang, Cavite') AS city,
-                COALESCE(ap.work_arrangement, 'Hybrid') AS work_arrangement,
+                COALESCE(ap.city, '') AS city,
+                COALESCE(ap.work_arrangement, '') AS work_arrangement,
                 ap.skills,
                 ap.qualifications,
                 ap.certifications,
@@ -6971,10 +6728,10 @@ app.get("/api/employers/:userId/eligible-feedback-candidates", optionalAuthentic
                 di.status AS application_status,
                 di.applicant_user_id,
                 di.job_post_id,
-                COALESCE(jp.title, 'Candidate') AS job_title,
+                COALESCE(jp.title, 'Job Opening') AS job_title,
                 COALESCE(NULLIF(TRIM(COALESCE(ap.first_name, '') || ' ' || COALESCE(ap.last_name, '')), ''), u.email, 'Candidate') AS candidate_name,
-                COALESCE(ap.city, 'Silang, Cavite') AS city,
-                COALESCE(ap.work_arrangement, 'On-Site') AS work_arrangement,
+                COALESCE(ap.city, '') AS city,
+                COALESCE(ap.work_arrangement, '') AS work_arrangement,
                 ap.skills,
                 ap.qualifications,
                 ap.certifications,
@@ -6992,62 +6749,6 @@ app.get("/api/employers/:userId/eligible-feedback-candidates", optionalAuthentic
         [userId]
       );
       rows = [...rows, ...invites];
-    }
-
-    if (rows.length === 0) {
-      rows = [
-        {
-          application_id: "sample-cand-1",
-          application_status: "Recruited",
-          applicant_user_id: 201,
-          job_post_id: 101,
-          job_title: "Full Stack Web Developer",
-          candidate_name: "Christian Kyle Santos",
-          city: "Silang, Cavite",
-          work_arrangement: "Hybrid",
-          skills: "React, Node.js, TypeScript, PostgreSQL",
-          qualifications: "Bachelor of Science in Information Technology",
-          certifications: "AWS Certified Cloud Practitioner",
-          profile_picture_path: null,
-          email: "christian.santos@example.com",
-          phone: "09171234567",
-          rating: 4.8,
-        },
-        {
-          application_id: "sample-cand-2",
-          application_status: "Accepted",
-          applicant_user_id: 202,
-          job_post_id: 102,
-          job_title: "UI/UX Designer",
-          candidate_name: "Marielle Angela Cruz",
-          city: "Dasmariñas, Cavite",
-          work_arrangement: "Remote",
-          skills: "Figma, UI Design, Wireframing, User Research",
-          qualifications: "Bachelor of Science in Computer Science",
-          certifications: "Google UX Design Professional Certificate",
-          profile_picture_path: null,
-          email: "marielle.cruz@example.com",
-          phone: "09189876543",
-          rating: 4.9,
-        },
-        {
-          application_id: "sample-cand-3",
-          application_status: "Denied",
-          applicant_user_id: 203,
-          job_post_id: 103,
-          job_title: "Junior Backend Engineer",
-          candidate_name: "Joshua Miguel Rivera",
-          city: "General Trias, Cavite",
-          work_arrangement: "On-Site",
-          skills: "Python, Django, REST APIs, Docker",
-          qualifications: "Bachelor of Science in Computer Engineering",
-          certifications: "Cisco Certified Network Associate (CCNA)",
-          profile_picture_path: null,
-          email: "joshua.rivera@example.com",
-          phone: "09205551234",
-          rating: 4.5,
-        },
-      ];
     }
 
     res.json({ candidates: rows });
@@ -7249,13 +6950,13 @@ app.get("/api/interviews", async (req, res) => {
         `SELECT i.*,
                 COALESCE(i.job_title, jp.title, 'Job Position') AS job_title,
                 COALESCE(i.applicant_name, NULLIF(TRIM(CONCAT_WS(' ', ap.first_name, ap.middle_name, ap.last_name)), ''), u_app.email, 'Candidate') AS applicant_name,
-                COALESCE(i.applicant_phone, ap.phone, '+63 917 000 0000') AS applicant_phone,
-                COALESCE(i.applicant_city, ap.city, 'Cavite') AS applicant_city,
-                COALESCE(i.applicant_email, u_app.email, 'candidate@example.com') AS applicant_email,
+                COALESCE(i.applicant_phone, ap.phone, '') AS applicant_phone,
+                COALESCE(i.applicant_city, ap.city, '') AS applicant_city,
+                COALESCE(i.applicant_email, u_app.email, '') AS applicant_email,
                 ap.profile_picture_path AS applicant_profile_picture_path,
                 ep.company_logo_path AS employer_logo_path,
                 ep.company_cover_path AS employer_cover_path,
-                COALESCE(i.employer_company_name, ep.business_name, 'Cebuana Lhuillier') AS employer_company_name
+                COALESCE(i.employer_company_name, ep.business_name, '') AS employer_company_name
          FROM scheduled_interviews i
          LEFT JOIN job_posts jp ON i.job_post_id = jp.id
          LEFT JOIN applicant_profiles ap ON i.applicant_user_id = ap.user_id
@@ -7279,16 +6980,16 @@ app.get("/api/interviews", async (req, res) => {
       rows = await all(
         `SELECT i.*,
                 COALESCE(i.job_title, jp.title, 'Job Position') AS job_title,
-                COALESCE(i.employer_company_name, ep.business_name, u_emp.email, 'Cebuana Lhuillier') AS employer_company_name,
-                COALESCE(i.employer_phone, ep.contact_number, '+63 917 123 4567') AS employer_phone,
-                COALESCE(i.employer_address, ep.company_address, 'Cavite') AS employer_address,
-                COALESCE(i.employer_email, u_emp.email, 'hr@cebuana.com') AS employer_email,
+                COALESCE(i.employer_company_name, ep.business_name, u_emp.email, '') AS employer_company_name,
+                COALESCE(i.employer_phone, ep.contact_number, '') AS employer_phone,
+                COALESCE(i.employer_address, ep.company_address, '') AS employer_address,
+                COALESCE(i.employer_email, u_emp.email, '') AS employer_email,
                 ep.company_logo_path AS employer_logo_path,
                 ep.company_cover_path AS employer_cover_path,
                 COALESCE(i.applicant_name, NULLIF(TRIM(CONCAT_WS(' ', ap.first_name, ap.middle_name, ap.last_name)), ''), u_app.email, 'Candidate') AS applicant_name,
-                COALESCE(i.applicant_phone, ap.phone, '+63 917 000 0000') AS applicant_phone,
-                COALESCE(i.applicant_city, ap.city, 'Cavite') AS applicant_city,
-                COALESCE(i.applicant_email, u_app.email, 'candidate@example.com') AS applicant_email,
+                COALESCE(i.applicant_phone, ap.phone, '') AS applicant_phone,
+                COALESCE(i.applicant_city, ap.city, '') AS applicant_city,
+                COALESCE(i.applicant_email, u_app.email, '') AS applicant_email,
                 ap.profile_picture_path AS applicant_profile_picture_path
          FROM scheduled_interviews i
          LEFT JOIN job_posts jp ON i.job_post_id = jp.id
@@ -7311,7 +7012,7 @@ app.get("/api/interviews", async (req, res) => {
         `SELECT i.*,
                 COALESCE(i.job_title, jp.title, 'Job Position') AS job_title,
                 COALESCE(i.applicant_name, NULLIF(TRIM(CONCAT_WS(' ', ap.first_name, ap.middle_name, ap.last_name)), ''), u_app.email, 'Candidate') AS applicant_name,
-                COALESCE(i.employer_company_name, ep.business_name, u_emp.email, 'Cebuana Lhuillier') AS employer_company_name
+                COALESCE(i.employer_company_name, ep.business_name, u_emp.email, '') AS employer_company_name
          FROM scheduled_interviews i
          LEFT JOIN job_posts jp ON i.job_post_id = jp.id
          LEFT JOIN applicant_profiles ap ON i.applicant_user_id = ap.user_id
@@ -7389,6 +7090,9 @@ app.post("/api/interviews", async (req, res) => {
     const formattedEndTime = end_time?.trim() || start_time;
     const address = meeting_link_or_address?.trim() || "On-Site";
 
+    const empProfile = await get("SELECT business_name FROM employer_profiles WHERE user_id = ?", [employerId]);
+    const empName = empProfile?.business_name || (req.body?.employer_company_name ? String(req.body.employer_company_name).trim() : "");
+
     const result = await run(
       `INSERT INTO scheduled_interviews (
          employer_user_id, applicant_user_id, candidate_user_ids,
@@ -7397,7 +7101,7 @@ app.post("/api/interviews", async (req, res) => {
          notes, status, job_title, applicant_name, applicant_phone,
          applicant_city, applicant_email, employer_company_name,
          deleted_by_employer, deleted_by_applicant
-       ) VALUES (?, ?, ?::jsonb, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, 'Cebuana Lhuillier', FALSE, FALSE)`,
+       ) VALUES (?, ?, ?::jsonb, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, FALSE, FALSE)`,
       [
         employerId,
         primaryApplicantId,
@@ -7416,11 +7120,9 @@ app.post("/api/interviews", async (req, res) => {
         applicant_phone?.trim() || null,
         applicant_city?.trim() || null,
         applicant_email?.trim() || null,
+        empName,
       ]
     );
-
-    const empProfile = await get("SELECT business_name FROM employer_profiles WHERE user_id = ?", [employerId]);
-    const empName = empProfile?.business_name || "Cebuana Lhuillier";
 
     // Create notification for primary candidate if valid registered user
     if (primaryApplicantId && primaryApplicantId < 100) {
@@ -8048,7 +7750,6 @@ Promise.resolve()
   .then(() => ensureScheduledInterviewColumns())
   .then(() => syncHistoricalInvitations())
   .then(() => ensureAdminUser())
-  .then(() => resetAndSeedZakiAccounts())
   .then(() => app.listen(PORT, () => {
     console.log(`EliteCruit backend running at http://localhost:${PORT}`);
   }))
