@@ -257,22 +257,98 @@
 }
 
 .chat-head {
-  padding: 14px 18px;
+  padding: 10px 18px;
   border-bottom: 1px solid #dfe7f1;
   display: flex;
-  gap: 12px;
+  justify-content: space-between;
   align-items: center;
+  gap: 12px;
+  min-height: 62px;
+  box-sizing: border-box;
 }
 
-.chat-head strong {
+.chat-head-user-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.chat-head-user-meta {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.chat-head-user-meta strong {
+  display: block;
   font-size: 1.05rem;
+  font-weight: 800;
   color: #01294a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
 }
 
-.chat-head p {
-  margin: 2px 0 0;
-  color: #64748b;
+.chat-head-contact-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 3px;
   font-size: 0.82rem;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.chat-head-email {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+  color: #475569;
+}
+
+.chat-head-phone {
+  white-space: nowrap;
+  flex-shrink: 0;
+  color: #475569;
+}
+
+.chat-head-contact-sep {
+  color: #94a3b8;
+  font-weight: 700;
+  user-select: none;
+}
+
+.chat-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.chat-head-actions .chat-details-btn {
+  padding: 7px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.chat-head-actions .schedule-shortcut-btn {
+  padding: 7px 12px !important;
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  white-space: nowrap !important;
+}
+
+.chat-head-actions .chat-header-info-btn {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
 }
 
 .chat-body {
@@ -1044,7 +1120,7 @@
 
 /* 3-Column Messenger Layout */
 .messages-shell.with-info-sidebar {
-  grid-template-columns: 290px minmax(0, 1fr) 350px;
+  grid-template-columns: 250px minmax(0, 1fr) 295px;
 }
 
 /* Chat Info Sidebar Panel */
@@ -1434,13 +1510,13 @@
 /* Responsive Rules */
 @media (max-width: 1280px) {
   .messages-shell.with-info-sidebar {
-    grid-template-columns: 260px minmax(0, 1fr) 310px;
+    grid-template-columns: 240px minmax(0, 1fr) 280px;
   }
 }
 
 @media (max-width: 992px) {
   .messages-shell.with-info-sidebar {
-    grid-template-columns: 260px minmax(0, 1fr);
+    grid-template-columns: 240px minmax(0, 1fr);
   }
 
   .chat-info-sidebar {

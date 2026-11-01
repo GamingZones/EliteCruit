@@ -1820,8 +1820,8 @@ export default function Messages() {
           <section className="chat-panel">
             {selectedThread ? (
               <>
-                <header className="chat-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
+                <header className="chat-head">
+                  <div className="chat-head-user-wrap">
                     <span className="avatar-dot" style={{ overflow: "hidden", position: "relative" }}>
                       {selectedThread.other_user_avatar ? (
                         <img
@@ -1840,16 +1840,30 @@ export default function Messages() {
                         {initialsFromName(selectedThread.other_user_name || selectedThread.title)}
                       </span>
                     </span>
-                    <div style={{ minWidth: 0 }}>
+                    <div className="chat-head-user-meta">
                       <strong>{selectedThread.other_user_name || selectedThread.title || (isEmployer ? "Applicant" : "Employer")}</strong>
-                      <p style={{ margin: "2px 0 0", color: "#64748b", fontSize: "0.82rem" }}>
-                        {selectedThread.other_user_email || "No email"}
-                        {selectedThread.other_user_phone ? ` · ${selectedThread.other_user_phone}` : ""}
-                      </p>
+                      <div className="chat-head-contact-line">
+                        {selectedThread.other_user_email && (
+                          <span className="chat-head-email" title={selectedThread.other_user_email}>
+                            {selectedThread.other_user_email}
+                          </span>
+                        )}
+                        {selectedThread.other_user_email && selectedThread.other_user_phone && (
+                          <span className="chat-head-contact-sep" aria-hidden="true">·</span>
+                        )}
+                        {selectedThread.other_user_phone && (
+                          <span className="chat-head-phone">
+                            {selectedThread.other_user_phone}
+                          </span>
+                        )}
+                        {!selectedThread.other_user_email && !selectedThread.other_user_phone && (
+                          <span style={{ color: "#94a3b8" }}>No contact details</span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+                  <div className="chat-head-actions">
                     {isEmployer && selectedThread.other_user_id && (
                       <button
                         type="button"
@@ -1911,8 +1925,8 @@ export default function Messages() {
                         type="button"
                         className={`chat-header-info-btn ${isInfoSidebarOpen ? "active" : ""}`}
                         onClick={handleToggleInfoSidebar}
-                        title="Company Jobs & Information"
-                        aria-label="Toggle Company Jobs & Information"
+                        title={isEmployer ? "Candidate Jobs & Recruitment" : "Company Jobs & Information"}
+                        aria-label={isEmployer ? "Toggle Candidate Jobs & Recruitment" : "Toggle Company Jobs & Information"}
                       >
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                           <circle cx="12" cy="12" r="10" />
