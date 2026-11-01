@@ -1050,18 +1050,16 @@ export default function JobSearch() {
     const h1 = measureModalH1();
     if (!h1) return;
 
-    const h2 = measureModalH2(h1);
-
+    // The job details modal is master; docked side drawers match its height
+    // so opening messages or breakdown never shrinks or changes the job card height
     const clampedH1 = Math.max(minAllowed, Math.min(h1, maxAllowed));
-    const clampedH2 = Math.max(minAllowed, Math.min(h2, maxAllowed));
-
-    const equalH = Math.min(clampedH1, clampedH2);
+    const equalH = clampedH1;
 
     setModalMatchedHeight((prev) => {
       if (prev !== null && Math.abs(prev - equalH) <= 2) return prev;
       return equalH;
     });
-  }, [isMatchDrawerOpen, isMatchDrawerClosing, isJobMsgOpen, isJobMsgClosing, measureModalH1, measureModalH2]);
+  }, [isMatchDrawerOpen, isMatchDrawerClosing, isJobMsgOpen, isJobMsgClosing, measureModalH1]);
 
   useEffect(() => {
     const hasSidePanel = Boolean((isMatchDrawerOpen && !isMatchDrawerClosing) || (isJobMsgOpen && !isJobMsgClosing));
@@ -2915,7 +2913,6 @@ export default function JobSearch() {
       >
         <div
           className={`jd-modal-container ${hasSidePanel ? "with-side-panel" : ""}`}
-          style={!hasSidePanel ? { maxWidth: "820px" } : undefined}
         >
           <div className="jd-panel-outer-wrap">
             {!isEmployerModalOnTop && (

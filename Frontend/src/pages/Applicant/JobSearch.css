@@ -2027,7 +2027,7 @@
   background: #ffffff;
   border-radius: 16px;
   box-shadow: 0 24px 60px rgba(10, 30, 60, 0.22);
-  width: min(820px, 100%);
+  width: 100%;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
