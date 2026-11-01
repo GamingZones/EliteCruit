@@ -2728,6 +2728,14 @@ export default function ApplicantProfile() {
 
   const [nearbyModalProvince, setNearbyModalProvince] = useState("Cavite");
   const [nearbyModalCity, setNearbyModalCity] = useState("");
+  const [nearbyWarningModal, setNearbyWarningModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: React.ReactNode;
+    cancelLabel: string;
+    confirmLabel: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   const handleOpenNearbyModal = () => {
     setNearbyModalProvince(profile.province || "Cavite");
@@ -2735,10 +2743,10 @@ export default function ApplicantProfile() {
     setIsMapModalOpen(true);
   };
 
-  const handleSaveNearbyLocation = async () => {
-    if (!userId || !nearbyModalCity) return;
+  const confirmSaveNearbyLocation = async (chosenLocStr: string) => {
+    if (!userId) return;
+    setNearbyWarningModal(null);
     setIsSavingLocation(true);
-    const chosenLocStr = `${nearbyModalCity}${nearbyModalProvince ? `, ${nearbyModalProvince}` : ""}`;
     try {
       const res = await fetch(`/api/applicants/${userId}/location`, {
         method: "PUT",
@@ -2772,23 +2780,41 @@ export default function ApplicantProfile() {
     }
   };
 
-  const [isUpdatingParticipation, setIsUpdatingParticipation] = useState(false);
-  const [isUnsavedExpWarningOpen, setIsUnsavedExpWarningOpen] = useState(false);
-
-  const handleToggleParticipation = async () => {
-    if (!userId) return;
-    setIsUpdatingParticipation(true);
+  const promptSaveNearbyLocation = () => {
+    if (!userId || !nearbyModalCity) return;
+    const chosenLocStr = `${nearbyModalCity}${nearbyModalProvince ? `, ${nearbyModalProvince}` : ""}`;
     const currentlyActive = Boolean(
       profile.nearby_location && profile.nearby_location.trim().length > 0
     );
-    let newNearbyLoc: string | null = null;
 
-    if (!currentlyActive) {
-      newNearbyLoc = profile.city
-        ? `${profile.city}${profile.province ? `, ${profile.province}` : ""}`
-        : profile.address || "Cavite Area";
-    }
+    setNearbyWarningModal({
+      isOpen: true,
+      title: "Warning",
+      message: (
+        <div>
+          <p style={{ margin: "0 0 8px" }}>
+            {currentlyActive
+              ? `Are you sure you want to change your Nearby Discovery location to ${chosenLocStr}?`
+              : `Are you sure you want to set your Nearby Discovery location to ${chosenLocStr}?`}
+          </p>
+          <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>
+            This will update where employers can discover your profile for local candidate searches.
+          </p>
+        </div>
+      ),
+      cancelLabel: "Cancel",
+      confirmLabel: "Change Location",
+      onConfirm: () => confirmSaveNearbyLocation(chosenLocStr),
+    });
+  };
 
+  const [isUpdatingParticipation, setIsUpdatingParticipation] = useState(false);
+  const [isUnsavedExpWarningOpen, setIsUnsavedExpWarningOpen] = useState(false);
+
+  const confirmToggleParticipation = async (newNearbyLoc: string | null) => {
+    if (!userId) return;
+    setNearbyWarningModal(null);
+    setIsUpdatingParticipation(true);
     try {
       const res = await fetch(`/api/applicants/${userId}/location`, {
         method: "PUT",
@@ -2818,6 +2844,54 @@ export default function ApplicantProfile() {
       alert("Failed to update participation status.");
     } finally {
       setIsUpdatingParticipation(false);
+    }
+  };
+
+  const promptToggleParticipation = () => {
+    if (!userId) return;
+    const currentlyActive = Boolean(
+      profile.nearby_location && profile.nearby_location.trim().length > 0
+    );
+
+    if (currentlyActive) {
+      setNearbyWarningModal({
+        isOpen: true,
+        title: "Warning",
+        message: (
+          <div>
+            <p style={{ margin: "0 0 8px" }}>
+              Are you sure you want to turn off Nearby Employer Discovery?
+            </p>
+            <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>
+              Your profile will no longer be visible to employers conducting nearby candidate searches.
+            </p>
+          </div>
+        ),
+        cancelLabel: "Cancel",
+        confirmLabel: "Turn Off",
+        onConfirm: () => confirmToggleParticipation(null),
+      });
+    } else {
+      const targetLoc = profile.nearby_location || (profile.city
+        ? `${profile.city}${profile.province ? `, ${profile.province}` : ""}`
+        : profile.address || "Cavite Area");
+      setNearbyWarningModal({
+        isOpen: true,
+        title: "Warning",
+        message: (
+          <div>
+            <p style={{ margin: "0 0 8px" }}>
+              Are you sure you want to turn on Nearby Employer Discovery?
+            </p>
+            <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>
+              Your profile will become visible to employers searching for candidates in <strong>{targetLoc}</strong>.
+            </p>
+          </div>
+        ),
+        cancelLabel: "Cancel",
+        confirmLabel: "Turn On",
+        onConfirm: () => confirmToggleParticipation(targetLoc),
+      });
     }
   };
 
@@ -4266,7 +4340,7 @@ export default function ApplicantProfile() {
                               <input
                                 type="checkbox"
                                 checked={isParticipating}
-                                onChange={handleToggleParticipation}
+                                onChange={promptToggleParticipation}
                                 disabled={isUpdatingParticipation}
                                 style={{ display: "none" }}
                               />
@@ -4987,7 +5061,7 @@ export default function ApplicantProfile() {
                 <button
                   type="button"
                   className="applicant-map-btn-save"
-                  onClick={handleSaveNearbyLocation}
+                  onClick={promptSaveNearbyLocation}
                   disabled={isSavingLocation || !nearbyModalCity.trim()}
                 >
                   {isSavingLocation ? "Saving..." : "Save Location"}
@@ -5608,6 +5682,23 @@ export default function ApplicantProfile() {
         confirmLabel="Delete Entry"
         onCancel={() => setWorkExpToDelete(null)}
         onConfirm={confirmDeleteWorkExperience}
+      />
+
+      {/* DOUBLE VERIFICATION: NEARBY EMPLOYER DISCOVERY WARNING MODAL (Rule 6 Compliant) */}
+      <ConfirmationModal
+        isOpen={Boolean(nearbyWarningModal?.isOpen)}
+        type="warning"
+        title={nearbyWarningModal?.title || "Warning"}
+        message={nearbyWarningModal?.message || ""}
+        cancelLabel={nearbyWarningModal?.cancelLabel || "Cancel"}
+        confirmLabel={nearbyWarningModal?.confirmLabel || "Confirm"}
+        isConfirming={isUpdatingParticipation || isSavingLocation}
+        onCancel={() => setNearbyWarningModal(null)}
+        onConfirm={() => {
+          if (nearbyWarningModal?.onConfirm) {
+            nearbyWarningModal.onConfirm();
+          }
+        }}
       />
 
       {/* NON-INTRUSIVE UNDO TOAST */}
