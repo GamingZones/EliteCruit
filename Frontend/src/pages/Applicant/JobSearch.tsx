@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { authFetch } from "../../utils/auth";
 import { ChevronIcon, SideIcon } from "../../components/Icons";
 import ApplicantChatbotDrawer from "../../components/ApplicantChatbotDrawer";
 import CalendarDrawer from "../../components/CalendarDrawer";
@@ -1265,7 +1266,7 @@ export default function JobSearch() {
 
   useEffect(() => {
     if (!applicantUserId) return;
-    fetch(`/api/applicants/${applicantUserId}/applications`)
+    authFetch(`/api/applicants/${applicantUserId}/applications`)
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok) throw new Error(data?.message || "Unable to load your applications.");
@@ -1292,7 +1293,7 @@ export default function JobSearch() {
         // Keep UI usable even when applications endpoint is temporarily unavailable.
       });
 
-    fetch(`/api/applicants/${applicantUserId}/invitations`)
+    authFetch(`/api/applicants/${applicantUserId}/invitations`)
       .then(async (response) => {
         const data = await response.json();
         if (response.ok && Array.isArray(data?.invitations)) {
@@ -1448,8 +1449,8 @@ export default function JobSearch() {
     const minSalary = selectedMinSalary === "Any salary" ? 0 : Number(selectedMinSalary.replace(/\D/g, "")) || 0;
 
     const filtered = jobs.filter((job) => {
-      // Exclude job postings the applicant has already applied for
-      if (appliedJobIds.includes(job.id)) {
+      // Exclude job postings the applicant has already applied for (or has an existing application/invitation status for)
+      if (appliedJobIds.includes(job.id) || Boolean(applicationStatusByJobId[job.id])) {
         return false;
       }
 
@@ -1616,6 +1617,7 @@ export default function JobSearch() {
     bookmarkedIds,
     applicantMatchProfile,
     appliedJobIds,
+    applicationStatusByJobId,
   ]);
 
   const JOBS_PER_PAGE = 10;
@@ -1720,7 +1722,7 @@ export default function JobSearch() {
     setApplyingJobId(jobId);
     setJobsMessage("");
     try {
-      const response = await fetch(`/api/applicants/${applicantUserId}/applications`, {
+      const response = await authFetch(`/api/applicants/${applicantUserId}/applications`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ job_post_id: jobId }),
@@ -2668,31 +2670,6 @@ export default function JobSearch() {
             </div>
           </div>
           <div className="jd-side-header-actions" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <button
-              type="button"
-              className="cand-msg-employer-details-btn"
-              onClick={() => {
-                const empId = detailsJob.employerUserId || employers.find((e) => e.company_name.toLowerCase() === detailsJob.company.toLowerCase())?.employer_user_id;
-                if (empId) {
-                  setIsEmployerModalOnTop(true);
-                  handleOpenEmployerDetailsById(empId);
-                }
-              }}
-              style={{
-                padding: "5px 12px",
-                fontSize: "0.8rem",
-                fontWeight: 700,
-                background: "#0284c7",
-                color: "#ffffff",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer",
-                fontFamily: "'Inter', sans-serif",
-                transition: "all 0.15s ease",
-              }}
-            >
-              Employer Details
-            </button>
             <button
               type="button"
               className="jd-side-close-btn"
@@ -3986,7 +3963,42 @@ export default function JobSearch() {
                               </span>
                             </div>
                             <p className="meta-line" style={{ marginTop: "4px", marginBottom: 0 }}>
-                              <RenderLocationMeta location={formatLocationWithCavite(employer.location || employer.city)} />
+                              {(() => {
+                                const rawAddr = (employer.company_address || employer.location || "").trim();
+                                const rawCity = (employer.city || "").trim();
+
+                                // If multi-branch (explicitly delimited by ';' or '\n')
+                                if (rawAddr.includes(";") || rawAddr.includes("\n")) {
+                                  return <RenderLocationMeta location={rawAddr} />;
+                                }
+
+                                // Single address: resolve clean municipality/city
+                                let displayCity = "";
+                                if (rawCity && rawCity.toLowerCase() !== "cavite") {
+                                  displayCity = formatLocationWithCavite(rawCity);
+                                } else if (rawAddr) {
+                                  const foundCaviteCity = CAVITE_CITIES.find(
+                                    (c) => c.toLowerCase() !== "cavite" && rawAddr.toLowerCase().includes(c.toLowerCase())
+                                  );
+                                  if (foundCaviteCity) {
+                                    displayCity = `${foundCaviteCity}, Cavite`;
+                                  } else {
+                                    displayCity = formatLocationWithCavite(rawAddr);
+                                  }
+                                } else {
+                                  displayCity = "Cavite";
+                                }
+
+                                return (
+                                  <span
+                                    className="location-meta"
+                                    title={rawAddr && rawAddr !== displayCity ? `Address: ${rawAddr}` : undefined}
+                                  >
+                                    <MiniIcon name="location" />
+                                    <span>{displayCity}</span>
+                                  </span>
+                                );
+                              })()}
                               {employer.industry && (
                                 <span className="emp-industry-tag">
                                   {employer.industry.toUpperCase()}

@@ -734,7 +734,7 @@
   color: #fbbf24;
 }
 
-.jd-employer-name {
+[data-theme="dark"] .jd-employer-name {
   color: #f8fafc !important;
 }
 

@@ -3552,6 +3552,27 @@
 }
 
 /* Employer Result Card Styles */
+.employer-result-card .result-title-row {
+  overflow: visible;
+}
+
+.employer-result-card .overflow-tooltip {
+  top: calc(100% + 8px);
+  bottom: auto;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+.employer-result-card .overflow-dots-badge:hover .overflow-tooltip,
+.employer-result-card .overflow-dots-badge:focus .overflow-tooltip {
+  transform: translateX(-50%) translateY(0);
+}
+
+.employer-result-card .overflow-tooltip::after {
+  top: auto;
+  bottom: 100%;
+  border-color: transparent transparent #091f34 transparent;
+}
+
 .employer-result-card .employer-card-logo {
   width: 48px;
   height: 48px;
