@@ -785,44 +785,45 @@ Document Timestamp: ${new Date().toLocaleString()}
                   </div>
 
                   <div className="aol-template-card-body">
+                    {/* Horizontal Tags Bar touching both edges of container */}
+                    <div className="aol-template-tags-bar">
+                      <span>Insert tag:</span>
+                      <button
+                        type="button"
+                        className="aol-template-tag-chip"
+                        onClick={() => insertTag("acceptance", "{applicant_name}")}
+                        title="Your full name"
+                      >
+                        + &#123;applicant_name&#125;
+                      </button>
+                      <button
+                        type="button"
+                        className="aol-template-tag-chip"
+                        onClick={() => insertTag("acceptance", "{job_title}")}
+                        title="Position offered"
+                      >
+                        + &#123;job_title&#125;
+                      </button>
+                      <button
+                        type="button"
+                        className="aol-template-tag-chip"
+                        onClick={() => insertTag("acceptance", "{company_name}")}
+                        title="Employer company name"
+                      >
+                        + &#123;company_name&#125;
+                      </button>
+                      <button
+                        type="button"
+                        className="aol-template-tag-chip"
+                        onClick={() => insertTag("acceptance", "{start_date}")}
+                        title="Target onboarding start date"
+                      >
+                        + &#123;start_date&#125;
+                      </button>
+                    </div>
+
                     <div className="aol-template-studio-split">
                       <div className="aol-template-inputs-side">
-                        <div className="aol-template-tags-bar">
-                          <span>Insert tag:</span>
-                          <button
-                            type="button"
-                            className="aol-template-tag-chip"
-                            onClick={() => insertTag("acceptance", "{applicant_name}")}
-                            title="Your full name"
-                          >
-                            + &#123;applicant_name&#125;
-                          </button>
-                          <button
-                            type="button"
-                            className="aol-template-tag-chip"
-                            onClick={() => insertTag("acceptance", "{job_title}")}
-                            title="Position offered"
-                          >
-                            + &#123;job_title&#125;
-                          </button>
-                          <button
-                            type="button"
-                            className="aol-template-tag-chip"
-                            onClick={() => insertTag("acceptance", "{company_name}")}
-                            title="Employer company name"
-                          >
-                            + &#123;company_name&#125;
-                          </button>
-                          <button
-                            type="button"
-                            className="aol-template-tag-chip"
-                            onClick={() => insertTag("acceptance", "{start_date}")}
-                            title="Target onboarding start date"
-                          >
-                            + &#123;start_date&#125;
-                          </button>
-                        </div>
-
                         <textarea
                           className="aol-template-textarea"
                           rows={9}
@@ -885,36 +886,37 @@ Document Timestamp: ${new Date().toLocaleString()}
                   </div>
 
                   <div className="aol-template-card-body">
+                    {/* Horizontal Tags Bar touching both edges of container */}
+                    <div className="aol-template-tags-bar">
+                      <span>Insert tag:</span>
+                      <button
+                        type="button"
+                        className="aol-template-tag-chip"
+                        onClick={() => insertTag("denial", "{applicant_name}")}
+                        title="Your full name"
+                      >
+                        + &#123;applicant_name&#125;
+                      </button>
+                      <button
+                        type="button"
+                        className="aol-template-tag-chip"
+                        onClick={() => insertTag("denial", "{job_title}")}
+                        title="Position offered"
+                      >
+                        + &#123;job_title&#125;
+                      </button>
+                      <button
+                        type="button"
+                        className="aol-template-tag-chip"
+                        onClick={() => insertTag("denial", "{company_name}")}
+                        title="Employer company name"
+                      >
+                        + &#123;company_name&#125;
+                      </button>
+                    </div>
+
                     <div className="aol-template-studio-split">
                       <div className="aol-template-inputs-side">
-                        <div className="aol-template-tags-bar">
-                          <span>Insert tag:</span>
-                          <button
-                            type="button"
-                            className="aol-template-tag-chip"
-                            onClick={() => insertTag("denial", "{applicant_name}")}
-                            title="Your full name"
-                          >
-                            + &#123;applicant_name&#125;
-                          </button>
-                          <button
-                            type="button"
-                            className="aol-template-tag-chip"
-                            onClick={() => insertTag("denial", "{job_title}")}
-                            title="Position offered"
-                          >
-                            + &#123;job_title&#125;
-                          </button>
-                          <button
-                            type="button"
-                            className="aol-template-tag-chip"
-                            onClick={() => insertTag("denial", "{company_name}")}
-                            title="Employer company name"
-                          >
-                            + &#123;company_name&#125;
-                          </button>
-                        </div>
-
                         <textarea
                           className="aol-template-textarea"
                           rows={9}
