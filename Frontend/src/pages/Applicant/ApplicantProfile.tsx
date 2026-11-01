@@ -2576,6 +2576,80 @@ export default function ApplicantProfile() {
     return () => clearInterval(timer);
   }, [otpCooldown]);
 
+  // Field-level single saving & dirty state tracking
+  const [savingField, setSavingField] = useState<string | null>(null);
+  const [fieldSuccess, setFieldSuccess] = useState<string | null>(null);
+
+  const saveSingleField = async (fieldName: keyof ApplicantProfileData, value: any) => {
+    if (!userId) return;
+    setSavingField(fieldName);
+    setProfileMessage("");
+    try {
+      const nextDraft = { ...draft, [fieldName]: value };
+      const rawMin = nextDraft.expected_salary_min !== null && nextDraft.expected_salary_min !== undefined
+        ? String(nextDraft.expected_salary_min).replace(/[^0-9.]/g, "").trim()
+        : "";
+      const rawMax = nextDraft.expected_salary_max !== null && nextDraft.expected_salary_max !== undefined
+        ? String(nextDraft.expected_salary_max).replace(/[^0-9.]/g, "").trim()
+        : "";
+      const consolidated = buildConsolidatedSalaryString(rawMin, rawMax);
+      const numMin = rawMin ? Number(rawMin) : null;
+      const numMax = rawMax ? Number(rawMax) : null;
+
+      const payload = {
+        ...nextDraft,
+        expected_salary: consolidated,
+        expected_salary_min: numMin !== null && Number.isFinite(numMin) ? numMin : null,
+        expected_salary_max: numMax !== null && Number.isFinite(numMax) ? numMax : null,
+      };
+
+      const response = await fetch(`/api/applicants/${userId}/profile`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Unable to save field.");
+
+      const updatedProfile = {
+        ...profile,
+        ...nextDraft,
+        ...(data.profile || {}),
+      };
+      setProfile(updatedProfile);
+      setDraft(updatedProfile);
+      setFieldSuccess(fieldName);
+      setTimeout(() => {
+        setFieldSuccess((curr) => (curr === fieldName ? null : curr));
+      }, 2500);
+
+      if (fieldName === "email" && value) {
+        const cleanSavedEmail = String(value).trim().toLowerCase();
+        setVerifiedEmailAddress(cleanSavedEmail);
+        setIsEmailVerified(true);
+        try {
+          const rawUser = localStorage.getItem("elitecruit-user");
+          if (rawUser) {
+            const parsed = JSON.parse(rawUser);
+            localStorage.setItem("elitecruit-user", JSON.stringify({ ...parsed, email: String(value).trim() }));
+          }
+        } catch {}
+      }
+    } catch (err: any) {
+      setProfileMessageType("error");
+      setProfileMessage(err.message || "Failed to update.");
+    } finally {
+      setSavingField(null);
+    }
+  };
+
+  const cancelField = (fieldName: keyof ApplicantProfileData) => {
+    setDraft((prev) => ({
+      ...prev,
+      [fieldName]: profile[fieldName] ?? "",
+    }));
+  };
+
   useEffect(() => {
     fetchPhilippineUniversitiesApi().then((list) => {
       if (list && list.length > 0) {
@@ -3232,7 +3306,7 @@ export default function ApplicantProfile() {
     setWorkExpToDelete(id);
   };
 
-  const visibleProfile = isEditing ? draft : profile;
+  const visibleProfile = draft;
 
   const updateDraft = (name: keyof ApplicantProfileData, value: string) => {
     if (name === "phone") {
@@ -4081,167 +4155,407 @@ export default function ApplicantProfile() {
                       </svg>
                       <span>{isUploadingPhoto || isApplyingPhotoAdjustment ? "Saving..." : "Profile Photo"}</span>
                     </button>
-
-                    <button
-                      type="button"
-                      className={`edit-profile-button ${isEditing && !isEmailVerified ? "disabled-btn" : ""}`}
-                      onClick={() => {
-                        if (isEditing) {
-                          if (!isEmailVerified) {
-                            setProfileMessageType("error");
-                            setProfileMessage("Please verify your email address before saving.");
-                            return;
-                          }
-                          saveProfile();
-                        } else {
-                          setIsEditing(true);
-                        }
-                      }}
-                      disabled={isSaving || (isEditing && !isEmailVerified)}
-                      title={isEditing && !isEmailVerified ? "Email verification required before saving" : ""}
-                    >
-                      {isEditing ? (isSaving ? "Saving..." : "Save Profile") : "Edit Profile"}
-                    </button>
-                    {isEditing && (
-                      <button
-                        type="button"
-                        className="cancel-profile-button"
-                        onClick={() => {
-                          setDraft(profile);
-                          setIsEmailVerified(Boolean(profile.is_email_verified));
-                          setIsEditing(false);
-                        }}
-                      >
-                        Cancel
-                      </button>
-                    )}
                   </div>
                 </div>
 
                 <div className="profile-divider" />
 
-                <div className="fields-grid">
-                  {/* 1ST LINE: First Name, Middle Name, Last Name */}
-                  <div className="name-row wide">
-                    <Field label="First Name" name="first_name" value={visibleProfile.first_name} editing={isEditing} onChange={updateDraft} />
-                    <Field label="Middle Name (Optional)" name="middle_name" value={visibleProfile.middle_name} editing={isEditing} onChange={updateDraft} optional placeholder="Middle Name" />
-                    <Field label="Last Name" name="last_name" value={visibleProfile.last_name} editing={isEditing} onChange={updateDraft} />
-                  </div>
+                {(() => {
+                  const isFirstNameDirty = (draft.first_name || "").trim() !== (profile.first_name || "").trim();
+                  const isMiddleNameDirty = (draft.middle_name || "").trim() !== (profile.middle_name || "").trim();
+                  const isLastNameDirty = (draft.last_name || "").trim() !== (profile.last_name || "").trim();
+                  const isProvinceDirty = (draft.province || "Cavite") !== (profile.province || "Cavite");
+                  const isCityDirty = (draft.city || "") !== (profile.city || "");
+                  const isPhoneDirty = (draft.phone || "").trim() !== (profile.phone || "").trim();
+                  const isEmailDirty = (draft.email || "").trim().toLowerCase() !== (profile.email || "").trim().toLowerCase();
+                  const isEmailVerifiedForDraft = isEmailDirty
+                    ? verifiedEmailAddress.trim().toLowerCase() === (draft.email || "").trim().toLowerCase()
+                    : Boolean(profile.is_email_verified);
+                  const isSummaryDirty = (draft.summary || "").trim() !== (profile.summary || "").trim();
 
-                  {/* 2ND LINE: Province, City / Municipality */}
-                  <div className="location-row wide">
-                    <label className={`profile-field ${!(visibleProfile.province || "Cavite") ? "missing-field" : ""}`}>
-                      <span>Province</span>
-                      <select
-                        value={visibleProfile.province || "Cavite"}
-                        disabled={!isEditing}
-                        onChange={(event) => {
-                          const newProv = event.target.value;
-                          updateDraft("province", newProv);
-                          const cities = getCitiesByProvince(newProv);
-                          if (!cities.includes(visibleProfile.city || "")) {
-                            updateDraft("city", cities[0] || "");
-                          }
-                        }}
-                      >
-                        <option value="">Select province</option>
-                        {ALL_PHILIPPINES_PROVINCES.map((prov) => (
-                          <option key={prov} value={prov}>
-                            {prov}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                  return (
+                    <div className="fields-grid" style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+                      {/* 1ST LINE: First Name, Middle Name, Last Name */}
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px", width: "100%" }}>
+                        {/* First Name */}
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                            <label style={{ fontSize: "0.84rem", fontWeight: 700, margin: 0 }}>First Name</label>
+                            {fieldSuccess === "first_name" && <span className="inline-field-saved-badge">✔ Saved</span>}
+                          </div>
+                          <div className="inline-field-row">
+                            <input
+                              className="inline-field-control"
+                              value={draft.first_name || ""}
+                              onChange={(e) => updateDraft("first_name", e.target.value)}
+                              placeholder="First Name"
+                            />
+                            {isFirstNameDirty && (
+                              <div className="inline-field-actions">
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-cancel-btn"
+                                  onClick={() => cancelField("first_name")}
+                                  disabled={savingField === "first_name"}
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-save-btn"
+                                  onClick={() => saveSingleField("first_name", draft.first_name)}
+                                  disabled={savingField === "first_name" || !draft.first_name?.trim()}
+                                >
+                                  {savingField === "first_name" ? "Saving..." : "Save"}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
 
-                    <label className={`profile-field ${!visibleProfile.city ? "missing-field" : ""}`}>
-                      <span>City / Municipality</span>
-                      <select
-                        value={visibleProfile.city || ""}
-                        disabled={!isEditing}
-                        onChange={(event) => updateDraft("city", event.target.value)}
-                      >
-                        <option value="">Select city / municipality</option>
-                        {getCitiesByProvince(visibleProfile.province || "Cavite").map((city) => (
-                          <option key={city} value={city}>
-                            {city}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
+                        {/* Middle Name */}
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                            <label style={{ fontSize: "0.84rem", fontWeight: 700, margin: 0 }}>Middle Name (Optional)</label>
+                            {fieldSuccess === "middle_name" && <span className="inline-field-saved-badge">✔ Saved</span>}
+                          </div>
+                          <div className="inline-field-row">
+                            <input
+                              className="inline-field-control"
+                              value={draft.middle_name || ""}
+                              onChange={(e) => updateDraft("middle_name", e.target.value)}
+                              placeholder="Middle Name"
+                            />
+                            {isMiddleNameDirty && (
+                              <div className="inline-field-actions">
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-cancel-btn"
+                                  onClick={() => cancelField("middle_name")}
+                                  disabled={savingField === "middle_name"}
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-save-btn"
+                                  onClick={() => saveSingleField("middle_name", draft.middle_name)}
+                                  disabled={savingField === "middle_name"}
+                                >
+                                  {savingField === "middle_name" ? "Saving..." : "Save"}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
 
-                  {/* 3RD LINE: Phone Number, Email Address */}
-                  <div className="contact-row wide">
-                    <Field
-                      label="Phone Number"
-                      name="phone"
-                      value={visibleProfile.phone}
-                      editing={isEditing}
-                      onChange={updateDraft}
-                      prefix="+63"
-                      numbersOnly
-                      maxLength={10}
-                      placeholder="9123456789"
-                    />
-
-                    <div className={`profile-field email-field-block ${!visibleProfile.email?.trim() ? "missing-field" : ""}`}>
-                      <div className="email-field-header">
-                        <span>Email Address</span>
-                        {isEmailVerified ? (
-                          <span className="email-status-badge verified" title="Email is verified">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
-                            Verified
-                          </span>
-                        ) : (
-                          <span className="email-status-badge unverified" title="Email is not verified">
-                            Unverified
-                          </span>
-                        )}
+                        {/* Last Name */}
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                            <label style={{ fontSize: "0.84rem", fontWeight: 700, margin: 0 }}>Last Name</label>
+                            {fieldSuccess === "last_name" && <span className="inline-field-saved-badge">✔ Saved</span>}
+                          </div>
+                          <div className="inline-field-row">
+                            <input
+                              className="inline-field-control"
+                              value={draft.last_name || ""}
+                              onChange={(e) => updateDraft("last_name", e.target.value)}
+                              placeholder="Last Name"
+                            />
+                            {isLastNameDirty && (
+                              <div className="inline-field-actions">
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-cancel-btn"
+                                  onClick={() => cancelField("last_name")}
+                                  disabled={savingField === "last_name"}
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-save-btn"
+                                  onClick={() => saveSingleField("last_name", draft.last_name)}
+                                  disabled={savingField === "last_name" || !draft.last_name?.trim()}
+                                >
+                                  {savingField === "last_name" ? "Saving..." : "Save"}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <div className="email-input-wrapper">
-                        <input
-                          type="email"
-                          value={visibleProfile.email || ""}
-                          readOnly={!isEditing}
-                          onChange={(e) => updateDraft("email", e.target.value)}
-                          placeholder="example@domain.com"
-                        />
-                        {!isEmailVerified && (
-                          <button
-                            type="button"
-                            className="email-verify-btn"
-                            onClick={handleSendEmailOtp}
-                            disabled={isSendingOtp}
-                            title="Verify email address with OTP"
-                          >
-                            {isSendingOtp ? "Sending..." : "Verify"}
-                          </button>
-                        )}
+
+                      {/* 2ND LINE: Province, City / Municipality */}
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "14px", width: "100%" }}>
+                        {/* Province */}
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                            <label style={{ fontSize: "0.84rem", fontWeight: 700, margin: 0 }}>Province</label>
+                            {fieldSuccess === "province" && <span className="inline-field-saved-badge">✔ Saved</span>}
+                          </div>
+                          <div className="inline-field-row">
+                            <select
+                              className="inline-field-control"
+                              value={draft.province || "Cavite"}
+                              onChange={(event) => {
+                                const newProv = event.target.value;
+                                updateDraft("province", newProv);
+                                const cities = getCitiesByProvince(newProv);
+                                if (!cities.includes(draft.city || "")) {
+                                  updateDraft("city", cities[0] || "");
+                                }
+                              }}
+                            >
+                              <option value="">Select province</option>
+                              {ALL_PHILIPPINES_PROVINCES.map((prov) => (
+                                <option key={prov} value={prov}>
+                                  {prov}
+                                </option>
+                              ))}
+                            </select>
+                            {isProvinceDirty && (
+                              <div className="inline-field-actions">
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-cancel-btn"
+                                  onClick={() => cancelField("province")}
+                                  disabled={savingField === "province"}
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-save-btn"
+                                  onClick={() => saveSingleField("province", draft.province)}
+                                  disabled={savingField === "province" || !draft.province}
+                                >
+                                  {savingField === "province" ? "Saving..." : "Save"}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* City / Municipality */}
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                            <label style={{ fontSize: "0.84rem", fontWeight: 700, margin: 0 }}>City / Municipality</label>
+                            {fieldSuccess === "city" && <span className="inline-field-saved-badge">✔ Saved</span>}
+                          </div>
+                          <div className="inline-field-row">
+                            <select
+                              className="inline-field-control"
+                              value={draft.city || ""}
+                              onChange={(event) => updateDraft("city", event.target.value)}
+                            >
+                              <option value="">Select city / municipality</option>
+                              {getCitiesByProvince(draft.province || "Cavite").map((city) => (
+                                <option key={city} value={city}>
+                                  {city}
+                                </option>
+                              ))}
+                            </select>
+                            {isCityDirty && (
+                              <div className="inline-field-actions">
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-cancel-btn"
+                                  onClick={() => cancelField("city")}
+                                  disabled={savingField === "city"}
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-save-btn"
+                                  onClick={() => saveSingleField("city", draft.city)}
+                                  disabled={savingField === "city" || !draft.city}
+                                >
+                                  {savingField === "city" ? "Saving..." : "Save"}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 3RD LINE: Phone Number, Email Address */}
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "14px", width: "100%" }}>
+                        {/* Phone Number */}
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                            <label style={{ fontSize: "0.84rem", fontWeight: 700, margin: 0 }}>Phone Number</label>
+                            {fieldSuccess === "phone" && <span className="inline-field-saved-badge">✔ Saved</span>}
+                          </div>
+                          <div className="inline-field-row">
+                            <div style={{ display: "flex", alignItems: "center", flex: 1, minWidth: 0, position: "relative" }}>
+                              <span style={{ position: "absolute", left: "10px", fontWeight: 700, color: "#64748b", fontSize: "0.88rem", pointerEvents: "none" }}>
+                                +63
+                              </span>
+                              <input
+                                className="inline-field-control"
+                                style={{ paddingLeft: "42px" }}
+                                value={draft.phone || ""}
+                                maxLength={10}
+                                inputMode="numeric"
+                                onChange={(e) => updateDraft("phone", e.target.value)}
+                                placeholder="9123456789"
+                              />
+                            </div>
+                            {isPhoneDirty && (
+                              <div className="inline-field-actions">
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-cancel-btn"
+                                  onClick={() => cancelField("phone")}
+                                  disabled={savingField === "phone"}
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-save-btn"
+                                  onClick={() => saveSingleField("phone", draft.phone)}
+                                  disabled={savingField === "phone"}
+                                >
+                                  {savingField === "phone" ? "Saving..." : "Save"}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Email Address */}
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                            <label style={{ fontSize: "0.84rem", fontWeight: 700, margin: 0 }}>Email Address</label>
+                            {fieldSuccess === "email" && <span className="inline-field-saved-badge">✔ Saved</span>}
+                          </div>
+                          <div className="inline-field-row">
+                            <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", alignItems: "center" }}>
+                              <input
+                                type="email"
+                                className="inline-field-control"
+                                value={draft.email || ""}
+                                onChange={(e) => updateDraft("email", e.target.value)}
+                                placeholder="example@domain.com"
+                                style={{ width: "100%", paddingRight: !isEmailDirty && isEmailVerifiedForDraft ? "95px" : "14px" }}
+                              />
+                              {!isEmailDirty && isEmailVerifiedForDraft && (
+                                <span
+                                  style={{
+                                    position: "absolute",
+                                    right: "10px",
+                                    background: "#dcfce7",
+                                    color: "#15803d",
+                                    fontSize: "0.75rem",
+                                    fontWeight: 700,
+                                    padding: "3px 10px",
+                                    borderRadius: "9999px",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                    pointerEvents: "none",
+                                  }}
+                                >
+                                  ✔ Verified
+                                </span>
+                              )}
+                            </div>
+                            {isEmailDirty && (
+                              <div className="inline-field-actions">
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-cancel-btn"
+                                  onClick={() => cancelField("email")}
+                                  disabled={savingField === "email"}
+                                >
+                                  Cancel
+                                </button>
+                                {!isEmailVerifiedForDraft ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className="inline-field-btn inline-field-verify-btn"
+                                      onClick={handleSendEmailOtp}
+                                      disabled={isSendingOtp || !draft.email?.trim() || !draft.email.includes("@")}
+                                    >
+                                      {isSendingOtp ? "Sending Code..." : "Verify Email"}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="inline-field-btn inline-field-save-btn"
+                                      disabled
+                                      title="Please click 'Verify Email' and enter OTP before saving."
+                                    >
+                                      Save
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="inline-field-saved-badge">✔ Verified</span>
+                                    <button
+                                      type="button"
+                                      className="inline-field-btn inline-field-save-btn"
+                                      onClick={() => saveSingleField("email", draft.email)}
+                                      disabled={savingField === "email"}
+                                    >
+                                      {savingField === "email" ? "Saving..." : "Save"}
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <small style={{ display: "block", fontSize: "0.75rem", color: "#64748b", marginTop: "4px" }}>
+                            {isEmailDirty && !isEmailVerifiedForDraft
+                              ? "Changing your email requires verifying before saving."
+                              : "Primary contact email used for communication and notifications."}
+                          </small>
+                        </div>
+                      </div>
+
+                      {/* 4TH LINE: Professional Summary / Career Bio */}
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                          <label style={{ fontSize: "0.84rem", fontWeight: 700, margin: 0 }}>Professional Summary / Career Bio</label>
+                          {fieldSuccess === "summary" && <span className="inline-field-saved-badge">✔ Saved</span>}
+                        </div>
+                        <div>
+                          <textarea
+                            className="inline-field-control"
+                            rows={4}
+                            value={draft.summary || ""}
+                            placeholder="Briefly describe your professional background, key achievements, and core strengths..."
+                            onChange={(e) => updateDraft("summary", e.target.value)}
+                            style={{ width: "100%", resize: "vertical" }}
+                          />
+                          {isSummaryDirty && (
+                            <div className="inline-field-actions" style={{ marginTop: "8px", justifyContent: "flex-end" }}>
+                              <button
+                                type="button"
+                                className="inline-field-btn inline-field-cancel-btn"
+                                onClick={() => cancelField("summary")}
+                                disabled={savingField === "summary"}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                className="inline-field-btn inline-field-save-btn"
+                                onClick={() => saveSingleField("summary", draft.summary)}
+                                disabled={savingField === "summary"}
+                              >
+                                {savingField === "summary" ? "Saving..." : "Save"}
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-
-                  {/* 4TH LINE: Professional Summary / Career Bio (FULL WIDTH CONTAINER) */}
-                  <div className="summary-row wide">
-                    <label className={`profile-field wide ${!visibleProfile.summary?.trim() ? "missing-field" : ""}`}>
-                      <span>Professional Summary / Career Bio</span>
-                      {isEditing ? (
-                        <textarea
-                          className="profile-textarea"
-                          rows={4}
-                          value={visibleProfile.summary || ""}
-                          placeholder="Briefly describe your professional background, key achievements, and core strengths..."
-                          onChange={(e) => updateDraft("summary", e.target.value)}
-                        />
-                      ) : (
-                        <div className="profile-value-text">
-                          {visibleProfile.summary?.trim() || "No professional summary added yet."}
-                        </div>
-                      )}
-                    </label>
-                  </div>
+                  );
+                })()}
 
                   {/* 5TH LINE: Spoken Languages inside the SAME personal-card container */}
                   <div className="languages-row wide">
@@ -4696,7 +5010,7 @@ export default function ApplicantProfile() {
 
                     <div className="fields-grid" style={{ marginTop: "14px" }}>
                       <label className="profile-field">
-                        <span>Job Title *</span>
+                        <span>Job Title</span>
                         <input
                           type="text"
                           placeholder="e.g. Senior Software Engineer"
@@ -4706,7 +5020,7 @@ export default function ApplicantProfile() {
                       </label>
 
                       <label className="profile-field">
-                        <span>Company / Employer Name *</span>
+                        <span>Company / Employer Name</span>
                         <input
                           type="text"
                           placeholder="e.g. Accenture Philippines"

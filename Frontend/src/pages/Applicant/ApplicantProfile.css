@@ -3716,3 +3716,161 @@
 
 
 
+
+
+/* ==========================================================================
+   INLINE FIELD-LEVEL DIRTY EDIT CONTROLS (APPLICANT PROFILE)
+   ========================================================================== */
+.inline-field-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.inline-field-control {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.inline-field-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  animation: inlineActionFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes inlineActionFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.inline-field-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.inline-field-cancel-btn {
+  background: transparent;
+  border: 1.5px solid #cbd5e1;
+  color: #64748b;
+}
+
+.inline-field-cancel-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.inline-field-save-btn {
+  background: #0284c7;
+  border: 1.5px solid #0284c7;
+  color: #ffffff;
+}
+
+.inline-field-save-btn:hover:not(:disabled) {
+  background: #0369a1;
+  border-color: #0369a1;
+}
+
+.inline-field-save-btn:disabled {
+  background: #94a3b8 !important;
+  border-color: #94a3b8 !important;
+  color: #f1f5f9 !important;
+  cursor: not-allowed !important;
+  opacity: 0.65;
+}
+
+.inline-field-verify-btn {
+  background: #f59e0b;
+  border: 1.5px solid #f59e0b;
+  color: #ffffff;
+}
+
+.inline-field-verify-btn:hover:not(:disabled) {
+  background: #d97706;
+  border-color: #d97706;
+}
+
+.inline-field-verify-btn:disabled {
+  background: #fed7aa !important;
+  border-color: #fed7aa !important;
+  color: #9a3412 !important;
+  cursor: not-allowed !important;
+  opacity: 0.7;
+}
+
+.inline-field-saved-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #16a34a;
+  background: #dcfce7;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  border: 1px solid #86efac;
+  animation: inlineActionFadeIn 0.2s ease-out;
+}
+
+/* Dark Theme Isolation for Inline Actions */
+[data-theme="dark"] .inline-field-cancel-btn {
+  background: transparent !important;
+  border-color: #3b4259 !important;
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .inline-field-cancel-btn:hover:not(:disabled) {
+  background: #242735 !important;
+  color: #ffffff !important;
+  border-color: #475569 !important;
+}
+
+[data-theme="dark"] .inline-field-save-btn {
+  background: #38bdf8 !important;
+  border-color: #38bdf8 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="dark"] .inline-field-save-btn:hover:not(:disabled) {
+  background: #0ea5e9 !important;
+  border-color: #0ea5e9 !important;
+}
+
+[data-theme="dark"] .inline-field-verify-btn {
+  background: #f59e0b !important;
+  border-color: #f59e0b !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .inline-field-verify-btn:hover:not(:disabled) {
+  background: #d97706 !important;
+  border-color: #d97706 !important;
+}
+
+[data-theme="dark"] .inline-field-saved-badge {
+  background: rgba(34, 197, 94, 0.15) !important;
+  border-color: #22c55e !important;
+  color: #4ade80 !important;
+}
