@@ -412,14 +412,38 @@ function isKnownProvince(name?: string | null): boolean {
   );
 }
 
+const WORK_ARRANGEMENT_TRAILING_REGEX = /\s*[\/\-|,]\s*(?:remote|hybrid|on-site|onsite|work from home|wfh|flexible)(?:\s*[\/\-]\s*(?:remote|hybrid|on-site|onsite|work from home|wfh|flexible))*/gi;
+const WORK_ARRANGEMENT_PAREN_REGEX = /\s*\(\s*(?:remote|hybrid|on-site|onsite|work from home|wfh|flexible)\s*\)/gi;
+
+export function stripWorkArrangement(val?: string | null): string {
+  if (!val) return "";
+  let s = val.replace(WORK_ARRANGEMENT_PAREN_REGEX, "").replace(WORK_ARRANGEMENT_TRAILING_REGEX, "").trim();
+  const lower = s.toLowerCase();
+  if (["hybrid", "remote", "on-site", "onsite", "flexible", "work from home", "wfh"].includes(lower)) {
+    return "";
+  }
+  return s;
+}
+
 function parseLocationTokens(tokens: string[]): string[] {
   const result: string[] = [];
   let i = 0;
   while (i < tokens.length) {
     const cur = tokens[i];
     const next = tokens[i + 1];
+    const third = tokens[i + 2];
 
     const curCaviteCity = getCanonicalCaviteCity(cur);
+
+    // Check for 3-part address like: "Lumina Point", "Imus", "Cavite"
+    if (!curCaviteCity && next && third) {
+      const nextCity = getCanonicalCaviteCity(next);
+      if (nextCity && isKnownProvince(third)) {
+        result.push(`${cur}, ${nextCity}, Cavite`);
+        i += 3;
+        continue;
+      }
+    }
 
     if (next && isKnownProvince(next)) {
       if (curCaviteCity && isCaviteProvince(next)) {
@@ -446,32 +470,36 @@ function parseLocationTokens(tokens: string[]): string[] {
 
 export function cleanBranchLocation(item: string): string {
   if (!item) return "";
-  const trimmed = item.trim();
+  const trimmed = stripWorkArrangement(item.trim());
+  if (!trimmed) return "";
+
   const parenMatch = trimmed.match(/\(([^)]+)\)$/);
   if (parenMatch && parenMatch[1]) {
-    const inside = parenMatch[1].trim();
+    const inside = stripWorkArrangement(parenMatch[1].trim());
+    if (!inside) return "";
     const insideTokens = inside.split(/,\s*/).map((x) => x.trim()).filter(Boolean);
     if (insideTokens.length >= 2) {
       const paired = parseLocationTokens(insideTokens);
-      if (paired.length > 0) return paired[0];
-      return inside;
+      if (paired.length > 0) return paired[0].replace(/(?:,\s*Cavite\b)+/gi, ", Cavite");
+      return inside.replace(/(?:,\s*Cavite\b)+/gi, ", Cavite");
     }
     const city = getCanonicalCaviteCity(inside);
     if (city && !inside.toLowerCase().includes("cavite")) {
       return `${city}, Cavite`;
     }
-    return inside;
+    return inside.replace(/(?:,\s*Cavite\b)+/gi, ", Cavite");
   }
   const city = getCanonicalCaviteCity(trimmed);
   if (city && !trimmed.toLowerCase().includes("cavite")) {
     return `${city}, Cavite`;
   }
-  return trimmed;
+  return trimmed.replace(/(?:,\s*Cavite\b)+/gi, ", Cavite");
 }
 
 export function parseLocations(locStr?: string | null): string[] {
   if (!locStr || !locStr.trim()) return [];
-  const s = locStr.trim();
+  const s = stripWorkArrangement(locStr.trim());
+  if (!s) return [];
 
   let rawList: string[] = [];
 

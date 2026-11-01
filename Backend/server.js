@@ -4165,6 +4165,19 @@ app.get("/api/employers/:userId/job-posts", async (req, res) => {
   }
 });
 
+function cleanLocationWorkArrangement(loc, fallback = "Cavite") {
+  if (!loc || typeof loc !== "string") return fallback;
+  let s = loc
+    .replace(/\s*[\/\-|,]\s*(?:remote|hybrid|on-site|onsite|work from home|wfh|flexible)(?:\s*[\/\-]\s*(?:remote|hybrid|on-site|onsite|work from home|wfh|flexible))*/gi, "")
+    .replace(/\s*\(\s*(?:remote|hybrid|on-site|onsite|work from home|wfh|flexible)\s*\)/gi, "")
+    .trim();
+  const lower = s.toLowerCase();
+  if (!s || ["hybrid", "remote", "on-site", "onsite", "flexible", "work from home", "wfh"].includes(lower)) {
+    return fallback;
+  }
+  return s;
+}
+
 app.get("/api/job-posts", async (req, res) => {
   try {
     const hasApplications = await tableExists("applications");
@@ -4181,8 +4194,24 @@ app.get("/api/job-posts", async (req, res) => {
     const rows = await all(
       `SELECT jp.*,
               COALESCE(ep.business_name, u.email, 'Employer') AS company_name,
-              COALESCE(NULLIF(TRIM(jp.location), ''), ep.company_address, ep.city, 'Cavite') AS company_address,
-              COALESCE(NULLIF(TRIM(jp.location), ''), ep.company_address, ep.city, 'Cavite') AS location,
+              COALESCE(
+                CASE
+                  WHEN LOWER(TRIM(jp.location)) IN ('hybrid', 'remote', 'on-site', 'onsite', 'flexible', 'remote / hybrid', 'remote hybrid', 'work from home', 'wfh') THEN NULL
+                  ELSE NULLIF(TRIM(jp.location), '')
+                END,
+                ep.company_address,
+                ep.city,
+                'Cavite'
+              ) AS company_address,
+              COALESCE(
+                CASE
+                  WHEN LOWER(TRIM(jp.location)) IN ('hybrid', 'remote', 'on-site', 'onsite', 'flexible', 'remote / hybrid', 'remote hybrid', 'work from home', 'wfh') THEN NULL
+                  ELSE NULLIF(TRIM(jp.location), '')
+                END,
+                ep.company_address,
+                ep.city,
+                'Cavite'
+              ) AS location,
               ep.company_logo_path,
               ep.company_cover_path,
               ${hasApplications ? "COUNT(DISTINCT a.id)" : "0"} AS applicant_count,
@@ -4200,8 +4229,12 @@ app.get("/api/job-posts", async (req, res) => {
     const jobPosts = rows
       .map((row) => {
         const avg = row.rating ? Number(row.rating).toFixed(1) : null;
+        const cleanedLoc = cleanLocationWorkArrangement(row.location, cleanLocationWorkArrangement(row.company_address, "Cavite"));
+        const cleanedAddr = cleanLocationWorkArrangement(row.company_address, cleanedLoc);
         return {
           ...row,
+          location: cleanedLoc,
+          company_address: cleanedAddr,
           rating: avg,
           status: deriveJobPostStatus(row.close_date, row.status),
         };

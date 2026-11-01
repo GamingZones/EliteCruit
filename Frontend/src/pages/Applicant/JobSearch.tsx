@@ -778,7 +778,7 @@ function RenderLocationMeta({ location }: { location?: string | null }) {
     return (
       <span className="location-meta">
         <MiniIcon name="location" />
-        <span>Location not set</span>
+        <span>Cavite</span>
       </span>
     );
   }
