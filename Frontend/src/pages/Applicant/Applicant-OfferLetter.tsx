@@ -785,7 +785,7 @@ Document Timestamp: ${new Date().toLocaleString()}
                   </div>
 
                   <div className="aol-template-card-body">
-                    {/* Horizontal Tags Bar touching both edges of container */}
+                    {/* Horizontal Tags Bar touching both edges */}
                     <div className="aol-template-tags-bar">
                       <span>Insert tag:</span>
                       <button
@@ -822,30 +822,26 @@ Document Timestamp: ${new Date().toLocaleString()}
                       </button>
                     </div>
 
-                    <div className="aol-template-studio-split">
-                      <div className="aol-template-inputs-side">
-                        <textarea
-                          className="aol-template-textarea"
-                          rows={9}
-                          value={acceptanceTemplate}
-                          onChange={(e) => setAcceptanceTemplate(e.target.value)}
-                          placeholder="Write your formal acceptance message..."
-                        />
-                      </div>
+                    {/* Textarea - Same length (full width) as the tag bar */}
+                    <textarea
+                      className="aol-template-textarea"
+                      rows={8}
+                      value={acceptanceTemplate}
+                      onChange={(e) => setAcceptanceTemplate(e.target.value)}
+                      placeholder="Write your formal acceptance message..."
+                    />
 
-                      <div className="aol-template-preview-side">
-                        <div className="aol-template-preview-box">
-                          <span className="aol-template-preview-label">
-                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                              <circle cx="12" cy="12" r="3" />
-                            </svg>
-                            Employer Preview
-                          </span>
-                          <div className="aol-template-preview-content">
-                            {renderPreview(acceptanceTemplate || SYSTEM_DEFAULT_ACCEPTANCE, true)}
-                          </div>
-                        </div>
+                    {/* Preview Box - Same length (full width) as the tag bar */}
+                    <div className="aol-template-preview-box">
+                      <span className="aol-template-preview-label">
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        Employer Preview
+                      </span>
+                      <div className="aol-template-preview-content">
+                        {renderPreview(acceptanceTemplate || SYSTEM_DEFAULT_ACCEPTANCE, true)}
                       </div>
                     </div>
                   </div>
@@ -886,7 +882,7 @@ Document Timestamp: ${new Date().toLocaleString()}
                   </div>
 
                   <div className="aol-template-card-body">
-                    {/* Horizontal Tags Bar touching both edges of container */}
+                    {/* Horizontal Tags Bar touching both edges */}
                     <div className="aol-template-tags-bar">
                       <span>Insert tag:</span>
                       <button
@@ -915,30 +911,26 @@ Document Timestamp: ${new Date().toLocaleString()}
                       </button>
                     </div>
 
-                    <div className="aol-template-studio-split">
-                      <div className="aol-template-inputs-side">
-                        <textarea
-                          className="aol-template-textarea"
-                          rows={9}
-                          value={declineTemplate}
-                          onChange={(e) => setDeclineTemplate(e.target.value)}
-                          placeholder="Write your formal decline message..."
-                        />
-                      </div>
+                    {/* Textarea - Same length (full width) as the tag bar */}
+                    <textarea
+                      className="aol-template-textarea"
+                      rows={8}
+                      value={declineTemplate}
+                      onChange={(e) => setDeclineTemplate(e.target.value)}
+                      placeholder="Write your formal decline message..."
+                    />
 
-                      <div className="aol-template-preview-side">
-                        <div className="aol-template-preview-box">
-                          <span className="aol-template-preview-label">
-                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                              <circle cx="12" cy="12" r="3" />
-                            </svg>
-                            Employer Preview
-                          </span>
-                          <div className="aol-template-preview-content">
-                            {renderPreview(declineTemplate || SYSTEM_DEFAULT_DECLINE, false)}
-                          </div>
-                        </div>
+                    {/* Preview Box - Same length (full width) as the tag bar */}
+                    <div className="aol-template-preview-box">
+                      <span className="aol-template-preview-label">
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        Employer Preview
+                      </span>
+                      <div className="aol-template-preview-content">
+                        {renderPreview(declineTemplate || SYSTEM_DEFAULT_DECLINE, false)}
                       </div>
                     </div>
                   </div>
