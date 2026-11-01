@@ -2215,6 +2215,7 @@ export type JobMatchDetailsResult = {
   locationPts: number;
   titleBonus: number;
   matchedSkills: string[];
+  partialSkills?: string[];
   missingSkills: string[];
   matchedQuals: string[];
   missingQuals: string[];
@@ -2336,6 +2337,92 @@ export function calculateSkillExperienceYears(rawSkill: string | null | undefine
   }
 
   return 1;
+}
+
+/**
+ * Parses the required experience years from a job skill string or object.
+ * e.g. "React (3 years)" -> 3, "Node.js (1 yr)" -> 1, "Git" -> 0.
+ */
+export function parseSkillRequiredYears(rawSkill: any): number {
+  if (!rawSkill) return 0;
+  if (typeof rawSkill === "object" && rawSkill !== null) {
+    if (rawSkill.years) {
+      const match = String(rawSkill.years).match(/(\d+)/);
+      if (match) return parseInt(match[1], 10);
+    }
+    rawSkill = rawSkill.name || "";
+  }
+  const str = String(rawSkill);
+  const match = str.match(/(\d+)\s*(?:\+\s*)?(?:years?|yrs?|yr)/i);
+  if (match) {
+    const num = parseInt(match[1], 10);
+    return isNaN(num) ? 0 : num;
+  }
+  return 0;
+}
+
+export type SkillMatchStatus = "matched" | "partial" | "missing";
+
+export type SkillRequirementEvaluation = {
+  status: SkillMatchStatus; // "matched" (green), "partial" (yellow), "missing" (red)
+  hasSkill: boolean;
+  reqYears: number;
+  candYears: number;
+  displayLabel: string;
+};
+
+/**
+ * 3-Tier Competency & Duration Match Evaluator:
+ * 1. Checks whether candidate has the skill first (evaluation order).
+ * 2. If candidate lacks the skill -> "missing" (RED).
+ * 3. If candidate has the skill AND meets/exceeds required years (or no years required) -> "matched" (GREEN).
+ * 4. If candidate has the skill BUT lacks required years -> "partial" (YELLOW).
+ */
+export function evaluateSkillRequirementMatch(
+  jobSkill: string,
+  candSkills: string[] = [],
+  candCerts: string[] = []
+): SkillRequirementEvaluation {
+  const reqYears = parseSkillRequiredYears(jobSkill);
+
+  // Step 1: Always check skill presence first
+  const matchingCandItem =
+    (candSkills || []).find((cs) => isSkillMatch(jobSkill, cs)) ||
+    (candCerts || []).find((cc) => isSkillMatch(jobSkill, cc));
+
+  if (!matchingCandItem) {
+    return {
+      status: "missing",
+      hasSkill: false,
+      reqYears,
+      candYears: 0,
+      displayLabel: jobSkill,
+    };
+  }
+
+  // Step 2: Candidate has the skill! Now check experience duration
+  const candYears = calculateSkillExperienceYears(matchingCandItem);
+
+  if (reqYears === 0 || candYears >= reqYears) {
+    const displayLabel = candYears > 1 ? `${jobSkill} (${candYears} yrs exp)` : jobSkill;
+    return {
+      status: "matched",
+      hasSkill: true,
+      reqYears,
+      candYears,
+      displayLabel,
+    };
+  }
+
+  // Step 3: Has skill, but lacking experience duration
+  const displayLabel = `${jobSkill} (${candYears}/${reqYears} yrs exp)`;
+  return {
+    status: "partial",
+    hasSkill: true,
+    reqYears,
+    candYears,
+    displayLabel,
+  };
 }
 
 export const QUALIFICATION_TAXONOMY_MAP: Record<string, string[]> = {
@@ -3025,6 +3112,7 @@ export function calculateJobMatchDetails(
       maxQualPts: 30,
       maxCertPts: 20,
       matchedSkills: [],
+      partialSkills: [],
       missingSkills: job.skillTags || [],
       matchedQuals: [],
       missingQuals: job.qualTags || [],
@@ -3041,23 +3129,30 @@ export function calculateJobMatchDetails(
     };
   }
 
-  // 1. Skills
+  // 1. Skills (3-Tier: Skill presence checked first, then duration. Skills & years count as distinct requirements)
   const rawJobSkills = job.skillTags || [];
   const profileSkills = profile.skills || [];
   const profileCerts = profile.certifications || [];
   const profileQuals = profile.qualifications || [];
 
   const matchedSkills: string[] = [];
+  const partialSkills: string[] = [];
   const missingSkills: string[] = [];
 
+  let totalSkillSubReqs = 0;
+  let satisfiedSkillSubReqs = 0;
+
   rawJobSkills.forEach((item) => {
-    const matchingProfileSkill =
-      profileSkills.find((ps) => isSkillMatch(item, ps)) ||
-      profileCerts.find((pc) => isSkillMatch(item, pc));
-    if (matchingProfileSkill) {
-      const expYears = calculateSkillExperienceYears(matchingProfileSkill);
-      const displayLabel = expYears > 1 ? `${item} (${expYears} yrs exp)` : item;
-      matchedSkills.push(displayLabel);
+    const evalResult = evaluateSkillRequirementMatch(item, profileSkills, profileCerts);
+    const subReqCount = evalResult.reqYears > 0 ? 2 : 1;
+    totalSkillSubReqs += subReqCount;
+
+    if (evalResult.status === "matched") {
+      satisfiedSkillSubReqs += subReqCount;
+      matchedSkills.push(evalResult.displayLabel);
+    } else if (evalResult.status === "partial") {
+      satisfiedSkillSubReqs += 1; // Satisfies skill presence requirement, lacking duration requirement
+      partialSkills.push(evalResult.displayLabel);
     } else {
       missingSkills.push(item);
     }
@@ -3121,7 +3216,7 @@ export function calculateJobMatchDetails(
     maxQualsPts = hasQuals ? Math.round((baseQuals / totalBase) * 100) : 0;
     maxCertPts = hasCerts ? (100 - maxSkillsPts - maxQualsPts) : 0;
 
-    const skillsRatio = hasSkills ? matchedSkills.length / rawJobSkills.length : 0;
+    const skillsRatio = hasSkills && totalSkillSubReqs > 0 ? satisfiedSkillSubReqs / totalSkillSubReqs : 0;
     const qualsRatio = hasQuals ? matchedQuals.length / rawJobQuals.length : 0;
     const certsRatio = hasCerts ? matchedCerts.length / rawJobCerts.length : 0;
 
@@ -3138,7 +3233,10 @@ export function calculateJobMatchDetails(
   const locationSummary = formatLocationWithCavite(job.location);
 
   const breakdownParts: string[] = [];
-  if (hasSkills) breakdownParts.push(`• Skills: ${skillsPts}/${maxSkillsPts}%`);
+  if (hasSkills) {
+    const partialCountNote = partialSkills.length > 0 ? ` (${partialSkills.length} partial exp)` : "";
+    breakdownParts.push(`• Skills: ${skillsPts}/${maxSkillsPts}%${partialCountNote}`);
+  }
   if (hasQuals) breakdownParts.push(`• Qualifications: ${qualPts}/${maxQualsPts}%`);
   if (hasCerts) breakdownParts.push(`• Certifications: ${certPts}/${maxCertPts}%`);
 
@@ -3151,6 +3249,11 @@ export function calculateJobMatchDetails(
   if (missingSkills.length > 0) {
     recommendations.push(
       `Add "${missingSkills.slice(0, 2).join('", "')}" to your profile skills or certifications to increase your match score.`
+    );
+  }
+  if (partialSkills.length > 0) {
+    recommendations.push(
+      `Gain additional experience in "${partialSkills.slice(0, 2).join('", "')}" to fully satisfy the required experience duration.`
     );
   }
   if (missingQuals.length > 0) {
@@ -3183,6 +3286,7 @@ export function calculateJobMatchDetails(
     maxQualPts: maxQualsPts,
     maxCertPts,
     matchedSkills,
+    partialSkills,
     missingSkills,
     matchedQuals,
     missingQuals,

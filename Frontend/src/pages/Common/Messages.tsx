@@ -13,6 +13,7 @@ import {
   calculateJobMatchDetails,
   formatExperienceLevel,
   formatLocationWithCavite,
+  evaluateSkillRequirementMatch,
   getMatchColorClass,
   isSkillMatch,
   isCertificationMatch,
@@ -3640,7 +3641,11 @@ export default function Messages() {
                         <div className="jd-compare-legend" style={{ fontFamily: '"Inter", sans-serif' }}>
                           <div className="legend-item">
                             <span className="legend-dot green"></span>
-                            <span><strong>Green Tag:</strong> Matched candidate competency</span>
+                            <span><strong>Green Tag:</strong> Fully satisfied (Skill & Experience)</span>
+                          </div>
+                          <div className="legend-item">
+                            <span className="legend-dot yellow"></span>
+                            <span><strong>Yellow Tag:</strong> Skill matched, lacking experience</span>
                           </div>
                           <div className="legend-item">
                             <span className="legend-dot red"></span>
@@ -3875,16 +3880,36 @@ export default function Messages() {
                                 <div className="jd-col-tags-container">
                                   {jobSkills.length > 0 ? (
                                     jobSkills.map((item) => {
-                                      const matched = checkMatch(item, candSkills);
+                                      const evalResult = evaluateSkillRequirementMatch(item, candSkills, candCerts);
+                                      const statusClass =
+                                        evalResult.status === "matched"
+                                          ? "tag-matched-green"
+                                          : evalResult.status === "partial"
+                                          ? "tag-partial-yellow"
+                                          : "tag-missing-red";
+                                      const icon =
+                                        evalResult.status === "matched"
+                                          ? "✓"
+                                          : evalResult.status === "partial"
+                                          ? "▲"
+                                          : "✗";
                                       const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
                                       const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "skills" && isSkillMatch(item, hoveredCompareTag.item));
                                       return (
                                         <span
                                           key={item}
-                                          className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
+                                          className={`jd-comp-tag ${statusClass} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
+                                          title={
+                                            evalResult.status === "matched"
+                                              ? `Fully Satisfied: ${item}`
+                                              : evalResult.status === "partial"
+                                              ? `Skill matched, but lacking ${evalResult.reqYears} yrs experience (Candidate: ${evalResult.candYears} yr${evalResult.candYears === 1 ? "" : "s"})`
+                                              : `Missing: ${item}`
+                                          }
                                           onMouseEnter={() => setHoveredCompareTag({ item, side: "employer", category: "skills" })}
                                           onMouseLeave={() => setHoveredCompareTag(null)}
                                         >
+                                          <span className="tag-icon">{icon}</span>
                                           <span className="tag-text">{item}</span>
                                         </span>
                                       );
