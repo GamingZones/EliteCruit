@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { ChevronIcon, SideIcon } from "../../components/Icons";
 import { useEmployerCompanyLabel } from "../../hooks/useEmployerCompanyLabel";
 import { useUnreadNotificationsCount } from "../../hooks/useUnreadNotificationsCount";
@@ -416,6 +416,22 @@ export default function Messages() {
   const [threads, setThreads] = useState<ThreadItem[]>([]);
   const [selectedThread, setSelectedThread] = useState<ThreadItem | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const chatBodyRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = (instant = false) => {
+    if (chatBodyRef.current) {
+      chatBodyRef.current.scrollTo({
+        top: chatBodyRef.current.scrollHeight,
+        behavior: instant ? "auto" : "smooth",
+      });
+    } else if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({
+        behavior: instant ? "auto" : "smooth",
+        block: "end",
+      });
+    }
+  };
   const [composeText, setComposeText] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [filterType, setFilterType] = useState<"all" | "applied" | "recruited">("all");
@@ -1434,6 +1450,29 @@ export default function Messages() {
     }
   }, [selectedThread?.id, isEmployer, selectedThread?.other_user_id]);
 
+  // Always scroll to the bottom of the conversation when a thread opens or messages change
+  useEffect(() => {
+    if (messages.length > 0 && selectedThread?.id) {
+      if (chatBodyRef.current) {
+        chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
+      }
+      const t1 = setTimeout(() => {
+        if (chatBodyRef.current) {
+          chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
+        }
+      }, 50);
+      const t2 = setTimeout(() => {
+        if (chatBodyRef.current) {
+          chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
+        }
+      }, 150);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    }
+  }, [messages, selectedThread?.id]);
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!composeText.trim() || !selectedThread?.id || !currentUserId || isSending) return;
@@ -1464,6 +1503,7 @@ export default function Messages() {
             )
           );
           window.dispatchEvent(new Event("elitecruit_messages_update"));
+          setTimeout(() => scrollToBottom(false), 30);
         }
       }
     } catch {
@@ -1884,7 +1924,7 @@ export default function Messages() {
                   </div>
                 </header>
 
-                <div className="chat-body">
+                <div className="chat-body" ref={chatBodyRef}>
                   {messages.length === 0 ? (
                     <div style={{ padding: "32px", textAlign: "center", color: "#64748b" }}>
                       <p style={{ margin: 0, fontWeight: 600 }}>No messages yet in this conversation.</p>
@@ -1914,6 +1954,7 @@ export default function Messages() {
                       );
                     })
                   )}
+                  <div ref={messagesEndRef} />
                 </div>
 
                 <form className="chat-compose" onSubmit={handleSendMessage}>
