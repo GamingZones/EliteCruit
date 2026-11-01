@@ -3524,6 +3524,102 @@
   color: #ffffff;
 }
 
+/* Target Roles Container & Pills */
+.target-roles-pill-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  min-height: 40px;
+  padding: 6px 10px;
+  background: #fdfefe;
+  border: 1px solid #bdcddd;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.target-role-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #00385e;
+  color: #ffffff;
+  border-radius: 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.target-role-pill button {
+  background: none;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+/* Same-line row for Work Arrangement, Min Salary, and Max Salary */
+.work-salary-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.work-salary-row .work-arrangements-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.work-salary-row .work-arrangement-pill-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-height: 38px;
+  align-items: center;
+  margin-top: 0;
+}
+
+.empty-category-notice {
+  padding: 20px;
+  text-align: center;
+  background: #fdfefe;
+  border: 1px dashed #bdcddd;
+  border-radius: 8px;
+  color: #64748b;
+  font-size: 0.86rem;
+}
+
+@media (max-width: 850px) {
+  .work-salary-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+[data-theme="dark"] .target-roles-pill-container {
+  background: #242735 !important;
+  border: 1px solid #2e3244 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .target-role-pill {
+  background: #00385e !important;
+  border: 1px solid #0284c7 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .empty-category-notice {
+  background: #181b24 !important;
+  border-color: #2e3244 !important;
+  color: #94a3b8 !important;
+}
+
 .system-popup-overlay {
   position: fixed;
   inset: 0;

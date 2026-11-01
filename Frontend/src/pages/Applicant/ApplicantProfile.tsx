@@ -4285,7 +4285,7 @@ export default function ApplicantProfile() {
                   <div>
                     <div className="person-heading" style={{ flexWrap: "wrap", gap: "12px", alignItems: "flex-start", justifyContent: "space-between" }}>
                       <div>
-                        <strong style={{ fontSize: "1.1rem", color: "#092540", fontWeight: 700, display: "block", marginBottom: "4px" }}>
+                        <strong style={{ fontSize: "1.1rem", fontWeight: 700, display: "block", marginBottom: "4px" }}>
                           Preferred Work Locations
                         </strong>
                         <small style={{ display: "block", fontSize: "0.85rem", color: "#64748b", fontWeight: 400 }}>
@@ -4305,7 +4305,7 @@ export default function ApplicantProfile() {
                       </button>
                     </div>
 
-                    <div className="profile-divider" style={{ margin: "16px 0 16px 0", borderTop: "1px solid #e2e8f0" }} />
+                    <div className="profile-divider" style={{ margin: "16px 0 16px 0" }} />
 
                     <div className="selected-items-list" style={{ marginTop: "12px", display: "flex", flexWrap: "wrap", gap: "12px" }}>
                       {parsePreferredLocationTags(getPreferredLocationsRaw(profile)).length === 0 ? (
@@ -4379,7 +4379,7 @@ export default function ApplicantProfile() {
                       <small style={{ color: "#64748b", fontSize: "0.8rem" }}>Select one or more job roles across industries</small>
                     </div>
 
-                    <div className="target-roles-pill-container" style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "8px", minHeight: "36px", padding: "6px", background: "var(--field-bg, #f8fafc)", border: "1px solid #cbd5e1", borderRadius: "8px" }}>
+                    <div className="target-roles-pill-container">
                       {(() => {
                         const currentRoles = (visibleProfile.desired_job_title || "")
                           .split(",")
@@ -4396,31 +4396,11 @@ export default function ApplicantProfile() {
                           <span
                             key={role}
                             className="target-role-pill"
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "6px",
-                              padding: "4px 10px",
-                              background: "#00385e",
-                              color: "#ffffff",
-                              borderRadius: "16px",
-                              fontSize: "0.82rem",
-                              fontWeight: 600,
-                            }}
                           >
                             <span>{role}</span>
                             {isEditing && (
                               <button
                                 type="button"
-                                style={{
-                                  background: "none",
-                                  border: "none",
-                                  color: "#ffffff",
-                                  cursor: "pointer",
-                                  padding: 0,
-                                  fontSize: "0.85rem",
-                                  lineHeight: 1,
-                                }}
                                 onClick={() => {
                                   const updated = currentRoles.filter((r) => r !== role);
                                   updateDraft("desired_job_title", updated.join(", "));
@@ -4466,64 +4446,66 @@ export default function ApplicantProfile() {
                     )}
                   </div>
 
-                  <div className="profile-field work-arrangements-field">
-                    <span>Work Arrangement Preferences</span>
-                    <div className="work-arrangement-pill-group">
-                      {["Remote", "On-Site", "Hybrid"].map((arr) => {
-                        const currentArrangements = (visibleProfile.work_arrangement || "")
-                          .split(",")
-                          .map((s) => s.trim())
-                          .filter(Boolean);
-                        const isSelected = currentArrangements.includes(arr);
-                        return (
-                          <button
-                            key={arr}
-                            type="button"
-                            disabled={!isEditing}
-                            className={`arr-toggle-pill ${isSelected ? "selected" : ""}`}
-                            onClick={() => {
-                              if (!isEditing) return;
-                              let updated: string[];
-                              if (isSelected) {
-                                updated = currentArrangements.filter((a) => a !== arr);
-                              } else {
-                                updated = [...currentArrangements, arr];
-                              }
-                              updateDraft("work_arrangement", updated.join(", "));
-                            }}
-                          >
-                            {isSelected ? "✓ " : "+ "}{arr}
-                          </button>
-                        );
-                      })}
+                  <div className="work-salary-row">
+                    <div className="profile-field work-arrangements-field">
+                      <span>Work Arrangement Preferences</span>
+                      <div className="work-arrangement-pill-group">
+                        {["Remote", "On-Site", "Hybrid"].map((arr) => {
+                          const currentArrangements = (visibleProfile.work_arrangement || "")
+                            .split(",")
+                            .map((s) => s.trim())
+                            .filter(Boolean);
+                          const isSelected = currentArrangements.includes(arr);
+                          return (
+                            <button
+                              key={arr}
+                              type="button"
+                              disabled={!isEditing}
+                              className={`arr-toggle-pill ${isSelected ? "selected" : ""}`}
+                              onClick={() => {
+                                if (!isEditing) return;
+                                let updated: string[];
+                                if (isSelected) {
+                                  updated = currentArrangements.filter((a) => a !== arr);
+                                } else {
+                                  updated = [...currentArrangements, arr];
+                                }
+                                updateDraft("work_arrangement", updated.join(", "));
+                              }}
+                            >
+                              {isSelected ? "✓ " : "+ "}{arr}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
+
+                    <Field
+                      label="Minimum Expected Salary"
+                      name="expected_salary_min"
+                      value={visibleProfile.expected_salary_min}
+                      editing={isEditing}
+                      onChange={handleSalaryMinChange}
+                      onBlur={handleSalaryBlur}
+                      prefix="PHP"
+                      currencyFormat
+                      placeholder="e.g. 25,000.00"
+                      hasError={Boolean(salaryError)}
+                    />
+
+                    <Field
+                      label="Maximum Expected Salary"
+                      name="expected_salary_max"
+                      value={visibleProfile.expected_salary_max}
+                      editing={isEditing}
+                      onChange={handleSalaryMaxChange}
+                      onBlur={handleSalaryBlur}
+                      prefix="PHP"
+                      currencyFormat
+                      placeholder="e.g. 40,000.00"
+                      hasError={Boolean(salaryError)}
+                    />
                   </div>
-
-                  <Field
-                    label="Minimum Expected Salary"
-                    name="expected_salary_min"
-                    value={visibleProfile.expected_salary_min}
-                    editing={isEditing}
-                    onChange={handleSalaryMinChange}
-                    onBlur={handleSalaryBlur}
-                    prefix="PHP"
-                    currencyFormat
-                    placeholder="e.g. 25,000.00"
-                    hasError={Boolean(salaryError)}
-                  />
-
-                  <Field
-                    label="Maximum Expected Salary"
-                    name="expected_salary_max"
-                    value={visibleProfile.expected_salary_max}
-                    editing={isEditing}
-                    onChange={handleSalaryMaxChange}
-                    onBlur={handleSalaryBlur}
-                    prefix="PHP"
-                    currencyFormat
-                    placeholder="e.g. 40,000.00"
-                    hasError={Boolean(salaryError)}
-                  />
                 </div>
               </article>
             </section>
@@ -4863,7 +4845,7 @@ export default function ApplicantProfile() {
 
                 <div className="work-exp-list">
                   {workExperiences.length === 0 ? (
-                    <div className="empty-category-notice" style={{ padding: "20px", textAlign: "center", background: "#ffffff", borderRadius: "8px", border: "1px solid #dbe5f0" }}>
+                    <div className="empty-category-notice">
                       No work experience entries added yet. Click "+ Add Experience" to add your employment records.
                     </div>
                   ) : (
