@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import ApplicantSidebar from "../../components/ApplicantSidebar";
 import ApplicantChatbotDrawer from "../../components/ApplicantChatbotDrawer";
 import CalendarDrawer from "../../components/CalendarDrawer";
+import { authFetch } from "../../utils/auth";
 import "./Applicant-OfferLetter.css";
 
 const SYSTEM_DEFAULT_ACCEPTANCE = `Dear {company_name} Hiring Team,
@@ -72,6 +73,8 @@ export default function ApplicantOfferLetter() {
   // Offers state
   const [offers, setOffers] = useState<OfferRecord[]>([DEFAULT_SAMPLE_OFFER]);
   const [selectedOfferId, setSelectedOfferId] = useState<string | number>(DEFAULT_SAMPLE_OFFER.id);
+  // Collapsible dropdown state for received offers (closed by default)
+  const [expandedOfferId, setExpandedOfferId] = useState<string | number | null>(null);
 
   // Selected response decision
   const [selectedDecision, setSelectedDecision] = useState<"accept" | "decline" | null>(null);
@@ -110,7 +113,7 @@ export default function ApplicantOfferLetter() {
         setCandidateName(fullName);
 
         // Fetch candidate profile for accurate name
-        fetch(`/api/applicants/${savedUser.id}/profile`)
+        authFetch(`/api/applicants/${savedUser.id}/profile`)
           .then((r) => (r.ok ? r.json() : null))
           .then((d) => {
             if (d?.first_name || d?.last_name) {
@@ -129,7 +132,7 @@ export default function ApplicantOfferLetter() {
   useEffect(() => {
     if (!userId) return;
 
-    fetch(`/api/applicants/${userId}/letter-templates`)
+    authFetch(`/api/applicants/${userId}/letter-templates`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!data) return;
@@ -143,7 +146,7 @@ export default function ApplicantOfferLetter() {
     const appId = params.get("applicationId");
     const invId = params.get("invitationId");
 
-    fetch(`/api/applicants/${userId}/applications`)
+    authFetch(`/api/applicants/${userId}/applications`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         const list = Array.isArray(d?.applications) ? d.applications : [];
@@ -182,12 +185,13 @@ export default function ApplicantOfferLetter() {
             status: found.status,
           });
           setSelectedOfferId(found.id);
+          setExpandedOfferId(found.id);
         }
       })
       .catch(() => {});
 
     if (invId) {
-      fetch(`/api/applicants/${userId}/invitations`)
+      authFetch(`/api/applicants/${userId}/invitations`)
         .then((r) => (r.ok ? r.json() : null))
         .then((d) => {
           const list = Array.isArray(d?.invitations) ? d.invitations : [];
@@ -202,6 +206,8 @@ export default function ApplicantOfferLetter() {
               startDate: found.start_date,
               status: found.status,
             });
+            setSelectedOfferId(found.id);
+            setExpandedOfferId(found.id);
           }
         })
         .catch(() => {});
@@ -483,236 +489,285 @@ Document Timestamp: ${new Date().toLocaleString()}
               </button>
             </div>
 
-            {/* TAB 1: RECEIVED OFFERS (Matches UI Mockup 873848189 / 873066323) */}
+            {/* TAB 1: RECEIVED OFFERS (Dropdown List - Closed by Default) */}
             {activeTab === "received" && (
               <div className="aol-received-offers-view">
-                {/* Offers summary list */}
                 <div className="aol-offers-list-section">
                   <h3 className="aol-section-title">Offers ({offers.length})</h3>
-                  <div className="aol-offers-list-strip">
-                    {offers.map((offer) => {
-                      const isSelected = String(offer.id) === String(currentOffer.id);
-                      return (
-                        <div
-                          key={offer.id}
-                          className={`aol-offer-strip-item ${isSelected ? "selected" : ""}`}
-                          onClick={() => setSelectedOfferId(offer.id)}
-                          tabIndex={0}
-                          role="button"
-                        >
-                          <div className="aol-offer-strip-head">
-                            <h4 className="aol-offer-strip-title">{offer.title}</h4>
-                            <span className="aol-offer-badge pending">{offer.status}</span>
+
+                  {offers.length === 0 ? (
+                    <div className="aol-empty-offers-card">
+                      <p>No offer letters received yet.</p>
+                    </div>
+                  ) : (
+                    <div className="aol-offers-list-strip">
+                      {offers.map((offer) => {
+                        const isExpanded = String(offer.id) === String(expandedOfferId);
+                        const toggleOffer = () => {
+                          if (isExpanded) {
+                            setExpandedOfferId(null);
+                          } else {
+                            setExpandedOfferId(offer.id);
+                            setSelectedOfferId(offer.id);
+                          }
+                        };
+
+                        return (
+                          <div
+                            key={offer.id}
+                            className={`aol-offer-accordion-group ${isExpanded ? "expanded" : ""}`}
+                          >
+                            {/* Accordion Dropdown Trigger Item */}
+                            <div
+                              className={`aol-offer-strip-item ${isExpanded ? "selected" : ""}`}
+                              onClick={toggleOffer}
+                              tabIndex={0}
+                              role="button"
+                              aria-expanded={isExpanded}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  toggleOffer();
+                                }
+                              }}
+                            >
+                              <div className="aol-offer-strip-head">
+                                <h4 className="aol-offer-strip-title">{offer.title}</h4>
+                                <div className="aol-offer-strip-head-right">
+                                  <span className="aol-offer-badge pending">{offer.status}</span>
+                                  <span
+                                    className={`aol-dropdown-chevron ${isExpanded ? "open" : ""}`}
+                                    aria-hidden="true"
+                                    title={isExpanded ? "Collapse offer details" : "Expand offer details"}
+                                  >
+                                    <svg
+                                      viewBox="0 0 24 24"
+                                      width="18"
+                                      height="18"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2.5"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    >
+                                      <polyline points="6 9 12 15 18 9" />
+                                    </svg>
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="aol-offer-strip-company">{offer.company}</div>
+                              <div className="aol-offer-strip-meta">
+                                <span>
+                                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                    <line x1="16" y1="2" x2="16" y2="6" />
+                                    <line x1="8" y1="2" x2="8" y2="6" />
+                                    <line x1="3" y1="10" x2="21" y2="10" />
+                                  </svg>
+                                  Received {offer.receivedDate}
+                                </span>
+                                <span>
+                                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <polyline points="12 6 12 12 16 14" />
+                                  </svg>
+                                  Respond by {offer.respondByDate}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Dropdown Expanded Details Container */}
+                            {isExpanded && (
+                              <div className="aol-offer-detail-card aol-accordion-body">
+                                {/* Title & Badge Header */}
+                                <div className="aol-detail-head">
+                                  <div>
+                                    <h2 className="aol-detail-title">{offer.title}</h2>
+                                    <div className="aol-detail-company">{offer.company}</div>
+                                  </div>
+                                  <span className="aol-offer-badge pending">{offer.status}</span>
+                                </div>
+
+                                {/* 3-Column Metrics Strip */}
+                                <div className="aol-metrics-strip">
+                                  <div className="aol-metric-col">
+                                    <div className="aol-metric-icon">
+                                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                        <line x1="16" y1="2" x2="16" y2="6" />
+                                        <line x1="8" y1="2" x2="8" y2="6" />
+                                        <line x1="3" y1="10" x2="21" y2="10" />
+                                      </svg>
+                                    </div>
+                                    <div className="aol-metric-info">
+                                      <small>Start date</small>
+                                      <strong>{offer.startDate}</strong>
+                                    </div>
+                                  </div>
+
+                                  <div className="aol-metric-col">
+                                    <div className="aol-metric-icon">
+                                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                                      </svg>
+                                    </div>
+                                    <div className="aol-metric-info">
+                                      <small>Work setup</small>
+                                      <strong>{offer.workSetup}</strong>
+                                    </div>
+                                  </div>
+
+                                  <div className="aol-metric-col">
+                                    <div className="aol-metric-icon">
+                                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <rect x="2" y="6" width="20" height="12" rx="2" />
+                                        <circle cx="12" cy="12" r="2" />
+                                        <path d="M6 12h.01M18 12h.01" />
+                                      </svg>
+                                    </div>
+                                    <div className="aol-metric-info">
+                                      <small>Salary</small>
+                                      <strong>{offer.salary}</strong>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Formal Offer Letter Card */}
+                                <div className="aol-formal-letter-card">
+                                  <div className="aol-formal-letter-head">
+                                    <h3>Formal Offer Letter</h3>
+                                    <span className="aol-readonly-badge">
+                                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                      </svg>
+                                      Read-only document from employer
+                                    </span>
+                                  </div>
+
+                                  <div className="aol-formal-letter-body">
+                                    <div className="aol-letter-doc-icon">
+                                      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                        <polyline points="14 2 14 8 20 8" />
+                                        <line x1="16" y1="13" x2="8" y2="13" />
+                                        <line x1="16" y1="17" x2="8" y2="17" />
+                                        <polyline points="10 9 9 9 8 9" />
+                                      </svg>
+                                    </div>
+                                    <div className="aol-letter-text-content">
+                                      {offer.letterContent.split("\n\n").map((para, i) => (
+                                        <p key={i}>{para}</p>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Your Response Section */}
+                                <div className="aol-response-section">
+                                  <h3 className="aol-response-title">Your Response</h3>
+                                  <p className="aol-response-subtitle">
+                                    Choose a decision, then review the message that will be sent to the employer.
+                                  </p>
+
+                                  {/* Radio Cards */}
+                                  <div className="aol-decision-cards-row">
+                                    <label
+                                      className={`aol-decision-radio-card accept ${selectedDecision === "accept" ? "active" : ""}`}
+                                      onClick={() => setSelectedDecision("accept")}
+                                    >
+                                      <input
+                                        type="radio"
+                                        name={`offer_decision_${offer.id}`}
+                                        checked={selectedDecision === "accept"}
+                                        onChange={() => setSelectedDecision("accept")}
+                                      />
+                                      <div className="aol-radio-custom" />
+                                      <div className="aol-radio-text">
+                                        <strong>Accept offer</strong>
+                                        <span>I would like to accept this offer and join the team.</span>
+                                      </div>
+                                    </label>
+
+                                    <label
+                                      className={`aol-decision-radio-card decline ${selectedDecision === "decline" ? "active" : ""}`}
+                                      onClick={() => setSelectedDecision("decline")}
+                                    >
+                                      <input
+                                        type="radio"
+                                        name={`offer_decision_${offer.id}`}
+                                        checked={selectedDecision === "decline"}
+                                        onChange={() => setSelectedDecision("decline")}
+                                      />
+                                      <div className="aol-radio-custom" />
+                                      <div className="aol-radio-text">
+                                        <strong>Decline offer</strong>
+                                        <span>I must decline this offer at this time.</span>
+                                      </div>
+                                    </label>
+                                  </div>
+
+                                  {/* Optional Message Field */}
+                                  <div className="aol-response-message-field">
+                                    <label>Message to employer (optional)</label>
+                                    <textarea
+                                      className="aol-message-textarea"
+                                      rows={4}
+                                      maxLength={500}
+                                      placeholder="Add a short message to the employer (optional)..."
+                                      value={customMessage}
+                                      onChange={(e) => setCustomMessage(e.target.value)}
+                                    />
+                                    <div className="aol-char-count">{customMessage.length}/500</div>
+                                  </div>
+
+                                  {/* Final decision warning notice */}
+                                  <div className="aol-warning-notice">
+                                    <span className="aol-warning-icon">⚠️</span>
+                                    <span>Your decision is final after confirmation.</span>
+                                  </div>
+
+                                  {/* Bottom Action Buttons */}
+                                  <div className="aol-actions-row">
+                                    <button type="button" className="aol-action-btn outline" onClick={handleDownloadLetter}>
+                                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                        <polyline points="7 10 12 15 17 10" />
+                                        <line x1="12" y1="15" x2="12" y2="3" />
+                                      </svg>
+                                      Download Letter
+                                    </button>
+
+                                    <button type="button" className="aol-action-btn outline" onClick={handleSaveDraft}>
+                                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                                        <polyline points="17 21 17 13 7 13 7 21" />
+                                        <polyline points="7 3 7 8 15 8" />
+                                      </svg>
+                                      Save response draft
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      className="aol-action-btn primary"
+                                      disabled={!selectedDecision}
+                                      onClick={() => setIsReviewModalOpen(true)}
+                                    >
+                                      <span>Review Decision</span>
+                                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                        <polyline points="9 18 15 12 9 6" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
-                          <div className="aol-offer-strip-company">{offer.company}</div>
-                          <div className="aol-offer-strip-meta">
-                            <span>
-                              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                                <line x1="16" y1="2" x2="16" y2="6" />
-                                <line x1="8" y1="2" x2="8" y2="6" />
-                                <line x1="3" y1="10" x2="21" y2="10" />
-                              </svg>
-                              Received {offer.receivedDate}
-                            </span>
-                            <span>
-                              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                                <circle cx="12" cy="12" r="10" />
-                                <polyline points="12 6 12 12 16 14" />
-                              </svg>
-                              Respond by {offer.respondByDate}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Selected Offer Detail Card */}
-                <div className="aol-offer-detail-card">
-                  {/* Title & Badge Header */}
-                  <div className="aol-detail-head">
-                    <div>
-                      <h2 className="aol-detail-title">{currentOffer.title}</h2>
-                      <div className="aol-detail-company">{currentOffer.company}</div>
+                        );
+                      })}
                     </div>
-                    <span className="aol-offer-badge pending">{currentOffer.status}</span>
-                  </div>
-
-                  {/* 3-Column Metrics Strip */}
-                  <div className="aol-metrics-strip">
-                    <div className="aol-metric-col">
-                      <div className="aol-metric-icon">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                          <line x1="16" y1="2" x2="16" y2="6" />
-                          <line x1="8" y1="2" x2="8" y2="6" />
-                          <line x1="3" y1="10" x2="21" y2="10" />
-                        </svg>
-                      </div>
-                      <div className="aol-metric-info">
-                        <small>Start date</small>
-                        <strong>{currentOffer.startDate}</strong>
-                      </div>
-                    </div>
-
-                    <div className="aol-metric-col">
-                      <div className="aol-metric-icon">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-                          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-                        </svg>
-                      </div>
-                      <div className="aol-metric-info">
-                        <small>Work setup</small>
-                        <strong>{currentOffer.workSetup}</strong>
-                      </div>
-                    </div>
-
-                    <div className="aol-metric-col">
-                      <div className="aol-metric-icon">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="2" y="6" width="20" height="12" rx="2" />
-                          <circle cx="12" cy="12" r="2" />
-                          <path d="M6 12h.01M18 12h.01" />
-                        </svg>
-                      </div>
-                      <div className="aol-metric-info">
-                        <small>Salary</small>
-                        <strong>{currentOffer.salary}</strong>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Formal Offer Letter Card */}
-                  <div className="aol-formal-letter-card">
-                    <div className="aol-formal-letter-head">
-                      <h3>Formal Offer Letter</h3>
-                      <span className="aol-readonly-badge">
-                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                        </svg>
-                        Read-only document from employer
-                      </span>
-                    </div>
-
-                    <div className="aol-formal-letter-body">
-                      <div className="aol-letter-doc-icon">
-                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                          <polyline points="14 2 14 8 20 8" />
-                          <line x1="16" y1="13" x2="8" y2="13" />
-                          <line x1="16" y1="17" x2="8" y2="17" />
-                          <polyline points="10 9 9 9 8 9" />
-                        </svg>
-                      </div>
-                      <div className="aol-letter-text-content">
-                        {currentOffer.letterContent.split("\n\n").map((para, i) => (
-                          <p key={i}>{para}</p>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Your Response Section */}
-                  <div className="aol-response-section">
-                    <h3 className="aol-response-title">Your Response</h3>
-                    <p className="aol-response-subtitle">
-                      Choose a decision, then review the message that will be sent to the employer.
-                    </p>
-
-                    {/* Radio Cards */}
-                    <div className="aol-decision-cards-row">
-                      <label
-                        className={`aol-decision-radio-card accept ${selectedDecision === "accept" ? "active" : ""}`}
-                        onClick={() => setSelectedDecision("accept")}
-                      >
-                        <input
-                          type="radio"
-                          name="offer_decision"
-                          checked={selectedDecision === "accept"}
-                          onChange={() => setSelectedDecision("accept")}
-                        />
-                        <div className="aol-radio-custom" />
-                        <div className="aol-radio-text">
-                          <strong>Accept offer</strong>
-                          <span>I would like to accept this offer and join the team.</span>
-                        </div>
-                      </label>
-
-                      <label
-                        className={`aol-decision-radio-card decline ${selectedDecision === "decline" ? "active" : ""}`}
-                        onClick={() => setSelectedDecision("decline")}
-                      >
-                        <input
-                          type="radio"
-                          name="offer_decision"
-                          checked={selectedDecision === "decline"}
-                          onChange={() => setSelectedDecision("decline")}
-                        />
-                        <div className="aol-radio-custom" />
-                        <div className="aol-radio-text">
-                          <strong>Decline offer</strong>
-                          <span>I must decline this offer at this time.</span>
-                        </div>
-                      </label>
-                    </div>
-
-                    {/* Optional Message Field */}
-                    <div className="aol-response-message-field">
-                      <label>Message to employer (optional)</label>
-                      <textarea
-                        className="aol-message-textarea"
-                        rows={4}
-                        maxLength={500}
-                        placeholder="Add a short message to the employer (optional)..."
-                        value={customMessage}
-                        onChange={(e) => setCustomMessage(e.target.value)}
-                      />
-                      <div className="aol-char-count">{customMessage.length}/500</div>
-                    </div>
-
-                    {/* Final decision warning notice */}
-                    <div className="aol-warning-notice">
-                      <span className="aol-warning-icon">⚠️</span>
-                      <span>Your decision is final after confirmation.</span>
-                    </div>
-
-                    {/* Bottom Action Buttons */}
-                    <div className="aol-actions-row">
-                      <button type="button" className="aol-action-btn outline" onClick={handleDownloadLetter}>
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                          <polyline points="7 10 12 15 17 10" />
-                          <line x1="12" y1="15" x2="12" y2="3" />
-                        </svg>
-                        Download Letter
-                      </button>
-
-                      <button type="button" className="aol-action-btn outline" onClick={handleSaveDraft}>
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                          <polyline points="17 21 17 13 7 13 7 21" />
-                          <polyline points="7 3 7 8 15 8" />
-                        </svg>
-                        Save response draft
-                      </button>
-
-                      <button
-                        type="button"
-                        className="aol-action-btn primary"
-                        disabled={!selectedDecision}
-                        onClick={() => setIsReviewModalOpen(true)}
-                      >
-                        <span>Review Decision</span>
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <polyline points="9 18 15 12 9 6" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             )}

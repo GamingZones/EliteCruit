@@ -2157,8 +2157,12 @@
   display: block;
   font-size: 0.96rem;
   font-weight: 800;
-  color: #0d2f4f;
+  color: #0d2f4f !important;
   line-height: 1.2;
+}
+
+[data-theme="dark"] .jd-employer-name {
+  color: #f8fafc !important;
 }
 
 .jd-employer-location {

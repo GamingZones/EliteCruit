@@ -1450,7 +1450,12 @@ export default function JobSearch() {
 
     const filtered = jobs.filter((job) => {
       // Exclude job postings the applicant has already applied for (or has an existing application/invitation status for)
-      if (appliedJobIds.includes(job.id) || Boolean(applicationStatusByJobId[job.id])) {
+      const jId = Number(job.id);
+      if (
+        appliedJobIds.some((id) => Number(id) === jId) ||
+        Boolean(applicationStatusByJobId[jId]) ||
+        Boolean(applicationStatusByJobId[String(jId) as any])
+      ) {
         return false;
       }
 

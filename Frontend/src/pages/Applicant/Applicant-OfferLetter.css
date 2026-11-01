@@ -660,17 +660,42 @@
 .aol-offers-list-strip {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
+}
+
+.aol-offer-accordion-group {
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  transition: all 0.25s ease;
+}
+
+.aol-offer-accordion-group.expanded {
+  box-shadow: 0 4px 16px rgba(2, 132, 199, 0.08);
+}
+
+.aol-offer-accordion-group.expanded .aol-offer-strip-item {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: 1.5px dashed #cbd5e1;
+}
+
+.aol-offer-accordion-group.expanded .aol-offer-detail-card {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-top: none;
+  margin-top: 0;
 }
 
 .aol-offer-strip-item {
   background: #ffffff;
   border: 1.5px solid #e2e8f0;
   border-left: 4px solid #0284c7;
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 16px 20px;
   cursor: pointer;
   transition: all 0.2s ease;
+  user-select: none;
 }
 .aol-offer-strip-item:hover {
   border-color: #0284c7;
@@ -680,6 +705,14 @@
   background: #f0f9ff;
   border-color: #0284c7;
   border-left: 4px solid #0284c7;
+}
+
+[data-theme="dark"] .aol-offer-accordion-group.expanded {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .aol-offer-accordion-group.expanded .aol-offer-strip-item {
+  border-bottom-color: #334155 !important;
 }
 
 [data-theme="dark"] .aol-offer-strip-item {
@@ -697,6 +730,53 @@
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+}
+
+.aol-offer-strip-head-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.aol-dropdown-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: #64748b;
+  transition: transform 0.25s ease, color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.aol-dropdown-chevron.open {
+  transform: rotate(180deg);
+  color: #0284c7;
+}
+
+[data-theme="dark"] .aol-dropdown-chevron {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .aol-dropdown-chevron.open {
+  color: #38bdf8 !important;
+}
+
+.aol-empty-offers-card {
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 32px 20px;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+[data-theme="dark"] .aol-empty-offers-card {
+  background: #1c1e27 !important;
+  border-color: #334155 !important;
+  color: #94a3b8 !important;
 }
 .aol-offer-strip-title {
   margin: 0;
