@@ -838,7 +838,15 @@ export default function Feedback() {
           .catch(() => {});
       }
 
-      const storageKey = isEmp ? "elitecruit-employer-feedback-history" : "elitecruit-applicant-feedback-history";
+      // Clean up legacy unscoped keys that previously leaked reviews across accounts
+      try {
+        localStorage.removeItem("elitecruit-employer-feedback-history");
+        localStorage.removeItem("elitecruit-applicant-feedback-history");
+      } catch {}
+
+      const storageKey = isEmp
+        ? `elitecruit-employer-feedback-history_${savedUser.id}`
+        : `elitecruit-applicant-feedback-history_${savedUser.id}`;
       
       // Fetch persisted feedbacks from backend
       if (savedUser.id) {
@@ -878,21 +886,16 @@ export default function Feedback() {
               setFeedbackList(mappedFb);
               localStorage.setItem(storageKey, JSON.stringify(mappedFb));
             } else {
-              // Fallback to local storage cache if API returned empty
-              const cached = localStorage.getItem(storageKey);
-              if (cached) {
-                try {
-                  setFeedbackList(JSON.parse(cached));
-                } catch {
-                  setFeedbackList([]);
-                }
-              }
+              setFeedbackList([]);
+              try { localStorage.setItem(storageKey, JSON.stringify([])); } catch {}
             }
           })
           .catch(() => {
             const cached = localStorage.getItem(storageKey);
             if (cached) {
               try { setFeedbackList(JSON.parse(cached)); } catch { setFeedbackList([]); }
+            } else {
+              setFeedbackList([]);
             }
           });
       }
@@ -1205,7 +1208,7 @@ export default function Feedback() {
           }
           return f;
         });
-        const key = role === "employer" ? "elitecruit-employer-feedback-history" : "elitecruit-applicant-feedback-history";
+        const key = (role === "employer" ? "elitecruit-employer-feedback-history" : "elitecruit-applicant-feedback-history") + (userId ? `_${userId}` : "");
         localStorage.setItem(key, JSON.stringify(updated));
         return updated;
       });
@@ -1290,7 +1293,7 @@ export default function Feedback() {
 
       setFeedbackList((prev) => {
         const updated = [updatedRecord, ...prev];
-        const key = role === "employer" ? "elitecruit-employer-feedback-history" : "elitecruit-applicant-feedback-history";
+        const key = (role === "employer" ? "elitecruit-employer-feedback-history" : "elitecruit-applicant-feedback-history") + (userId ? `_${userId}` : "");
         localStorage.setItem(key, JSON.stringify(updated));
         return updated;
       });
@@ -1323,7 +1326,7 @@ export default function Feedback() {
 
       setFeedbackList((prev) => {
         const updated = prev.filter((item) => item.id !== targetId);
-        const key = role === "employer" ? "elitecruit-employer-feedback-history" : "elitecruit-applicant-feedback-history";
+        const key = (role === "employer" ? "elitecruit-employer-feedback-history" : "elitecruit-applicant-feedback-history") + (userId ? `_${userId}` : "");
         localStorage.setItem(key, JSON.stringify(updated));
         return updated;
       });

@@ -15,6 +15,9 @@ import {
   send2FAEmail,
   sendPasswordResetEmail,
   sendPasswordChangedNotificationEmail,
+  sendInterviewCancelledEmail,
+  sendJobClosedEmail,
+  sendInterviewRescheduledEmail,
 } from "./utils/emailService.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -4370,6 +4373,7 @@ app.get("/api/applicants/:userId/applications", authenticateToken, requireUserOr
                 LIMIT 1
               ) si_row) AS scheduled_interview,
               jp.title AS job_title,
+              jp.status AS job_status,
               COALESCE(NULLIF(TRIM(jp.location), ''), ep.company_address, ep.city, 'Cavite') AS location,
               jp.description AS description,
               jp.work_arrangement AS work_arrangement,
@@ -4397,10 +4401,18 @@ app.get("/api/applicants/:userId/applications", authenticateToken, requireUserOr
       [userId]
     );
 
-    const applications = rows.map((row) => ({
-      ...row,
-      rating: row.rating ? Number(row.rating).toFixed(1) : null,
-    }));
+    const applications = rows.map((row) => {
+      const isJobClosed = row.job_status === "closed" || (row.close_date && new Date(row.close_date).getTime() < Date.now());
+      const effectiveStatus = (isJobClosed && ["pending", "submitted", "under_review"].includes(String(row.status || "").toLowerCase()))
+        ? "closed"
+        : row.status;
+
+      return {
+        ...row,
+        status: effectiveStatus,
+        rating: row.rating ? Number(row.rating).toFixed(1) : null,
+      };
+    });
 
     const totals = await get(
       `SELECT
@@ -4647,6 +4659,55 @@ app.patch("/api/employers/:userId/job-posts/:jobPostId/status", authenticateToke
 
     const updated = await run(updateSql, params);
     if (!updated.changes) return res.status(404).json({ message: "Job post not found." });
+
+    if (targetStatus === "closed") {
+      try {
+        const pendingApps = await all(
+          `SELECT a.id, a.applicant_user_id, u.email as applicant_email, ap.first_name, jp.title as job_title, ep.business_name
+           FROM applications a
+           JOIN users u ON a.applicant_user_id = u.id
+           LEFT JOIN applicant_profiles ap ON u.id = ap.user_id
+           JOIN job_posts jp ON a.job_post_id = jp.id
+           LEFT JOIN employer_profiles ep ON jp.employer_user_id = ep.user_id
+           WHERE a.job_post_id = ? 
+             AND LOWER(a.status) IN ('pending', 'submitted', 'under_review')`,
+          [jobPostId]
+        );
+
+        if (pendingApps && pendingApps.length > 0) {
+          await run(
+            `UPDATE applications 
+             SET status = 'closed', updated_at = CURRENT_TIMESTAMP 
+             WHERE job_post_id = ? AND LOWER(status) IN ('pending', 'submitted', 'under_review')`,
+            [jobPostId]
+          );
+
+          for (const appItem of pendingApps) {
+            const companyName = appItem.business_name || "The employer";
+            const jobTitle = appItem.job_title || "the position";
+            const notifTitle = "Job Posting Closed";
+            const notifBody = `The job posting for "${jobTitle}" at ${companyName} has been closed by the employer. Your application status has been updated to closed.`;
+
+            await run(
+              `INSERT INTO notifications (user_id, type, title, body, related_user_id, related_application_id)
+               VALUES (?, 'job_closed', ?, ?, ?, ?)`,
+              [appItem.applicant_user_id, notifTitle, notifBody, userId, appItem.id]
+            ).catch(() => {});
+
+            if (appItem.applicant_email && appItem.applicant_email.includes("@")) {
+              sendJobClosedEmail({
+                toEmail: appItem.applicant_email,
+                recipientName: appItem.first_name || "Applicant",
+                companyName,
+                jobTitle,
+              }).catch(() => {});
+            }
+          }
+        }
+      } catch (closeErr) {
+        console.error("Error updating applications for closed job post:", closeErr);
+      }
+    }
 
     const row = await get("SELECT * FROM job_posts WHERE id = ? AND employer_user_id = ?", [jobPostId, userId]);
     res.json({
@@ -5839,24 +5900,66 @@ app.get("/api/employers/:userId/dashboard-summary", authenticateToken, requireUs
         `SELECT
           COUNT(*) AS total_count,
           SUM(CASE WHEN lower(a.status) = 'shortlisted' THEN 1 ELSE 0 END) AS shortlisted_count,
-          SUM(CASE WHEN lower(a.status) IN ('submitted', 'pending') THEN 1 ELSE 0 END) AS to_review_count
+          SUM(CASE WHEN lower(a.status) IN ('submitted', 'pending') THEN 1 ELSE 0 END) AS to_review_count,
+          SUM(CASE WHEN lower(a.status) = 'under_review' THEN 1 ELSE 0 END) AS under_review_count,
+          SUM(CASE WHEN lower(a.status) IN ('approved', 'accepted') THEN 1 ELSE 0 END) AS approved_count,
+          SUM(CASE WHEN lower(a.status) = 'interview' THEN 1 ELSE 0 END) AS interview_count,
+          SUM(CASE WHEN lower(a.status) = 'recruited' THEN 1 ELSE 0 END) AS recruited_count,
+          SUM(CASE WHEN lower(a.status) = 'hired' THEN 1 ELSE 0 END) AS hired_count,
+          SUM(CASE WHEN lower(a.status) IN ('rejected', 'denied') THEN 1 ELSE 0 END) AS rejected_count,
+          SUM(CASE WHEN lower(a.status) = 'closed' THEN 1 ELSE 0 END) AS closed_count
          FROM applications a
          INNER JOIN job_posts jp ON jp.id = a.job_post_id
          WHERE jp.employer_user_id = ?`,
         [userId]
       );
 
+      // Check active scheduled interviews for this employer
+      const interviewCountRow = await get(
+        `SELECT COUNT(*) as interview_count 
+         FROM scheduled_interviews 
+         WHERE employer_user_id = ? AND status NOT IN ('cancelled', 'completed') AND deleted_by_employer = FALSE`,
+        [userId]
+      ).catch(() => ({ interview_count: 0 }));
+
       totalApplications = Number(totals?.total_count || 0);
       shortlistedCount = Number(totals?.shortlisted_count || 0);
       toReviewCount = Number(totals?.to_review_count || 0);
+
+      res.json({
+        stats: {
+          activeJobs: activeJobPosts.length,
+          applications: totalApplications,
+          shortlisted: shortlistedCount,
+          toReview: toReviewCount,
+          underReview: Number(totals?.under_review_count || 0),
+          approved: Number(totals?.approved_count || 0),
+          interview: Number(interviewCountRow?.interview_count || totals?.interview_count || 0),
+          recruited: Number(totals?.recruited_count || 0),
+          hired: Number(totals?.hired_count || 0),
+          rejected: Number(totals?.rejected_count || 0),
+          closed: Number(totals?.closed_count || 0),
+        },
+        activeJobPosts,
+        recentApplications,
+        applicationsAvailable: hasApplications,
+      });
+      return;
     }
 
     res.json({
       stats: {
         activeJobs: activeJobPosts.length,
         applications: totalApplications,
-        shortlisted: shortlistedCount,
-        toReview: toReviewCount,
+        shortlisted: 0,
+        toReview: 0,
+        underReview: 0,
+        approved: 0,
+        interview: 0,
+        recruited: 0,
+        hired: 0,
+        rejected: 0,
+        closed: 0,
       },
       activeJobPosts,
       recentApplications,
@@ -7253,7 +7356,11 @@ app.patch("/api/interviews/:id/status", async (req, res) => {
       ? `Cancellation Reason: ${cancellation_reason}${notes ? ` | ${notes}` : ""}`
       : notes !== undefined ? notes : null;
 
-    if (targetStatus === "rescheduled" && (new_date || new_start_time)) {
+    const finalNewDate = new_date || req.body.interview_date || null;
+    const finalNewStartTime = new_start_time || req.body.start_time || null;
+    const finalNewEndTime = new_end_time || req.body.end_time || null;
+
+    if (targetStatus === "rescheduled" && (finalNewDate || finalNewStartTime)) {
       await run(
         `UPDATE scheduled_interviews
          SET status = ?,
@@ -7263,7 +7370,7 @@ app.patch("/api/interviews/:id/status", async (req, res) => {
              notes = COALESCE(?, notes),
              updated_at = CURRENT_TIMESTAMP
          WHERE id = ?`,
-        [targetStatus, new_date || null, new_start_time || null, new_end_time || null, finalNotes, id]
+        [targetStatus, finalNewDate, finalNewStartTime, finalNewEndTime, finalNotes, id]
       );
     } else {
       await run(
@@ -7279,29 +7386,85 @@ app.patch("/api/interviews/:id/status", async (req, res) => {
     const isApplicantUpdating = updaterId === existing.applicant_user_id;
     const recipientUserId = isApplicantUpdating ? existing.employer_user_id : existing.applicant_user_id;
 
-    if (recipientUserId && recipientUserId > 0) {
-      let notifTitle = `Interview Update: ${existing.interview_title}`;
-      let notifBody = `The interview scheduled for ${existing.interview_date} at ${existing.start_time} has been updated to "${targetStatus}".`;
-
-      if (targetStatus === "accepted") {
-        notifTitle = `Interview Confirmed!`;
-        notifBody = `The candidate has confirmed the interview on ${existing.interview_date} at ${existing.start_time}.`;
-      } else if (targetStatus === "declined") {
-        notifTitle = `Interview Declined`;
-        notifBody = `The candidate has declined the interview scheduled for ${existing.interview_date}.`;
-      } else if (targetStatus === "cancelled") {
-        notifTitle = `Interview Cancelled`;
-        notifBody = `The scheduled interview on ${existing.interview_date} at ${existing.start_time} was cancelled.${cancellation_reason ? ` Reason: "${cancellation_reason}".` : ""}`;
-      } else if (targetStatus === "rescheduled") {
-        notifTitle = `Interview Rescheduled`;
-        notifBody = `The interview has been rescheduled to ${new_date || existing.interview_date} at ${new_start_time || existing.start_time}.`;
+    // Collect all candidate user IDs for candidate group notifications
+    let candidateUserIds = [];
+    try {
+      if (Array.isArray(existing.candidate_user_ids)) {
+        candidateUserIds = existing.candidate_user_ids.map(Number);
+      } else if (typeof existing.candidate_user_ids === "string") {
+        candidateUserIds = JSON.parse(existing.candidate_user_ids).map(Number);
       }
+    } catch {}
+    if (existing.applicant_user_id && !candidateUserIds.includes(existing.applicant_user_id)) {
+      candidateUserIds.push(existing.applicant_user_id);
+    }
+
+    const recipientsToNotify = isApplicantUpdating
+      ? [existing.employer_user_id].filter(Boolean)
+      : candidateUserIds.filter(Boolean);
+
+    let notifTitle = `Interview Update: ${existing.interview_title}`;
+    let notifBody = `The interview scheduled for ${existing.interview_date} at ${existing.start_time} has been updated to "${targetStatus}".`;
+
+    if (targetStatus === "accepted") {
+      notifTitle = `Interview Confirmed!`;
+      notifBody = `The candidate has confirmed the interview on ${existing.interview_date} at ${existing.start_time}.`;
+    } else if (targetStatus === "declined") {
+      notifTitle = `Interview Declined`;
+      notifBody = `The candidate has declined the interview scheduled for ${existing.interview_date}.`;
+    } else if (targetStatus === "cancelled") {
+      notifTitle = `Interview Cancelled`;
+      notifBody = `The scheduled interview on ${existing.interview_date} at ${existing.start_time} was cancelled.${cancellation_reason ? ` Reason: "${cancellation_reason}".` : ""}`;
+    } else if (targetStatus === "rescheduled") {
+      notifTitle = `Interview Rescheduled`;
+      notifBody = `The interview has been rescheduled to ${finalNewDate || existing.interview_date} at ${finalNewStartTime || existing.start_time}.`;
+    }
+
+    for (const rUid of recipientsToNotify) {
+      if (!rUid || rUid < 1) continue;
 
       await run(
         `INSERT INTO notifications (user_id, type, title, body, related_user_id, related_application_id)
          VALUES (?, 'interview_status_update', ?, ?, ?, ?)`,
-        [recipientUserId, notifTitle, notifBody, updaterId || null, existing.job_post_id]
+        [rUid, notifTitle, notifBody, updaterId || null, existing.job_post_id]
       ).catch(() => {});
+
+      // Dispatch real email notifications
+      try {
+        const uRow = await get("SELECT id, email, role FROM users WHERE id = ?", [rUid]);
+        if (uRow && uRow.email && uRow.email.includes("@")) {
+          const uProf = uRow.role === "applicant"
+            ? await get("SELECT first_name, last_name FROM applicant_profiles WHERE user_id = ?", [rUid])
+            : await get("SELECT business_name FROM employer_profiles WHERE user_id = ?", [rUid]);
+          const rName = uRow.role === "applicant"
+            ? `${uProf?.first_name || ""} ${uProf?.last_name || ""}`.trim() || existing.applicant_name || "Applicant"
+            : uProf?.business_name || existing.employer_company_name || "Employer";
+
+          if (targetStatus === "cancelled") {
+            sendInterviewCancelledEmail({
+              toEmail: uRow.email,
+              recipientName: rName,
+              companyName: existing.employer_company_name || "Employer",
+              jobTitle: existing.job_title || existing.interview_title || "Job Position",
+              interviewDate: existing.interview_date,
+              startTime: existing.start_time,
+              cancellationReason: cancellation_reason || notes || "",
+            }).catch(() => {});
+          } else if (targetStatus === "rescheduled") {
+            sendInterviewRescheduledEmail({
+              toEmail: uRow.email,
+              recipientName: rName,
+              companyName: existing.employer_company_name || "Employer",
+              jobTitle: existing.job_title || existing.interview_title || "Job Position",
+              newDate: finalNewDate || existing.interview_date,
+              newStartTime: finalNewStartTime || existing.start_time,
+              venueOrLink: existing.meeting_link_or_address || "",
+            }).catch(() => {});
+          }
+        }
+      } catch (emailErr) {
+        console.error("Interview notification email error:", emailErr?.message || emailErr);
+      }
     }
 
     return res.json({ success: true, status: targetStatus });

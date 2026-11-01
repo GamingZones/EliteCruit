@@ -1468,7 +1468,7 @@ export default function EmployerJobPosts() {
             <span>{completionChecks.hasDescription ? "◉" : "○"} Description</span>
             <span>{completionChecks.hasSkills ? "◉" : "○"} Required Skills</span>
             <span>{completionChecks.hasQualifications ? "◉" : "○"} Qualifications</span>
-            <span>{completionChecks.hasCertifications ? "◉" : "○"} Certifications (Optional)</span>
+            <span>{completionChecks.hasCertifications ? "◉" : "—"} Certifications (Optional)</span>
           </div>
         </section>
 

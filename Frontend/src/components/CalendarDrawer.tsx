@@ -544,11 +544,18 @@ export default function CalendarDrawer({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             status: isEmployer ? "rescheduled" : "pending",
+            new_date: rescheduleDate,
+            new_start_time: rescheduleTime,
             interview_date: rescheduleDate,
             start_time: rescheduleTime,
             updated_by_user_id: currentUserId,
           }),
-        }).catch(() => {});
+        })
+          .then(() => {
+            loadInterviewsFromApi();
+            window.dispatchEvent(new Event("elitecruit_interviews_update"));
+          })
+          .catch(() => {});
       } catch {}
     }
     setInterviewToReschedule(null);
@@ -809,7 +816,12 @@ export default function CalendarDrawer({
           updated_by_user_id: currentUserId,
           cancellation_reason: cancellationReason,
         }),
-      }).catch(() => {});
+      })
+        .then(() => {
+          loadInterviewsFromApi();
+          window.dispatchEvent(new Event("elitecruit_interviews_update"));
+        })
+        .catch(() => {});
     } catch {}
   };
 

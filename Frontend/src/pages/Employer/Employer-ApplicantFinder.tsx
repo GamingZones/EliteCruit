@@ -1752,6 +1752,10 @@ export default function EmployerApplicantFinder() {
   };
 
   const openCandidateRecruit = (cand: Candidate) => {
+    if (activeJobs.length === 0) {
+      setWarningPopup("You have no active job postings. Please create and publish a job posting before recruiting candidates.");
+      return;
+    }
     openInviteModal(cand, typeof selectedJobId === "number" ? selectedJobId : undefined);
   };
 
@@ -3067,6 +3071,10 @@ export default function EmployerApplicantFinder() {
   ]);
 
   const openInviteModal = (cand: Candidate, initialJobId?: number) => {
+    if (activeJobs.length === 0) {
+      setWarningPopup("You have no active job postings. Please create and publish a job posting before recruiting candidates.");
+      return;
+    }
     setInviteCandidate(cand);
     let targetIndex = 0;
     if (initialJobId && activeJobs.length > 0) {
@@ -3103,6 +3111,7 @@ export default function EmployerApplicantFinder() {
 
   const [isConfirmRecruitOpen, setIsConfirmRecruitOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [warningPopup, setWarningPopup] = useState("");
 
   const handleInitiateSendInvite = (e: React.FormEvent) => {
     e.preventDefault();
@@ -5986,6 +5995,28 @@ export default function EmployerApplicantFinder() {
             window.location.href = "/";
           }}
         />
+
+        {/* MODAL WARNING POPUP NOTIFICATION (Rule 6 compliant) */}
+        {warningPopup && (
+          <div className="system-popup-overlay" onClick={() => setWarningPopup("")}>
+            <div className="system-popup-card" onClick={(e) => e.stopPropagation()}>
+              <div className="system-popup-icon-wrap warning">
+                <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#ca8a04" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </div>
+              <h3 className="system-popup-title">Warning</h3>
+              <p className="system-popup-message">{warningPopup}</p>
+              <div className="system-popup-actions">
+                <button type="button" className="system-popup-btn" onClick={() => setWarningPopup("")}>
+                  OK
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

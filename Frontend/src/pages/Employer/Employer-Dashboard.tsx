@@ -77,6 +77,13 @@ type DashboardSummary = {
     applications: number;
     shortlisted: number;
     toReview: number;
+    underReview?: number;
+    approved?: number;
+    interview?: number;
+    recruited?: number;
+    hired?: number;
+    rejected?: number;
+    closed?: number;
   };
   activeJobPosts: ActiveJobPost[];
   recentApplications: RecentApplication[];
@@ -162,7 +169,19 @@ export default function EmployerDashboard() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [profileMessage, setProfileMessage] = useState("");
   const [summary, setSummary] = useState<DashboardSummary>({
-    stats: { activeJobs: 0, applications: 0, shortlisted: 0, toReview: 0 },
+    stats: {
+      activeJobs: 0,
+      applications: 0,
+      shortlisted: 0,
+      toReview: 0,
+      underReview: 0,
+      approved: 0,
+      interview: 0,
+      recruited: 0,
+      hired: 0,
+      rejected: 0,
+      closed: 0,
+    },
     activeJobPosts: [],
     recentApplications: [],
   });
@@ -426,10 +445,14 @@ export default function EmployerDashboard() {
 
           <article className="employer-block status-overview-block">
             <header><h2>Application Status Overview</h2></header>
-            <div className="status-line"><span>Pending Review</span><b className="status-count gray">{summary.stats.toReview}</b></div>
-            <div className="status-line"><span>Under Review</span><b className="status-count blue">{Math.max(summary.stats.applications - summary.stats.toReview - summary.stats.shortlisted, 0)}</b></div>
-            <div className="status-line"><span>Shortlisted</span><b className="status-count blue">{summary.stats.shortlisted}</b></div>
-            <div className="status-line"><span>Rejected</span><b className="status-count red">0</b></div>
+            <div className="status-line"><span>Pending Review</span><b className="status-count gray">{summary.stats.toReview ?? 0}</b></div>
+            <div className="status-line"><span>Under Review</span><b className="status-count blue">{summary.stats.underReview ?? 0}</b></div>
+            <div className="status-line"><span>Shortlisted</span><b className="status-count blue">{summary.stats.shortlisted ?? 0}</b></div>
+            <div className="status-line"><span>Approved</span><b className="status-count green">{summary.stats.approved ?? 0}</b></div>
+            <div className="status-line"><span>Interview</span><b className="status-count purple">{summary.stats.interview ?? 0}</b></div>
+            <div className="status-line"><span>Recruited</span><b className="status-count teal">{summary.stats.recruited ?? 0}</b></div>
+            <div className="status-line"><span>Hired</span><b className="status-count green">{summary.stats.hired ?? 0}</b></div>
+            <div className="status-line"><span>Rejected</span><b className="status-count red">{summary.stats.rejected ?? 0}</b></div>
           </article>
 
           <article className="employer-block quick-actions-block">

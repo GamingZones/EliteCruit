@@ -487,6 +487,18 @@
   background: #ef1f1f;
 }
 
+.status-count.green {
+  background: #10b981;
+}
+
+.status-count.purple {
+  background: #8b5cf6;
+}
+
+.status-count.teal {
+  background: #0d9488;
+}
+
 .quick-actions-block button {
   width: 100%;
   margin-top: 10px;

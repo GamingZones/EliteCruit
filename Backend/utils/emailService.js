@@ -322,3 +322,147 @@ export async function sendPasswordChangedNotificationEmail(toEmail, recipientNam
     logTag: "Password Change Alert",
   });
 }
+
+/**
+ * Sends an email notification when an interview is cancelled, including the cancellation reason.
+ */
+export async function sendInterviewCancelledEmail({
+  toEmail,
+  recipientName = "User",
+  companyName = "Employer",
+  jobTitle = "Position",
+  interviewDate = "",
+  startTime = "",
+  cancellationReason = "",
+}) {
+  if (!toEmail || !toEmail.includes("@")) return { success: false, method: "invalid_email" };
+
+  const highlightBoxHtml = `
+    <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 16px 18px; margin: 0 0 22px;">
+      <div style="color: #991b1b; font-size: 13.5px; font-weight: 700; margin-bottom: 6px;">
+        ✕ Scheduled Interview Cancelled
+      </div>
+      <div style="color: #7f1d1d; font-size: 12.5px; line-height: 1.6;">
+        <strong>Company:</strong> ${companyName}<br />
+        <strong>Position:</strong> ${jobTitle}<br />
+        <strong>Original Schedule:</strong> ${interviewDate} at ${startTime}<br />
+        ${cancellationReason ? `<strong>Reason for Cancellation:</strong> <em>"${cancellationReason}"</em>` : ""}
+      </div>
+    </div>
+  `;
+
+  const htmlContent = buildEliteCruitEmailTemplate({
+    badgeText: "Interview Update",
+    headline: "Interview Cancellation Notice",
+    greetingName: recipientName,
+    introText: `Your scheduled interview for the position of <strong>${jobTitle}</strong> at <strong>${companyName}</strong> has been cancelled.`,
+    highlightBoxHtml,
+    footerNote: "You can view your updated application timeline and calendar anytime by logging into your EliteCruit account.",
+  });
+
+  const textContent = `Interview Cancellation Notice: Your scheduled interview for ${jobTitle} at ${companyName} (${interviewDate} at ${startTime}) has been cancelled. ${cancellationReason ? `Reason: "${cancellationReason}".` : ""}`;
+
+  return dispatchEmail({
+    toEmail,
+    recipientName,
+    subject: `Interview Cancelled: ${jobTitle} at ${companyName}`,
+    htmlContent,
+    textContent,
+    logTag: "Interview Cancelled Alert",
+  });
+}
+
+/**
+ * Sends an email notification when an employer closes a job posting connected to pending applications.
+ */
+export async function sendJobClosedEmail({
+  toEmail,
+  recipientName = "Applicant",
+  companyName = "Employer",
+  jobTitle = "Position",
+}) {
+  if (!toEmail || !toEmail.includes("@")) return { success: false, method: "invalid_email" };
+
+  const highlightBoxHtml = `
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 18px; margin: 0 0 22px;">
+      <div style="color: #334155; font-size: 13.5px; font-weight: 700; margin-bottom: 6px;">
+        Job Post Closed
+      </div>
+      <div style="color: #475569; font-size: 12.5px; line-height: 1.6;">
+        <strong>Company:</strong> ${companyName}<br />
+        <strong>Position:</strong> ${jobTitle}<br />
+        <strong>Application Status:</strong> Closed
+      </div>
+    </div>
+  `;
+
+  const htmlContent = buildEliteCruitEmailTemplate({
+    badgeText: "Application Update",
+    headline: "Job Post Closed",
+    greetingName: recipientName,
+    introText: `We are writing to let you know that the job posting for <strong>${jobTitle}</strong> at <strong>${companyName}</strong> has been officially closed by the employer.`,
+    highlightBoxHtml,
+    footerNote: "We encourage you to explore other open opportunities on EliteCruit that match your background and skills.",
+  });
+
+  const textContent = `Application Update: The job posting for ${jobTitle} at ${companyName} has been closed by the employer. Your application status has been updated to closed.`;
+
+  return dispatchEmail({
+    toEmail,
+    recipientName,
+    subject: `Job Posting Closed: ${jobTitle} at ${companyName}`,
+    htmlContent,
+    textContent,
+    logTag: "Job Closed Alert",
+  });
+}
+
+/**
+ * Sends an email notification when an interview is rescheduled.
+ */
+export async function sendInterviewRescheduledEmail({
+  toEmail,
+  recipientName = "User",
+  companyName = "Employer",
+  jobTitle = "Position",
+  newDate = "",
+  newStartTime = "",
+  venueOrLink = "",
+}) {
+  if (!toEmail || !toEmail.includes("@")) return { success: false, method: "invalid_email" };
+
+  const highlightBoxHtml = `
+    <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 16px 18px; margin: 0 0 22px;">
+      <div style="color: #1e40af; font-size: 13.5px; font-weight: 700; margin-bottom: 6px;">
+        🗓️ New Interview Schedule
+      </div>
+      <div style="color: #1e3a8a; font-size: 12.5px; line-height: 1.6;">
+        <strong>Company:</strong> ${companyName}<br />
+        <strong>Position:</strong> ${jobTitle}<br />
+        <strong>New Date:</strong> ${newDate}<br />
+        <strong>New Time:</strong> ${newStartTime}<br />
+        ${venueOrLink ? `<strong>Venue / Address:</strong> ${venueOrLink}` : ""}
+      </div>
+    </div>
+  `;
+
+  const htmlContent = buildEliteCruitEmailTemplate({
+    badgeText: "Interview Rescheduled",
+    headline: "Interview Reschedule Notice",
+    greetingName: recipientName,
+    introText: `The scheduled interview for <strong>${jobTitle}</strong> at <strong>${companyName}</strong> has been rescheduled to a new time.`,
+    highlightBoxHtml,
+    footerNote: "Please check your EliteCruit Calendar to review the updated details.",
+  });
+
+  const textContent = `Interview Rescheduled: Your interview for ${jobTitle} at ${companyName} has been rescheduled to ${newDate} at ${newStartTime}.`;
+
+  return dispatchEmail({
+    toEmail,
+    recipientName,
+    subject: `Interview Rescheduled: ${jobTitle} at ${companyName}`,
+    htmlContent,
+    textContent,
+    logTag: "Interview Rescheduled Alert",
+  });
+}

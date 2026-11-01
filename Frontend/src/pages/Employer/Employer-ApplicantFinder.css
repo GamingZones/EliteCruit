@@ -4171,3 +4171,114 @@
 
 
 
+
+
+/* ==========================================================================
+   SYSTEM POPUP WARNING MODAL (Rule 6 Compliant)
+   ========================================================================== */
+.system-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: systemPopupFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.system-popup-card {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.18), 0 10px 10px -5px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 380px;
+  padding: 24px;
+  text-align: center;
+  animation: systemPopupScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.system-popup-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+}
+
+.system-popup-icon-wrap.warning {
+  background: #fef9c3;
+  border: 1px solid #fef08a;
+}
+
+.system-popup-title {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.system-popup-message {
+  margin: 0 0 20px;
+  font-size: 0.92rem;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.system-popup-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.system-popup-btn {
+  background: #103f65;
+  color: #ffffff;
+  border: 1px solid #103f65;
+  border-radius: 8px;
+  padding: 9px 24px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  min-width: 90px;
+  box-shadow: 0 2px 4px rgba(16, 63, 101, 0.15);
+}
+
+.system-popup-btn:hover {
+  background: #0c3251;
+  border-color: #0c3251;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(16, 63, 101, 0.25);
+}
+
+@keyframes systemPopupFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes systemPopupScaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+[data-theme="dark"] .system-popup-card {
+  background: #0f1e32;
+  border-color: rgba(148, 163, 184, 0.22);
+}
+
+[data-theme="dark"] .system-popup-title {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .system-popup-message {
+  color: #cbd5e1;
+}
