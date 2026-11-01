@@ -1842,24 +1842,26 @@ export default function Messages() {
                     </span>
                     <div className="chat-head-user-meta">
                       <strong>{selectedThread.other_user_name || selectedThread.title || (isEmployer ? "Applicant" : "Employer")}</strong>
-                      <div className="chat-head-contact-line">
-                        {selectedThread.other_user_email && (
-                          <span className="chat-head-email" title={selectedThread.other_user_email}>
-                            {selectedThread.other_user_email}
-                          </span>
-                        )}
-                        {selectedThread.other_user_email && selectedThread.other_user_phone && (
-                          <span className="chat-head-contact-sep" aria-hidden="true">·</span>
-                        )}
-                        {selectedThread.other_user_phone && (
-                          <span className="chat-head-phone">
-                            {selectedThread.other_user_phone}
-                          </span>
-                        )}
-                        {!selectedThread.other_user_email && !selectedThread.other_user_phone && (
-                          <span style={{ color: "#94a3b8" }}>No contact details</span>
-                        )}
-                      </div>
+                      {!isInfoSidebarOpen && (
+                        <div className="chat-head-contact-line">
+                          {selectedThread.other_user_email && (
+                            <span className="chat-head-email" title={selectedThread.other_user_email}>
+                              {selectedThread.other_user_email}
+                            </span>
+                          )}
+                          {selectedThread.other_user_email && selectedThread.other_user_phone && (
+                            <span className="chat-head-contact-sep" aria-hidden="true">·</span>
+                          )}
+                          {selectedThread.other_user_phone && (
+                            <span className="chat-head-phone">
+                              {selectedThread.other_user_phone}
+                            </span>
+                          )}
+                          {!selectedThread.other_user_email && !selectedThread.other_user_phone && (
+                            <span style={{ color: "#94a3b8" }}>No contact details</span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
 

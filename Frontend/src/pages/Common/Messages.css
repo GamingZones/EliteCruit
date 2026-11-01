@@ -254,6 +254,12 @@
 .chat-panel {
   display: grid;
   grid-template-rows: auto 1fr auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.messages-shell.with-info-sidebar .chat-head-contact-line {
+  display: none !important;
 }
 
 .chat-head {
@@ -435,10 +441,12 @@
   border-top: 1px solid #dfe7f1;
   padding: 12px 16px;
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
   background: #ffffff;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .chat-compose input {
@@ -450,6 +458,9 @@
   color: #0f172a;
   outline: none;
   transition: all 0.15s ease;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .chat-compose input:focus {
