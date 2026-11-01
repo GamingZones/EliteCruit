@@ -3386,19 +3386,6 @@ export default function EmployerApplicantFinder() {
                           <option key={role} value={role}>{role}</option>
                         ))}
                       </select>
-                      {/* Popular Role Quick Chips */}
-                      <div className="filter-role-quick-chips">
-                        {["Software Engineer", "Web Developer", "Data Analyst", "IT Support", "Database Administrator"].map((r) => (
-                          <button
-                            key={r}
-                            type="button"
-                            className={`filter-quick-chip ${selectedRole === r ? "active" : ""}`}
-                            onClick={() => setSelectedRole(selectedRole === r ? "All roles" : r)}
-                          >
-                            {r}
-                          </button>
-                        ))}
-                      </div>
                     </div>
 
                     {/* Work Arrangement Segmented Control */}
