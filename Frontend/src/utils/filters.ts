@@ -412,12 +412,16 @@ function isKnownProvince(name?: string | null): boolean {
   );
 }
 
-const WORK_ARRANGEMENT_TRAILING_REGEX = /\s*[\/\-|,]\s*(?:remote|hybrid|on-site|onsite|work from home|wfh|flexible)(?:\s*[\/\-]\s*(?:remote|hybrid|on-site|onsite|work from home|wfh|flexible))*/gi;
-const WORK_ARRANGEMENT_PAREN_REGEX = /\s*\(\s*(?:remote|hybrid|on-site|onsite|work from home|wfh|flexible)\s*\)/gi;
-
 export function stripWorkArrangement(val?: string | null): string {
-  if (!val) return "";
-  let s = val.replace(WORK_ARRANGEMENT_PAREN_REGEX, "").replace(WORK_ARRANGEMENT_TRAILING_REGEX, "").trim();
+  if (!val || typeof val !== "string") return "";
+  let s = val
+    .replace(/\s*\(\s*(?:remote|hybrid|on-site|onsite|work from home|wfh|flexible|office-based|office\s*based)(?:\s*[\/\-|,]\s*(?:remote|hybrid|on-site|onsite|work from home|wfh|flexible|office-based|office\s*based))*\s*\)/gi, "")
+    .replace(/\s*[\/\-|,]*(?:\s*\b(?:remote|hybrid|on-site|onsite|work from home|wfh|flexible|office-based|office\s*based)\b\s*[\/\-|,]*)+/gi, " ")
+    .replace(/\s{2,}/g, " ")
+    .replace(/^[\s\/\-|,,]+|[\s\/\-|,,]+$/g, "")
+    .replace(/(?:,\s*Cavite\b)+/gi, ", Cavite")
+    .replace(/^Cavite,\s*Cavite$/i, "Cavite")
+    .trim();
   const lower = s.toLowerCase();
   if (["hybrid", "remote", "on-site", "onsite", "flexible", "work from home", "wfh"].includes(lower)) {
     return "";
@@ -470,19 +474,16 @@ function parseLocationTokens(tokens: string[]): string[] {
 
 export function cleanBranchLocation(item: string): string {
   if (!item) return "";
-  const trimmed = stripWorkArrangement(item.trim());
+  let trimmed = stripWorkArrangement(item.trim());
   if (!trimmed) return "";
+
+  // Collapse repeated Cavite e.g. "Cavite, Cavite" -> "Cavite"
+  trimmed = trimmed.replace(/(?:,\s*Cavite\b)+/gi, ", Cavite").replace(/^Cavite,\s*Cavite$/i, "Cavite");
 
   const parenMatch = trimmed.match(/\(([^)]+)\)$/);
   if (parenMatch && parenMatch[1]) {
     const inside = stripWorkArrangement(parenMatch[1].trim());
     if (!inside) return "";
-    const insideTokens = inside.split(/,\s*/).map((x) => x.trim()).filter(Boolean);
-    if (insideTokens.length >= 2) {
-      const paired = parseLocationTokens(insideTokens);
-      if (paired.length > 0) return paired[0].replace(/(?:,\s*Cavite\b)+/gi, ", Cavite");
-      return inside.replace(/(?:,\s*Cavite\b)+/gi, ", Cavite");
-    }
     const city = getCanonicalCaviteCity(inside);
     if (city && !inside.toLowerCase().includes("cavite")) {
       return `${city}, Cavite`;
@@ -493,13 +494,16 @@ export function cleanBranchLocation(item: string): string {
   if (city && !trimmed.toLowerCase().includes("cavite")) {
     return `${city}, Cavite`;
   }
-  return trimmed.replace(/(?:,\s*Cavite\b)+/gi, ", Cavite");
+  return trimmed;
 }
 
 export function parseLocations(locStr?: string | null): string[] {
   if (!locStr || !locStr.trim()) return [];
-  const s = stripWorkArrangement(locStr.trim());
+  let s = stripWorkArrangement(locStr.trim());
   if (!s) return [];
+
+  // Collapse duplicate ", Cavite"
+  s = s.replace(/(?:,\s*Cavite\b)+/gi, ", Cavite");
 
   let rawList: string[] = [];
 
@@ -516,8 +520,20 @@ export function parseLocations(locStr?: string | null): string[] {
   } else if (s.includes(";") || s.includes("\n")) {
     rawList = s.split(/[;\n]+/).map((x) => x.trim()).filter(Boolean);
   } else {
+    // No parentheses and no semicolons.
+    // Check if the string has multiple distinct Cavite cities (e.g. "Imus, Bacoor, Dasmarinas")
+    // versus a single multi-part address (e.g. "Lumina Point, Imus, Cavite" or "BGC, Taguig")
     const tokens = s.split(/,\s*/).map((x) => x.trim()).filter(Boolean);
-    rawList = parseLocationTokens(tokens);
+    const caviteCityTokens = tokens.filter((t) => getCanonicalCaviteCity(t));
+
+    if (caviteCityTokens.length > 1 && !tokens.some((t) => isKnownProvince(t))) {
+      // Multiple cities listed without province, e.g. "Imus, Bacoor, Dasmarinas"
+      rawList = caviteCityTokens.map((c) => `${c}, Cavite`);
+    } else {
+      // Single compound address: e.g. "Lumina Point, Imus, Cavite" or "BGC, Taguig"
+      const single = tokens.join(", ").replace(/(?:,\s*Cavite\b)+/gi, ", Cavite");
+      rawList = [single];
+    }
   }
 
   const cleanedList = rawList.map(cleanBranchLocation).filter(Boolean);
@@ -526,6 +542,15 @@ export function parseLocations(locStr?: string | null): string[] {
   for (const loc of cleanedList) {
     if (!deduplicated.some((d) => d.toLowerCase() === loc.toLowerCase())) {
       deduplicated.push(loc);
+    }
+  }
+
+  // If there's a specific Cavite location (e.g. "Lumina Point, Imus, Cavite" or "Imus, Cavite")
+  // and also a standalone "Cavite", remove the redundant standalone "Cavite"
+  if (deduplicated.length > 1) {
+    const hasSpecificCavite = deduplicated.some((d) => d.toLowerCase().includes("cavite") && d.toLowerCase() !== "cavite");
+    if (hasSpecificCavite) {
+      return deduplicated.filter((d) => d.toLowerCase() !== "cavite");
     }
   }
 

@@ -2220,17 +2220,17 @@
 }
 
 [data-theme="dark"] .company-inline-rating-pill {
-  background: rgba(245, 158, 11, 0.16);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.55);
+  background: rgba(245, 158, 11, 0.16) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.55) !important;
 }
 
 [data-theme="dark"] .company-inline-rating-pill span {
-  color: #fbbf24;
+  color: #fbbf24 !important;
 }
 
 [data-theme="dark"] .company-inline-rating-pill .star-icon {
-  color: #fbbf24;
+  color: #fbbf24 !important;
 }
 
 .rating-score-box {
@@ -2560,19 +2560,23 @@
 [data-theme="dark"] .meta-line .company-inline-rating-pill,
 [data-theme="dark"] .meta-line .company-inline-rating-pill span,
 [data-theme="dark"] .app-company-loc-line .company-inline-rating-pill,
-[data-theme="dark"] .app-company-loc-line .company-inline-rating-pill span {
-  color: #fbbf24;
+[data-theme="dark"] .app-company-loc-line .company-inline-rating-pill span,
+[data-theme="dark"] .company-meta-with-rating .company-inline-rating-pill,
+[data-theme="dark"] .company-meta-with-rating .company-inline-rating-pill span {
+  color: #fbbf24 !important;
 }
 
 [data-theme="dark"] .meta-line .company-inline-rating-pill,
-[data-theme="dark"] .app-company-loc-line .company-inline-rating-pill {
-  background: rgba(245, 158, 11, 0.16);
-  border: 1px solid rgba(245, 158, 11, 0.55);
+[data-theme="dark"] .app-company-loc-line .company-inline-rating-pill,
+[data-theme="dark"] .company-meta-with-rating .company-inline-rating-pill {
+  background: rgba(245, 158, 11, 0.16) !important;
+  border: 1px solid rgba(245, 158, 11, 0.55) !important;
 }
 
 [data-theme="dark"] .meta-line .company-inline-rating-pill .star-icon,
-[data-theme="dark"] .app-company-loc-line .company-inline-rating-pill .star-icon {
-  color: #fbbf24;
+[data-theme="dark"] .app-company-loc-line .company-inline-rating-pill .star-icon,
+[data-theme="dark"] .company-meta-with-rating .company-inline-rating-pill .star-icon {
+  color: #fbbf24 !important;
 }
 
 [data-theme="dark"] .meta-divider {

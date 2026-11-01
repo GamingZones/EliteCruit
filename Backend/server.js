@@ -4168,8 +4168,12 @@ app.get("/api/employers/:userId/job-posts", async (req, res) => {
 function cleanLocationWorkArrangement(loc, fallback = "Cavite") {
   if (!loc || typeof loc !== "string") return fallback;
   let s = loc
-    .replace(/\s*[\/\-|,]\s*(?:remote|hybrid|on-site|onsite|work from home|wfh|flexible)(?:\s*[\/\-]\s*(?:remote|hybrid|on-site|onsite|work from home|wfh|flexible))*/gi, "")
-    .replace(/\s*\(\s*(?:remote|hybrid|on-site|onsite|work from home|wfh|flexible)\s*\)/gi, "")
+    .replace(/\s*\(\s*(?:remote|hybrid|on-site|onsite|work from home|wfh|flexible|office-based|office\s*based)(?:\s*[\/\-|,]\s*(?:remote|hybrid|on-site|onsite|work from home|wfh|flexible|office-based|office\s*based))*\s*\)/gi, "")
+    .replace(/\s*[\/\-|,]*(?:\s*\b(?:remote|hybrid|on-site|onsite|work from home|wfh|flexible|office-based|office\s*based)\b\s*[\/\-|,]*)+/gi, " ")
+    .replace(/\s{2,}/g, " ")
+    .replace(/^[\s\/\-|,,]+|[\s\/\-|,,]+$/g, "")
+    .replace(/(?:,\s*Cavite\b)+/gi, ", Cavite")
+    .replace(/^Cavite,\s*Cavite$/i, "Cavite")
     .trim();
   const lower = s.toLowerCase();
   if (!s || ["hybrid", "remote", "on-site", "onsite", "flexible", "work from home", "wfh"].includes(lower)) {
@@ -4295,7 +4299,7 @@ app.get("/api/employers", async (_req, res) => {
         jobsByEmployer[job.employer_user_id].push({
           id: job.id,
           title: job.title,
-          location: job.location || job.company_address || "Cavite",
+          location: cleanLocationWorkArrangement(job.location, cleanLocationWorkArrangement(job.company_address, "Cavite")),
           work_arrangement: job.work_arrangement || "On-Site",
           salary_min: job.salary_min,
           salary_max: job.salary_max,
