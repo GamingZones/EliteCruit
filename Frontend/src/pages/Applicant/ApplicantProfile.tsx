@@ -4565,7 +4565,6 @@ export default function ApplicantProfile() {
                       disabled={isSavingTags}
                     />
                   </div>
-                </div>
               </article>
             </section>
           )}
