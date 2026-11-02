@@ -6017,9 +6017,25 @@
 
 /* --- 23.5 Direct Recruitment Invitations Section --- */
 [data-theme="dark"] #direct-invitations {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] #direct-invitations .direct-invitations-header-card {
   background: #1c1e27 !important;
   border: 1px solid #2e3244 !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35) !important;
+}
+
+[data-theme="dark"] #direct-invitations .invitation-applicant-card {
+  background: #242735 !important;
+  border: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] #direct-invitations .invitation-applicant-card:hover {
+  background: #2c3042 !important;
+  border-color: #3b4259 !important;
 }
 
 [data-theme="dark"] #direct-invitations h2 {

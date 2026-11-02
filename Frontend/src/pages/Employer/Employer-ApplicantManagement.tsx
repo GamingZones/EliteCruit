@@ -1931,6 +1931,122 @@ export default function EmployerApplicantManagement() {
     setExpandedJobIds(new Set());
   };
 
+  const invitationJobGroups = useMemo(() => {
+    const jobMap = new Map<
+      string,
+      {
+        id: string;
+        title: string;
+        location?: string;
+        workArrangement?: string;
+        salaryMin?: number;
+        salaryMax?: number;
+      }
+    >();
+
+    // 1. Gather from directInvitations
+    directInvitations.forEach((inv) => {
+      if (inv.job_post_id) {
+        const key = String(inv.job_post_id);
+        if (!jobMap.has(key)) {
+          jobMap.set(key, {
+            id: key,
+            title: inv.job_title || "Untitled Job",
+            location: inv.job_location || undefined,
+            workArrangement: inv.work_arrangement || undefined,
+            salaryMin: inv.salary_min,
+            salaryMax: inv.salary_max,
+          });
+        }
+      }
+    });
+
+    // 2. Merge from allJobsMap so all employer jobs are represented
+    Object.values(allJobsMap).forEach((j: any) => {
+      if (j.id) {
+        const key = String(j.id);
+        const existing = jobMap.get(key);
+        jobMap.set(key, {
+          id: key,
+          title: j.title || existing?.title || "Untitled Job",
+          location: j.location || existing?.location || undefined,
+          workArrangement: j.work_arrangement || existing?.workArrangement || undefined,
+          salaryMin: j.salary_min ?? existing?.salaryMin,
+          salaryMax: j.salary_max ?? existing?.salaryMax,
+        });
+      }
+    });
+
+    const groups: {
+      id: string;
+      title: string;
+      location?: string;
+      workArrangement?: string;
+      salaryMin?: number;
+      salaryMax?: number;
+      invitations: DirectInvitation[];
+      totalInvitations: number;
+    }[] = [];
+
+    const assignedInvIds = new Set<number>();
+
+    jobMap.forEach((jobInfo, jobId) => {
+      const jobInvs = filteredInvitations.filter((inv) => {
+        const match =
+          String(inv.job_post_id) === jobId ||
+          (inv.job_title || "").toLowerCase() === jobInfo.title.toLowerCase();
+        if (match) assignedInvIds.add(inv.id);
+        return match;
+      });
+
+      const totalForJob = directInvitations.filter(
+        (inv) =>
+          String(inv.job_post_id) === jobId ||
+          (inv.job_title || "").toLowerCase() === jobInfo.title.toLowerCase()
+      ).length;
+
+      groups.push({
+        ...jobInfo,
+        invitations: jobInvs,
+        totalInvitations: totalForJob,
+      });
+    });
+
+    const leftover = filteredInvitations.filter((inv) => !assignedInvIds.has(inv.id));
+    if (leftover.length > 0) {
+      groups.push({
+        id: "other",
+        title: "Other Direct Invitations",
+        invitations: leftover,
+        totalInvitations: leftover.length,
+      });
+    }
+
+    return groups;
+  }, [directInvitations, filteredInvitations, allJobsMap]);
+
+  const [expandedInvitationJobIds, setExpandedInvitationJobIds] = useState<Set<string>>(new Set());
+
+  const toggleInvitationJobAccordion = (jobId: string) => {
+    setExpandedInvitationJobIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(jobId)) {
+        next.delete(jobId);
+      } else {
+        next.add(jobId);
+      }
+      return next;
+    });
+  };
+
+  const handleExpandAllInvitations = () => {
+    setExpandedInvitationJobIds(new Set(invitationJobGroups.map((g) => g.id)));
+  };
+
+  const handleCollapseAllInvitations = () => {
+    setExpandedInvitationJobIds(new Set());
+  };
+
   const toggleJobAll = (jobApplicants: Application[]) => {
     const unfinalized = jobApplicants.filter((a) => !isFinalizedStatus(a.status));
     if (unfinalized.length === 0) return;
@@ -4015,204 +4131,392 @@ export default function EmployerApplicantManagement() {
 
         {/* DIRECT INVITATIONS BOARD */}
         {activeScreeningSection === "direct-invitations" && (
-          <section id="direct-invitations" className="applicant-shortlist-board card" style={{ margin: "0 14px 24px", padding: "20px 24px" }}>
-          <div className="matches-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-            <div>
-              <h2 className="direct-invitations-heading" style={{ margin: 0, fontSize: "1.35rem" }}>Direct Recruitment Invitations</h2>
-              <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "0.84rem" }}>
-                Candidates directly invited from Applicant Finder to apply for active job openings.
-              </p>
-            </div>
-            <div style={{ display: "flex", gap: "6px" }}>
-              {(["all", "accepted", "pending", "declined"] as const).map((filterKey) => {
-                const count =
-                  filterKey === "all"
-                    ? directInvitations.length
-                    : directInvitations.filter((inv) => (inv.status || "pending").toLowerCase() === filterKey).length;
-                return (
-                  <button
-                    key={filterKey}
-                    type="button"
-                    className={`invitation-filter-btn ${invitationFilter === filterKey ? "active" : ""}`}
-                    onClick={() => setInvitationFilter(filterKey)}
-                    style={{
-                      padding: "5px 12px",
-                      borderRadius: "20px",
-                      fontSize: "0.75rem",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      textTransform: "capitalize",
-                    }}
-                  >
-                    {filterKey} ({count})
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {filteredInvitations.length === 0 ? (
-            <div style={{ padding: "32px 16px", textAlign: "center", color: "#64748b" }}>
-              <p style={{ margin: 0, fontSize: "0.9rem" }}>
-                {invitationFilter === "all" ? "No direct invitations found." : `No ${invitationFilter} direct invitations found.`}
-              </p>
-              <a href="/employer-applicant-finder" className="solid-btn" style={{ display: "inline-block", marginTop: "12px", textDecoration: "none", padding: "8px 16px", fontSize: "0.82rem" }}>
-                Find Nearby Candidates
-              </a>
-            </div>
-          ) : (
-            <div style={{ display: "grid", gap: "12px", marginTop: "16px" }}>
-              {filteredInvitations.map((inv) => {
-                const candidateName = [inv.first_name, inv.last_name].filter(Boolean).join(" ") || inv.applicant_email || "Candidate";
-                const status = (inv.status || "pending").toLowerCase();
-                const synthApp: Application = {
-                  id: inv.id,
-                  status: status === "accepted" ? "approved" : status,
-                  submitted_at: inv.created_at,
-                  job_post_id: inv.job_post_id,
-                  job_title: inv.job_title,
-                  job_required_skills: inv.job_required_skills,
-                  job_required_qualifications: inv.job_required_qualifications,
-                  job_required_certifications: inv.job_required_certifications,
-                  job_work_arrangement: inv.work_arrangement,
-                  job_location: inv.job_location,
-                  job_salary_min: inv.salary_min,
-                  job_salary_max: inv.salary_max,
-                  city: inv.city || "Cavite",
-                  applicant_name: candidateName,
-                  email: inv.applicant_email,
-                  phone: inv.phone,
-                  desired_job_title: inv.desired_job_title || inv.job_title,
-                  work_arrangement: inv.applicant_work_arrangement || inv.work_arrangement,
-                  expected_salary: inv.expected_salary,
-                  applicant_user_id: inv.applicant_user_id,
-                  skills: inv.skills,
-                  qualifications: inv.qualifications,
-                  certifications: inv.certifications,
-                };
-                return (
-                  <article
-                    key={inv.id}
-                    className="applicant-card invitation-applicant-card"
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "16px 20px",
-                      borderRadius: "10px",
-                      gap: "16px",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <div style={{ display: "flex", gap: "14px", alignItems: "center", minWidth: "240px", flex: "1 1 auto" }}>
-                      {(() => {
-                        const picUrl = inv.profile_picture_path
-                          ? (inv.profile_picture_path.startsWith("http") || inv.profile_picture_path.startsWith("/api")
-                              ? inv.profile_picture_path
-                              : `/api/applicants/${inv.applicant_user_id}/profile-picture`)
-                          : null;
-                        return (
-                          <span
-                            className="inv-avatar-badge"
-                            style={{
-                              width: "44px",
-                              height: "44px",
-                              borderRadius: "50%",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontWeight: "700",
-                              fontSize: "0.92rem",
-                              flexShrink: 0,
-                              overflow: "hidden",
-                              position: "relative",
-                            }}
-                          >
-                            {picUrl && (
-                              <img
-                                src={picUrl}
-                                alt={candidateName}
-                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                                onError={(e) => {
-                                  (e.currentTarget as HTMLElement).style.display = "none";
-                                  if (e.currentTarget.nextElementSibling) {
-                                    (e.currentTarget.nextElementSibling as HTMLElement).style.display = "inline";
-                                  }
-                                }}
-                              />
-                            )}
-                            <span style={{ display: picUrl ? "none" : "inline" }}>
-                              {initialsFrom(candidateName)}
-                            </span>
-                          </span>
-                        );
-                      })()}
-                      <div>
-                        <h3 className="invitation-candidate-name" style={{ margin: 0, fontSize: "1.05rem" }}>{candidateName}</h3>
-                        <p style={{ margin: "2px 0 0", fontSize: "0.86rem", color: "#0284c7", fontWeight: 600 }}>
-                          {inv.job_title}
-                        </p>
-                        <small style={{ color: "#64748b" }}>
-                          {inv.city || "Cavite"} • {status === "accepted" ? "Recruited" : "Invited"}: {formatDate(status === "accepted" ? (inv.responded_at || inv.created_at) : inv.created_at)}
-                        </small>
-                      </div>
-                    </div>
-
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
-                      <span
+          <section id="direct-invitations" style={{ margin: "0 14px 24px" }}>
+            <div className="card direct-invitations-header-card" style={{ padding: "18px 22px", marginBottom: "14px" }}>
+              <div className="matches-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+                <div>
+                  <h2 className="direct-invitations-heading" style={{ margin: 0, fontSize: "1.35rem" }}>Direct Recruitment Invitations</h2>
+                  <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "0.84rem" }}>
+                    Candidates directly invited from Applicant Finder to apply for active job openings.
+                  </p>
+                </div>
+                <div style={{ display: "flex", gap: "6px" }}>
+                  {(["all", "accepted", "pending", "declined"] as const).map((filterKey) => {
+                    const count =
+                      filterKey === "all"
+                        ? directInvitations.length
+                        : directInvitations.filter((inv) => (inv.status || "pending").toLowerCase() === filterKey).length;
+                    return (
+                      <button
+                        key={filterKey}
+                        type="button"
+                        className={`invitation-filter-btn ${invitationFilter === filterKey ? "active" : ""}`}
+                        onClick={() => setInvitationFilter(filterKey)}
                         style={{
-                          padding: "4px 12px",
-                          borderRadius: "999px",
-                          fontSize: "0.78rem",
-                          fontWeight: 700,
+                          padding: "5px 12px",
+                          borderRadius: "20px",
+                          fontSize: "0.75rem",
+                          fontWeight: 600,
+                          cursor: "pointer",
                           textTransform: "capitalize",
-                          background: status === "accepted" ? "#ecfdf5" : status === "declined" ? "#fef2f2" : "#fffbeb",
-                          color: status === "accepted" ? "#065f46" : status === "declined" ? "#991b1b" : "#92400e",
-                          border: status === "accepted" ? "1px solid #a7f3d0" : status === "declined" ? "1px solid #fecaca" : "1px solid #fde68a",
                         }}
                       >
-                        {status === "accepted" ? "Recruited" : status === "declined" ? "Denied" : "Pending Response"}
-                      </span>
-                    </div>
-
-                    <div style={{ display: "flex", gap: "8px", alignItems: "center", flexShrink: 0 }}>
-                      <button
-                        type="button"
-                        className="solid-btn invitation-action-btn"
-                        style={{
-                          padding: "8px 16px",
-                          fontSize: "0.84rem",
-                          fontWeight: 700,
-                          borderRadius: "6px",
-                          cursor: "pointer",
-                          whiteSpace: "nowrap",
-                        }}
-                        onClick={() => handleOpenReview(synthApp, false, true)}
-                      >
-                        Details
+                        {filterKey} ({count})
                       </button>
-                      <button
-                        type="button"
-                        className="solid-btn invitation-action-btn"
-                        style={{
-                          padding: "8px 16px",
-                          fontSize: "0.84rem",
-                          fontWeight: 700,
-                          borderRadius: "6px",
-                          cursor: "pointer",
-                          whiteSpace: "nowrap",
-                        }}
-                        onClick={() => handleOpenReview(synthApp, false, true, false, true)}
-                      >
-                        Message
-                      </button>
-                    </div>
-                  </article>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              </div>
             </div>
-          )}
-        </section>
+
+            {invitationJobGroups.length === 0 ? (
+              <div className="card" style={{ padding: "32px 16px", textAlign: "center", color: "#64748b" }}>
+                <p style={{ margin: 0, fontSize: "0.9rem" }}>No job postings or direct invitations found.</p>
+                <a href="/employer-applicant-finder" className="solid-btn" style={{ display: "inline-block", marginTop: "12px", textDecoration: "none", padding: "8px 16px", fontSize: "0.82rem" }}>
+                  Find Nearby Candidates
+                </a>
+              </div>
+            ) : (
+              <div className="job-accordions-container">
+                {/* Accordions Toolbar */}
+                <div className="job-accordions-toolbar">
+                  <div className="job-accordions-summary">
+                    <strong>Recruitment Pools by Job Posting</strong>
+                    <span className="job-accordions-summary-divider">•</span>
+                    <span>{invitationJobGroups.length} {invitationJobGroups.length === 1 ? "Job Position" : "Job Positions"}</span>
+                    <span className="job-accordions-summary-divider">•</span>
+                    <span>{filteredInvitations.length} {filteredInvitations.length === 1 ? "Candidate" : "Candidates"}</span>
+                  </div>
+
+                  <div className="job-accordions-controls">
+                    <button
+                      type="button"
+                      className="accordion-ctrl-btn"
+                      onClick={handleExpandAllInvitations}
+                      title="Expand all job sections"
+                    >
+                      <span>▼ Expand All</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="accordion-ctrl-btn"
+                      onClick={handleCollapseAllInvitations}
+                      title="Collapse all job sections"
+                    >
+                      <span>▲ Collapse All</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Accordion Cards */}
+                {invitationJobGroups.map((jobGroup) => {
+                  const isExpanded = expandedInvitationJobIds.has(jobGroup.id);
+                  const pendingCount = jobGroup.invitations.filter((inv) => (inv.status || "pending").toLowerCase() === "pending").length;
+                  const locations = parseJobLocationsList(jobGroup.location);
+                  const salaryText = formatJobSalary(jobGroup.salaryMin, jobGroup.salaryMax);
+
+                  return (
+                    <div
+                      key={jobGroup.id}
+                      className={`job-accordion-card ${isExpanded ? "is-expanded" : ""}`}
+                    >
+                      <div
+                        className="job-accordion-header"
+                        onClick={() => toggleInvitationJobAccordion(jobGroup.id)}
+                      >
+                        <div className="job-accordion-header-left">
+                          <span className="accordion-chevron-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </span>
+
+                          <div className="job-title-and-meta">
+                            <h3 className="job-accordion-title">
+                              {jobGroup.title}
+                            </h3>
+                            <div className="job-accordion-meta-pills">
+                              {locations.length > 0 && (
+                                <span
+                                  className="job-meta-pill location-pill"
+                                  title={locations.length > 1 ? locations.join(" • ") : locations[0]}
+                                >
+                                  <svg
+                                    viewBox="0 0 24 24"
+                                    width="13"
+                                    height="13"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    style={{ flexShrink: 0, color: "#be123c" }}
+                                  >
+                                    <path d="M12 21s-7-4.35-7-10a7 7 0 1 1 14 0c0 5.65-7 10-7 10z" />
+                                    <circle cx="12" cy="11" r="2.5" />
+                                  </svg>
+                                  <span>
+                                    {locations.length >= 2
+                                      ? `${locations.length} Locations`
+                                      : locations[0]}
+                                  </span>
+                                </span>
+                              )}
+                              {jobGroup.workArrangement && (
+                                <span className="job-meta-pill setup-pill">
+                                  <svg
+                                    viewBox="0 0 24 24"
+                                    width="12"
+                                    height="12"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    style={{ flexShrink: 0, color: "#0369a1" }}
+                                  >
+                                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                                  </svg>
+                                  <span>{jobGroup.workArrangement}</span>
+                                </span>
+                              )}
+                              {salaryText && (
+                                <span className="job-meta-pill salary-pill">
+                                  <svg
+                                    viewBox="0 0 24 24"
+                                    width="13"
+                                    height="13"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    style={{ flexShrink: 0, color: "#047857" }}
+                                  >
+                                    <rect x="2" y="6" width="20" height="12" rx="2" />
+                                    <circle cx="12" cy="12" r="2.5" />
+                                    <path d="M6 12h.01M18 12h.01" />
+                                  </svg>
+                                  <span>{salaryText}</span>
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="job-accordion-header-right" onClick={(e) => e.stopPropagation()}>
+                          <div className="status-mini-pills">
+                            {pendingCount > 0 && (
+                              <span className="status-mini-pill pending" title={`${pendingCount} Pending Response`}>
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  width="12"
+                                  height="12"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2.2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  style={{ flexShrink: 0, color: "#b45309" }}
+                                >
+                                  <path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" />
+                                </svg>
+                                <span>{pendingCount} Pending</span>
+                              </span>
+                            )}
+                          </div>
+
+                          <span
+                            className={`applicant-count-badge ${jobGroup.invitations.length === 0 ? "zero-count" : ""}`}
+                            onClick={() => toggleInvitationJobAccordion(jobGroup.id)}
+                            style={{ cursor: "pointer" }}
+                          >
+                            <svg
+                              viewBox="0 0 24 24"
+                              width="13"
+                              height="13"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              style={{ flexShrink: 0, color: "#1d4ed8" }}
+                            >
+                              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                              <circle cx="9" cy="7" r="4" />
+                              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                            </svg>
+                            <strong>{jobGroup.invitations.length}</strong> {jobGroup.invitations.length === 1 ? "Candidate" : "Candidates"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {isExpanded && (
+                        <div className="job-accordion-body" style={{ padding: "14px 16px" }}>
+                          {jobGroup.invitations.length === 0 ? (
+                            <div className="job-accordion-empty" style={{ padding: "20px 16px", textAlign: "center", color: "#64748b", fontSize: "0.88rem" }}>
+                              {invitationFilter === "all" ? "No candidates have been directly invited to this job post yet." : `No ${invitationFilter} direct invitations found for this position.`}
+                            </div>
+                          ) : (
+                            <div style={{ display: "grid", gap: "10px" }}>
+                              {jobGroup.invitations.map((inv) => {
+                                const candidateName = [inv.first_name, inv.last_name].filter(Boolean).join(" ") || inv.applicant_email || "Candidate";
+                                const status = (inv.status || "pending").toLowerCase();
+                                const synthApp: Application = {
+                                  id: inv.id,
+                                  status: status === "accepted" ? "approved" : status,
+                                  submitted_at: inv.created_at,
+                                  job_post_id: inv.job_post_id,
+                                  job_title: inv.job_title,
+                                  job_required_skills: inv.job_required_skills,
+                                  job_required_qualifications: inv.job_required_qualifications,
+                                  job_required_certifications: inv.job_required_certifications,
+                                  job_work_arrangement: inv.work_arrangement,
+                                  job_location: inv.job_location,
+                                  job_salary_min: inv.salary_min,
+                                  job_salary_max: inv.salary_max,
+                                  city: inv.city || "Cavite",
+                                  applicant_name: candidateName,
+                                  email: inv.applicant_email,
+                                  phone: inv.phone,
+                                  desired_job_title: inv.desired_job_title || inv.job_title,
+                                  work_arrangement: inv.applicant_work_arrangement || inv.work_arrangement,
+                                  expected_salary: inv.expected_salary,
+                                  applicant_user_id: inv.applicant_user_id,
+                                  skills: inv.skills,
+                                  qualifications: inv.qualifications,
+                                  certifications: inv.certifications,
+                                };
+                                return (
+                                  <article
+                                    key={inv.id}
+                                    className="applicant-card invitation-applicant-card"
+                                    style={{
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      alignItems: "center",
+                                      padding: "14px 18px",
+                                      borderRadius: "10px",
+                                      gap: "16px",
+                                      flexWrap: "wrap",
+                                    }}
+                                  >
+                                    <div style={{ display: "flex", gap: "14px", alignItems: "center", minWidth: "240px", flex: "1 1 auto" }}>
+                                      {(() => {
+                                        const picUrl = inv.profile_picture_path
+                                          ? (inv.profile_picture_path.startsWith("http") || inv.profile_picture_path.startsWith("/api")
+                                              ? inv.profile_picture_path
+                                              : `/api/applicants/${inv.applicant_user_id}/profile-picture`)
+                                          : null;
+                                        return (
+                                          <span
+                                            className="inv-avatar-badge"
+                                            style={{
+                                              width: "44px",
+                                              height: "44px",
+                                              borderRadius: "50%",
+                                              display: "flex",
+                                              alignItems: "center",
+                                              justifyContent: "center",
+                                              fontWeight: "700",
+                                              fontSize: "0.92rem",
+                                              flexShrink: 0,
+                                              overflow: "hidden",
+                                              position: "relative",
+                                            }}
+                                          >
+                                            {picUrl && (
+                                              <img
+                                                src={picUrl}
+                                                alt={candidateName}
+                                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                                onError={(e) => {
+                                                  (e.currentTarget as HTMLElement).style.display = "none";
+                                                  if (e.currentTarget.nextElementSibling) {
+                                                    (e.currentTarget.nextElementSibling as HTMLElement).style.display = "inline";
+                                                  }
+                                                }}
+                                              />
+                                            )}
+                                            <span style={{ display: picUrl ? "none" : "inline" }}>
+                                              {initialsFrom(candidateName)}
+                                            </span>
+                                          </span>
+                                        );
+                                      })()}
+                                      <div>
+                                        <h3 className="invitation-candidate-name" style={{ margin: 0, fontSize: "1.02rem" }}>{candidateName}</h3>
+                                        <small style={{ color: "#64748b", marginTop: "3px", display: "inline-block" }}>
+                                          {inv.city || "Cavite"} • {status === "accepted" ? "Recruited" : "Invited"}: {formatDate(status === "accepted" ? (inv.responded_at || inv.created_at) : inv.created_at)}
+                                        </small>
+                                      </div>
+                                    </div>
+
+                                    <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
+                                      <span
+                                        style={{
+                                          padding: "4px 12px",
+                                          borderRadius: "999px",
+                                          fontSize: "0.78rem",
+                                          fontWeight: 700,
+                                          textTransform: "capitalize",
+                                          background: status === "accepted" ? "#ecfdf5" : status === "declined" ? "#fef2f2" : "#fffbeb",
+                                          color: status === "accepted" ? "#065f46" : status === "declined" ? "#991b1b" : "#92400e",
+                                          border: `1px solid ${status === "accepted" ? "#a7f3d0" : status === "declined" ? "#fecaca" : "#fde68a"}`,
+                                        }}
+                                      >
+                                        {status === "accepted" ? "Recruited" : status === "declined" ? "Denied" : "Pending Response"}
+                                      </span>
+                                    </div>
+
+                                    <div style={{ display: "flex", gap: "8px", alignItems: "center", flexShrink: 0 }}>
+                                      <button
+                                        type="button"
+                                        className="solid-btn invitation-action-btn"
+                                        style={{
+                                          padding: "8px 16px",
+                                          fontSize: "0.84rem",
+                                          fontWeight: 700,
+                                          borderRadius: "6px",
+                                          cursor: "pointer",
+                                          whiteSpace: "nowrap",
+                                        }}
+                                        onClick={() => handleOpenReview(synthApp, false, true)}
+                                      >
+                                        Details
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="solid-btn invitation-action-btn"
+                                        style={{
+                                          padding: "8px 16px",
+                                          fontSize: "0.84rem",
+                                          fontWeight: 700,
+                                          borderRadius: "6px",
+                                          cursor: "pointer",
+                                          whiteSpace: "nowrap",
+                                        }}
+                                        onClick={() => handleOpenReview(synthApp, false, true, false, true)}
+                                      >
+                                        Message
+                                      </button>
+                                    </div>
+                                  </article>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
         )}
 
         {/* CANDIDATE DETAILS MODAL (EmployerApplicantDetailsModal.tsx) */}
