@@ -7747,7 +7747,7 @@ async function resetAndSeedZakiAccounts() {
 
   try {
     await run("CREATE TABLE IF NOT EXISTS system_migrations (name TEXT PRIMARY KEY, executed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP)");
-    const alreadyRun = await get("SELECT name FROM system_migrations WHERE name = 'zaki_accounts_reset_v2'");
+    const alreadyRun = await get("SELECT name FROM system_migrations WHERE name = 'zaki_accounts_reset_v3'");
     if (alreadyRun) {
       console.log("[Zaki Accounts] Already seeded previously. Skipping.");
       return;
@@ -8020,7 +8020,7 @@ async function resetAndSeedZakiAccounts() {
       [employerId, applicantId, job1Id]
     ).catch(() => {});
 
-    await run("INSERT INTO system_migrations (name) VALUES ('zaki_accounts_reset_v2') ON CONFLICT (name) DO NOTHING");
+    await run("INSERT INTO system_migrations (name) VALUES ('zaki_accounts_reset_v3') ON CONFLICT (name) DO NOTHING");
 
     console.log("[Zaki Accounts Migration] Successfully completed reset and seeding for Zaki accounts!");
   } catch (err) {
@@ -8030,8 +8030,9 @@ async function resetAndSeedZakiAccounts() {
 
 app.post("/api/admin/reset-zaki-accounts", async (req, res) => {
   try {
-    await run("DELETE FROM system_migrations WHERE name = 'zaki_accounts_reset_v2'").catch(() => {});
+    await run("DELETE FROM system_migrations WHERE name = 'zaki_accounts_reset_v3'").catch(() => {});
     await resetAndSeedZakiAccounts();
+    await ensureMeetingsForZakiAccounts();
     return res.json({ success: true, message: "Zaki accounts reset and full interactions seeded successfully!" });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
@@ -8342,7 +8343,51 @@ async function ensureMeetingsForZakiAccounts() {
       );
     }
 
-    console.log("[Zaki Accounts] Seeded 4 recruitment workflow test scenarios successfully!");
+    // 8. Ensure Application 5 (Job E: Declined directly during initial review - screening & interview bypassed)
+    const jobE = await ensureJob(
+      "Cybersecurity Analyst",
+      "Imus, Cavite",
+      "On-Site",
+      "Mid-Senior",
+      55000,
+      70000,
+      "Oversee security architecture, conduct vulnerability assessments, and implement zero-trust protocols for fintech operations.",
+      ["Cybersecurity", "Network Security", "Penetration Testing", "ISO 27001"]
+    );
+
+    const declineLetterE = "Dear Zaki Ablando,\n\nThank you for taking the time to apply for the Cybersecurity Analyst position at Cebuana Lhuillier. We reviewed your resume and credentials carefully.\n\nAfter thorough consideration, we have decided to move forward with other candidates whose specialized experience in infrastructure threat intelligence more closely aligns with our current hiring requirements.\n\nWe appreciate your interest in Cebuana Lhuillier and wish you the best in your career pursuits.\n\nSincerely,\nTalent Acquisition Team\nCebuana Lhuillier";
+
+    let appE = await get("SELECT id FROM applications WHERE applicant_user_id = ? AND job_post_id = ?", [applicant.id, jobE.id]);
+    if (!appE) {
+      await run(
+        `INSERT INTO applications (
+          job_post_id, applicant_user_id, status, submitted_at, decided_at,
+          decision_message, decision_message_type, start_date, response_decision, response_letter, responded_at,
+          was_shortlisted, had_interview, previous_status, updated_at
+        ) VALUES (?, ?, 'denied', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'rejection', NULL, NULL, NULL, NULL, FALSE, FALSE, 'submitted', CURRENT_TIMESTAMP)`,
+        [jobE.id, applicant.id, declineLetterE]
+      );
+    } else {
+      await run(
+        `UPDATE applications SET
+          status = 'denied',
+          decision_message = ?,
+          decision_message_type = 'rejection',
+          start_date = NULL,
+          decided_at = CURRENT_TIMESTAMP,
+          response_decision = NULL,
+          response_letter = NULL,
+          responded_at = NULL,
+          was_shortlisted = FALSE,
+          had_interview = FALSE,
+          previous_status = 'submitted',
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?`,
+        [declineLetterE, appE.id]
+      );
+    }
+
+    console.log("[Zaki Accounts] Seeded 5 recruitment workflow test scenarios successfully!");
     return {
       success: true,
       message: "Recruitment test data seeded successfully!",
@@ -8374,6 +8419,14 @@ async function ensureMeetingsForZakiAccounts() {
           status: "accepted",
           responseDecision: "accept",
           employerAction: "Log in as employer -> Shortlisted / Hired -> Click 'View Response Letter'"
+        },
+        {
+          scenario: "5. Declined application with bypassed middle stages (Test red 4th milestone & skipped stages)",
+          job: jobE.title,
+          status: "denied",
+          was_shortlisted: false,
+          had_interview: false,
+          applicantAction: "Log in as applicant and observe 4th milestone red '✕', middle steps bypassed with '—', and no withdraw button"
         }
       ]
     };

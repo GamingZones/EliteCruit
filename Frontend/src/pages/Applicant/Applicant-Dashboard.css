@@ -773,6 +773,10 @@
   max-width: calc(100% - 28px);
 }
 
+.card-timeline-line-fill.is-denied {
+  background: linear-gradient(90deg, #10b981 0%, #ef4444 100%);
+}
+
 .card-timeline-nodes-row {
   position: relative;
   width: 100%;
@@ -3313,6 +3317,10 @@
 
 [data-theme="dark"] .card-timeline-pulse-core {
   background: #38bdf8;
+}
+
+[data-theme="dark"] .card-timeline-line-fill.is-denied {
+  background: linear-gradient(90deg, #059669 0%, #ef4444 100%);
 }
 
 [data-theme="dark"] .card-timeline-circle.concluded {

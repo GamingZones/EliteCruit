@@ -269,7 +269,7 @@ function formatStatusLabel(status: string) {
   if (s === "approved" || s === "accepted") return "Approved";
   if (s === "shortlisted") return "Shortlisted";
   if (s === "withdrawn") return "Withdrawn";
-  if (s === "denied" || s === "rejected") return "Denied";
+  if (s === "denied" || s === "rejected") return "Declined";
   return "Pending";
 }
 
@@ -329,7 +329,7 @@ function getApplicationTimelineSteps(app: any) {
     {
       title: "Candidate Screening & Shortlist",
       description: isFinalDecision && !wasShortlisted
-        ? "Stage bypassed — Employer opted for immediate direct hiring decision."
+        ? (isDenied ? "Stage bypassed — Application concluded during initial review." : "Stage bypassed — Employer opted for immediate direct hiring decision.")
         : wasShortlisted
         ? "Profile screened and candidate shortlisted by recruitment team."
         : (status === "under_review" || status === "reviewed")
@@ -349,7 +349,7 @@ function getApplicationTimelineSteps(app: any) {
     {
       title: "Interviewing",
       description: isFinalDecision && !hadInterview
-        ? "Stage bypassed — Interview evaluation was waived by employer for direct decision."
+        ? (isDenied ? "Stage bypassed — Application concluded prior to interview stage." : "Stage bypassed — Interview evaluation was waived by employer for direct decision.")
         : interview
         ? `${interview.interview_stage || "Technical Interview"} (${interview.interview_type || "On-Site"})${interview.interview_date ? ` scheduled for ${interview.interview_date} ${interview.start_time ? `at ${interview.start_time}` : ""}` : ""}`
         : hadInterview && isFinalDecision
@@ -364,7 +364,7 @@ function getApplicationTimelineSteps(app: any) {
         : (hadInterview && isFinalDecision)
         ? fallbackInterviewDate
         : isFinalDecision && !hadInterview
-        ? "Waived"
+        ? "Bypassed"
         : null,
       state: isFinalDecision && !hadInterview
         ? ("bypassed" as const)
@@ -378,7 +378,7 @@ function getApplicationTimelineSteps(app: any) {
       title: status === "withdrawn"
         ? "Application Withdrawn"
         : status === "denied" || status === "rejected"
-        ? "Application Concluded"
+        ? "Application Declined"
         : status === "recruited"
         ? "Candidate Recruited"
         : status === "accepted"
@@ -391,7 +391,9 @@ function getApplicationTimelineSteps(app: any) {
       description: status === "withdrawn"
         ? "You have withdrawn your application for this position."
         : status === "denied" || status === "rejected"
-        ? "Employer decided to pursue other applicants for this role."
+        ? (app?.decision_message
+          ? "Application declined. Hiring team reviewed your application and chose to proceed with other candidates."
+          : "Employer decided to pursue other applicants for this role.")
         : status === "recruited"
         ? "Congratulations! You have been successfully recruited for this role."
         : status === "accepted"
@@ -472,7 +474,7 @@ function ApplicationCardTimeline({
       >
         <div className="card-timeline-line-bg" />
         <div
-          className="card-timeline-line-fill"
+          className={`card-timeline-line-fill ${isDenied ? "is-denied" : ""}`}
           style={{ width: `${progressPct}%` }}
         />
 
@@ -524,9 +526,9 @@ function ApplicationCardTimeline({
                         {isCompleted
                           ? "Completed"
                           : isConcluded
-                          ? "Concluded"
+                          ? (isDenied ? "Declined" : "Concluded")
                           : isBypassed
-                          ? "Bypassed / Waived"
+                          ? "Bypassed"
                           : isActive
                           ? "Current Stage"
                           : "Upcoming"}
