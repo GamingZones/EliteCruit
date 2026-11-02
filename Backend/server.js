@@ -7965,6 +7965,186 @@ app.post("/api/admin/reset-zaki-accounts", async (req, res) => {
   }
 });
 
+async function ensureMeetingsForZakiAccounts() {
+  const employerEmail = "zakiablando897@gmail.com";
+  const applicantEmail = "zaki_ablando897@yahoo.com";
+
+  try {
+    // 1. Find or create employer
+    let employer = await get("SELECT id, email FROM users WHERE lower(email) = ?", [employerEmail.toLowerCase()]);
+    if (!employer) {
+      const passHash = await bcrypt.hash("Password123!", 10);
+      const res = await run(
+        "INSERT INTO users (email, password_hash, role, is_active, is_email_verified, two_factor_enabled) VALUES (?, ?, 'employer', true, true, false)",
+        [employerEmail.toLowerCase(), passHash]
+      );
+      employer = { id: res.lastID, email: employerEmail };
+      await run(
+        `INSERT INTO employer_profiles (
+          user_id, business_name, industry, company_size, company_description, contact_number,
+          province, city, company_address, terms_accepted, terms_accepted_at
+        ) VALUES (?, 'Cebuana Lhuillier', 'Financial Services & Technology', '501-1000 employees',
+          'Leading financial services and fintech company.', '+63 917 123 4567',
+          'Cavite', 'Dasmarinas', 'Indang - Dasmarinas Tech Hub, Cavite', true, CURRENT_TIMESTAMP)
+         ON CONFLICT (user_id) DO NOTHING`,
+        [employer.id]
+      );
+    }
+
+    // 2. Find or create applicant
+    let applicant = await get("SELECT id, email FROM users WHERE lower(email) = ?", [applicantEmail.toLowerCase()]);
+    if (!applicant) {
+      const passHash = await bcrypt.hash("Password123!", 10);
+      const res = await run(
+        "INSERT INTO users (email, password_hash, role, is_active, is_email_verified, two_factor_enabled) VALUES (?, ?, 'applicant', true, true, false)",
+        [applicantEmail.toLowerCase(), passHash]
+      );
+      applicant = { id: res.lastID, email: applicantEmail };
+      await run(
+        `INSERT INTO applicant_profiles (
+          user_id, first_name, last_name, phone, city, address,
+          desired_job_title, expected_salary, work_arrangement, terms_accepted, terms_accepted_at
+        ) VALUES (?, 'Zaki', 'Ablando', '+63 999 999 9999', 'Alfonso', 'Alfonso, Cavite',
+          'Full Stack Web Developer', 'PHP 50,000', 'On-Site', true, CURRENT_TIMESTAMP)
+         ON CONFLICT (user_id) DO NOTHING`,
+        [applicant.id]
+      );
+    }
+
+    // 3. Find or create active job post for employer
+    let job = await get("SELECT id, title FROM job_posts WHERE employer_user_id = ? AND status = 'open' LIMIT 1", [employer.id]);
+    if (!job) {
+      const jobRes = await run(
+        `INSERT INTO job_posts (
+          employer_user_id, title, location, status, is_urgent, hide_salary,
+          work_arrangement, experience_level, salary_min, salary_max,
+          description, qualifications, required_skills, close_date
+        ) VALUES (?, 'Full Stack Web Developer', 'Alfonso, Cavite', 'open', 0, 0,
+          'On-Site', 'Mid-Level', 45000, 60000,
+          'Full stack developer for fintech web platform.',
+          ?::jsonb, ?::jsonb, '2026-12-31')`,
+        [
+          employer.id,
+          JSON.stringify(["Bachelor of Science in Information Technology (BSIT)"]),
+          JSON.stringify(["React", "Node.js", "TypeScript", "PostgreSQL"]),
+        ]
+      );
+      job = { id: jobRes.lastID, title: "Full Stack Web Developer" };
+    }
+
+    // 4. Ensure application exists
+    let appRecord = await get("SELECT id FROM applications WHERE applicant_user_id = ? AND job_post_id = ?", [applicant.id, job.id]);
+    if (!appRecord) {
+      const appRes = await run(
+        "INSERT INTO applications (job_post_id, applicant_user_id, status, submitted_at, updated_at) VALUES (?, ?, 'approved', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+        [job.id, applicant.id]
+      );
+      appRecord = { id: appRes.lastID };
+    }
+
+    // 5. Check existing interviews between them
+    const existingInterviews = await all(
+      "SELECT id, interview_title, interview_date FROM scheduled_interviews WHERE employer_user_id = ? AND applicant_user_id = ? AND deleted_by_employer = FALSE AND deleted_by_applicant = FALSE",
+      [employer.id, applicant.id]
+    );
+
+    const hasMeeting1 = existingInterviews.some((i) => i.interview_title?.includes("Technical Interview") && i.interview_date === "2026-11-06");
+    const hasMeeting2 = existingInterviews.some((i) => i.interview_title?.includes("Final Panel Interview") && i.interview_date === "2026-11-10");
+
+    let createdCount = 0;
+
+    if (!hasMeeting1) {
+      await run(
+        `INSERT INTO scheduled_interviews (
+          employer_user_id, applicant_user_id, candidate_user_ids,
+          job_post_id, interview_title, interview_stage, interview_type,
+          meeting_link_or_address, interview_date, start_time, end_time,
+          notes, status, job_title, applicant_name, applicant_phone,
+          applicant_city, applicant_email, employer_company_name,
+          deleted_by_employer, deleted_by_applicant, created_at, updated_at
+        ) VALUES (
+          ?, ?, ?::jsonb,
+          ?, 'Technical Interview - Full Stack Web Developer', 'Technical Evaluation', 'On-Site',
+          'Cebuana Hub, Alfonso Branch, Cavite', '2026-11-06', '10:00 AM', '10:45 AM',
+          'Review architecture, frontend React components, and database models.', 'accepted', ?,
+          'Zaki Ablando', '+63 999 999 9999', 'Alfonso, Cavite', ?, 'Cebuana Lhuillier',
+          FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+        )`,
+        [
+          employer.id,
+          applicant.id,
+          JSON.stringify([applicant.id]),
+          job.id,
+          job.title,
+          applicantEmail,
+        ]
+      );
+      createdCount++;
+      console.log("[Zaki Meetings] Created Meeting 1 for Nov 6, 2026");
+    }
+
+    if (!hasMeeting2) {
+      await run(
+        `INSERT INTO scheduled_interviews (
+          employer_user_id, applicant_user_id, candidate_user_ids,
+          job_post_id, interview_title, interview_stage, interview_type,
+          meeting_link_or_address, interview_date, start_time, end_time,
+          notes, status, job_title, applicant_name, applicant_phone,
+          applicant_city, applicant_email, employer_company_name,
+          deleted_by_employer, deleted_by_applicant, created_at, updated_at
+        ) VALUES (
+          ?, ?, ?::jsonb,
+          ?, 'Final Panel Interview - IT Systems & Infrastructure Specialist', 'Final Interview', 'On-Site',
+          'Cebuana Main Office, Trece Martires, Cavite', '2026-11-10', '02:00 PM', '03:00 PM',
+          'Final panel interview with the senior infrastructure team.', 'accepted', 'IT Systems & Infrastructure Specialist',
+          'Zaki Ablando', '+63 999 999 9999', 'Alfonso, Cavite', ?, 'Cebuana Lhuillier',
+          FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+        )`,
+        [
+          employer.id,
+          applicant.id,
+          JSON.stringify([applicant.id]),
+          job.id,
+          applicantEmail,
+        ]
+      );
+      createdCount++;
+      console.log("[Zaki Meetings] Created Meeting 2 for Nov 10, 2026");
+    }
+
+    // Insert notifications if created
+    if (createdCount > 0) {
+      await run(
+        `INSERT INTO notifications (user_id, type, title, body, is_read, related_user_id, related_application_id, created_at) VALUES
+        (?, 'interview_scheduled', 'Interview Confirmed: Technical Interview', 'CEBUANA scheduled an interview for Full Stack Web Developer on Nov 6, 2026 at 10:00 AM.', 0, ?, ?, CURRENT_TIMESTAMP)`,
+        [applicant.id, employer.id, appRecord.id]
+      ).catch(() => {});
+
+      await run(
+        `INSERT INTO notifications (user_id, type, title, body, is_read, related_user_id, related_application_id, created_at) VALUES
+        (?, 'interview_status_update', 'Meeting Scheduled: Zaki Ablando', 'Interview with Zaki Ablando for Full Stack Web Developer is set for Nov 6, 2026 at 10:00 AM.', 0, ?, ?, CURRENT_TIMESTAMP)`,
+        [employer.id, applicant.id, appRecord.id]
+      ).catch(() => {});
+    }
+
+    return {
+      success: true,
+      employerId: employer.id,
+      applicantId: applicant.id,
+      createdCount,
+      totalExisting: existingInterviews.length + createdCount,
+    };
+  } catch (err) {
+    console.error("[Zaki Meetings] Error ensuring meetings:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+app.get("/api/admin/ensure-zaki-meetings", async (req, res) => {
+  const result = await ensureMeetingsForZakiAccounts();
+  res.json(result);
+});
+
 // In production or full-stack deployment, serve built Frontend files if dist exists
 const distPath = path.resolve(__dirname, "../Frontend/dist");
 if (fs.existsSync(distPath)) {
@@ -8000,6 +8180,7 @@ Promise.resolve()
   .then(() => ensureScheduledInterviewColumns())
   .then(() => syncHistoricalInvitations())
   .then(() => ensureAdminUser())
+  .then(() => ensureMeetingsForZakiAccounts())
   .then(() => app.listen(PORT, () => {
     console.log(`EliteCruit backend running at http://localhost:${PORT}`);
   }))
