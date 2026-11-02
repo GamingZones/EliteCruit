@@ -3356,6 +3356,10 @@
   vertical-align: middle;
 }
 
+.job-accordion-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
 .job-accordion-table tbody tr:hover {
   background: #f8fafc;
 }
@@ -4425,4 +4429,69 @@
 
 [data-theme="dark"] .recruit-target-job-box span {
   color: #94a3b8 !important;
+}
+
+/* ==========================================================================
+   JOB ACCORDIONS & SCREENING TABLE DARK MODE (Rule 9 Isolation)
+   ========================================================================== */
+[data-theme="dark"] .job-accordion-card {
+  background: #1c1e27 !important;
+  border: 1px solid #2e3244 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important;
+}
+
+[data-theme="dark"] .job-accordion-header {
+  background: #181a22 !important;
+  border-bottom: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .job-accordion-card.is-expanded .job-accordion-header {
+  background: #181a22 !important;
+  border-bottom: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .job-accordion-header:hover {
+  background: #20232e !important;
+}
+
+[data-theme="dark"] .job-accordion-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .job-accordion-body {
+  background: #1c1e27 !important;
+}
+
+[data-theme="dark"] .job-accordion-empty {
+  background: #1c1e27 !important;
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .job-accordion-table {
+  background: #1c1e27 !important;
+}
+
+[data-theme="dark"] .job-accordion-table thead th {
+  background: #14151B !important;
+  color: #94a3b8 !important;
+  border-bottom: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .job-accordion-table tbody tr {
+  background: #1c1e27 !important;
+  border-bottom: 1px solid #242735 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .job-accordion-table tbody tr:hover {
+  background: #222634 !important;
+}
+
+[data-theme="dark"] .job-accordion-table tbody td {
+  border-bottom: 1px solid #242735 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .job-accordion-table tbody tr:last-child td {
+  border-bottom: none !important;
 }

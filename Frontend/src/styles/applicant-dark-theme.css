@@ -5704,6 +5704,15 @@
 }
 
 /* Accordion Table */
+[data-theme="dark"] .job-accordion-body {
+  background: #1c1e27 !important;
+}
+
+[data-theme="dark"] .job-accordion-empty {
+  background: #1c1e27 !important;
+  color: #94a3b8 !important;
+}
+
 [data-theme="dark"] .job-accordion-table thead th {
   background: #14151B !important;
   color: #94a3b8 !important;
@@ -5722,6 +5731,15 @@
 
 [data-theme="dark"] .job-accordion-table tbody tr.row-selected {
   background: rgba(2, 132, 199, 0.18) !important;
+}
+
+[data-theme="dark"] .job-accordion-table tbody td {
+  border-bottom: 1px solid #242735 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .job-accordion-table tbody tr:last-child td {
+  border-bottom: none !important;
 }
 
 [data-theme="dark"] .applicant-name .pill {
