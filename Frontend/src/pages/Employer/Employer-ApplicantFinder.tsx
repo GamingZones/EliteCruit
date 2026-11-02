@@ -3759,9 +3759,6 @@ export default function EmployerApplicantFinder() {
                                   <span className="finder-star-pill">
                                     <span className="star-icon">★</span> {cand.rating ? Number(cand.rating).toFixed(1) : "0.0"}
                                   </span>
-                                  <span className={`finder-match-pill ${matchClass}`}>
-                                    {matchPercent}% Match
-                                  </span>
                                 </div>
                                 <div className="finder-candidate-meta-inline">
                                   <span className="finder-meta-inline-item">
