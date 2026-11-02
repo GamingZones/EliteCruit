@@ -6979,6 +6979,45 @@
   align-self: flex-start !important;
 }
 
+/* ── Ensure ApplicantDetailsModal (cand-details-overlay) 1st container NEVER changes length (stays 920px) ── */
+.cand-details-overlay .jd-modal-container.with-side-panel,
+[data-theme="dark"] .cand-details-overlay .jd-modal-container.with-side-panel,
+.cand-details-overlay .cand-details-modal-container,
+[data-theme="dark"] .cand-details-overlay .cand-details-modal-container {
+  max-width: min(1480px, calc(100vw - 32px)) !important;
+  width: fit-content !important;
+}
+
+.cand-details-overlay .cand-details-panel-wrap,
+.cand-details-overlay .jd-panel-outer-wrap,
+.cand-details-overlay .jd-modal-container.with-side-panel .jd-panel-outer-wrap,
+.cand-details-overlay .jd-modal-container.with-side-panel .cand-details-panel-wrap,
+[data-theme="dark"] .cand-details-overlay .cand-details-panel-wrap,
+[data-theme="dark"] .cand-details-overlay .jd-panel-outer-wrap,
+[data-theme="dark"] .cand-details-overlay .jd-modal-container.with-side-panel .jd-panel-outer-wrap,
+[data-theme="dark"] .cand-details-overlay .jd-modal-container.with-side-panel .cand-details-panel-wrap,
+.cand-details-overlay .cand-details-panel,
+.cand-details-overlay .jd-modal-container.with-side-panel .cand-details-panel,
+[data-theme="dark"] .cand-details-overlay .cand-details-panel,
+[data-theme="dark"] .cand-details-overlay .jd-modal-container.with-side-panel .cand-details-panel {
+  width: 920px !important;
+  min-width: min(920px, calc(100vw - 40px)) !important;
+  max-width: min(920px, calc(100vw - 40px)) !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+}
+
+.cand-details-overlay .applicant-side-comparison-panel,
+.cand-details-overlay .jd-side-comparison-panel,
+[data-theme="dark"] .cand-details-overlay .applicant-side-comparison-panel,
+[data-theme="dark"] .cand-details-overlay .jd-side-comparison-panel {
+  width: 480px !important;
+  max-width: min(480px, calc(100vw - 976px)) !important;
+  min-width: 320px !important;
+  flex: 1 1 440px !important;
+  flex-shrink: 1 !important;
+}
+
 /* 4. Direct Recruitment Modal - Tight Height with No Extra Space (Pic 3) */
 .cand-details-overlay,
 [data-theme="dark"] .cand-details-overlay {

@@ -396,9 +396,10 @@ export default function ApplicantDetailsModal({
       }}
     >
       <div
-        className={`jd-modal-container ${activeSideTab ? "with-side-panel" : ""}`}
+        className={`cand-details-modal-container jd-modal-container ${activeSideTab ? "with-side-panel" : ""}`}
         style={{
-          maxWidth: activeSideTab ? "min(1280px, calc(100vw - 48px))" : "920px",
+          maxWidth: activeSideTab ? "min(1480px, calc(100vw - 32px))" : "920px",
+          width: "fit-content",
           display: "flex",
           gap: "16px",
           alignItems: "flex-start",
@@ -412,11 +413,12 @@ export default function ApplicantDetailsModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div
-          className="jd-panel-outer-wrap"
+          className="cand-details-panel-wrap jd-panel-outer-wrap"
           style={{
             position: "relative",
-            width: activeSideTab ? "min(700px, 54vw)" : "100%",
-            maxWidth: activeSideTab ? "min(700px, 54vw)" : "920px",
+            width: "920px",
+            maxWidth: "min(920px, calc(100vw - 40px))",
+            minWidth: "min(920px, calc(100vw - 40px))",
             flexShrink: 0,
             display: "flex",
             flexDirection: "column",
@@ -897,13 +899,16 @@ export default function ApplicantDetailsModal({
           className="applicant-side-comparison-panel jd-side-comparison-panel"
           style={{
             width: "480px",
+            maxWidth: "min(480px, calc(100vw - 976px))",
+            minWidth: "320px",
+            flex: "1 1 440px",
             height: "700px",
             maxHeight: "88vh",
             boxShadow: "0 25px 60px rgba(0, 0, 0, 0.35)",
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
-            flexShrink: 0,
+            flexShrink: 1,
             fontFamily: '"Inter", sans-serif',
           }}
         >
@@ -1077,13 +1082,16 @@ export default function ApplicantDetailsModal({
           className="applicant-side-comparison-panel jd-side-comparison-panel"
           style={{
             width: "480px",
+            maxWidth: "min(480px, calc(100vw - 976px))",
+            minWidth: "320px",
+            flex: "1 1 440px",
             height: "700px",
             maxHeight: "88vh",
             boxShadow: "0 25px 60px rgba(0, 0, 0, 0.35)",
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
-            flexShrink: 0,
+            flexShrink: 1,
             fontFamily: '"Inter", sans-serif',
           }}
         >
@@ -1170,13 +1178,16 @@ export default function ApplicantDetailsModal({
           className="applicant-side-comparison-panel cand-message-side-panel jd-side-comparison-panel"
           style={{
             width: "480px",
+            maxWidth: "min(480px, calc(100vw - 976px))",
+            minWidth: "320px",
+            flex: "1 1 440px",
             height: "700px",
             maxHeight: "88vh",
             boxShadow: "0 25px 60px rgba(0, 0, 0, 0.35)",
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
-            flexShrink: 0,
+            flexShrink: 1,
             fontFamily: '"Inter", sans-serif',
           }}
         >

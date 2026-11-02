@@ -807,17 +807,63 @@
 }
 
 /* ── Container Isolation: Never Paint Background Outer Box ── */
-.cand-details-overlay .jd-modal-container {
+.cand-details-overlay {
+  overflow-x: auto;
+}
+
+.cand-details-overlay .jd-modal-container,
+.cand-details-overlay .cand-details-modal-container {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   padding: 0 !important;
+  width: fit-content !important;
+  max-width: min(1480px, calc(100vw - 32px)) !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  gap: 16px !important;
 }
 
-[data-theme="dark"] .cand-details-overlay .jd-modal-container {
+[data-theme="dark"] .cand-details-overlay .jd-modal-container,
+[data-theme="dark"] .cand-details-overlay .cand-details-modal-container {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
+  max-width: min(1480px, calc(100vw - 32px)) !important;
+  width: fit-content !important;
+}
+
+/* ── 1st Container Length Lock (Must NOT change length when 2nd container opens - Pic 2 Ref) ── */
+.cand-details-overlay .cand-details-panel-wrap,
+.cand-details-overlay .jd-panel-outer-wrap,
+.cand-details-overlay .jd-modal-container.with-side-panel .jd-panel-outer-wrap,
+.cand-details-overlay .jd-modal-container.with-side-panel .cand-details-panel-wrap,
+[data-theme="dark"] .cand-details-overlay .cand-details-panel-wrap,
+[data-theme="dark"] .cand-details-overlay .jd-panel-outer-wrap,
+[data-theme="dark"] .cand-details-overlay .jd-modal-container.with-side-panel .jd-panel-outer-wrap,
+[data-theme="dark"] .cand-details-overlay .jd-modal-container.with-side-panel .cand-details-panel-wrap,
+.cand-details-overlay .cand-details-panel,
+.cand-details-overlay .jd-modal-container.with-side-panel .cand-details-panel,
+[data-theme="dark"] .cand-details-overlay .cand-details-panel,
+[data-theme="dark"] .cand-details-overlay .jd-modal-container.with-side-panel .cand-details-panel {
+  width: 920px !important;
+  min-width: min(920px, calc(100vw - 40px)) !important;
+  max-width: min(920px, calc(100vw - 40px)) !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+}
+
+/* ── 2nd Container (Adjusts dynamically to remaining space) ── */
+.cand-details-overlay .applicant-side-comparison-panel,
+.cand-details-overlay .jd-side-comparison-panel,
+[data-theme="dark"] .cand-details-overlay .applicant-side-comparison-panel,
+[data-theme="dark"] .cand-details-overlay .jd-side-comparison-panel {
+  width: 480px !important;
+  max-width: min(480px, calc(100vw - 976px)) !important;
+  min-width: 320px !important;
+  flex: 1 1 440px !important;
+  flex-shrink: 1 !important;
 }
 
 /* ── Base (Light Theme) Side Comparison Panel Styles ── */
