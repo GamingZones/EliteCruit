@@ -1586,36 +1586,42 @@ export default function ApplicantDashboard() {
                   />
                 </div>
                 <div className="app-card-actions">
+                  {/* Top Action Button: Withdraw if still not approved, or Offer Letter / View Letter if approved */}
                   {(() => {
+                    const statusLower = (app.status || "").toLowerCase();
+                    const isApproved = ["approved", "accepted", "recruited"].includes(statusLower);
+                    const isConcluded = ["denied", "rejected", "withdrawn"].includes(statusLower);
                     const hasFormalOffer = Boolean(
                       app.offer_letter ||
                       app.decision_message_type === "formal_offer" ||
-                      ["offered", "offer_extended"].includes((app.status || "").toLowerCase())
+                      ["offered", "offer_extended"].includes(statusLower) ||
+                      isApproved
                     );
                     const hasResponseLetter = Boolean(app.response_letter);
 
-                    if (hasResponseLetter) {
-                      return (
-                        <button
-                          type="button"
-                          className="solid-btn offer-letter-action-btn"
-                          onClick={() => {
-                            setViewLetterModalTarget({
-                              title: app.job_title || app.title || "Applied Role",
-                              company: app.company_name || "Employer",
-                              letterText: app.response_letter,
-                              startDate: app.start_date,
-                              respondedAt: app.responded_at,
-                              decision: app.response_decision || (app.status === "declined" ? "declined" : "accepted"),
-                            });
-                          }}
-                        >
-                          <span>View Letter</span>
-                        </button>
-                      );
-                    }
+                    // When approved: Offer Letter (or View Letter if candidate already responded)
+                    if (isApproved || hasResponseLetter || hasFormalOffer) {
+                      if (hasResponseLetter) {
+                        return (
+                          <button
+                            type="button"
+                            className="solid-btn offer-letter-action-btn"
+                            onClick={() => {
+                              setViewLetterModalTarget({
+                                title: app.job_title || app.title || "Applied Role",
+                                company: app.company_name || "Employer",
+                                letterText: app.response_letter,
+                                startDate: app.start_date,
+                                respondedAt: app.responded_at,
+                                decision: app.response_decision || (app.status === "declined" ? "declined" : "accepted"),
+                              });
+                            }}
+                          >
+                            <span>View Letter</span>
+                          </button>
+                        );
+                      }
 
-                    if (hasFormalOffer) {
                       return (
                         <button
                           type="button"
@@ -1633,23 +1639,27 @@ export default function ApplicantDashboard() {
                       );
                     }
 
+                    // If still not approved (and not already concluded): Withdraw button at top
+                    if (!isConcluded) {
+                      return (
+                        <button
+                          type="button"
+                          className="ghost-btn withdraw-app-btn"
+                          onClick={() => setWithdrawTargetApp(app)}
+                          title="Withdraw application"
+                        >
+                          Withdraw
+                        </button>
+                      );
+                    }
+
                     return null;
                   })()}
+
                   <button type="button" className="solid-btn review-app-btn" onClick={() => handleReviewApplication(app)}>
                     Review
                   </button>
                   <button type="button" className="ghost-btn message-app-btn" onClick={() => { window.location.href = "/messages"; }}>Message</button>
-                  {!["approved", "accepted", "recruited", "denied", "rejected", "withdrawn"].includes((app.status || "").toLowerCase()) && (
-                    <button
-                      type="button"
-                      className="ghost-btn withdraw-app-btn"
-                      onClick={() => setWithdrawTargetApp(app)}
-                      title="Withdraw application"
-                      style={{ color: "#ef4444", borderColor: "#fecaca" }}
-                    >
-                      Withdraw
-                    </button>
-                  )}
                 </div>
               </article>
             ))
