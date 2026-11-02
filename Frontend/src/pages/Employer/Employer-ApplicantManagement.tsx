@@ -2019,9 +2019,13 @@ export default function EmployerApplicantManagement() {
 
     updateFromHash();
     window.addEventListener("hashchange", updateFromHash);
+    window.addEventListener("elitecruit-interviews-updated", fetchApplications);
+    window.addEventListener("elitecruit_interviews_update", fetchApplications);
 
     return () => {
       window.removeEventListener("hashchange", updateFromHash);
+      window.removeEventListener("elitecruit-interviews-updated", fetchApplications);
+      window.removeEventListener("elitecruit_interviews_update", fetchApplications);
     };
   }, []);
 
@@ -3377,7 +3381,14 @@ export default function EmployerApplicantManagement() {
                               <strong>{a.applicant_name}</strong>
                               <span className="ticket-match-badge" style={{ color: style.color }}>{percent}%</span>
                             </div>
-                            <small style={{ display: "block", color: "#64748b" }}>{a.job_title}</small>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "2px" }}>
+                              <small style={{ color: "#64748b" }}>{a.job_title}</small>
+                              {["interviewing", "interview"].includes(a.status?.toLowerCase()) && (
+                                <span className="status-chip interviewing" style={{ fontSize: "0.62rem", padding: "1px 6px" }}>
+                                  Interviewing
+                                </span>
+                              )}
+                            </div>
                           </div>
                         );
                       })

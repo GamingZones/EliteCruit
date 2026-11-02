@@ -846,23 +846,26 @@ export default function ApplicantDashboard() {
       if (savedUser.role !== "applicant" || !savedUser.id) return;
       setApplicantUserId(savedUser.id);
 
-      fetch(`/api/applicants/${savedUser.id}/applications`)
-        .then(async (response) => {
-          const data = await response.json();
-          if (!response.ok) throw new Error(data?.message || "Unable to load applications.");
-          const total = Number(data?.stats?.total || 0);
-          const underReview = Number(data?.stats?.underReview || 0);
-          const shortlisted = Number(data?.stats?.shortlisted || 0);
-          setMyApplicationsList(Array.isArray(data?.applications) ? data.applications : []);
+      const refreshApplications = () => {
+        fetch(`/api/applicants/${savedUser.id}/applications`)
+          .then(async (response) => {
+            const data = await response.json();
+            if (!response.ok) throw new Error(data?.message || "Unable to load applications.");
+            setMyApplicationsList(Array.isArray(data?.applications) ? data.applications : []);
 
-          const ids = Array.isArray(data?.applications)
-            ? data.applications
-                .map((item: any) => Number(item?.job_post_id))
-                .filter((id: number) => Number.isInteger(id) && id > 0)
-            : [];
-          setAppliedJobIds(ids);
-        })
-        .catch(() => {});
+            const ids = Array.isArray(data?.applications)
+              ? data.applications
+                  .map((item: any) => Number(item?.job_post_id))
+                  .filter((id: number) => Number.isInteger(id) && id > 0)
+              : [];
+            setAppliedJobIds(ids);
+          })
+          .catch(() => {});
+      };
+
+      refreshApplications();
+      window.addEventListener("elitecruit-interviews-updated", refreshApplications);
+      window.addEventListener("elitecruit_interviews_update", refreshApplications);
 
       fetch(`/api/applicants/${savedUser.id}/invitations`)
         .then((res) => res.json())

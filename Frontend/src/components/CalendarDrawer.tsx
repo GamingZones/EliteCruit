@@ -954,6 +954,7 @@ export default function CalendarDrawer({
         .then(() => {
           loadInterviewsFromApi();
           window.dispatchEvent(new Event("elitecruit_interviews_update"));
+          window.dispatchEvent(new Event("elitecruit-interviews-updated"));
         })
         .catch(() => {});
     } catch {}
@@ -979,7 +980,13 @@ export default function CalendarDrawer({
     try {
       fetch(`/api/interviews/${interviewId}?role=${currentRole}&user_id=${currentUserId}`, {
         method: "DELETE",
-      }).catch(() => {});
+      })
+        .then(() => {
+          loadInterviewsFromApi();
+          window.dispatchEvent(new Event("elitecruit_interviews_update"));
+          window.dispatchEvent(new Event("elitecruit-interviews-updated"));
+        })
+        .catch(() => {});
     } catch {}
 
     setInterviewToDelete(null);

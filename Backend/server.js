@@ -7320,11 +7320,17 @@ app.post("/api/interviews", async (req, res) => {
       ]
     );
 
-    // Automatically advance application status to 'interviewing'
+    // Automatically advance application status to 'interviewing' and preserve previous status
     const appIdFromReq = req.body?.application_id ? Number(req.body.application_id) : null;
     if (appIdFromReq) {
       await run(
-        `UPDATE applications SET status = 'interviewing', was_shortlisted = TRUE, had_interview = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        `UPDATE applications 
+         SET previous_status = CASE WHEN lower(status) NOT IN ('interviewing', 'interview') THEN status ELSE previous_status END,
+             status = 'interviewing', 
+             was_shortlisted = TRUE, 
+             had_interview = TRUE, 
+             updated_at = CURRENT_TIMESTAMP 
+         WHERE id = ?`,
         [appIdFromReq]
       ).catch(() => {});
     } else {
@@ -7333,7 +7339,11 @@ app.post("/api/interviews", async (req, res) => {
         if (jobPostId) {
           await run(
             `UPDATE applications 
-             SET status = 'interviewing', was_shortlisted = TRUE, had_interview = TRUE, updated_at = CURRENT_TIMESTAMP 
+             SET previous_status = CASE WHEN lower(status) NOT IN ('interviewing', 'interview') THEN status ELSE previous_status END,
+                 status = 'interviewing', 
+                 was_shortlisted = TRUE, 
+                 had_interview = TRUE, 
+                 updated_at = CURRENT_TIMESTAMP 
              WHERE applicant_user_id = ? AND job_post_id = ? AND lower(status) IN ('submitted', 'pending', 'shortlisted')`,
             [cid, jobPostId]
           ).catch(() => {});
@@ -7376,6 +7386,76 @@ app.post("/api/interviews", async (req, res) => {
   }
 });
 
+async function syncApplicationStatusAfterInterviewCancellation(interview, excludeInterviewId = null) {
+  if (!interview || !interview.job_post_id) return;
+
+  try {
+    let candIds = [];
+    if (Array.isArray(interview.candidate_user_ids)) {
+      candIds = interview.candidate_user_ids.map(Number);
+    } else if (typeof interview.candidate_user_ids === "string") {
+      try {
+        candIds = JSON.parse(interview.candidate_user_ids).map(Number);
+      } catch {}
+    }
+    if (interview.applicant_user_id && !candIds.includes(Number(interview.applicant_user_id))) {
+      candIds.push(Number(interview.applicant_user_id));
+    }
+
+    for (const cid of candIds) {
+      if (!cid || cid < 1) continue;
+
+      const app = await get(
+        "SELECT id, status, previous_status, was_shortlisted FROM applications WHERE applicant_user_id = ? AND job_post_id = ?",
+        [cid, interview.job_post_id]
+      );
+
+      // Only revert if application is currently in 'interviewing' stage
+      if (app && ["interviewing", "interview"].includes(String(app.status || "").toLowerCase())) {
+        let query = `
+          SELECT id FROM scheduled_interviews 
+          WHERE job_post_id = ? 
+            AND (applicant_user_id = ? OR candidate_user_ids @> ?::text::jsonb)
+            AND status NOT IN ('cancelled', 'declined')
+            AND deleted_by_employer = FALSE
+            AND deleted_by_applicant = FALSE
+        `;
+        const params = [interview.job_post_id, cid, cid];
+        if (excludeInterviewId) {
+          query += " AND id != ?";
+          params.push(excludeInterviewId);
+        }
+
+        const remainingActiveInterview = await get(query, params);
+
+        // If no active interviews remain for this application, revert to previous_status
+        if (!remainingActiveInterview) {
+          let revertStatus = (app.previous_status && !["interviewing", "interview"].includes(String(app.previous_status).toLowerCase()))
+            ? app.previous_status
+            : (app.was_shortlisted ? "shortlisted" : "pending");
+
+          const wasShortlisted = ["shortlisted"].includes(revertStatus.toLowerCase()) || Boolean(app.was_shortlisted);
+
+          await run(
+            `UPDATE applications 
+             SET status = ?, 
+                 previous_status = 'interviewing',
+                 had_interview = FALSE, 
+                 was_shortlisted = ?, 
+                 updated_at = CURRENT_TIMESTAMP 
+             WHERE id = ?`,
+            [revertStatus, wasShortlisted, app.id]
+          );
+
+          console.log(`[Interview Cancelled] Reverted application #${app.id} for applicant #${cid} to '${revertStatus}'.`);
+        }
+      }
+    }
+  } catch (syncErr) {
+    console.error("Error syncing application status after interview cancellation:", syncErr);
+  }
+}
+
 app.delete("/api/interviews/:id", async (req, res) => {
   const id = Number(req.params.id);
   const role = String(req.query.role || req.body?.role || "employer").toLowerCase().trim();
@@ -7401,6 +7481,8 @@ app.delete("/api/interviews/:id", async (req, res) => {
         [id]
       );
     }
+
+    await syncApplicationStatusAfterInterviewCancellation(existing, id);
 
     return res.json({ success: true, message: "Interview deleted successfully for your view." });
   } catch (err) {
@@ -7502,6 +7584,10 @@ app.patch("/api/interviews/:id/status", async (req, res) => {
          WHERE id = ?`,
         [targetStatus, finalNotes, id]
       );
+    }
+
+    if (targetStatus === "cancelled" || targetStatus === "declined") {
+      await syncApplicationStatusAfterInterviewCancellation(existing, id);
     }
 
     // Notify the other party if valid registered user
