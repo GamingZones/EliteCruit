@@ -703,6 +703,9 @@ async function ensureJobPostColumns() {
   await run("ALTER TABLE applications ADD COLUMN IF NOT EXISTS response_decision TEXT");
   await run("ALTER TABLE applications ADD COLUMN IF NOT EXISTS responded_at TIMESTAMPTZ");
   await run("ALTER TABLE applications ADD COLUMN IF NOT EXISTS start_date TEXT");
+  await run("ALTER TABLE applications ADD COLUMN IF NOT EXISTS was_shortlisted BOOLEAN NOT NULL DEFAULT FALSE");
+  await run("ALTER TABLE applications ADD COLUMN IF NOT EXISTS had_interview BOOLEAN NOT NULL DEFAULT FALSE");
+  await run("ALTER TABLE applications ADD COLUMN IF NOT EXISTS previous_status TEXT");
   await run("ALTER TABLE job_invitations ADD COLUMN IF NOT EXISTS response_letter TEXT");
   await run("ALTER TABLE job_invitations ADD COLUMN IF NOT EXISTS responded_at TIMESTAMPTZ");
   await run("ALTER TABLE job_invitations ADD COLUMN IF NOT EXISTS start_date TEXT");
@@ -4365,6 +4368,9 @@ app.get("/api/applicants/:userId/applications", authenticateToken, requireUserOr
               a.response_decision,
               a.responded_at,
               a.start_date,
+              a.was_shortlisted,
+              a.had_interview,
+              a.previous_status,
               (SELECT row_to_json(si_row) FROM (
                 SELECT si.id, si.interview_date, si.start_time, si.end_time, si.interview_stage, si.interview_type, si.meeting_link_or_address, si.status
                 FROM scheduled_interviews si
@@ -4407,8 +4413,15 @@ app.get("/api/applicants/:userId/applications", authenticateToken, requireUserOr
         ? "closed"
         : row.status;
 
+      const hasInterview = Boolean(row.scheduled_interview) || Boolean(row.had_interview);
+      const wasShortlisted = Boolean(row.was_shortlisted) ||
+        ["shortlisted", "interviewing", "interview"].includes(String(row.status || "").toLowerCase()) ||
+        ["shortlisted", "interviewing", "interview"].includes(String(row.previous_status || "").toLowerCase());
+
       return {
         ...row,
+        was_shortlisted: wasShortlisted,
+        had_interview: hasInterview,
         status: effectiveStatus,
         rating: row.rating ? Number(row.rating).toFixed(1) : null,
         offer_letter: row.decision_message_type === "formal_offer" ? (row.decision_message || null) : null,
@@ -4991,15 +5004,21 @@ app.put("/api/applications/:id/status", authenticateToken, requireApplicationDec
 
       const msgType = isApproved ? "formal_offer" : (message_type === "manual" ? "manual" : "automated");
 
+      const wasShortlisted = Boolean(existing.was_shortlisted) || ["shortlisted", "interviewing", "interview"].includes(currentStatus);
+      const hadInterview = Boolean(existing.had_interview) || ["interviewing", "interview"].includes(currentStatus);
+
       await run(
         `UPDATE applications
          SET status = ?,
              decision_message = ?,
              decision_message_type = ?,
              decided_at = CURRENT_TIMESTAMP,
+             previous_status = ?,
+             was_shortlisted = ?,
+             had_interview = ?,
              updated_at = CURRENT_TIMESTAMP
          WHERE id = ?`,
-        [cleanStatus, finalMsg, msgType, applicationId]
+        [cleanStatus, finalMsg, msgType, currentStatus, wasShortlisted, hadInterview, applicationId]
       );
 
       const notifType = isApproved ? "formal_offer" : "application_denied";
@@ -5054,9 +5073,18 @@ app.put("/api/applications/:id/status", authenticateToken, requireApplicationDec
     }
 
     // Otherwise, normal update (e.g. moving between pending and shortlisted)
+    const markShortlisted = cleanStatus === "shortlisted" || cleanStatus === "interviewing" || Boolean(existing.was_shortlisted);
+    const markInterview = cleanStatus === "interviewing" || Boolean(existing.had_interview);
+
     await run(
-      "UPDATE applications SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-      [cleanStatus, applicationId]
+      `UPDATE applications
+       SET status = ?,
+           previous_status = COALESCE(previous_status, ?),
+           was_shortlisted = ?,
+           had_interview = ?,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [cleanStatus, currentStatus, markShortlisted, markInterview, applicationId]
     );
 
     res.json({ success: true, id: applicationId, status: cleanStatus });
@@ -7296,7 +7324,7 @@ app.post("/api/interviews", async (req, res) => {
     const appIdFromReq = req.body?.application_id ? Number(req.body.application_id) : null;
     if (appIdFromReq) {
       await run(
-        `UPDATE applications SET status = 'interviewing', updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        `UPDATE applications SET status = 'interviewing', was_shortlisted = TRUE, had_interview = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
         [appIdFromReq]
       ).catch(() => {});
     } else {
@@ -7305,7 +7333,7 @@ app.post("/api/interviews", async (req, res) => {
         if (jobPostId) {
           await run(
             `UPDATE applications 
-             SET status = 'interviewing', updated_at = CURRENT_TIMESTAMP 
+             SET status = 'interviewing', was_shortlisted = TRUE, had_interview = TRUE, updated_at = CURRENT_TIMESTAMP 
              WHERE applicant_user_id = ? AND job_post_id = ? AND lower(status) IN ('submitted', 'pending', 'shortlisted')`,
             [cid, jobPostId]
           ).catch(() => {});
@@ -7719,7 +7747,7 @@ async function resetAndSeedZakiAccounts() {
 
   try {
     await run("CREATE TABLE IF NOT EXISTS system_migrations (name TEXT PRIMARY KEY, executed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP)");
-    const alreadyRun = await get("SELECT name FROM system_migrations WHERE name = 'zaki_accounts_reset_v1'");
+    const alreadyRun = await get("SELECT name FROM system_migrations WHERE name = 'zaki_accounts_reset_v2'");
     if (alreadyRun) {
       console.log("[Zaki Accounts] Already seeded previously. Skipping.");
       return;
@@ -7992,7 +8020,7 @@ async function resetAndSeedZakiAccounts() {
       [employerId, applicantId, job1Id]
     ).catch(() => {});
 
-    await run("INSERT INTO system_migrations (name) VALUES ('zaki_accounts_reset_v1') ON CONFLICT (name) DO NOTHING");
+    await run("INSERT INTO system_migrations (name) VALUES ('zaki_accounts_reset_v2') ON CONFLICT (name) DO NOTHING");
 
     console.log("[Zaki Accounts Migration] Successfully completed reset and seeding for Zaki accounts!");
   } catch (err) {
@@ -8002,7 +8030,7 @@ async function resetAndSeedZakiAccounts() {
 
 app.post("/api/admin/reset-zaki-accounts", async (req, res) => {
   try {
-    await run("DELETE FROM system_migrations WHERE name = 'zaki_accounts_reset_v1'").catch(() => {});
+    await run("DELETE FROM system_migrations WHERE name = 'zaki_accounts_reset_v2'").catch(() => {});
     await resetAndSeedZakiAccounts();
     return res.json({ success: true, message: "Zaki accounts reset and full interactions seeded successfully!" });
   } catch (err) {
@@ -8148,14 +8176,14 @@ async function ensureMeetingsForZakiAccounts() {
     let appA = await get("SELECT id FROM applications WHERE applicant_user_id = ? AND job_post_id = ?", [applicant.id, jobA.id]);
     if (!appA) {
       await run(
-        `INSERT INTO applications (job_post_id, applicant_user_id, status, submitted_at, updated_at)
-         VALUES (?, ?, 'shortlisted', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        `INSERT INTO applications (job_post_id, applicant_user_id, status, submitted_at, was_shortlisted, had_interview, previous_status, updated_at)
+         VALUES (?, ?, 'shortlisted', CURRENT_TIMESTAMP, TRUE, FALSE, 'submitted', CURRENT_TIMESTAMP)`,
         [jobA.id, applicant.id]
       );
     } else {
       await run(
-        `UPDATE applications SET status = 'shortlisted', decision_message = NULL, decision_message_type = NULL,
-         response_letter = NULL, response_decision = NULL, responded_at = NULL, start_date = NULL, updated_at = CURRENT_TIMESTAMP
+        `UPDATE applications SET status = 'shortlisted', was_shortlisted = TRUE, had_interview = FALSE, previous_status = 'submitted',
+         decision_message = NULL, decision_message_type = NULL, response_letter = NULL, response_decision = NULL, responded_at = NULL, start_date = NULL, updated_at = CURRENT_TIMESTAMP
          WHERE id = ?`,
         [appA.id]
       );
@@ -8165,14 +8193,14 @@ async function ensureMeetingsForZakiAccounts() {
     let appB = await get("SELECT id FROM applications WHERE applicant_user_id = ? AND job_post_id = ?", [applicant.id, jobB.id]);
     if (!appB) {
       await run(
-        `INSERT INTO applications (job_post_id, applicant_user_id, status, submitted_at, updated_at)
-         VALUES (?, ?, 'interviewing', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        `INSERT INTO applications (job_post_id, applicant_user_id, status, submitted_at, was_shortlisted, had_interview, previous_status, updated_at)
+         VALUES (?, ?, 'interviewing', CURRENT_TIMESTAMP, TRUE, TRUE, 'shortlisted', CURRENT_TIMESTAMP)`,
         [jobB.id, applicant.id]
       );
     } else {
       await run(
-        `UPDATE applications SET status = 'interviewing', decision_message = NULL, decision_message_type = NULL,
-         response_letter = NULL, response_decision = NULL, responded_at = NULL, start_date = NULL, updated_at = CURRENT_TIMESTAMP
+        `UPDATE applications SET status = 'interviewing', was_shortlisted = TRUE, had_interview = TRUE, previous_status = 'shortlisted',
+         decision_message = NULL, decision_message_type = NULL, response_letter = NULL, response_decision = NULL, responded_at = NULL, start_date = NULL, updated_at = CURRENT_TIMESTAMP
          WHERE id = ?`,
         [appB.id]
       );
@@ -8255,8 +8283,9 @@ async function ensureMeetingsForZakiAccounts() {
       await run(
         `INSERT INTO applications (
           job_post_id, applicant_user_id, status, submitted_at, decided_at,
-          decision_message, decision_message_type, start_date, response_decision, response_letter, responded_at, updated_at
-        ) VALUES (?, ?, 'approved', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'formal_offer', '2026-11-16', NULL, NULL, NULL, CURRENT_TIMESTAMP)`,
+          decision_message, decision_message_type, start_date, response_decision, response_letter, responded_at,
+          was_shortlisted, had_interview, previous_status, updated_at
+        ) VALUES (?, ?, 'approved', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'formal_offer', '2026-11-16', NULL, NULL, NULL, FALSE, FALSE, 'submitted', CURRENT_TIMESTAMP)`,
         [jobC.id, applicant.id, offerLetterTextC]
       );
     } else {
@@ -8270,6 +8299,9 @@ async function ensureMeetingsForZakiAccounts() {
           response_decision = NULL,
           response_letter = NULL,
           responded_at = NULL,
+          was_shortlisted = FALSE,
+          had_interview = FALSE,
+          previous_status = 'submitted',
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ?`,
         [offerLetterTextC, appC.id]
@@ -8285,8 +8317,9 @@ async function ensureMeetingsForZakiAccounts() {
       await run(
         `INSERT INTO applications (
           job_post_id, applicant_user_id, status, submitted_at, decided_at,
-          decision_message, decision_message_type, start_date, response_decision, response_letter, responded_at, updated_at
-        ) VALUES (?, ?, 'accepted', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'formal_offer', '2026-12-01', 'accept', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+          decision_message, decision_message_type, start_date, response_decision, response_letter, responded_at,
+          was_shortlisted, had_interview, previous_status, updated_at
+        ) VALUES (?, ?, 'accepted', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'formal_offer', '2026-12-01', 'accept', ?, CURRENT_TIMESTAMP, FALSE, FALSE, 'submitted', CURRENT_TIMESTAMP)`,
         [jobD.id, applicant.id, offerLetterTextD, acceptLetterTextD]
       );
     } else {
@@ -8300,6 +8333,9 @@ async function ensureMeetingsForZakiAccounts() {
           response_decision = 'accept',
           response_letter = ?,
           responded_at = CURRENT_TIMESTAMP,
+          was_shortlisted = FALSE,
+          had_interview = FALSE,
+          previous_status = 'submitted',
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ?`,
         [offerLetterTextD, acceptLetterTextD, appD.id]

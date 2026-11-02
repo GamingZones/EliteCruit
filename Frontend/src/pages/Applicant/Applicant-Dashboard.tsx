@@ -295,9 +295,22 @@ function getApplicationTimelineSteps(app: any) {
     } catch {}
   }
 
-  const isShortlistedOrBeyond = ["shortlisted", "interviewing", "interview", "recruited", "approved", "accepted", "denied", "rejected", "withdrawn"].includes(status);
-  const isInterviewStage = ["interviewing", "interview"].includes(status) || Boolean(interview);
   const isFinalDecision = ["approved", "accepted", "recruited", "denied", "rejected", "withdrawn"].includes(status);
+  const isApproved = ["approved", "accepted", "recruited"].includes(status);
+  const isDenied = ["denied", "rejected", "withdrawn"].includes(status);
+
+  // Check if candidate actually passed through shortlisted / interview stages
+  const wasShortlisted = Boolean(app?.was_shortlisted) ||
+    ["shortlisted", "interviewing", "interview"].includes(String(app?.previous_status || "").toLowerCase()) ||
+    ["shortlisted", "interviewing", "interview"].includes(status);
+
+  const hadInterview = Boolean(app?.had_interview) ||
+    ["interviewing", "interview"].includes(String(app?.previous_status || "").toLowerCase()) ||
+    ["interviewing", "interview"].includes(status) ||
+    Boolean(interview) ||
+    Boolean(app?.interview_date);
+
+  const isInterviewStage = ["interviewing", "interview"].includes(status) || Boolean(interview);
 
   // Compute a clean chronological fallback interview date if one isn't explicitly saved
   const fallbackInterviewDate = app?.interview_date
@@ -315,27 +328,47 @@ function getApplicationTimelineSteps(app: any) {
     },
     {
       title: "Candidate Screening & Shortlist",
-      description: isShortlistedOrBeyond
+      description: isFinalDecision && !wasShortlisted
+        ? "Stage bypassed — Employer opted for immediate direct hiring decision."
+        : wasShortlisted
         ? "Profile screened and candidate shortlisted by recruitment team."
         : (status === "under_review" || status === "reviewed")
         ? "Application is under active candidate screening."
         : "Pending initial profile review by hiring manager.",
-      timestamp: isShortlistedOrBeyond ? (app?.updated_at ? formatDate(app.updated_at) : "Completed") : null,
-      state: isShortlistedOrBeyond ? ("completed" as const) : ("active" as const),
+      timestamp: wasShortlisted
+        ? (app?.updated_at ? formatDate(app.updated_at) : "Completed")
+        : isFinalDecision
+        ? "Bypassed"
+        : null,
+      state: isFinalDecision && !wasShortlisted
+        ? ("bypassed" as const)
+        : wasShortlisted
+        ? ("completed" as const)
+        : ("active" as const),
     },
     {
       title: "Interviewing",
-      description: interview
+      description: isFinalDecision && !hadInterview
+        ? "Stage bypassed — Interview evaluation was waived by employer for direct decision."
+        : interview
         ? `${interview.interview_stage || "Technical Interview"} (${interview.interview_type || "On-Site"})${interview.interview_date ? ` scheduled for ${interview.interview_date} ${interview.start_time ? `at ${interview.start_time}` : ""}` : ""}`
-        : (["interviewing", "interview"].includes(status)
-          ? "Candidate advanced to active interview evaluation stage."
-          : (isFinalDecision
-            ? "Technical & Competency Interview conducted with hiring manager."
-            : (status === "shortlisted"
-              ? "Candidate shortlisted. Awaiting interview schedule or hiring update."
-              : "Awaiting interview invitation from hiring team."))),
-      timestamp: interview?.interview_date ? formatDate(interview.interview_date) : (isFinalDecision ? fallbackInterviewDate : null),
-      state: isFinalDecision
+        : hadInterview && isFinalDecision
+        ? "Technical & competency interview conducted with hiring manager."
+        : isInterviewStage
+        ? "Candidate advanced to active interview evaluation stage."
+        : wasShortlisted
+        ? "Candidate shortlisted. Awaiting interview schedule or hiring update."
+        : "Awaiting interview invitation from hiring team.",
+      timestamp: interview?.interview_date
+        ? formatDate(interview.interview_date)
+        : (hadInterview && isFinalDecision)
+        ? fallbackInterviewDate
+        : isFinalDecision && !hadInterview
+        ? "Waived"
+        : null,
+      state: isFinalDecision && !hadInterview
+        ? ("bypassed" as const)
+        : isFinalDecision && hadInterview
         ? ("completed" as const)
         : isInterviewStage
         ? ("active" as const)
@@ -372,7 +405,7 @@ function getApplicationTimelineSteps(app: any) {
         : "Pending final review and formal employment offer.",
       timestamp: decidedDate,
       state: isFinalDecision
-        ? (status === "denied" || status === "rejected" || status === "withdrawn" ? "concluded" as const : "completed" as const)
+        ? (isDenied ? ("concluded" as const) : ("completed" as const))
         : ("upcoming" as const),
     },
   ];
@@ -448,6 +481,7 @@ function ApplicationCardTimeline({
             const isCompleted = step.state === "completed";
             const isActive = step.state === "active";
             const isConcluded = step.state === "concluded";
+            const isBypassed = step.state === "bypassed";
             const isHovered = hoveredStepIndex === idx;
 
             return (
@@ -464,13 +498,16 @@ function ApplicationCardTimeline({
                     </svg>
                   )}
                   {isConcluded && (
-                    <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="18" y1="6" x2="6" y2="18" />
                       <line x1="6" y1="6" x2="18" y2="18" />
                     </svg>
                   )}
+                  {isBypassed && (
+                    <span className="card-timeline-bypassed-dash" title="Stage Bypassed">—</span>
+                  )}
                   {isActive && <span className="card-timeline-pulse-core" />}
-                  {!isCompleted && !isConcluded && !isActive && <span className="card-timeline-dot-core" />}
+                  {!isCompleted && !isConcluded && !isActive && !isBypassed && <span className="card-timeline-dot-core" />}
                 </div>
 
                 {/* Floating Information Tooltip: ONLY shows on hover */}
@@ -484,7 +521,15 @@ function ApplicationCardTimeline({
                     {step.description && <p className="popover-desc">{step.description}</p>}
                     <div className="popover-status-badge">
                       <span className={`popover-pill ${step.state}`}>
-                        {isCompleted ? "Completed" : isActive ? "Current Stage" : isConcluded ? "Concluded" : "Upcoming"}
+                        {isCompleted
+                          ? "Completed"
+                          : isConcluded
+                          ? "Concluded"
+                          : isBypassed
+                          ? "Bypassed / Waived"
+                          : isActive
+                          ? "Current Stage"
+                          : "Upcoming"}
                       </span>
                     </div>
                   </div>
@@ -1540,7 +1585,7 @@ export default function ApplicantDashboard() {
                     onOpenTimeline={() => setTimelineModalApp(app)}
                   />
                 </div>
-                <div className="job-actions">
+                <div className="app-card-actions">
                   {(() => {
                     const hasFormalOffer = Boolean(
                       app.offer_letter ||
@@ -1575,6 +1620,7 @@ export default function ApplicantDashboard() {
                         <button
                           type="button"
                           className="solid-btn offer-letter-action-btn"
+                          title="Review formal offer letter and respond"
                           onClick={() => {
                             setAppDecisionModalTarget({
                               app,
@@ -1582,7 +1628,7 @@ export default function ApplicantDashboard() {
                             });
                           }}
                         >
-                          <span>Formal Offer Letter</span>
+                          <span>Offer Letter</span>
                         </button>
                       );
                     }
@@ -1954,6 +2000,8 @@ export default function ApplicantDashboard() {
                           <line x1="18" y1="6" x2="6" y2="18" />
                           <line x1="6" y1="6" x2="18" y2="18" />
                         </svg>
+                      ) : step.state === "bypassed" ? (
+                        <span className="step-num step-bypassed">—</span>
                       ) : (
                         <span className="step-num">{idx + 1}</span>
                       )}
