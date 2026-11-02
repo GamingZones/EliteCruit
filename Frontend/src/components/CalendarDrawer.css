@@ -86,8 +86,8 @@
   top: 0;
   right: 0;
   bottom: 0;
-  width: 480px;
-  max-width: 95vw;
+  width: 500px;
+  max-width: 96vw;
   height: 100vh;
   background: #ffffff;
   box-shadow: -10px 0 40px rgba(0, 20, 45, 0.3);
@@ -646,15 +646,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
+  row-gap: 8px;
   padding-top: 8px;
   border-top: 1px solid #f1f5f9;
+  flex-wrap: wrap;
 }
 
 .interview-card-left-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+  flex-shrink: 0;
 }
 
 
@@ -693,8 +696,10 @@
 .interview-card-right-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 5px;
+  row-gap: 6px;
   margin-left: auto;
+  flex-wrap: wrap;
 }
 
 /* Unified Card Action Buttons - Perfect Height, Font, and Alignment Match */
@@ -709,9 +714,9 @@
   align-items: center !important;
   justify-content: center !important;
   white-space: nowrap !important;
-  padding: 0 11px !important;
+  padding: 0 8px !important;
   border-radius: 6px !important;
-  font-size: 0.78rem !important;
+  font-size: 0.76rem !important;
   font-weight: 700 !important;
   font-family: inherit !important;
   line-height: 1 !important;
@@ -725,7 +730,7 @@
   background: #f0f9ff;
   border: 1px solid #0284c7;
   color: #0284c7;
-  gap: 6px;
+  gap: 5px;
 }
 
 .int-candidate-list-btn:hover {

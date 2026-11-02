@@ -3533,7 +3533,7 @@ function InterviewItemCard({
           <div className="interview-card-right-actions">
             {/* Action buttons (Reschedule & Cancel with Reason) */}
             {(isPending || isAccepted || applicantStatus === "scheduled") && (
-              <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+              <div style={{ display: "flex", gap: "5px", alignItems: "center", flexWrap: "wrap" }}>
                 <button
                   type="button"
                   className="int-card-btn int-btn-reschedule"
