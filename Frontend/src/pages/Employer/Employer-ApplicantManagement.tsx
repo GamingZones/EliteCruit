@@ -2515,6 +2515,7 @@ export default function EmployerApplicantManagement() {
 
   const employerJobsList = useMemo(() => {
     return Object.values(allJobsMap).map((j: any) => ({
+      ...j,
       id: j.id,
       title: j.title || "Job Position",
       location: j.location || "Cavite",

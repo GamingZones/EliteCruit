@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import "./EmployerApplicantDetailsModal.css";
+import { JobDetailsModal, type JobModalData } from "../../components/modals";
 import {
   isSkillMatch,
   isCertificationMatch,
@@ -1857,99 +1858,49 @@ export default function EmployerApplicantDetailsModal({
       )}
     </div>
     {renderBreakdownPopupModal()}
-    {/* ── Preview Job Details Modal (Popup on top) ── */}
-    {selectedPreviewJob && (
-      <div
-        className="cand-details-overlay"
-        style={{
-          position: "fixed",
-          inset: 0,
-          background: "rgba(10, 30, 50, 0.68)",
-          backdropFilter: "blur(5px)",
-          WebkitBackdropFilter: "blur(5px)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 35000,
-          padding: "24px",
-          fontFamily: '"Inter", sans-serif',
-        }}
-        onClick={() => setSelectedPreviewJob(null)}
-      >
-        <div
-          className="jd-details-side-card"
-          style={{
-            background: "#ffffff",
-            borderRadius: "16px",
-            width: "100%",
-            maxWidth: "540px",
-            maxHeight: "85vh",
-            display: "flex",
-            flexDirection: "column",
-            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.35)",
-            overflow: "hidden",
-            position: "relative",
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div
-            className="jd-details-side-header"
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "16px 24px",
-              borderBottom: "1px solid #f1f5f9",
-              background: "#f8fbff",
-            }}
-          >
-            <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a" }}>Job Details</h3>
-            <button
-              type="button"
-              className="side-close-btn"
-              onClick={() => setSelectedPreviewJob(null)}
-              aria-label="Close"
-            >
-              ✕
-            </button>
-          </div>
-          <div style={{ padding: "20px 24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "14px", flex: 1 }}>
-            <h4 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#01294a" }}>{selectedPreviewJob.title}</h4>
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
-              <span className="jd-side-setup-pill" style={{ background: "#e0f2fe", color: "#0369a1", padding: "4px 12px", borderRadius: "999px", fontSize: "0.78rem", fontWeight: 700 }}>
-                {selectedPreviewJob.work_arrangement || "On-Site"}
-              </span>
-              {selectedPreviewJob.location && (
-                <span style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>
-                  {selectedPreviewJob.location}
-                </span>
-              )}
-              {selectedPreviewJob.salary_min && (
-                <span style={{ background: "#fef3c7", color: "#b45309", padding: "4px 12px", borderRadius: "999px", fontSize: "0.78rem", fontWeight: 700 }}>
-                  PHP {Number(selectedPreviewJob.salary_min).toLocaleString()} - {Number(selectedPreviewJob.salary_max).toLocaleString()}
-                </span>
-              )}
-            </div>
-            {selectedPreviewJob.description && (
-              <div>
-                <strong style={{ fontSize: "0.85rem", color: "#475569" }}>Description</strong>
-                <p style={{ margin: "4px 0 0", fontSize: "0.88rem", lineHeight: 1.5, color: "#334155" }}>{selectedPreviewJob.description}</p>
-              </div>
-            )}
-            {(selectedPreviewJob.required_skills || selectedPreviewJob.skills) && (
-              <div>
-                <strong style={{ fontSize: "0.85rem", color: "#475569" }}>Required Skills</strong>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "6px" }}>
-                  {parseItemList(selectedPreviewJob.required_skills || selectedPreviewJob.skills).map((s: string, idx: number) => (
-                    <span key={idx} style={{ background: "#f1f5f9", padding: "3px 10px", borderRadius: "6px", fontSize: "0.78rem", fontWeight: 600, color: "#1e293b" }}>{s}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    )}
+    {/* ── Standardized Job Details Modal (from JobDetailsModal.tsx) ── */}
+    <JobDetailsModal
+      isOpen={Boolean(selectedPreviewJob)}
+      onClose={() => setSelectedPreviewJob(null)}
+      job={selectedPreviewJob ? {
+        id: selectedPreviewJob.id,
+        title: selectedPreviewJob.title,
+        company: selectedPreviewJob.company || selectedPreviewJob.company_name,
+        employerUserId: selectedPreviewJob.employerUserId || selectedPreviewJob.employer_user_id || currentEmployerUserId,
+        companyLogoPath: selectedPreviewJob.companyLogoPath || selectedPreviewJob.company_logo_path,
+        companyCoverPath: selectedPreviewJob.companyCoverPath || selectedPreviewJob.company_cover_path,
+        location: selectedPreviewJob.location,
+        rating: selectedPreviewJob.rating,
+        status: selectedPreviewJob.status || "open",
+        urgent: Boolean(selectedPreviewJob.urgent || selectedPreviewJob.is_urgent),
+        setup: selectedPreviewJob.work_arrangement || selectedPreviewJob.setup || "On-Site",
+        work_arrangement: selectedPreviewJob.work_arrangement,
+        salary_min: selectedPreviewJob.salary_min,
+        salary_max: selectedPreviewJob.salary_max,
+        experience_level: selectedPreviewJob.experience_level || selectedPreviewJob.experienceLevel,
+        summary: selectedPreviewJob.summary || selectedPreviewJob.description,
+        description: selectedPreviewJob.description || selectedPreviewJob.summary,
+        required_skills: selectedPreviewJob.required_skills || selectedPreviewJob.skills,
+        skills: selectedPreviewJob.skills || selectedPreviewJob.required_skills,
+        qualifications: selectedPreviewJob.qualifications,
+        certifications: selectedPreviewJob.certifications,
+        applicantCount: selectedPreviewJob.applicantCount ?? selectedPreviewJob.applicant_count ?? 0,
+        applicationLimit: selectedPreviewJob.applicationLimit ?? selectedPreviewJob.application_limit,
+        closeDate: selectedPreviewJob.closeDate || selectedPreviewJob.close_date,
+        faqs: selectedPreviewJob.faqs || [],
+      } : null}
+      applicantProfile={{
+        desiredJobTitle: candidate?.desired_job_title || candidate?.job_title,
+        workArrangement: candidate?.work_arrangement,
+        expectedSalary: Number(candidate?.expected_salary) || 0,
+        skills: candidate?.skills,
+        qualifications: candidate?.qualifications,
+        certifications: candidate?.certifications,
+        nearbyLocation: candidate?.nearby_location,
+        preferredLocations: candidate?.preferred_locations,
+      }}
+      zIndex={45000}
+    />
   </div>
   );
 }
