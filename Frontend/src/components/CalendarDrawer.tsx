@@ -1896,6 +1896,18 @@ export default function CalendarDrawer({
                     </div>
                   </div>
 
+                  {/* Active Meeting Context Banner (When opened from Meeting Candidate List) */}
+                  {activeMeetingCandidatesModal && (
+                    <div className="applicant-details-meeting-strip">
+                      <span className="applicant-meeting-context-badge">
+                        {activeMeetingCandidatesModal.interview_type || "On-Site"} Interview
+                      </span>
+                      <span className="applicant-meeting-context-text">
+                        Scheduled for <strong>{activeMeetingCandidatesModal.job_title || activeMeetingCandidatesModal.interview_title}</strong> on <strong>{formatDisplayDate(activeMeetingCandidatesModal.interview_date)}</strong> at <strong>{formatDisplayTime(activeMeetingCandidatesModal.start_time)} – {formatDisplayTime(activeMeetingCandidatesModal.end_time)}</strong>
+                      </span>
+                    </div>
+                  )}
+
                   {/* 4-SECTION NAVIGATION TABS (Matching Applicant Profile Design) */}
                   <div className="cand-modal-nav-wrap">
                     <nav className="profile-section-nav cand-modal-tabs" aria-label="Profile Sections">
@@ -2401,7 +2413,13 @@ export default function CalendarDrawer({
                   {/* Footer */}
                   <div className="applicant-details-footer">
                     <div className="applicant-footer-meta">
-                      <span><strong>Target Job:</strong> {employerJobs.find((j) => String(j.id) === formJobId)?.title || viewingApplicantDetails.job_title || "Job Position"}</span>
+                      <span>
+                        <strong>Target Job:</strong>{" "}
+                        {activeMeetingCandidatesModal?.job_title ||
+                          employerJobs.find((j) => String(j.id) === formJobId)?.title ||
+                          viewingApplicantDetails.job_title ||
+                          "Job Position"}
+                      </span>
                     </div>
 
                     <div className="applicant-footer-actions">
@@ -2422,17 +2440,19 @@ export default function CalendarDrawer({
                       >
                         Close
                       </button>
-                      <button
-                        type="button"
-                        className={`applicant-details-toggle-select-btn ${selectedCandidateUserIds.includes(viewingApplicantDetails.user_id) ? "selected" : ""}`}
-                        onClick={() => {
-                          toggleCandidateSelection(viewingApplicantDetails.user_id);
-                        }}
-                      >
-                        {selectedCandidateUserIds.includes(viewingApplicantDetails.user_id)
-                          ? "✓ Selected for On-Site Interview"
-                          : "+ Select for On-Site Interview"}
-                      </button>
+                      {!activeMeetingCandidatesModal && (
+                        <button
+                          type="button"
+                          className={`applicant-details-toggle-select-btn ${selectedCandidateUserIds.includes(viewingApplicantDetails.user_id) ? "selected" : ""}`}
+                          onClick={() => {
+                            toggleCandidateSelection(viewingApplicantDetails.user_id);
+                          }}
+                        >
+                          {selectedCandidateUserIds.includes(viewingApplicantDetails.user_id)
+                            ? "✓ Selected for On-Site Interview"
+                            : "+ Select for On-Site Interview"}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

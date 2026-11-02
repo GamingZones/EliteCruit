@@ -3283,3 +3283,112 @@
   background: #064e3b !important;
   color: #34d399 !important;
 }
+
+/* ==========================================================================
+   APPLICANT DETAILS MODAL: MEETING CONTEXT STRIP & ENHANCED DARK THEME
+   ========================================================================== */
+.applicant-details-meeting-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 24px;
+  background: #f0fdf4;
+  border-bottom: 1px solid #bbf7d0;
+  font-size: 0.84rem;
+  color: #166534;
+}
+
+.applicant-meeting-context-badge {
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.applicant-meeting-context-text {
+  color: #166534;
+  font-size: 0.84rem;
+}
+
+.applicant-meeting-context-text strong {
+  color: #14532d;
+}
+
+/* Dark Mode Overrides (Strict Rule 9) */
+[data-theme="dark"] .applicant-details-meeting-strip {
+  background: #064e3b !important;
+  border-bottom: 1px solid #047857 !important;
+  color: #a7f3d0 !important;
+}
+
+[data-theme="dark"] .applicant-meeting-context-badge {
+  background: #059669 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .applicant-meeting-context-text {
+  color: #d1fae5 !important;
+}
+
+[data-theme="dark"] .applicant-meeting-context-text strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .cand-info-label {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .cand-info-val {
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .cand-info-val.highlight {
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .setup-pill {
+  background: #242735 !important;
+  border-color: #3b4259 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .cand-exp-banner {
+  background: #181a22 !important;
+  border-color: #2e3244 !important;
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .cand-work-exp-card {
+  background: #1c1e27 !important;
+  border-color: #2e3244 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .cand-exp-title {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .cand-exp-company {
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .cand-exp-loc,
+[data-theme="dark"] .cand-exp-period,
+[data-theme="dark"] .cand-exp-skills-label {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .cand-exp-type-pill {
+  background: #242735 !important;
+  border-color: #3b4259 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .cand-exp-bullet-line {
+  color: #cbd5e1 !important;
+}
