@@ -295,7 +295,8 @@ function getApplicationTimelineSteps(app: any) {
     } catch {}
   }
 
-  const isReviewed = ["reviewed", "under_review", "shortlisted", "recruited", "approved", "accepted", "denied", "rejected"].includes(status);
+  const isShortlistedOrBeyond = ["shortlisted", "interviewing", "interview", "recruited", "approved", "accepted", "denied", "rejected", "withdrawn"].includes(status);
+  const isInterviewStage = ["interviewing", "interview"].includes(status) || Boolean(interview);
   const isFinalDecision = ["approved", "accepted", "recruited", "denied", "rejected", "withdrawn"].includes(status);
 
   // Compute a clean chronological fallback interview date if one isn't explicitly saved
@@ -313,14 +314,14 @@ function getApplicationTimelineSteps(app: any) {
       state: "completed" as const,
     },
     {
-      title: "Candidate Screening & Review",
-      description: isReviewed
-        ? (["shortlisted", "interviewing", "interview", "recruited", "approved", "accepted"].includes(status)
-          ? "Profile screened and candidate shortlisted by recruitment team."
-          : "Application is under active candidate screening.")
+      title: "Candidate Screening & Shortlist",
+      description: isShortlistedOrBeyond
+        ? "Profile screened and candidate shortlisted by recruitment team."
+        : (status === "under_review" || status === "reviewed")
+        ? "Application is under active candidate screening."
         : "Pending initial profile review by hiring manager.",
-      timestamp: isReviewed ? (app.updated_at ? formatDate(app.updated_at) : "Completed") : null,
-      state: isReviewed ? ("completed" as const) : ("active" as const),
+      timestamp: isShortlistedOrBeyond ? (app?.updated_at ? formatDate(app.updated_at) : "Completed") : null,
+      state: isShortlistedOrBeyond ? ("completed" as const) : ("active" as const),
     },
     {
       title: "Interviewing",
@@ -330,15 +331,13 @@ function getApplicationTimelineSteps(app: any) {
           ? "Candidate advanced to active interview evaluation stage."
           : (isFinalDecision
             ? "Technical & Competency Interview conducted with hiring manager."
-            : (isReviewed
-              ? "Hiring team is finalizing interview schedule details."
+            : (status === "shortlisted"
+              ? "Candidate shortlisted. Awaiting interview schedule or hiring update."
               : "Awaiting interview invitation from hiring team."))),
       timestamp: interview?.interview_date ? formatDate(interview.interview_date) : (isFinalDecision ? fallbackInterviewDate : null),
-      state: (interview || ["interviewing", "interview"].includes(status))
-        ? ("active" as const)
-        : isFinalDecision
+      state: isFinalDecision
         ? ("completed" as const)
-        : isReviewed
+        : isInterviewStage
         ? ("active" as const)
         : ("upcoming" as const),
     },
@@ -394,6 +393,7 @@ function ApplicationCardTimeline({
 }) {
   const steps = getApplicationTimelineSteps(app);
   const [hoveredStepIndex, setHoveredStepIndex] = useState<number | null>(null);
+  const status = (app?.status || "submitted").toLowerCase();
 
   // Compute progress line width (3 intervals between 4 steps: 0%, 33.33%, 66.66%, 100%)
   const lastCompletedIndex = steps.reduce(
@@ -401,15 +401,19 @@ function ApplicationCardTimeline({
     -1
   );
   const activeIndex = steps.findIndex((s) => s.state === "active");
+  const isFinalDecision = ["approved", "accepted", "recruited", "denied", "rejected", "withdrawn"].includes(status);
 
   let progressPct = 0;
-  if (lastCompletedIndex === 3) {
+  if (isFinalDecision || lastCompletedIndex === 3) {
     progressPct = 100;
+  } else if (status === "interviewing" || status === "interview" || activeIndex === 2) {
+    progressPct = 66.67;
+  } else if (status === "shortlisted" || (lastCompletedIndex === 1 && activeIndex === -1)) {
+    progressPct = 33.33;
+  } else if (activeIndex === 1) {
+    progressPct = 16.67;
   } else if (lastCompletedIndex >= 0) {
-    const effectiveIndex = activeIndex > lastCompletedIndex ? activeIndex - 0.5 : lastCompletedIndex;
-    progressPct = Math.min(100, Math.max(0, (effectiveIndex / 3) * 100));
-  } else if (activeIndex >= 0) {
-    progressPct = 15;
+    progressPct = Math.min(100, Math.max(0, (lastCompletedIndex / 3) * 100));
   }
 
   return (
