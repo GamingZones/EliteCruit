@@ -1019,6 +1019,8 @@ export type Candidate = {
   profile_picture_path?: string | null;
   applied_count?: number;
   latest_application_status?: string | null;
+  application_status?: string | null;
+  invitation_status?: string | null;
   distance_km?: number;
   latitude?: number | string | null;
   longitude?: number | string | null;
@@ -1752,11 +1754,32 @@ export default function EmployerApplicantFinder() {
   };
 
   const openCandidateRecruit = (cand: Candidate) => {
-    if (activeJobs.length === 0) {
-      setWarningPopup("You have no active job postings. Please create and publish a job posting before recruiting candidates.");
+    if (activeJobs.length === 0 && currentEmployerId) {
+      fetch(`/api/employers/${currentEmployerId}/job-posts`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (Array.isArray(d?.jobPosts)) {
+            const openJobs = d.jobPosts.filter((j: any) => j.status === "open" || !j.status);
+            setActiveJobs(openJobs);
+            if (openJobs.length === 0) {
+              setWarningPopup("You have no active job postings. Please create and publish a job posting before inviting candidates.");
+              return;
+            }
+          }
+        })
+        .catch(() => {});
+    } else if (activeJobs.length === 0) {
+      setWarningPopup("You have no active job postings. Please create and publish a job posting before inviting candidates.");
       return;
     }
-    openInviteModal(cand, typeof selectedJobId === "number" ? selectedJobId : undefined);
+
+    setSelectedCandidate(cand);
+    setIsDocsDrawerOpen(false);
+    setIsPreviewingDoc(false);
+    setIsMatchDrawerOpen(false);
+    setIsMessagePanelOpen(false);
+    setIsOtherJobsOpen(true);
+    setIsOtherJobsClosing(false);
   };
 
   const handleSendCandidateMessage = async (e?: React.FormEvent) => {
@@ -3757,23 +3780,21 @@ export default function EmployerApplicantFinder() {
                                 Details
                               </button>
 
-                              {invitedCandidateIds.includes(cand.user_id) || cand.invitation_status === "accepted" || cand.application_status === "recruited" || cand.invitation_status === "recruited" ? (
+                              {cand.invitation_status === "accepted" || cand.application_status === "recruited" || cand.invitation_status === "recruited" ? (
                                 <button
                                   type="button"
-                                  className="finder-card-btn btn-invite"
+                                  className="finder-card-btn btn-invite status-recruited"
                                   disabled
-                                  style={{ background: "#e2e8f0", color: "#64748b", border: "1px solid #cbd5e1", cursor: "not-allowed" }}
                                 >
                                   ✓ Recruited
                                 </button>
-                              ) : cand.invitation_status === "pending" ? (
+                              ) : cand.invitation_status === "pending" || invitedCandidateIds.includes(cand.user_id) ? (
                                 <button
                                   type="button"
-                                  className="finder-card-btn btn-invite"
+                                  className="finder-card-btn btn-invite status-invited"
                                   disabled
-                                  style={{ background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a", cursor: "not-allowed" }}
                                 >
-                                  Invitation Sent
+                                  ✓ Invitation Sent
                                 </button>
                               ) : (
                                 <button
@@ -3781,7 +3802,7 @@ export default function EmployerApplicantFinder() {
                                   className="finder-card-btn btn-invite"
                                   onClick={() => openCandidateRecruit(cand)}
                                 >
-                                  Recruit
+                                  Invite
                                 </button>
                               )}
                             </div>
@@ -4105,23 +4126,21 @@ export default function EmployerApplicantFinder() {
                               Details
                             </button>
 
-                            {invitedCandidateIds.includes(cand.user_id) || cand.invitation_status === "accepted" || cand.application_status === "recruited" || cand.invitation_status === "recruited" ? (
+                            {cand.invitation_status === "accepted" || cand.application_status === "recruited" || cand.invitation_status === "recruited" ? (
                               <button
                                 type="button"
-                                className="finder-card-btn btn-invite"
+                                className="finder-card-btn btn-invite status-recruited"
                                 disabled
-                                style={{ background: "#e2e8f0", color: "#64748b", border: "1px solid #cbd5e1", cursor: "not-allowed" }}
                               >
                                 ✓ Recruited
                               </button>
-                            ) : cand.invitation_status === "pending" ? (
+                            ) : cand.invitation_status === "pending" || invitedCandidateIds.includes(cand.user_id) ? (
                               <button
                                 type="button"
-                                className="finder-card-btn btn-invite"
+                                className="finder-card-btn btn-invite status-invited"
                                 disabled
-                                style={{ background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a", cursor: "not-allowed" }}
                               >
-                                Invitation Sent
+                                ✓ Invitation Sent
                               </button>
                             ) : (
                               <button
@@ -4129,7 +4148,7 @@ export default function EmployerApplicantFinder() {
                                 className="finder-card-btn btn-invite"
                                 onClick={() => openCandidateRecruit(cand)}
                               >
-                                Recruit
+                                Invite
                               </button>
                             )}
                           </div>
@@ -4807,11 +4826,14 @@ export default function EmployerApplicantFinder() {
                     className="finder-btn finder-btn-green"
                     onClick={() => {
                       if (selectedCandidate) {
-                        openInviteModal(selectedCandidate);
+                        setIsMatchDrawerOpen(false);
+                        setIsMessagePanelOpen(false);
+                        setIsOtherJobsOpen(true);
+                        setIsOtherJobsClosing(false);
                       }
                     }}
                   >
-                    Recruit
+                    Invite
                   </button>
                 </div>
               </div>
@@ -5594,7 +5616,7 @@ export default function EmployerApplicantFinder() {
                         handleCloseJobDetails();
                       }}
                     >
-                      Recruit
+                      Invite
                     </button>
                   </div>
                 </div>

@@ -5260,15 +5260,23 @@ app.get("/api/employers/:userId/talent-pool", async (req, res) => {
             LIMIT 1
           ) AS latest_application_status,
           (
-            SELECT COUNT(n.id)
+            SELECT n.id
             FROM notifications n
             WHERE n.user_id = u.id AND n.related_user_id = ? AND n.type = 'job_invitation'
-          ) AS invited_count
+            LIMIT 1
+          ) AS invited_count,
+          (
+            SELECT ji.status
+            FROM job_invitations ji
+            WHERE ji.applicant_user_id = u.id AND ji.employer_user_id = ?
+            ORDER BY ji.created_at DESC
+            LIMIT 1
+          ) AS invitation_status
        FROM users u
        LEFT JOIN applicant_profiles ap ON ap.user_id = u.id
        WHERE u.role = 'applicant'
        ORDER BY u.created_at DESC`,
-      [userId, userId, userId]
+      [userId, userId, userId, userId]
     );
 
     res.json({ candidates });

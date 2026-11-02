@@ -2213,7 +2213,7 @@ export default function EmployerApplicantDetailsModal({
           }}
           onClick={() => handleOpenRecruitModal(selectedPreviewJob)}
         >
-          Recruit
+          Invite
         </button>
       }
       hideEmployerHeader={true}

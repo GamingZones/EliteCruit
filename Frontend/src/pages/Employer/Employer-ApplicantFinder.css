@@ -839,6 +839,32 @@
   cursor: default;
 }
 
+.finder-card-btn.btn-invite.status-invited {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+  border: 1px solid #fde68a !important;
+  cursor: not-allowed !important;
+}
+
+.finder-card-btn.btn-invite.status-recruited {
+  background: #e2e8f0 !important;
+  color: #64748b !important;
+  border: 1px solid #cbd5e1 !important;
+  cursor: not-allowed !important;
+}
+
+[data-theme="dark"] .finder-card-btn.btn-invite.status-invited {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+}
+
+[data-theme="dark"] .finder-card-btn.btn-invite.status-recruited {
+  background: rgba(100, 116, 139, 0.2) !important;
+  color: #94a3b8 !important;
+  border: 1px solid rgba(100, 116, 139, 0.35) !important;
+}
+
 .finder-pill.quali,
 .finder-pill.cert {
   background: #fef3c7;
