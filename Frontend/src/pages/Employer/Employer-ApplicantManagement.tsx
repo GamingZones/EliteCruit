@@ -4939,16 +4939,26 @@ export default function EmployerApplicantManagement() {
                 </div>
                 <div className="decision-card-body">
                   {viewingResponseLetterApp.start_date && (
-                    <div style={{ marginBottom: "14px", padding: "8px 12px", background: "#f0f9ff", borderRadius: "8px", border: "1px solid #bae6fd", fontSize: "0.85rem", color: "#0369a1" }}>
-                      <strong>Confirmed Target Start Date:</strong> {new Date(viewingResponseLetterApp.start_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    <div className="candidate-response-start-date">
+                      <strong>Confirmed Target Start Date:</strong>{" "}
+                      {new Date(viewingResponseLetterApp.start_date).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
                     </div>
                   )}
                   {viewingResponseLetterApp.responded_at && (
-                    <div style={{ marginBottom: "10px", fontSize: "0.78rem", color: "#64748b" }}>
-                      Responded on: {new Date(viewingResponseLetterApp.responded_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    <div className="candidate-response-meta">
+                      Responded on:{" "}
+                      {new Date(viewingResponseLetterApp.responded_at).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
                     </div>
                   )}
-                  <div style={{ whiteSpace: "pre-wrap", background: "#f8fafc", padding: "16px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.9rem", color: "#334155", lineHeight: 1.6 }}>
+                  <div className="candidate-response-letter-body">
                     {viewingResponseLetterApp.response_letter || "No response letter text provided."}
                   </div>
                 </div>

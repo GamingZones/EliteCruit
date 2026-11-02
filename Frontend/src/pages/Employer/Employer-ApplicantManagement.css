@@ -4495,3 +4495,52 @@
 [data-theme="dark"] .job-accordion-table tbody tr:last-child td {
   border-bottom: none !important;
 }
+
+
+/* Candidate Response Letter Modal & Button Styles (Light Theme Base) */
+.candidate-response-start-date {
+  margin-bottom: 14px;
+  padding: 8px 12px;
+  background: #f0f9ff;
+  border-radius: 8px;
+  border: 1px solid #bae6fd;
+  font-size: 0.85rem;
+  color: #0369a1;
+}
+
+.candidate-response-start-date strong {
+  color: #0369a1;
+}
+
+.candidate-response-meta {
+  margin-bottom: 10px;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.candidate-response-letter-body {
+  white-space: pre-wrap;
+  background: #f8fafc;
+  padding: 18px 20px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  font-size: 0.9rem;
+  color: #334155;
+  line-height: 1.65;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.action-btn.letter-action-btn,
+.action-btn.letter-btn-icon {
+  background: #eef2ff !important;
+  border: 1px solid #c7d2fe !important;
+  color: #4f46e5 !important;
+}
+
+.action-btn.letter-action-btn:hover,
+.action-btn.letter-btn-icon:hover {
+  background: #4f46e5 !important;
+  border-color: #4f46e5 !important;
+  color: #ffffff !important;
+}
