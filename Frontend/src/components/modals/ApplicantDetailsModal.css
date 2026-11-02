@@ -573,3 +573,235 @@
   background: #0f1d30 !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
+
+/* ==========================================================================
+   FLOATING ACTION TABS & SIDE PANELS (Match Breakdown, Other Jobs, Messages)
+   ========================================================================== */
+
+.cal-modal-floating-tabs-container,
+.jd-floating-tabs-container {
+  position: absolute;
+  right: 0;
+  top: -42px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 100;
+}
+
+.cal-modal-floating-tab,
+.jd-floating-breakdown-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #ffffff;
+  border: 1.5px solid #0284c7;
+  color: #0284c7;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.2);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.cal-modal-floating-tab:hover,
+.jd-floating-breakdown-tab:hover {
+  background: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.3);
+  transform: translateY(-2px);
+}
+
+.cal-modal-floating-tab.active,
+.jd-floating-breakdown-tab.active {
+  background: #01294a;
+  border-color: #01294a;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(1, 41, 74, 0.3);
+}
+
+.side-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.side-close-btn:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+
+.match-badge-pill {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.match-badge-pill.green {
+  background: #e1f7ee;
+  color: #12874f;
+  border-color: #9fdfb9;
+}
+
+.match-badge-pill.yellow,
+.match-badge-pill.orange {
+  background: #fff3da;
+  color: #b85a06;
+  border-color: #f7d49e;
+}
+
+.match-badge-pill.red {
+  background: #ffe8e8;
+  color: #b02a2a;
+  border-color: #f6b3b3;
+}
+
+.jd-comp-tag.app-matched {
+  background: #e6f7ef;
+  color: #0d6e46;
+  border: 1px solid #a4e5c5;
+}
+
+.jd-comp-tag.tag-matched-green {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+}
+
+.jd-comp-tag.tag-partial-yellow {
+  background: #fefce8;
+  color: #854d0e;
+  border: 1px solid #fde047;
+}
+
+.jd-comp-tag.tag-missing-red {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+/* Dark Theme Overrides for Floating Tabs & Side Panels */
+[data-theme="dark"] .cal-modal-floating-tab,
+[data-theme="dark"] .jd-floating-breakdown-tab {
+  background: #242735 !important;
+  border: 1.5px solid #2e3244 !important;
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .cal-modal-floating-tab:hover,
+[data-theme="dark"] .jd-floating-breakdown-tab:hover {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border-color: #0284c7 !important;
+}
+
+[data-theme="dark"] .cal-modal-floating-tab.active,
+[data-theme="dark"] .jd-floating-breakdown-tab.active {
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .applicant-side-comparison-panel {
+  background: #1c1e27 !important;
+  border: 1px solid #2e3244 !important;
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .side-panel-header {
+  background: #14151B !important;
+  border-bottom: 1px solid #2e3244 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .side-title-row h3 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .side-subtitle {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .side-close-btn {
+  background: #242735 !important;
+  border-color: #3b4259 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .side-close-btn:hover {
+  background: #7f1d1d !important;
+  border-color: #ef4444 !important;
+  color: #fecaca !important;
+}
+
+[data-theme="dark"] .jd-compare-legend {
+  background: #181a22 !important;
+  border-color: #2e3244 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .jd-master-col {
+  background: #14151b !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .jd-master-col-header {
+  color: #e2e8f0 !important;
+  border-bottom-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .jd-master-col-header.employer {
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .cand-msg-chat-body,
+[data-theme="dark"] .cand-msg-messages-scroll {
+  background: #14151B !important;
+}
+
+[data-theme="dark"] .cand-msg-bubble.incoming {
+  background: #242735 !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .cand-msg-bubble.outgoing {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+[data-theme="dark"] .cand-msg-compose-bar {
+  background: #1c1e27 !important;
+  border-top: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .cand-msg-input {
+  background: #14151B !important;
+  border: 1px solid #2e3244 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .cand-msg-input:focus {
+  border-color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .cand-msg-empty-title {
+  color: #f1f5f9 !important;
+}

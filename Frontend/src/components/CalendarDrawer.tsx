@@ -447,6 +447,20 @@ export default function CalendarDrawer({
   // Standalone Applicant Details Modal state (ApplicantDetailsModal.tsx)
   const [detailsCandidate, setDetailsCandidate] = useState<CandidateModalData | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+
+  // Prevent background page scrolling when applicant details modal is open
+  useEffect(() => {
+    if (isDetailsModalOpen) {
+      const prevBody = document.body.style.overflow;
+      const prevHtml = document.documentElement.style.overflow;
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = prevBody;
+        document.documentElement.style.overflow = prevHtml;
+      };
+    }
+  }, [isDetailsModalOpen]);
   // Load employer active jobs and schedulable candidates dynamically from database
   useEffect(() => {
     if (!isEmployer || !currentUserId) return;
@@ -3037,6 +3051,8 @@ export default function CalendarDrawer({
             setDetailsCandidate(null);
           }}
           candidate={detailsCandidate}
+          employerJobs={employerJobs}
+          currentEmployerUserId={currentUserId}
         />,
         document.body
       )}
