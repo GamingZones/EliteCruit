@@ -6218,6 +6218,19 @@
   color: #ffffff !important;
 }
 
+[data-theme="dark"] .jd-other-job-invite-btn {
+  background: #059669 !important;
+  color: #ffffff !important;
+  border: 1px solid #059669 !important;
+}
+
+[data-theme="dark"] .jd-other-job-invite-btn.status-invited,
+[data-theme="dark"] .jd-other-job-invite-btn:disabled {
+  background: rgba(245, 158, 11, 0.18) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+}
+
 [data-theme="dark"] .other-jobs-card .solid-btn:hover,
 [data-theme="dark"] .jd-other-job-card .details-btn:hover,
 [data-theme="dark"] .jd-other-job-card .jd-other-job-details-btn:hover {

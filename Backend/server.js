@@ -5271,12 +5271,17 @@ app.get("/api/employers/:userId/talent-pool", async (req, res) => {
             WHERE ji.applicant_user_id = u.id AND ji.employer_user_id = ?
             ORDER BY ji.created_at DESC
             LIMIT 1
-          ) AS invitation_status
+          ) AS invitation_status,
+          (
+            SELECT COALESCE(json_agg(json_build_object('job_post_id', ji.job_post_id, 'status', ji.status)), '[]'::json)
+            FROM job_invitations ji
+            WHERE ji.applicant_user_id = u.id AND ji.employer_user_id = ?
+          ) AS invited_jobs
        FROM users u
        LEFT JOIN applicant_profiles ap ON ap.user_id = u.id
        WHERE u.role = 'applicant'
        ORDER BY u.created_at DESC`,
-      [userId, userId, userId, userId]
+      [userId, userId, userId, userId, userId]
     );
 
     res.json({ candidates });
@@ -5340,11 +5345,22 @@ app.post("/api/employers/:userId/invite-candidate", authenticateToken, requireUs
       [threadId, userId, body]
     );
 
-    await run(
-      `INSERT INTO job_invitations (employer_user_id, applicant_user_id, job_post_id, custom_message, status)
-       VALUES (?, ?, ?, ?, 'pending')`,
-      [userId, applicantId, jobId, body]
+    const existingInv = await get(
+      "SELECT id FROM job_invitations WHERE employer_user_id = ? AND applicant_user_id = ? AND job_post_id = ?",
+      [userId, applicantId, jobId]
     );
+    if (existingInv) {
+      await run(
+        "UPDATE job_invitations SET custom_message = ?, status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        [body, existingInv.id]
+      );
+    } else {
+      await run(
+        `INSERT INTO job_invitations (employer_user_id, applicant_user_id, job_post_id, custom_message, status)
+         VALUES (?, ?, ?, ?, 'pending')`,
+        [userId, applicantId, jobId, body]
+      );
+    }
 
     res.json({ success: true, message: `Invitation sent to candidate successfully for ${job.title}!` });
   } catch (err) {

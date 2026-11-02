@@ -865,6 +865,44 @@
   border: 1px solid rgba(100, 116, 139, 0.35) !important;
 }
 
+.jd-other-job-invite-btn {
+  background: #059669;
+  color: #ffffff;
+  border: 1px solid #059669;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+  transition: all 0.15s ease;
+}
+
+.jd-other-job-invite-btn:hover:not(:disabled) {
+  background: #047857;
+  border-color: #047857;
+}
+
+.jd-other-job-invite-btn.status-invited,
+.jd-other-job-invite-btn:disabled {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+  border: 1px solid #fde68a !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .jd-other-job-invite-btn {
+  background: #059669 !important;
+  color: #ffffff !important;
+  border: 1px solid #059669 !important;
+}
+
+[data-theme="dark"] .jd-other-job-invite-btn.status-invited,
+[data-theme="dark"] .jd-other-job-invite-btn:disabled,
+[data-theme="dark"] .jd-recruit-btn.status-invited,
+[data-theme="dark"] .jd-recruit-btn:disabled {
+  background: rgba(245, 158, 11, 0.18) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+}
+
 .finder-pill.quali,
 .finder-pill.cert {
   background: #fef3c7;

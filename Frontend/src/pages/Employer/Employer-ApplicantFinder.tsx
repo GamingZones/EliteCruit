@@ -1022,6 +1022,7 @@ export type Candidate = {
   latest_application_status?: string | null;
   application_status?: string | null;
   invitation_status?: string | null;
+  invited_jobs?: Array<{ job_post_id: number; status: string }> | string | null;
   distance_km?: number;
   latitude?: number | string | null;
   longitude?: number | string | null;
@@ -1565,6 +1566,23 @@ export default function EmployerApplicantFinder() {
   const [isSendingInvite, setIsSendingInvite] = useState(false);
   const [inviteSuccessMsg, setInviteSuccessMsg] = useState("");
   const [invitedCandidateIds, setInvitedCandidateIds] = useState<number[]>([]);
+  const [invitedJobPairs, setInvitedJobPairs] = useState<Set<string>>(new Set());
+
+  const isCandidateInvitedToJob = (cand: Candidate | null, jobId: number | undefined): boolean => {
+    if (!cand || !jobId) return false;
+    const pairKey = `${cand.user_id}-${jobId}`;
+    if (invitedJobPairs.has(pairKey)) return true;
+    let list = cand.invited_jobs;
+    if (typeof list === "string") {
+      try {
+        list = JSON.parse(list);
+      } catch {}
+    }
+    if (Array.isArray(list)) {
+      return list.some((item: any) => Number(item.job_post_id) === Number(jobId));
+    }
+    return false;
+  };
 
   // Match Breakdown Drawer State
   const [isMatchDrawerOpen, setIsMatchDrawerOpen] = useState(false);
@@ -3167,6 +3185,30 @@ export default function EmployerApplicantFinder() {
       if (!res.ok) throw new Error(data?.message || "Unable to send invitation.");
 
       setInvitedCandidateIds((prev) => [...prev, inviteCandidate.user_id]);
+      const pairKey = `${inviteCandidate.user_id}-${effectiveJobId}`;
+      setInvitedJobPairs((prev) => new Set([...prev, pairKey]));
+      setCandidates((prev) =>
+        prev.map((c) => {
+          if (c.user_id === inviteCandidate.user_id) {
+            const existingList = Array.isArray(c.invited_jobs) ? c.invited_jobs : [];
+            return {
+              ...c,
+              invited_jobs: [...existingList, { job_post_id: Number(effectiveJobId), status: "pending" }],
+            };
+          }
+          return c;
+        })
+      );
+      if (inviteJobsCandidate && inviteJobsCandidate.user_id === inviteCandidate.user_id) {
+        setInviteJobsCandidate((prev) => {
+          if (!prev) return null;
+          const existingList = Array.isArray(prev.invited_jobs) ? prev.invited_jobs : [];
+          return {
+            ...prev,
+            invited_jobs: [...existingList, { job_post_id: Number(effectiveJobId), status: "pending" }],
+          };
+        });
+      }
       setInviteSuccessMsg(`Invitation sent to ${inviteCandidate.applicant_name}!`);
       setIsConfirmRecruitOpen(false);
       setTimeout(() => {
@@ -3784,31 +3826,13 @@ export default function EmployerApplicantFinder() {
                                 Details
                               </button>
 
-                              {cand.invitation_status === "accepted" || cand.application_status === "recruited" || cand.invitation_status === "recruited" ? (
-                                <button
-                                  type="button"
-                                  className="finder-card-btn btn-invite status-recruited"
-                                  disabled
-                                >
-                                  ✓ Recruited
-                                </button>
-                              ) : cand.invitation_status === "pending" || invitedCandidateIds.includes(cand.user_id) ? (
-                                <button
-                                  type="button"
-                                  className="finder-card-btn btn-invite status-invited"
-                                  disabled
-                                >
-                                  ✓ Invitation Sent
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  className="finder-card-btn btn-invite"
-                                  onClick={() => openCandidateRecruit(cand)}
-                                >
-                                  Invite
-                                </button>
-                              )}
+                              <button
+                                type="button"
+                                className="finder-card-btn btn-invite"
+                                onClick={() => openCandidateRecruit(cand)}
+                              >
+                                Invite
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -4130,31 +4154,13 @@ export default function EmployerApplicantFinder() {
                               Details
                             </button>
 
-                            {cand.invitation_status === "accepted" || cand.application_status === "recruited" || cand.invitation_status === "recruited" ? (
-                              <button
-                                type="button"
-                                className="finder-card-btn btn-invite status-recruited"
-                                disabled
-                              >
-                                ✓ Recruited
-                              </button>
-                            ) : cand.invitation_status === "pending" || invitedCandidateIds.includes(cand.user_id) ? (
-                              <button
-                                type="button"
-                                className="finder-card-btn btn-invite status-invited"
-                                disabled
-                              >
-                                ✓ Invitation Sent
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                className="finder-card-btn btn-invite"
-                                onClick={() => openCandidateRecruit(cand)}
-                              >
-                                Invite
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              className="finder-card-btn btn-invite"
+                              onClick={() => openCandidateRecruit(cand)}
+                            >
+                              Invite
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -5135,36 +5141,62 @@ export default function EmployerApplicantFinder() {
                           </div>
                         </div>
 
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px", flexShrink: 0 }}>
-                          <span
-                            className={`jd-other-job-match-pill ${percent >= 80 ? "green" : percent >= 50 ? "yellow" : "red"}`}
-                          >
-                            {percent}% Match
-                          </span>
-                          <button
-                            type="button"
-                            className="details-btn jd-other-job-details-btn"
-                            style={{
-                              fontWeight: 800,
-                              fontSize: "0.84rem",
-                              padding: "6px 22px",
-                              borderRadius: "999px",
-                              border: "none",
-                              whiteSpace: "nowrap",
-                              cursor: "pointer",
-                              boxShadow: "0 2px 8px rgba(2, 132, 199, 0.3)",
-                              transition: "all 0.15s ease",
-                              minWidth: "85px",
-                              textAlign: "center",
-                            }}
-                            onClick={() => {
-                              setViewingJobDetails(otherJob);
-                              setIsMatchDrawerOpen(false);
-                            }}
-                          >
-                            Details
-                          </button>
-                        </div>
+                        {(() => {
+                          const isJobInvited = isCandidateInvitedToJob(inviteJobsCandidate, otherJob.id);
+                          return (
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px", flexShrink: 0 }}>
+                              <span
+                                className={`jd-other-job-match-pill ${percent >= 80 ? "green" : percent >= 50 ? "yellow" : "red"}`}
+                              >
+                                {percent}% Match
+                              </span>
+                              <button
+                                type="button"
+                                className="details-btn jd-other-job-details-btn"
+                                style={{
+                                  fontWeight: 800,
+                                  fontSize: "0.84rem",
+                                  padding: "6px 22px",
+                                  borderRadius: "999px",
+                                  border: "none",
+                                  whiteSpace: "nowrap",
+                                  cursor: "pointer",
+                                  boxShadow: "0 2px 8px rgba(2, 132, 199, 0.3)",
+                                  transition: "all 0.15s ease",
+                                  minWidth: "85px",
+                                  textAlign: "center",
+                                }}
+                                onClick={() => {
+                                  setViewingJobDetails(otherJob);
+                                  setIsMatchDrawerOpen(false);
+                                }}
+                              >
+                                Details
+                              </button>
+                              <button
+                                type="button"
+                                className={`jd-other-job-invite-btn ${isJobInvited ? "status-invited" : ""}`}
+                                disabled={isJobInvited}
+                                style={{
+                                  fontWeight: 800,
+                                  fontSize: "0.84rem",
+                                  padding: "6px 22px",
+                                  borderRadius: "999px",
+                                  whiteSpace: "nowrap",
+                                  minWidth: "85px",
+                                  textAlign: "center",
+                                }}
+                                onClick={() => {
+                                  if (!isJobInvited && inviteJobsCandidate) {
+                                    openInviteModal(inviteJobsCandidate, otherJob.id);
+                                  }
+                                }}
+                              >
+                                {isJobInvited ? "Invited" : "Invite"}
+                              </button>
+                            </div>
+                          );
+                        })()}
                       </div>
                     );
                   });
@@ -5358,34 +5390,40 @@ export default function EmployerApplicantFinder() {
                 preferredLocations: targetCandidate.preferred_locations,
               } : null}
               customFooterActions={
-                <button
-                  type="button"
-                  className="solid-btn jd-recruit-btn"
-                  style={{
-                    background: "#0284c7",
-                    color: "#ffffff",
-                    border: "none",
-                    borderRadius: "8px",
-                    padding: "10px 22px",
-                    fontWeight: 700,
-                    fontSize: "0.9rem",
-                    cursor: "pointer",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    transition: "all 0.15s ease",
-                  }}
-                  onClick={() => {
-                    if (targetCandidate && viewingJobDetails) {
-                      openInviteModal(targetCandidate, viewingJobDetails.id);
-                    }
-                    setInviteSuccessMsg("");
-                    setInviteJobsCandidate(null);
-                    setViewingJobDetails(null);
-                  }}
-                >
-                  Recruit
-                </button>
+                (() => {
+                  const isJobInvited = isCandidateInvitedToJob(targetCandidate, viewingJobDetails?.id);
+                  return (
+                    <button
+                      type="button"
+                      className={`solid-btn jd-recruit-btn ${isJobInvited ? "status-invited" : ""}`}
+                      disabled={isJobInvited}
+                      style={{
+                        background: isJobInvited ? "#fef3c7" : "#059669",
+                        color: isJobInvited ? "#92400e" : "#ffffff",
+                        border: isJobInvited ? "1px solid #fde68a" : "none",
+                        borderRadius: "8px",
+                        padding: "10px 22px",
+                        fontWeight: 700,
+                        fontSize: "0.9rem",
+                        cursor: isJobInvited ? "not-allowed" : "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        transition: "all 0.15s ease",
+                      }}
+                      onClick={() => {
+                        if (!isJobInvited && targetCandidate && viewingJobDetails) {
+                          openInviteModal(targetCandidate, viewingJobDetails.id);
+                          setInviteSuccessMsg("");
+                          setInviteJobsCandidate(null);
+                          setViewingJobDetails(null);
+                        }
+                      }}
+                    >
+                      {isJobInvited ? "Invited" : "Invite"}
+                    </button>
+                  );
+                })()
               }
               hideEmployerHeader={true}
               zIndex={50000}
