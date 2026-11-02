@@ -448,8 +448,8 @@ export default function EmployerDashboard() {
             <div className="status-line"><span>Pending Review</span><b className="status-count gray">{summary.stats.toReview ?? 0}</b></div>
             <div className="status-line"><span>Under Review</span><b className="status-count blue">{summary.stats.underReview ?? 0}</b></div>
             <div className="status-line"><span>Shortlisted</span><b className="status-count blue">{summary.stats.shortlisted ?? 0}</b></div>
+            <div className="status-line"><span>Interviewing</span><b className="status-count purple">{summary.stats.interview ?? 0}</b></div>
             <div className="status-line"><span>Approved</span><b className="status-count green">{summary.stats.approved ?? 0}</b></div>
-            <div className="status-line"><span>Interview</span><b className="status-count purple">{summary.stats.interview ?? 0}</b></div>
             <div className="status-line"><span>Recruited</span><b className="status-count teal">{summary.stats.recruited ?? 0}</b></div>
             <div className="status-line"><span>Hired</span><b className="status-count green">{summary.stats.hired ?? 0}</b></div>
             <div className="status-line"><span>Rejected</span><b className="status-count red">{summary.stats.rejected ?? 0}</b></div>

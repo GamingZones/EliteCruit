@@ -657,6 +657,7 @@ function formatDate(d: string | null) {
 
 function statusChipClass(status: string) {
   const s = (status || "").toLowerCase();
+  if (s === "interviewing" || s === "interview") return "status-chip interviewing";
   if (s === "shortlisted") return "status-chip shortlisted";
   if (s === "approved" || s === "accepted" || s === "recruited") return "status-chip approved";
   if (s === "denied" || s === "rejected" || s === "withdrawn") return "status-chip denied";
@@ -665,6 +666,7 @@ function statusChipClass(status: string) {
 
 function formatStatusLabel(status: string) {
   const s = (status || "").toLowerCase();
+  if (s === "interviewing" || s === "interview") return "interviewing";
   if (s === "recruited") return "recruited";
   if (s === "shortlisted") return "shortlisted";
   if (s === "approved" || s === "accepted") return "approved";
@@ -3180,7 +3182,10 @@ export default function EmployerApplicantManagement() {
                                       </button>
 
                                       {(() => {
-                                        const isShortlisted = app.status?.toLowerCase() === "shortlisted";
+                                        const appStatusLower = (app.status || "").toLowerCase();
+                                        const isShortlisted = appStatusLower === "shortlisted";
+                                        const isInterviewing = appStatusLower === "interviewing" || appStatusLower === "interview";
+                                        const canSchedule = isShortlisted || isInterviewing;
                                         const isApproved = isApprovedStatus(app.status);
                                         const isDenied = isDeniedStatus(app.status);
                                         const isFinalized = isFinalizedStatus(app.status);
@@ -3219,20 +3224,20 @@ export default function EmployerApplicantManagement() {
                                           <div className="status-actions-trio" role="group" aria-label="Status actions">
                                             <button
                                               type="button"
-                                              className={`action-btn shortlist-action-btn shortlist-btn-icon ${isShortlisted ? "active-shortlisted active" : ""}`}
-                                              title={isShortlisted ? "Shortlisted (click to un-shortlist)" : "Shortlist candidate"}
-                                              aria-label="Shortlist candidate"
-                                              onClick={() => handleInitiateStatusChange(app, isShortlisted ? "pending" : "shortlisted")}
+                                              className={`action-btn shortlist-action-btn shortlist-btn-icon ${isShortlisted || isInterviewing ? "active-shortlisted active" : ""}`}
+                                              title={isInterviewing ? "In Interviewing Stage" : isShortlisted ? "Shortlisted (click to un-shortlist)" : "Shortlist candidate"}
+                                              aria-label={isInterviewing ? "In Interviewing Stage" : "Shortlist candidate"}
+                                              onClick={() => handleInitiateStatusChange(app, isShortlisted || isInterviewing ? "pending" : "shortlisted")}
                                             >
                                               <RowActionIcon name="shortlist" />
                                             </button>
 
-                                            {isShortlisted && (
+                                            {canSchedule && (
                                               <button
                                                 type="button"
                                                 className="action-btn schedule-action-btn schedule-btn-icon"
-                                                title="Schedule Interview"
-                                                aria-label="Schedule Interview"
+                                                title={isInterviewing ? "Reschedule Interview" : "Schedule Interview"}
+                                                aria-label={isInterviewing ? "Reschedule Interview" : "Schedule Interview"}
                                                 onClick={() => handleOpenDirectScheduleModal(app)}
                                               >
                                                 <RowActionIcon name="schedule" />
@@ -3324,7 +3329,7 @@ export default function EmployerApplicantManagement() {
           <div className="board-grid">
             {(() => {
               const shortlistApps = boardApplications.filter(
-                (a) => a.status?.toLowerCase() === "shortlisted" && !stagedDecisions[a.id]
+                (a) => ["shortlisted", "interviewing", "interview"].includes(a.status?.toLowerCase()) && !stagedDecisions[a.id]
               );
               const approvedApps = boardApplications.filter(
                 (a) => isApprovedStatus(a.status) || stagedDecisions[a.id] === "approved"
@@ -3435,7 +3440,14 @@ export default function EmployerApplicantManagement() {
                               </span>
                               <span className="ticket-match-badge" style={{ color: style.color }}>{percent}%</span>
                             </div>
-                            <small style={{ display: "block", color: "#64748b" }}>{a.job_title}</small>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "2px" }}>
+                              <small style={{ color: "#64748b" }}>{a.job_title}</small>
+                              {["interviewing", "interview"].includes(a.status?.toLowerCase()) && (
+                                <span className="status-chip interviewing" style={{ fontSize: "0.62rem", padding: "1px 6px" }}>
+                                  Interviewing
+                                </span>
+                              )}
+                            </div>
                           </div>
                         );
                       })
@@ -3499,7 +3511,14 @@ export default function EmployerApplicantManagement() {
                               </span>
                               <span className="ticket-match-badge" style={{ color: style.color }}>{percent}%</span>
                             </div>
-                            <small style={{ display: "block", color: "#64748b" }}>{a.job_title}</small>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "2px" }}>
+                              <small style={{ color: "#64748b" }}>{a.job_title}</small>
+                              {["interviewing", "interview"].includes(a.status?.toLowerCase()) && (
+                                <span className="status-chip interviewing" style={{ fontSize: "0.62rem", padding: "1px 6px" }}>
+                                  Interviewing
+                                </span>
+                              )}
+                            </div>
                           </div>
                         );
                       })
@@ -3677,7 +3696,10 @@ export default function EmployerApplicantManagement() {
                       const isApproved = isApprovedStatus(currentApp.status);
                       const isDenied = isDeniedStatus(currentApp.status);
                       const isFinalized = isFinalizedStatus(currentApp.status);
-                      const isShortlisted = currentApp.status?.toLowerCase() === "shortlisted";
+                      const appStatusLower = (currentApp.status || "").toLowerCase();
+                      const isShortlisted = appStatusLower === "shortlisted";
+                      const isInterviewing = appStatusLower === "interviewing" || appStatusLower === "interview";
+                      const canSchedule = isShortlisted || isInterviewing;
 
                       if (isFinalized) {
                         const hasResponseLetter = Boolean(currentApp.response_letter);
@@ -3712,22 +3734,22 @@ export default function EmployerApplicantManagement() {
                         <div className="status-actions-trio preview-status-actions-trio" role="group" aria-label="Status actions">
                           <button
                             type="button"
-                            className={`action-btn preview-action-btn shortlist-action-btn shortlist-btn-icon ${isShortlisted ? "active-shortlisted active" : ""}`}
-                            title={isShortlisted ? "Shortlisted (click to un-shortlist)" : "Shortlist candidate"}
-                            aria-label="Shortlist candidate"
+                            className={`action-btn preview-action-btn shortlist-action-btn shortlist-btn-icon ${isShortlisted || isInterviewing ? "active-shortlisted active" : ""}`}
+                            title={isInterviewing ? "In Interviewing Stage" : isShortlisted ? "Shortlisted (click to un-shortlist)" : "Shortlist candidate"}
+                            aria-label={isInterviewing ? "In Interviewing Stage" : "Shortlist candidate"}
                             onClick={() => {
-                              handleInitiateStatusChange(currentApp, isShortlisted ? "pending" : "shortlisted");
+                              handleInitiateStatusChange(currentApp, isShortlisted || isInterviewing ? "pending" : "shortlisted");
                             }}
                           >
                             <RowActionIcon name="shortlist" />
                           </button>
 
-                          {isShortlisted && (
+                          {canSchedule && (
                             <button
                               type="button"
                               className="action-btn preview-action-btn schedule-action-btn schedule-btn-icon"
-                              title="Schedule Interview"
-                              aria-label="Schedule Interview"
+                              title={isInterviewing ? "Reschedule Interview" : "Schedule Interview"}
+                              aria-label={isInterviewing ? "Reschedule Interview" : "Schedule Interview"}
                               onClick={() => handleOpenDirectScheduleModal(currentApp)}
                             >
                               <RowActionIcon name="schedule" />
@@ -4707,10 +4729,13 @@ export default function EmployerApplicantManagement() {
                     </button>
 
                     {!isDirectInvitationModal && (() => {
-                      const isShortlisted = reviewModalApp.status?.toLowerCase() === "shortlisted";
                       const isApproved = isApprovedStatus(reviewModalApp.status);
                       const isDenied = isDeniedStatus(reviewModalApp.status);
                       const isFinalized = isFinalizedStatus(reviewModalApp.status);
+                      const appStatusLower = (reviewModalApp.status || "").toLowerCase();
+                      const isShortlisted = appStatusLower === "shortlisted";
+                      const isInterviewing = appStatusLower === "interviewing" || appStatusLower === "interview";
+                      const canSchedule = isShortlisted || isInterviewing;
 
                       if (isFinalized) {
                         const hasResponseLetter = Boolean(reviewModalApp.response_letter);
@@ -4743,23 +4768,23 @@ export default function EmployerApplicantManagement() {
                         <div className="status-actions-trio modal-status-actions-trio" role="group" aria-label="Status actions">
                           <button
                             type="button"
-                            className={`modal-status-word-btn modal-shortlist-btn ${isShortlisted ? "active-shortlisted active" : ""}`}
-                            title={isShortlisted ? "Shortlisted (click to un-shortlist)" : "Shortlist candidate"}
-                            aria-label="Shortlist candidate"
-                            onClick={() => handleInitiateStatusChange(reviewModalApp, isShortlisted ? "pending" : "shortlisted")}
+                            className={`modal-status-word-btn modal-shortlist-btn ${isShortlisted || isInterviewing ? "active-shortlisted active" : ""}`}
+                            title={isInterviewing ? "In Interviewing Stage" : isShortlisted ? "Shortlisted (click to un-shortlist)" : "Shortlist candidate"}
+                            aria-label={isInterviewing ? "In Interviewing Stage" : "Shortlist candidate"}
+                            onClick={() => handleInitiateStatusChange(reviewModalApp, isShortlisted || isInterviewing ? "pending" : "shortlisted")}
                           >
-                            <span>{isShortlisted ? "Shortlisted" : "Shortlist"}</span>
+                            <span>{isInterviewing ? "Interviewing" : isShortlisted ? "Shortlisted" : "Shortlist"}</span>
                           </button>
 
-                          {isShortlisted && (
+                          {canSchedule && (
                             <button
                               type="button"
                               className="modal-status-word-btn modal-schedule-btn"
-                              title="Schedule Interview"
-                              aria-label="Schedule Interview"
+                              title={isInterviewing ? "Reschedule Interview" : "Schedule Interview"}
+                              aria-label={isInterviewing ? "Reschedule Interview" : "Schedule Interview"}
                               onClick={() => handleOpenDirectScheduleModal(reviewModalApp)}
                             >
-                              <span>Schedule Interview</span>
+                              <span>{isInterviewing ? "Reschedule Interview" : "Schedule Interview"}</span>
                             </button>
                           )}
 

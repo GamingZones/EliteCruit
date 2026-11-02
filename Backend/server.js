@@ -4757,6 +4757,8 @@ app.get("/api/employers/:userId/applications", authenticateToken, requireUserOrA
       const s = status.toLowerCase();
       if (s === "pending" || s === "pendings") {
         whereClause += " AND lower(a.status) IN ('pending', 'submitted')";
+      } else if (s === "interviewing" || s === "interview") {
+        whereClause += " AND lower(a.status) IN ('interviewing', 'interview')";
       } else if (s === "approved") {
         whereClause += " AND lower(a.status) IN ('approved', 'reviewed', 'accepted', 'recruited')";
       } else if (s === "recruited") {
@@ -4844,7 +4846,8 @@ app.get("/api/employers/:userId/applications", authenticateToken, requireUserOrA
       `SELECT
           COUNT(*) AS total,
           SUM(CASE WHEN lower(a.status) IN ('submitted', 'pending') THEN 1 ELSE 0 END) AS pending,
-          SUM(CASE WHEN lower(a.status) = 'shortlisted' THEN 1 ELSE 0 END) AS shortlisted
+          SUM(CASE WHEN lower(a.status) = 'shortlisted' THEN 1 ELSE 0 END) AS shortlisted,
+          SUM(CASE WHEN lower(a.status) IN ('interviewing', 'interview') THEN 1 ELSE 0 END) AS interviewing
        FROM applications a
        INNER JOIN job_posts jp ON jp.id = a.job_post_id
        WHERE jp.employer_user_id = ?`,
@@ -4857,6 +4860,7 @@ app.get("/api/employers/:userId/applications", authenticateToken, requireUserOrA
         total: Number(statsRow?.total || 0),
         pending: Number(statsRow?.pending || 0),
         shortlisted: Number(statsRow?.shortlisted || 0),
+        interviewing: Number(statsRow?.interviewing || 0),
       },
     });
   } catch (err) {
@@ -4871,7 +4875,7 @@ app.put("/api/applications/bulk-status", authenticateToken, async (req, res) => 
     return res.status(400).json({ message: "No application IDs provided." });
   }
 
-  const validStatuses = ["pending", "submitted", "reviewed", "shortlisted", "recruited", "approved", "accepted", "denied", "rejected", "withdrawn"];
+  const validStatuses = ["pending", "submitted", "reviewed", "shortlisted", "interviewing", "interview", "recruited", "approved", "accepted", "denied", "rejected", "withdrawn"];
   if (typeof status !== "string" || !validStatuses.includes(status.toLowerCase())) {
     return res.status(400).json({ message: "Invalid status value." });
   }
@@ -4930,7 +4934,7 @@ app.put("/api/applications/:id/status", authenticateToken, requireApplicationDec
     return res.status(400).json({ message: "Invalid application ID." });
   }
 
-  const validStatuses = ["pending", "submitted", "reviewed", "shortlisted", "recruited", "approved", "accepted", "denied", "rejected", "withdrawn"];
+  const validStatuses = ["pending", "submitted", "reviewed", "shortlisted", "interviewing", "interview", "recruited", "approved", "accepted", "denied", "rejected", "withdrawn"];
   if (typeof status !== "string" || !validStatuses.includes(status.toLowerCase())) {
     return res.status(400).json({ message: "Invalid status value." });
   }
@@ -7288,6 +7292,27 @@ app.post("/api/interviews", async (req, res) => {
       ]
     );
 
+    // Automatically advance application status to 'interviewing'
+    const appIdFromReq = req.body?.application_id ? Number(req.body.application_id) : null;
+    if (appIdFromReq) {
+      await run(
+        `UPDATE applications SET status = 'interviewing', updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [appIdFromReq]
+      ).catch(() => {});
+    } else {
+      const allTargetCandIds = candIds.length > 0 ? candIds : (primaryApplicantId ? [primaryApplicantId] : []);
+      for (const cid of allTargetCandIds) {
+        if (jobPostId) {
+          await run(
+            `UPDATE applications 
+             SET status = 'interviewing', updated_at = CURRENT_TIMESTAMP 
+             WHERE applicant_user_id = ? AND job_post_id = ? AND lower(status) IN ('submitted', 'pending', 'shortlisted')`,
+            [cid, jobPostId]
+          ).catch(() => {});
+        }
+      }
+    }
+
     // Create notification for primary candidate if valid registered user
     if (primaryApplicantId && primaryApplicantId < 100) {
       await run(
@@ -8136,17 +8161,17 @@ async function ensureMeetingsForZakiAccounts() {
       );
     }
 
-    // 5. Ensure Application 2 (Job B: Shortlisted with scheduled interview)
+    // 5. Ensure Application 2 (Job B: Interviewing with scheduled interview)
     let appB = await get("SELECT id FROM applications WHERE applicant_user_id = ? AND job_post_id = ?", [applicant.id, jobB.id]);
     if (!appB) {
       await run(
         `INSERT INTO applications (job_post_id, applicant_user_id, status, submitted_at, updated_at)
-         VALUES (?, ?, 'shortlisted', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+         VALUES (?, ?, 'interviewing', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
         [jobB.id, applicant.id]
       );
     } else {
       await run(
-        `UPDATE applications SET status = 'shortlisted', decision_message = NULL, decision_message_type = NULL,
+        `UPDATE applications SET status = 'interviewing', decision_message = NULL, decision_message_type = NULL,
          response_letter = NULL, response_decision = NULL, responded_at = NULL, start_date = NULL, updated_at = CURRENT_TIMESTAMP
          WHERE id = ?`,
         [appB.id]
@@ -8295,9 +8320,9 @@ async function ensureMeetingsForZakiAccounts() {
           interview: null
         },
         {
-          scenario: "2. Shortlisted with scheduled interview (Test interview completion & post-interview decision)",
+          scenario: "2. Interviewing with scheduled interview (Test candidate in 'Interviewing' stage & post-interview decision)",
           job: jobB.title,
-          status: "shortlisted",
+          status: "interviewing",
           interview: "Nov 6, 2026 at 10:00 AM"
         },
         {

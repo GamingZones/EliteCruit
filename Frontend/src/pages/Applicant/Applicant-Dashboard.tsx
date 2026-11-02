@@ -245,6 +245,7 @@ function parseExpectedSalary(raw: string | null | undefined) {
 
 function statusChipBadgeClass(status: string) {
   const s = (status || "").toLowerCase();
+  if (s === "interviewing" || s === "interview") return "chip-interviewing";
   if (s === "recruited") return "chip-recruited";
   if (s === "approved" || s === "accepted") return "chip-approved";
   if (s === "shortlisted") return "chip-shortlisted";
@@ -254,6 +255,7 @@ function statusChipBadgeClass(status: string) {
 
 function statusChipClass(status: string) {
   const s = (status || "").toLowerCase();
+  if (s === "interviewing" || s === "interview") return "match-chip chip-amber";
   if (s === "recruited" || s === "approved" || s === "accepted") return "match-chip chip-green";
   if (s === "shortlisted") return "match-chip chip-amber";
   if (s === "denied" || s === "rejected" || s === "withdrawn") return "match-chip chip-amber";
@@ -262,6 +264,7 @@ function statusChipClass(status: string) {
 
 function formatStatusLabel(status: string) {
   const s = (status || "").toLowerCase();
+  if (s === "interviewing" || s === "interview") return "Interviewing";
   if (s === "recruited") return "Recruited";
   if (s === "approved" || s === "accepted") return "Approved";
   if (s === "shortlisted") return "Shortlisted";
@@ -312,7 +315,7 @@ function getApplicationTimelineSteps(app: any) {
     {
       title: "Candidate Screening & Review",
       description: isReviewed
-        ? (["shortlisted", "recruited", "approved", "accepted"].includes(status)
+        ? (["shortlisted", "interviewing", "interview", "recruited", "approved", "accepted"].includes(status)
           ? "Profile screened and candidate shortlisted by recruitment team."
           : "Application is under active candidate screening.")
         : "Pending initial profile review by hiring manager.",
@@ -320,17 +323,19 @@ function getApplicationTimelineSteps(app: any) {
       state: isReviewed ? ("completed" as const) : ("active" as const),
     },
     {
-      title: "Interview Scheduled",
+      title: "Interviewing",
       description: interview
         ? `${interview.interview_stage || "Technical Interview"} (${interview.interview_type || "On-Site"})${interview.interview_date ? ` scheduled for ${interview.interview_date} ${interview.start_time ? `at ${interview.start_time}` : ""}` : ""}`
-        : (isFinalDecision
-          ? "Technical & Competency Interview conducted with hiring manager."
-          : (isReviewed
-            ? "Hiring team is finalizing interview schedule details."
-            : "Awaiting interview invitation from hiring team.")),
+        : (["interviewing", "interview"].includes(status)
+          ? "Candidate advanced to active interview evaluation stage."
+          : (isFinalDecision
+            ? "Technical & Competency Interview conducted with hiring manager."
+            : (isReviewed
+              ? "Hiring team is finalizing interview schedule details."
+              : "Awaiting interview invitation from hiring team."))),
       timestamp: interview?.interview_date ? formatDate(interview.interview_date) : (isFinalDecision ? fallbackInterviewDate : null),
-      state: interview
-        ? ("completed" as const)
+      state: (interview || ["interviewing", "interview"].includes(status))
+        ? ("active" as const)
         : isFinalDecision
         ? ("completed" as const)
         : isReviewed
