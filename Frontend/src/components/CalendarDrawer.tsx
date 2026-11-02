@@ -532,6 +532,9 @@ export default function CalendarDrawer({
   // Complete Interview Confirmation Modal state (Employer only)
   const [interviewToComplete, setInterviewToComplete] = useState<ScheduledInterview | null>(null);
 
+  // Complete Interview Success Notice state (Employer only)
+  const [completedSuccessNotice, setCompletedSuccessNotice] = useState<boolean>(false);
+
   // Cancel Interview Modal state (Matches UI 867402159 / 877549441)
   const [interviewToCancel, setInterviewToCancel] = useState<ScheduledInterview | null>(null);
   const [cancelReason, setCancelReason] = useState("Interviewer unavailable");
@@ -3092,8 +3095,38 @@ export default function CalendarDrawer({
             if (interviewToComplete) {
               handleUpdateStatus(interviewToComplete.id, "completed");
               setInterviewToComplete(null);
+              setCompletedSuccessNotice(true);
             }
           }}
+        />,
+        document.body
+      )}
+
+      {/* ── INTERVIEW COMPLETED SUCCESS POPUP MODAL (PORTALED TO BODY - SYSTEM POPUP) ── */}
+      {typeof document !== "undefined" && completedSuccessNotice && createPortal(
+        <ConfirmationModal
+          isOpen={completedSuccessNotice}
+          type="info"
+          title="Interview Completed"
+          message="The interview has been successfully marked as completed."
+          confirmLabel="OK"
+          hideCancel={true}
+          icon={
+            <svg
+              viewBox="0 0 24 24"
+              width="28"
+              height="28"
+              fill="none"
+              stroke="#0284c7"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+          }
+          onConfirm={() => setCompletedSuccessNotice(false)}
         />,
         document.body
       )}

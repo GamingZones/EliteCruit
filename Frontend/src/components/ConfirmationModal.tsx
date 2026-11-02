@@ -12,7 +12,8 @@ export interface ConfirmationModalProps {
   confirmLabel?: string;
   isConfirming?: boolean;
   icon?: React.ReactNode;
-  onCancel: () => void;
+  hideCancel?: boolean;
+  onCancel?: () => void;
   onConfirm: () => void;
 }
 
@@ -25,6 +26,7 @@ export default function ConfirmationModal({
   confirmLabel = "Confirm",
   isConfirming = false,
   icon,
+  hideCancel = false,
   onCancel,
   onConfirm,
 }: ConfirmationModalProps) {
@@ -70,20 +72,33 @@ export default function ConfirmationModal({
   };
 
   return (
-    <div className="system-popup-overlay" onClick={onCancel} role="dialog" aria-modal="true" aria-label={title}>
+    <div
+      className="system-popup-overlay"
+      onClick={() => {
+        if (!isConfirming) {
+          if (onCancel) onCancel();
+          else onConfirm();
+        }
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+    >
       <div className="system-popup-card" onClick={(e) => e.stopPropagation()}>
         <div className={`system-popup-icon-wrap ${type}`}>{renderIcon()}</div>
         <h3 className="system-popup-title">{title}</h3>
         <div className="system-popup-message">{message}</div>
         <div className="system-popup-actions">
-          <button
-            type="button"
-            className="system-popup-btn secondary"
-            onClick={onCancel}
-            disabled={isConfirming}
-          >
-            {cancelLabel}
-          </button>
+          {!hideCancel && onCancel && (
+            <button
+              type="button"
+              className="system-popup-btn secondary"
+              onClick={onCancel}
+              disabled={isConfirming}
+            >
+              {cancelLabel}
+            </button>
+          )}
           <button
             type="button"
             className={`system-popup-btn ${type === "danger" ? "danger" : ""}`}
