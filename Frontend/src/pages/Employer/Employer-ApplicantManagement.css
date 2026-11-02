@@ -601,15 +601,15 @@
 }
 
 .stage header span {
-  font-size: 0.74rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: #0284c7;
-  background: #e0f2fe;
-  border: 1px solid #bae6fd;
-  border-radius: 999px;
-  padding: 2px 8px;
-  min-width: 20px;
-  text-align: center;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  min-width: unset;
+  text-align: right;
 }
 
 .ticket {

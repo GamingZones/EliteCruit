@@ -5889,8 +5889,13 @@
 }
 
 [data-theme="dark"] .stage-wrap .stage header span {
-  background: #242735 !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  padding: 0 !important;
   color: #38bdf8 !important;
+  box-shadow: none !important;
 }
 
 [data-theme="dark"] .stage-wrap .stage .empty.drag-target-hint {
@@ -5950,6 +5955,16 @@
 [data-theme="dark"] .preview-rating-badge {
   background: rgba(245, 158, 11, 0.2) !important;
   border: 1px solid rgba(245, 158, 11, 0.4) !important;
+  color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .candidate-preview .preview-rating-star,
+[data-theme="dark"] .preview-rating-star {
+  color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .candidate-preview .preview-rating-num,
+[data-theme="dark"] .preview-rating-num {
   color: #fbbf24 !important;
 }
 

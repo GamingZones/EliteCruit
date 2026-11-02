@@ -633,13 +633,42 @@ type DirectInvitation = {
 
 type Stats = { total: number; pending: number; shortlisted: number };
 
-function parseItemList(str?: string | null, fallback: string[] = []): string[] {
-  if (!str || !str.trim()) return fallback;
-  const items = str
-    .split(/[\n,•;]+/)
-    .map((s) => s.trim())
+function parseItemList(data?: any, fallback: string[] = []): string[] {
+  if (!data) return fallback;
+  const cleanToken = (s: string) =>
+    String(s)
+      .replace(/^[\s\[\]"'\\]+|[\s\[\]"'\\]+$/g, "")
+      .replace(/\\"/g, '"')
+      .replace(/^["']+|["']+$/g, "")
+      .trim();
+
+  if (Array.isArray(data)) {
+    return data
+      .flatMap((item) => {
+        if (typeof item === "string" && (item.trim().startsWith("[") || item.trim().startsWith("{"))) {
+          try {
+            const inner = JSON.parse(item);
+            if (Array.isArray(inner)) return inner;
+          } catch {}
+        }
+        return item;
+      })
+      .map(cleanToken)
+      .filter(Boolean);
+  }
+  try {
+    const parsed = typeof data === "string" ? JSON.parse(data) : data;
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map(cleanToken)
+        .filter(Boolean);
+    }
+  } catch {}
+  return String(data)
+    .replace(/^[\s\[\]"'\\]+|[\s\[\]"'\\]+$/g, "")
+    .split(/[,;\n•|]+/)
+    .map(cleanToken)
     .filter(Boolean);
-  return items.length > 0 ? items : fallback;
 }
 
 function initialsFrom(name: string) {
@@ -3604,11 +3633,6 @@ export default function EmployerApplicantManagement() {
                           >
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                               <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                {isFinalized && (
-                                  <svg viewBox="0 0 24 24" width="12" height="12" fill="#059669" style={{ flexShrink: 0 }}>
-                                    <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" />
-                                  </svg>
-                                )}
                                 <strong>{a.applicant_name}</strong>
                               </span>
                               <span className="ticket-match-badge" style={{ color: style.color }}>{percent}%</span>
@@ -3675,11 +3699,6 @@ export default function EmployerApplicantManagement() {
                           >
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                               <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                {isFinalized && (
-                                  <svg viewBox="0 0 24 24" width="12" height="12" fill="#dc2626" style={{ flexShrink: 0 }}>
-                                    <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" />
-                                  </svg>
-                                )}
                                 <strong>{a.applicant_name}</strong>
                               </span>
                               <span className="ticket-match-badge" style={{ color: style.color }}>{percent}%</span>
@@ -3740,7 +3759,7 @@ export default function EmployerApplicantManagement() {
                     </div>
                     <div className="preview-head-badges" style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0, marginLeft: "auto" }}>
                       <div className="preview-rating-badge">
-                        <span className="preview-rating-star">★</span>
+                        <span className="preview-rating-star" style={{ color: "#f59e0b" }}>★</span>
                         <span className="preview-rating-num">{(currentApp as any).rating ? Number((currentApp as any).rating).toFixed(1) : "0.0"}</span>
                       </div>
                       <div
