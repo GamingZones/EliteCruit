@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import "./EmployerApplicantDetailsModal.css";
 import { JobDetailsModal, type JobModalData } from "../../components/modals";
+import { authFetch } from "../../utils/auth";
 import {
   isSkillMatch,
   isCertificationMatch,
@@ -321,6 +322,97 @@ export default function EmployerApplicantDetailsModal({
   } | null>(null);
   const [hoveredCompareTag, setHoveredCompareTag] = useState<{ item: string; side: "applicant" | "employer"; category: string } | null>(null);
 
+  // Direct Recruitment Invitation Modal state (Invite Candidate to Apply)
+  const [isRecruitModalOpen, setIsRecruitModalOpen] = useState(false);
+  const [isRecruitModalClosing, setIsRecruitModalClosing] = useState(false);
+  const [recruitTargetJob, setRecruitTargetJob] = useState<any | null>(null);
+  const [recruitCustomMsg, setRecruitCustomMsg] = useState("");
+  const [isRecruitSending, setIsRecruitSending] = useState(false);
+  const [recruitSuccessMsg, setRecruitSuccessMsg] = useState<string | null>(null);
+  const [recruitErrorMsg, setRecruitErrorMsg] = useState<string | null>(null);
+
+  const handleOpenRecruitModal = (job: any) => {
+    if (!candidate || !job) return;
+    setRecruitTargetJob(job);
+    const candName =
+      candidate.applicant_name ||
+      candidate.name ||
+      (candidate.first_name || candidate.last_name
+        ? `${candidate.first_name || ""} ${candidate.last_name || ""}`.trim()
+        : "Candidate");
+    setRecruitCustomMsg(
+      `Hello ${candName}! We reviewed your profile and would like to invite you to apply for our open position: ${job?.title || "our open position"}.`
+    );
+    setRecruitSuccessMsg(null);
+    setRecruitErrorMsg(null);
+    setIsRecruitModalOpen(true);
+  };
+
+  const closeRecruitModal = () => {
+    setIsRecruitModalClosing(true);
+    setTimeout(() => {
+      setIsRecruitModalOpen(false);
+      setIsRecruitModalClosing(false);
+      setRecruitTargetJob(null);
+      setRecruitSuccessMsg(null);
+      setRecruitErrorMsg(null);
+    }, 200);
+  };
+
+  const handleSendRecruitmentInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!candidate || !recruitTargetJob) return;
+
+    const rawUser = localStorage.getItem("elitecruit-user");
+    let employerUserId = currentEmployerUserId;
+    if (!employerUserId && rawUser) {
+      try {
+        employerUserId = JSON.parse(rawUser)?.id;
+      } catch {}
+    }
+    if (!employerUserId) return;
+
+    const targetApplicantUserId = candidate.applicant_user_id || candidate.user_id || candidate.id;
+    if (!targetApplicantUserId) return;
+
+    setIsRecruitSending(true);
+    setRecruitSuccessMsg(null);
+    setRecruitErrorMsg(null);
+
+    try {
+      const res = await authFetch(`/api/employers/${employerUserId}/invite-candidate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          applicant_user_id: targetApplicantUserId,
+          job_post_id: recruitTargetJob.id,
+          custom_message: recruitCustomMsg,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const candName =
+          candidate.applicant_name ||
+          candidate.name ||
+          (candidate.first_name || candidate.last_name
+            ? `${candidate.first_name || ""} ${candidate.last_name || ""}`.trim()
+            : "Candidate");
+        setRecruitSuccessMsg(`Invitation successfully sent to ${candName}!`);
+        setTimeout(() => {
+          closeRecruitModal();
+          setSelectedPreviewJob(null);
+        }, 1500);
+      } else {
+        setRecruitErrorMsg(data.message || "Failed to send invitation.");
+      }
+    } catch (err) {
+      console.error("Error sending invite:", err);
+      setRecruitErrorMsg("Network error sending invitation. Please try again.");
+    } finally {
+      setIsRecruitSending(false);
+    }
+  };
+
   // Candidate Messages state & handlers
   const [candMsgThread, setCandMsgThread] = useState<any | null>(null);
   const [candMessages, setCandMessages] = useState<any[]>([]);
@@ -356,6 +448,11 @@ export default function EmployerApplicantDetailsModal({
       setCandMessages([]);
       setCandMsgThread(null);
       setCandMsgInput("");
+      setIsRecruitModalOpen(false);
+      setIsRecruitModalClosing(false);
+      setRecruitTargetJob(null);
+      setRecruitSuccessMsg(null);
+      setRecruitErrorMsg(null);
     }
   }, [isOpen, initialSideTab]);
 
@@ -762,6 +859,201 @@ export default function EmployerApplicantDetailsModal({
               Done
             </button>
           </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render Direct Recruitment Invitation Modal (Pic 2)
+  const renderRecruitModal = () => {
+    if (!isRecruitModalOpen || !recruitTargetJob) return null;
+
+    const pic = profilePicSrc;
+    const targetTitle = recruitTargetJob.title || "Job Opening";
+    const targetLoc = recruitTargetJob.location || "Cavite";
+    const targetArrangement = recruitTargetJob.work_arrangement || recruitTargetJob.setup || "On-Site";
+
+    return (
+      <div
+        className="recruit-invite-overlay"
+        onClick={closeRecruitModal}
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 55000,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "rgba(1, 41, 74, 0.55)",
+          backdropFilter: "blur(4px)",
+          animation: isRecruitModalClosing
+            ? "jdFadeOut 0.2s ease forwards"
+            : "jdFadeIn 0.22s ease forwards",
+        }}
+      >
+        <div
+          className="cand-details-panel recruit-invite-panel"
+          style={{
+            maxWidth: "520px",
+            height: "auto",
+            minHeight: "unset",
+            width: "90%",
+            borderRadius: "16px",
+            background: "#ffffff",
+            boxShadow: "0 24px 60px rgba(0, 0, 0, 0.3)",
+            overflow: "hidden",
+            fontFamily: '"Inter", sans-serif',
+            animation: isRecruitModalClosing
+              ? "jdPopOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards"
+              : "jdPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div
+            className="recruit-invite-header"
+            style={{
+              padding: "16px 20px",
+              background: "#f8fbff",
+              borderBottom: "1px solid #e2e8f0",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#01294a", fontFamily: '"Inter", sans-serif' }}>
+              Invite Candidate to Apply
+            </h3>
+            <button
+              type="button"
+              className="recruit-invite-close"
+              onClick={closeRecruitModal}
+              style={{
+                background: "none",
+                border: "none",
+                fontSize: "1.2rem",
+                cursor: "pointer",
+                color: "#64748b",
+                padding: "4px",
+                lineHeight: 1,
+              }}
+            >
+              ✕
+            </button>
+          </div>
+
+          <form onSubmit={handleSendRecruitmentInvite} className="recruit-invite-form" style={{ padding: "20px", display: "grid", gap: "16px", fontFamily: '"Inter", sans-serif' }}>
+            {/* Applicant Summary */}
+            <div className="recruit-applicant-summary" style={{ display: "flex", gap: "12px", alignItems: "center", padding: "12px 14px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+              <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "#01294a", color: "#fff", display: "grid", placeItems: "center", fontWeight: 700, fontSize: "0.85rem", flexShrink: 0, overflow: "hidden", position: "relative" }}>
+                {pic && (
+                  <img
+                    src={pic}
+                    alt={displayName}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLElement).style.display = "none";
+                      if (e.currentTarget.nextElementSibling) {
+                        (e.currentTarget.nextElementSibling as HTMLElement).style.display = "inline";
+                      }
+                    }}
+                  />
+                )}
+                <span style={{ display: pic ? "none" : "inline" }}>
+                  {initials}
+                </span>
+              </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <strong style={{ fontSize: "0.95rem", color: "#0f172a", display: "block", wordBreak: "break-word" }}>{displayName}</strong>
+                <small style={{ display: "block", color: "#64748b", fontSize: "0.78rem", wordBreak: "break-word" }}>
+                  {candidate.email || "Candidate"} {candidate.phone ? `· ${candidate.phone}` : ""}
+                </small>
+              </div>
+            </div>
+
+            {/* Target Job Info */}
+            <div className="recruit-target-job-box" style={{ padding: "12px 14px", background: "#eff6ff", borderRadius: "10px", border: "1px solid #bfdbfe", display: "flex", flexDirection: "column", gap: "4px" }}>
+              <span className="recruit-target-job-badge" style={{ fontSize: "0.75rem", fontWeight: 700, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: "0.5px" }}>Target Job Opening</span>
+              <h4 className="recruit-target-job-title" style={{ margin: 0, fontSize: "0.98rem", fontWeight: 800, color: "#01294a" }}>{targetTitle}</h4>
+              <span className="recruit-target-job-meta" style={{ fontSize: "0.8rem", color: "#475569" }}>{targetLoc} • {targetArrangement}</span>
+            </div>
+
+            {/* Invitation Message Field */}
+            <label style={{ display: "grid", gap: "6px", fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", fontFamily: '"Inter", sans-serif' }}>
+              Invitation Message:
+              <textarea
+                className="recruit-msg-textarea"
+                value={recruitCustomMsg}
+                onChange={(e) => setRecruitCustomMsg(e.target.value)}
+                rows={4}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #cbd5e1",
+                  fontSize: "0.85rem",
+                  fontFamily: '"Inter", sans-serif',
+                  boxSizing: "border-box",
+                  resize: "vertical",
+                  lineHeight: "1.5",
+                }}
+              />
+            </label>
+
+            {/* Success Banner */}
+            {recruitSuccessMsg && (
+              <div style={{ background: "#dcfce7", color: "#15803d", border: "1px solid #86efac", padding: "12px", borderRadius: "8px", fontSize: "0.85rem", fontWeight: 700 }}>
+                {recruitSuccessMsg}
+              </div>
+            )}
+
+            {/* Error Banner */}
+            {recruitErrorMsg && (
+              <div style={{ background: "#fee2e2", color: "#b91c1c", border: "1px solid #fca5a5", padding: "12px", borderRadius: "8px", fontSize: "0.85rem", fontWeight: 700 }}>
+                {recruitErrorMsg}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "4px" }}>
+              <button
+                type="button"
+                className="recruit-cancel-btn"
+                style={{
+                  padding: "9px 18px",
+                  borderRadius: "8px",
+                  border: "1px solid #cbd5e1",
+                  background: "#f8fafc",
+                  color: "#475569",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                  fontFamily: '"Inter", sans-serif',
+                }}
+                onClick={closeRecruitModal}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="recruit-send-btn"
+                disabled={isRecruitSending}
+                style={{
+                  padding: "9px 20px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "#01294a",
+                  color: "#ffffff",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                  fontFamily: '"Inter", sans-serif',
+                  opacity: isRecruitSending ? 0.7 : 1,
+                }}
+              >
+                {isRecruitSending ? "Sending..." : "Send Invitation"}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     );
@@ -1901,9 +2193,33 @@ export default function EmployerApplicantDetailsModal({
         nearbyLocation: candidate?.nearby_location,
         preferredLocations: candidate?.preferred_locations,
       }}
+      customFooterActions={
+        <button
+          type="button"
+          className="solid-btn jd-recruit-btn"
+          style={{
+            background: "#0284c7",
+            color: "#ffffff",
+            border: "none",
+            borderRadius: "8px",
+            padding: "10px 22px",
+            fontWeight: 700,
+            fontSize: "0.9rem",
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            transition: "all 0.15s ease",
+          }}
+          onClick={() => handleOpenRecruitModal(selectedPreviewJob)}
+        >
+          Recruit
+        </button>
+      }
       hideEmployerHeader={true}
       zIndex={45000}
     />
+    {renderRecruitModal()}
   </div>
   );
 }

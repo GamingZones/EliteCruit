@@ -2002,3 +2002,240 @@
 [data-theme="dark"] .jd-details-side-card p {
   color: #cbd5e1 !important;
 }
+
+
+/* ── Direct Recruitment Invitation Modal (Invite Candidate to Apply) ── */
+.recruit-invite-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 55000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(1, 41, 74, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+.recruit-invite-panel {
+  max-width: 520px;
+  width: 90%;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  font-family: "Inter", sans-serif;
+}
+
+.recruit-invite-header {
+  padding: 16px 20px;
+  background: #f8fbff;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.recruit-invite-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #01294a;
+}
+
+.recruit-invite-close {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #64748b;
+  padding: 4px;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+.recruit-invite-close:hover {
+  color: #01294a;
+}
+
+.recruit-applicant-summary {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.recruit-target-job-box {
+  padding: 12px 14px;
+  background: #eff6ff;
+  border-radius: 10px;
+  border: 1px solid #bfdbfe;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.recruit-target-job-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #1d4ed8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.recruit-target-job-title {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #01294a;
+}
+
+.recruit-target-job-meta {
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+.recruit-msg-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  font-size: 0.85rem;
+  font-family: "Inter", sans-serif;
+  box-sizing: border-box;
+  resize: vertical;
+  line-height: 1.5;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.recruit-cancel-btn {
+  padding: 9px 18px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-family: "Inter", sans-serif;
+  transition: all 0.15s ease;
+}
+
+.recruit-cancel-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.recruit-send-btn {
+  padding: 9px 20px;
+  border-radius: 8px;
+  border: none;
+  background: #01294a;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-family: "Inter", sans-serif;
+  transition: background 0.15s ease;
+}
+
+.recruit-send-btn:hover {
+  background: #0284c7;
+}
+
+.jd-recruit-btn {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 10px 22px !important;
+  font-weight: 700 !important;
+  font-size: 0.9rem !important;
+  cursor: pointer !important;
+  transition: background 0.15s ease !important;
+}
+
+.jd-recruit-btn:hover {
+  background: #0369a1 !important;
+}
+
+/* Dark Theme overrides for Recruit Modal */
+[data-theme="dark"] .recruit-invite-panel {
+  background: #1c1e27 !important;
+  border: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .recruit-invite-header {
+  background: #14151B !important;
+  border-bottom: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .recruit-invite-header h3 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .recruit-invite-close {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .recruit-invite-close:hover {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .recruit-applicant-summary {
+  background: #242735 !important;
+  border: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .recruit-applicant-summary strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .recruit-applicant-summary small {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .recruit-target-job-box {
+  background: #0f1d30 !important;
+  border: 1px solid #1e3a5f !important;
+}
+
+[data-theme="dark"] .recruit-target-job-badge {
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .recruit-target-job-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .recruit-target-job-meta {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .recruit-msg-textarea {
+  background: #161821 !important;
+  border-color: #2e3244 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .recruit-cancel-btn {
+  background: #242735 !important;
+  border-color: #334155 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .recruit-cancel-btn:hover {
+  background: #334155 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .recruit-send-btn {
+  background: #0284c7 !important;
+}
+
+[data-theme="dark"] .recruit-send-btn:hover {
+  background: #0369a1 !important;
+}
