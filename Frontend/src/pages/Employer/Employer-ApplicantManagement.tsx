@@ -4157,7 +4157,7 @@ export default function EmployerApplicantManagement() {
                           {inv.job_title}
                         </p>
                         <small style={{ color: "#64748b" }}>
-                          {inv.city || "Cavite"} • {status === "accepted" ? "Recruited" : "Invited"}: {formatDate(inv.created_at)}
+                          {inv.city || "Cavite"} • {status === "accepted" ? "Recruited" : "Invited"}: {formatDate(status === "accepted" ? (inv.responded_at || inv.created_at) : inv.created_at)}
                         </small>
                       </div>
                     </div>

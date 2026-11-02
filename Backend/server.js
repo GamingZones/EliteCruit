@@ -5359,6 +5359,7 @@ app.get("/api/employers/:userId/direct-invitations", authenticateToken, requireU
   try {
     const invitations = await all(
       `SELECT ji.id, ji.job_post_id, ji.applicant_user_id, ji.status, ji.custom_message, ji.created_at, ji.updated_at,
+              ji.response_letter, ji.responded_at, ji.start_date,
               jp.title AS job_title, jp.location AS job_location, jp.salary_min, jp.salary_max, jp.hide_salary, jp.work_arrangement,
               jp.required_skills AS job_required_skills, jp.qualifications AS job_required_qualifications, jp.certifications AS job_required_certifications,
               ap.first_name, ap.last_name, ap.phone, ap.city, ap.skills, ap.qualifications, ap.certifications, ap.desired_job_title, ap.work_arrangement AS applicant_work_arrangement, ap.expected_salary, ap.resume_path, ap.profile_picture_path,
@@ -8481,7 +8482,120 @@ async function ensureMeetingsForZakiAccounts() {
       );
     }
 
-    console.log("[Zaki Accounts] Seeded 5 recruitment workflow test scenarios successfully!");
+    // 9. Ensure Direct Recruitment Invitations for Tab 3 Verification (Task 2.3)
+    async function ensureApplicantUser(email, firstName, lastName, phone, city, desiredJobTitle) {
+      let appRow = await get("SELECT id, email FROM users WHERE lower(email) = ?", [email.toLowerCase()]);
+      if (!appRow) {
+        const res = await run(
+          "INSERT INTO users (email, password_hash, role, is_active, is_email_verified, two_factor_enabled) VALUES (?, ?, 'applicant', true, true, false)",
+          [email.toLowerCase(), passHash]
+        );
+        appRow = { id: res.lastID, email };
+      }
+      await run(
+        `INSERT INTO applicant_profiles (
+          user_id, first_name, last_name, phone, city, address,
+          desired_job_title, expected_salary, work_arrangement, terms_accepted, terms_accepted_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'PHP 45,000', 'On-Site', true, CURRENT_TIMESTAMP)
+         ON CONFLICT (user_id) DO UPDATE SET first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name, city = EXCLUDED.city, desired_job_title = EXCLUDED.desired_job_title`,
+        [appRow.id, firstName, lastName, phone, city, `${city}, Cavite`, desiredJobTitle]
+      );
+      return appRow;
+    }
+
+    const johnJoe = await ensureApplicantUser("korikong69420@gmail.com", "John", "Joe", "09123456789", "Calamba", "Cybersecurity Analyst");
+    const mariaSantos = await ensureApplicantUser("maria.santos@applicant.elitecruit.ph", "Maria Clarissa", "Santos", "+63 917 234 5678", "Dasmarinas", "Senior Frontend Developer");
+    const juanReyes = await ensureApplicantUser("juan.reyes@applicant.elitecruit.ph", "Juan Carlos", "Reyes", "+63 917 345 6789", "Imus", "Industrial Maintenance Electrician");
+
+    const yesterdayIso = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const threeDaysAgoIso = new Date(Date.now() - 72 * 3600 * 1000).toISOString();
+    const twoHoursAgoIso = new Date(Date.now() - 2 * 3600 * 1000).toISOString();
+    const fiveDaysAgoIso = new Date(Date.now() - 120 * 3600 * 1000).toISOString();
+    const fourDaysAgoIso = new Date(Date.now() - 96 * 3600 * 1000).toISOString();
+
+    // Direct Invitation 1: Pending (John Joe -> Cybersecurity Analyst)
+    const invPending = await get(
+      "SELECT id FROM job_invitations WHERE employer_user_id = ? AND applicant_user_id = ? AND job_post_id = ?",
+      [employer.id, johnJoe.id, jobE.id]
+    );
+    if (!invPending) {
+      await run(
+        `INSERT INTO job_invitations (
+          employer_user_id, applicant_user_id, job_post_id, status, custom_message, created_at, updated_at
+        ) VALUES (?, ?, ?, 'pending', ?, ?, ?)`,
+        [
+          employer.id,
+          johnJoe.id,
+          jobE.id,
+          "Hello John Joe! We reviewed your profile and would like to invite you to apply for our open position: Cybersecurity Analyst.",
+          yesterdayIso,
+          yesterdayIso
+        ]
+      );
+    } else {
+      await run(
+        "UPDATE job_invitations SET status = 'pending', custom_message = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        ["Hello John Joe! We reviewed your profile and would like to invite you to apply for our open position: Cybersecurity Analyst.", invPending.id]
+      );
+    }
+
+    // Direct Invitation 2: Accepted / Recruited (Maria Santos -> Frontend UI/UX Developer)
+    const invAccepted = await get(
+      "SELECT id FROM job_invitations WHERE employer_user_id = ? AND applicant_user_id = ? AND job_post_id = ?",
+      [employer.id, mariaSantos.id, jobA.id]
+    );
+    const mariaAcceptMsg = "Dear Cebuana Lhuillier Hiring Team,\n\nI am delighted to accept your direct recruitment invitation for Frontend UI/UX Developer. Looking forward to joining the team!\n\nBest regards,\nMaria Clarissa Santos";
+    if (!invAccepted) {
+      await run(
+        `INSERT INTO job_invitations (
+          employer_user_id, applicant_user_id, job_post_id, status, custom_message, response_letter, responded_at, created_at, updated_at
+        ) VALUES (?, ?, ?, 'accepted', ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+        [
+          employer.id,
+          mariaSantos.id,
+          jobA.id,
+          "Hi Maria, we were impressed by your frontend and design experience and invite you directly to our UI/UX team.",
+          mariaAcceptMsg,
+          twoHoursAgoIso,
+          threeDaysAgoIso
+        ]
+      );
+    } else {
+      await run(
+        "UPDATE job_invitations SET status = 'accepted', response_letter = ?, responded_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        [mariaAcceptMsg, twoHoursAgoIso, invAccepted.id]
+      );
+    }
+
+    // Direct Invitation 3: Declined (Juan Carlos Reyes -> Cloud DevOps Engineer)
+    const invDeclined = await get(
+      "SELECT id FROM job_invitations WHERE employer_user_id = ? AND applicant_user_id = ? AND job_post_id = ?",
+      [employer.id, juanReyes.id, jobB.id]
+    );
+    const juanDeclineMsg = "Dear Cebuana Lhuillier Recruitment Team,\n\nThank you for reaching out. I am currently pursuing opportunities in electrical engineering and must respectfully decline.\n\nBest regards,\nJuan Carlos Reyes";
+    if (!invDeclined) {
+      await run(
+        `INSERT INTO job_invitations (
+          employer_user_id, applicant_user_id, job_post_id, status, custom_message, response_letter, responded_at, created_at, updated_at
+        ) VALUES (?, ?, ?, 'declined', ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+        [
+          employer.id,
+          juanReyes.id,
+          jobB.id,
+          "Hi Juan, we reviewed your technical expertise and invite you to interview for our Cloud DevOps opening.",
+          juanDeclineMsg,
+          fourDaysAgoIso,
+          fiveDaysAgoIso
+        ]
+      );
+    } else {
+      await run(
+        "UPDATE job_invitations SET status = 'declined', response_letter = ?, responded_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        [juanDeclineMsg, fourDaysAgoIso, invDeclined.id]
+      );
+    }
+
+    console.log("[Zaki Accounts] Seeded 5 recruitment workflow test scenarios + 3 direct invitation scenarios successfully!");
     return {
       success: true,
       message: "Recruitment test data seeded successfully!",
@@ -8521,6 +8635,22 @@ async function ensureMeetingsForZakiAccounts() {
           was_shortlisted: false,
           had_interview: false,
           applicantAction: "Log in as applicant and observe 4th milestone red '✕', middle steps bypassed with '—', and no withdraw button"
+        },
+        {
+          scenario: "6. Direct Invitation: Pending (Test date label 'Invited: [Date]' and 'Pending Response' pill in Tab 3)",
+          candidate: "John Joe",
+          job: jobE.title,
+          status: "pending",
+          expectedLabel: "Invited: Nov 2, 2026",
+          expectedBadge: "Pending Response"
+        },
+        {
+          scenario: "7. Direct Invitation: Recruited (Test date label 'Recruited: [Date]' and 'Recruited' pill in Tab 3)",
+          candidate: "Maria Clarissa Santos",
+          job: jobA.title,
+          status: "accepted",
+          expectedLabel: "Recruited: Nov 3, 2026",
+          expectedBadge: "Recruited"
         }
       ]
     };
