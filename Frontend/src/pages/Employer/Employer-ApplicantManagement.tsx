@@ -2128,7 +2128,7 @@ export default function EmployerApplicantManagement() {
     setSchedStartTime("10:00");
     setSchedEndTime("10:45");
     setSchedType("On-Site");
-    setSchedStage("Initial Interview");
+    setSchedStage("On-Site Interview");
     setSchedLocation(companyLabel ? `${companyLabel} Main Office` : "Company Office");
     setSchedNotes("");
   };
@@ -2156,20 +2156,21 @@ export default function EmployerApplicantManagement() {
       }
 
       const targetApplicantUserId = directScheduleApp.applicant_user_id || (directScheduleApp as any).user_id || 0;
-      const meetingTitle = `${schedStage} - ${directScheduleApp.applicant_name}`;
+      const meetingTitle = `Interview - ${directScheduleApp.applicant_name}`;
 
       const schedRes = await fetch("/api/interviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          application_id: directScheduleApp.id,
           employer_user_id: employerUserId,
           applicant_user_id: targetApplicantUserId,
           candidate_user_ids: [targetApplicantUserId],
           job_post_id: directScheduleApp.job_post_id,
           interview_title: meetingTitle,
-          interview_stage: schedStage,
-          interview_type: schedType,
-          meeting_link_or_address: schedLocation.trim() || (schedType === "Virtual" ? "Online Meeting" : (companyLabel ? `${companyLabel} Main Office` : "Company Office")),
+          interview_stage: "On-Site Interview",
+          interview_type: "On-Site",
+          meeting_link_or_address: schedLocation.trim() || (companyLabel ? `${companyLabel} Main Office` : "Company Office"),
           interview_date: schedDate,
           start_time: schedStartTime,
           end_time: schedEndTime || schedStartTime,
@@ -2181,14 +2182,15 @@ export default function EmployerApplicantManagement() {
       if (schedRes.ok) {
         const interviewObj = schedData?.interview || {
           id: Date.now(),
+          application_id: directScheduleApp.id,
           employer_user_id: employerUserId,
           applicant_user_id: targetApplicantUserId,
           candidate_user_ids: [targetApplicantUserId],
           job_post_id: directScheduleApp.job_post_id,
           interview_title: meetingTitle,
-          interview_stage: schedStage,
-          interview_type: schedType,
-          meeting_link_or_address: schedLocation.trim(),
+          interview_stage: "On-Site Interview",
+          interview_type: "On-Site",
+          meeting_link_or_address: schedLocation.trim() || (companyLabel ? `${companyLabel} Main Office` : "Company Office"),
           interview_date: schedDate,
           start_time: schedStartTime,
           end_time: schedEndTime || schedStartTime,
@@ -2202,6 +2204,15 @@ export default function EmployerApplicantManagement() {
           localStorage.setItem("elitecruit_scheduled_interviews", JSON.stringify(merged));
           window.dispatchEvent(new Event("elitecruit-interviews-updated"));
         } catch {}
+
+        setApplications((prev) =>
+          prev.map((app) =>
+            app.id === directScheduleApp.id
+              ? { ...app, status: "interviewing" }
+              : app
+          )
+        );
+        fetchApplications();
 
         const candidateName = directScheduleApp.applicant_name;
         setDirectScheduleApp(null);
@@ -4480,28 +4491,13 @@ export default function EmployerApplicantManagement() {
                     </div>
 
                     <div className="decision-sched-field">
-                      <label>Interview Stage</label>
-                      <select
-                        className="decision-sched-input"
-                        value={schedStage}
-                        onChange={(e) => setSchedStage(e.target.value)}
-                      >
-                        <option value="Initial Interview">Initial Interview</option>
-                        <option value="Technical Interview">Technical Interview</option>
-                        <option value="Final Interview">Final Interview</option>
-                        <option value="HR Screening">HR Screening</option>
-                        <option value="On-Site Interview">On-Site Interview</option>
-                      </select>
-                    </div>
-
-                    <div className="decision-sched-field">
                       <label>Office Address / Room</label>
                       <input
                         type="text"
                         className="decision-sched-input"
                         value={schedLocation}
                         onChange={(e) => setSchedLocation(e.target.value)}
-                        placeholder="e.g., CEBUANA Main Office or 4th Floor HQ, Room B"
+                        placeholder={companyLabel ? `${companyLabel} Main Office, Room / Floor` : "e.g., Main Office or 4th Floor HQ, Room B"}
                       />
                     </div>
 
@@ -4776,8 +4772,8 @@ export default function EmployerApplicantManagement() {
         )}
 
         {/* ── STANDALONE SCHEDULE INTERVIEW MODAL (OPTIONAL INTERVIEW TRACK) ── */}
-        {directScheduleApp && (
-          <div className="decision-modal-overlay" onClick={() => { if (!isDecisionSubmitting) setDirectScheduleApp(null); }}>
+        {typeof document !== "undefined" && directScheduleApp && createPortal(
+          <div className="decision-modal-overlay candidate-response-overlay" onClick={() => { if (!isDecisionSubmitting) setDirectScheduleApp(null); }}>
             <div className="decision-modal-containers-row" onClick={(e) => e.stopPropagation()}>
               <aside className="decision-card decision-schedule-card" style={{ maxWidth: "520px", width: "100%" }}>
                 <div className="decision-card-header">
@@ -4841,42 +4837,14 @@ export default function EmployerApplicantManagement() {
                     </div>
                   </div>
 
-                  <div className="decision-schedule-row two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                    <div className="decision-sched-field">
-                      <label>Interview Stage</label>
-                      <select
-                        className="decision-sched-input"
-                        value={schedStage}
-                        onChange={(e) => setSchedStage(e.target.value)}
-                      >
-                        <option value="Initial Interview">Initial Interview</option>
-                        <option value="Technical Interview">Technical Interview</option>
-                        <option value="Final Interview">Final Interview</option>
-                        <option value="HR Screening">HR Screening</option>
-                        <option value="On-Site Interview">On-Site Interview</option>
-                      </select>
-                    </div>
-                    <div className="decision-sched-field">
-                      <label>Interview Mode</label>
-                      <select
-                        className="decision-sched-input"
-                        value={schedType}
-                        onChange={(e) => setSchedType(e.target.value as "On-Site" | "Virtual")}
-                      >
-                        <option value="On-Site">On-Site</option>
-                        <option value="Virtual">Virtual / Online</option>
-                      </select>
-                    </div>
-                  </div>
-
                   <div className="decision-sched-field">
-                    <label>{schedType === "Virtual" ? "Meeting Link / Platform" : "Office Address / Room"}</label>
+                    <label>Office Address / Room</label>
                     <input
                       type="text"
                       className="decision-sched-input"
                       value={schedLocation}
                       onChange={(e) => setSchedLocation(e.target.value)}
-                      placeholder={schedType === "Virtual" ? "e.g., Google Meet link or Zoom" : "e.g., CEBUANA Main Office, Room 4B"}
+                      placeholder={companyLabel ? `${companyLabel} Main Office, Room / Floor` : "e.g., Main Office or 4th Floor HQ, Room B"}
                     />
                   </div>
 
@@ -4913,7 +4881,8 @@ export default function EmployerApplicantManagement() {
                 </div>
               </aside>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* ── CANDIDATE RESPONSE LETTER VIEW MODAL ── */}
