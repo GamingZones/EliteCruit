@@ -2405,6 +2405,7 @@
   border: none;
   font-size: 0.88rem;
   font-weight: 700;
+  background: #0f172a;
   color: #ffffff;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -4543,4 +4544,26 @@
   background: #4f46e5 !important;
   border-color: #4f46e5 !important;
   color: #ffffff !important;
+}
+
+
+.candidate-response-overlay {
+  z-index: 250000 !important;
+}
+
+.candidate-response-close-btn {
+  padding: 9px 24px !important;
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  border: none !important;
+  font-weight: 700 !important;
+  font-size: 0.88rem !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25) !important;
+}
+
+.candidate-response-close-btn:hover {
+  background: #1e293b !important;
+  transform: translateY(-1px) !important;
 }

@@ -9351,6 +9351,21 @@
   color: #ffffff !important;
 }
 
+[data-theme="dark"] .candidate-response-close-btn,
+[data-theme="dark"] .decision-confirm-btn:not(.approved):not(.denied):not(.schedule-action) {
+  background: #242735 !important;
+  border: 1px solid #2e3244 !important;
+  color: #f1f5f9 !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .candidate-response-close-btn:hover,
+[data-theme="dark"] .decision-confirm-btn:not(.approved):not(.denied):not(.schedule-action):hover {
+  background: #2e3244 !important;
+  border-color: #38bdf8 !important;
+  color: #ffffff !important;
+}
+
 /* ── Candidate Side-Docked Message Panel Dark Theme ── */
 [data-theme="dark"] .cand-message-side-panel {
   background: #1c1e27 !important;

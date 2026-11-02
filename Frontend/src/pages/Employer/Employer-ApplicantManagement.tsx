@@ -4917,8 +4917,8 @@ export default function EmployerApplicantManagement() {
         )}
 
         {/* ── CANDIDATE RESPONSE LETTER VIEW MODAL ── */}
-        {viewingResponseLetterApp && (
-          <div className="decision-modal-overlay" onClick={() => setViewingResponseLetterApp(null)}>
+        {typeof document !== "undefined" && viewingResponseLetterApp && createPortal(
+          <div className="decision-modal-overlay candidate-response-overlay" onClick={() => setViewingResponseLetterApp(null)}>
             <div className="decision-modal-containers-row" onClick={(e) => e.stopPropagation()}>
               <div className="decision-card decision-main-card" style={{ maxWidth: "560px", width: "100%" }}>
                 <div className="decision-card-header">
@@ -4965,7 +4965,7 @@ export default function EmployerApplicantManagement() {
                 <div className="decision-card-footer" style={{ justifyContent: "flex-end" }}>
                   <button
                     type="button"
-                    className="decision-confirm-btn"
+                    className="decision-confirm-btn candidate-response-close-btn"
                     onClick={() => setViewingResponseLetterApp(null)}
                   >
                     Close
@@ -4973,7 +4973,8 @@ export default function EmployerApplicantManagement() {
                 </div>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* ── SCHEDULE SUCCESS POPUP (RULE 6 COMPLIANT) ── */}
