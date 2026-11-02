@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import "./CalendarDrawer.css";
 import ApplicantDetailsModal, { CandidateModalData } from "./modals/ApplicantDetailsModal";
+import ConfirmationModal from "./ConfirmationModal";
 import {
   formatLocationWithCavite,
   parseItemList,
@@ -527,6 +528,9 @@ export default function CalendarDrawer({
 
   // System Delete Confirmation Modal state (Employer only)
   const [interviewToDelete, setInterviewToDelete] = useState<ScheduledInterview | null>(null);
+
+  // Complete Interview Confirmation Modal state (Employer only)
+  const [interviewToComplete, setInterviewToComplete] = useState<ScheduledInterview | null>(null);
 
   // Cancel Interview Modal state (Matches UI 867402159 / 877549441)
   const [interviewToCancel, setInterviewToCancel] = useState<ScheduledInterview | null>(null);
@@ -1347,6 +1351,7 @@ export default function CalendarDrawer({
                       onOpenMeetingCandidatesModal={handleOpenMeetingCandidatesModal}
                       onOpenCancelModal={handleOpenCancelModal}
                       onOpenRescheduleModal={handleOpenRescheduleModal}
+                      onOpenCompleteModal={(targetItem) => setInterviewToComplete(targetItem)}
                     />
                   ))
                 )}
@@ -1389,6 +1394,7 @@ export default function CalendarDrawer({
                     onOpenMeetingCandidatesModal={handleOpenMeetingCandidatesModal}
                     onOpenCancelModal={handleOpenCancelModal}
                     onOpenRescheduleModal={handleOpenRescheduleModal}
+                    onOpenCompleteModal={(targetItem) => setInterviewToComplete(targetItem)}
                   />
                 ))
               )}
@@ -3057,6 +3063,41 @@ export default function CalendarDrawer({
         document.body
       )}
 
+      {/* ── COMPLETE INTERVIEW CONFIRMATION POP-UP MODAL (PORTALED TO BODY - SYSTEM POPUP) ── */}
+      {typeof document !== "undefined" && interviewToComplete && createPortal(
+        <ConfirmationModal
+          isOpen={!!interviewToComplete}
+          type="info"
+          title="Mark Interview Completed"
+          message="Are you sure you want to mark this interview as completed?"
+          cancelLabel="Cancel"
+          confirmLabel="Mark Completed"
+          icon={
+            <svg
+              viewBox="0 0 24 24"
+              width="28"
+              height="28"
+              fill="none"
+              stroke="#0284c7"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+          }
+          onCancel={() => setInterviewToComplete(null)}
+          onConfirm={() => {
+            if (interviewToComplete) {
+              handleUpdateStatus(interviewToComplete.id, "completed");
+              setInterviewToComplete(null);
+            }
+          }}
+        />,
+        document.body
+      )}
+
       {/* ── DELETE CONFIRMATION POP-UP MODAL (PORTALED TO BODY - SYSTEM POPUP) ── */}
       {typeof document !== "undefined" && interviewToDelete && createPortal(
         <div
@@ -3367,6 +3408,7 @@ function InterviewItemCard({
   onOpenMeetingCandidatesModal,
   onOpenCancelModal,
   onOpenRescheduleModal,
+  onOpenCompleteModal,
 }: {
   item: ScheduledInterview;
   isEmployer: boolean;
@@ -3377,6 +3419,7 @@ function InterviewItemCard({
   onOpenMeetingCandidatesModal: (item: ScheduledInterview, candidates: SchedulableCandidate[]) => void;
   onOpenCancelModal: (item: ScheduledInterview) => void;
   onOpenRescheduleModal: (item: ScheduledInterview) => void;
+  onOpenCompleteModal?: (item: ScheduledInterview) => void;
 }) {
   const isPending = item.status === "pending";
   const isAccepted = item.status === "accepted";
@@ -3552,7 +3595,13 @@ function InterviewItemCard({
                   <button
                     type="button"
                     className="int-card-btn int-btn-completed"
-                    onClick={() => onUpdateStatus(item.id, "completed")}
+                    onClick={() => {
+                      if (onOpenCompleteModal) {
+                        onOpenCompleteModal(item);
+                      } else {
+                        onUpdateStatus(item.id, "completed");
+                      }
+                    }}
                   >
                     Mark Completed
                   </button>
