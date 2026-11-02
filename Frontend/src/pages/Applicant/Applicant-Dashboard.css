@@ -708,10 +708,269 @@
 }
 
 .job-card-middle {
-  flex: 1;
+  flex: 1.5;
+  min-width: 220px;
+  max-width: 360px;
   display: flex;
   justify-content: center;
   align-items: center;
+  position: relative;
+}
+
+/* ==========================================================================
+   Card Milestone Timeline (In Job Card Middle)
+   ========================================================================== */
+.card-timeline-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 10px;
+}
+
+.card-timeline-badge-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.card-timeline-track {
+  position: relative;
+  width: 100%;
+  padding: 4px 0;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.card-timeline-line-bg {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  right: 14px;
+  height: 3px;
+  background: #e2e8f0;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  z-index: 1;
+}
+
+.card-timeline-line-fill {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  height: 3px;
+  background: #10b981;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  z-index: 2;
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: calc(100% - 28px);
+}
+
+.card-timeline-nodes-row {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 3;
+}
+
+.card-timeline-node {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-timeline-node.is-hovered {
+  z-index: 60;
+}
+
+.card-timeline-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  user-select: none;
+}
+
+.card-timeline-circle.completed {
+  background: #10b981;
+  border: 2px solid #059669;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
+}
+
+.card-timeline-circle.active {
+  background: #ffffff;
+  border: 2.5px solid #2563eb;
+  color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.card-timeline-pulse-core {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2563eb;
+  animation: miniTimelinePulse 1.8s infinite ease-in-out;
+}
+
+@keyframes miniTimelinePulse {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.8; }
+}
+
+.card-timeline-circle.concluded {
+  background: #fee2e2;
+  border: 2px solid #ef4444;
+  color: #dc2626;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.25);
+}
+
+.card-timeline-circle.upcoming {
+  background: #f8fafc;
+  border: 2px solid #cbd5e1;
+  color: #94a3b8;
+}
+
+.card-timeline-dot-core {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #cbd5e1;
+}
+
+.card-timeline-node:hover .card-timeline-circle {
+  transform: scale(1.18);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Floating Tooltip / Popover on Circle Hover */
+.card-timeline-popover {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 250px;
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 10px 14px;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  z-index: 100;
+  animation: timelineTooltipFadeIn 0.15s ease-out;
+  text-align: left;
+}
+
+.card-timeline-node:first-child .card-timeline-popover {
+  left: 0;
+  transform: translateX(0);
+}
+.card-timeline-node:first-child .card-timeline-popover .popover-arrow {
+  left: 13px;
+  transform: translateX(0);
+}
+
+.card-timeline-node:last-child .card-timeline-popover {
+  left: auto;
+  right: 0;
+  transform: translateX(0);
+}
+.card-timeline-node:last-child .card-timeline-popover .popover-arrow {
+  left: auto;
+  right: 13px;
+  transform: translateX(0);
+}
+
+@keyframes timelineTooltipFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.card-timeline-popover .popover-arrow {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: #0f172a transparent transparent transparent;
+}
+
+.popover-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 5px;
+}
+
+.popover-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #f8fafc;
+  line-height: 1.25;
+}
+
+.popover-date {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.popover-desc {
+  margin: 0 0 6px;
+  font-size: 0.75rem;
+  color: #cbd5e1;
+  line-height: 1.35;
+}
+
+.popover-status-badge {
+  display: flex;
+  align-items: center;
+}
+
+.popover-pill {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.popover-pill.completed {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.popover-pill.active {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.popover-pill.concluded {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.popover-pill.upcoming {
+  background: rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.4);
 }
 
 .status-badge-chip {
@@ -2939,6 +3198,72 @@
   background: rgba(239, 68, 68, 0.16);
   color: #f87171;
   border-color: rgba(239, 68, 68, 0.35);
+}
+
+/* Dark Mode Card Milestone Timeline Isolation */
+[data-theme="dark"] .card-timeline-line-bg {
+  background: #334155;
+}
+
+[data-theme="dark"] .card-timeline-line-fill {
+  background: #10b981;
+}
+
+[data-theme="dark"] .card-timeline-circle.completed {
+  background: #059669;
+  border-color: #10b981;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+[data-theme="dark"] .card-timeline-circle.active {
+  background: #1e293b;
+  border-color: #38bdf8;
+  color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
+}
+
+[data-theme="dark"] .card-timeline-pulse-core {
+  background: #38bdf8;
+}
+
+[data-theme="dark"] .card-timeline-circle.concluded {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #f87171;
+  color: #f87171;
+}
+
+[data-theme="dark"] .card-timeline-circle.upcoming {
+  background: #1e293b;
+  border-color: #334155;
+  color: #64748b;
+}
+
+[data-theme="dark"] .card-timeline-dot-core {
+  background: #475569;
+}
+
+[data-theme="dark"] .card-timeline-popover {
+  background: #1e293b;
+  border: 1px solid #334155;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .card-timeline-popover .popover-arrow {
+  border-color: #1e293b transparent transparent transparent;
+}
+
+[data-theme="dark"] .popover-title {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .popover-date {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .popover-desc {
+  color: #cbd5e1;
 }
 
 /* =========================================================================

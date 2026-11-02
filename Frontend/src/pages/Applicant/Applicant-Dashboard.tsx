@@ -385,6 +385,115 @@ function formatDate(d: string | null) {
   return isNaN(dt.getTime()) ? d : dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+function ApplicationCardTimeline({
+  app,
+  onOpenTimeline,
+}: {
+  app: any;
+  onOpenTimeline: () => void;
+}) {
+  const steps = getApplicationTimelineSteps(app);
+  const [hoveredStepIndex, setHoveredStepIndex] = useState<number | null>(null);
+
+  // Compute progress line width (3 intervals between 4 steps: 0%, 33.33%, 66.66%, 100%)
+  const lastCompletedIndex = steps.reduce(
+    (max, s, idx) => (s.state === "completed" ? idx : max),
+    -1
+  );
+  const activeIndex = steps.findIndex((s) => s.state === "active");
+
+  let progressPct = 0;
+  if (lastCompletedIndex === 3) {
+    progressPct = 100;
+  } else if (lastCompletedIndex >= 0) {
+    const effectiveIndex = activeIndex > lastCompletedIndex ? activeIndex - 0.5 : lastCompletedIndex;
+    progressPct = Math.min(100, Math.max(0, (effectiveIndex / 3) * 100));
+  } else if (activeIndex >= 0) {
+    progressPct = 15;
+  }
+
+  return (
+    <div className="card-timeline-wrapper">
+      <div className="card-timeline-badge-row">
+        <span className={`status-badge-chip ${statusChipBadgeClass(app.status)}`}>
+          {formatStatusLabel(app.status)}
+        </span>
+      </div>
+
+      <div
+        className="card-timeline-track"
+        onClick={onOpenTimeline}
+        title="Click to view detailed milestone timeline"
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onOpenTimeline();
+          }
+        }}
+      >
+        <div className="card-timeline-line-bg" />
+        <div
+          className="card-timeline-line-fill"
+          style={{ width: `${progressPct}%` }}
+        />
+
+        <div className="card-timeline-nodes-row">
+          {steps.map((step, idx) => {
+            const isCompleted = step.state === "completed";
+            const isActive = step.state === "active";
+            const isConcluded = step.state === "concluded";
+            const isHovered = hoveredStepIndex === idx;
+
+            return (
+              <div
+                key={idx}
+                className={`card-timeline-node ${step.state} ${isHovered ? "is-hovered" : ""}`}
+                onMouseEnter={() => setHoveredStepIndex(idx)}
+                onMouseLeave={() => setHoveredStepIndex(null)}
+              >
+                <div className={`card-timeline-circle ${step.state}`}>
+                  {isCompleted && (
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                  {isConcluded && (
+                    <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  )}
+                  {isActive && <span className="card-timeline-pulse-core" />}
+                  {!isCompleted && !isConcluded && !isActive && <span className="card-timeline-dot-core" />}
+                </div>
+
+                {/* Floating Information Tooltip: ONLY shows on hover */}
+                {isHovered && (
+                  <div className="card-timeline-popover" onClick={(e) => e.stopPropagation()}>
+                    <div className="popover-arrow" />
+                    <div className="popover-header">
+                      <span className="popover-title">{step.title}</span>
+                      {step.timestamp && <span className="popover-date">{step.timestamp}</span>}
+                    </div>
+                    {step.description && <p className="popover-desc">{step.description}</p>}
+                    <div className="popover-status-badge">
+                      <span className={`popover-pill ${step.state}`}>
+                        {isCompleted ? "Completed" : isActive ? "Current Stage" : isConcluded ? "Concluded" : "Upcoming"}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export { SideIcon, ChevronIcon } from "../../components/Icons";
 
 function MenuIcon() {
@@ -1422,9 +1531,10 @@ export default function ApplicantDashboard() {
                   </p>
                 </div>
                 <div className="job-card-middle">
-                  <span className={`status-badge-chip ${statusChipBadgeClass(app.status)}`}>
-                    {formatStatusLabel(app.status)}
-                  </span>
+                  <ApplicationCardTimeline
+                    app={app}
+                    onOpenTimeline={() => setTimelineModalApp(app)}
+                  />
                 </div>
                 <div className="job-actions">
                   {(() => {
@@ -1475,15 +1585,6 @@ export default function ApplicantDashboard() {
 
                     return null;
                   })()}
-                  <button
-                    type="button"
-                    className="solid-btn track-timeline-btn"
-                    onClick={() => setTimelineModalApp(app)}
-                    title="Track application progress and milestone timeline"
-                    style={{ background: "#0284c7", color: "#ffffff" }}
-                  >
-                    Timeline
-                  </button>
                   <button type="button" className="solid-btn review-app-btn" onClick={() => handleReviewApplication(app)}>
                     Review
                   </button>
