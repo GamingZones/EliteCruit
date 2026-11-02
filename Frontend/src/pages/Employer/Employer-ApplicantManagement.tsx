@@ -4018,7 +4018,7 @@ export default function EmployerApplicantManagement() {
           <section id="direct-invitations" className="applicant-shortlist-board card" style={{ margin: "0 14px 24px", padding: "20px 24px" }}>
           <div className="matches-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
             <div>
-              <h2 style={{ margin: 0, fontSize: "1.35rem", color: "#01294a" }}>Direct Recruitment Invitations</h2>
+              <h2 className="direct-invitations-heading" style={{ margin: 0, fontSize: "1.35rem" }}>Direct Recruitment Invitations</h2>
               <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "0.84rem" }}>
                 Candidates directly invited from Applicant Finder to apply for active job openings.
               </p>
@@ -4040,9 +4040,6 @@ export default function EmployerApplicantManagement() {
                       borderRadius: "20px",
                       fontSize: "0.75rem",
                       fontWeight: 600,
-                      border: invitationFilter === filterKey ? "1px solid #0284c7" : "1px solid #cbd5e1",
-                      background: invitationFilter === filterKey ? "#e0f2fe" : "#f8fafc",
-                      color: invitationFilter === filterKey ? "#0369a1" : "#475569",
                       cursor: "pointer",
                       textTransform: "capitalize",
                     }}
@@ -4083,6 +4080,8 @@ export default function EmployerApplicantManagement() {
                   job_salary_max: inv.salary_max,
                   city: inv.city || "Cavite",
                   applicant_name: candidateName,
+                  email: inv.applicant_email,
+                  phone: inv.phone,
                   desired_job_title: inv.desired_job_title || inv.job_title,
                   work_arrangement: inv.applicant_work_arrangement || inv.work_arrangement,
                   expected_salary: inv.expected_salary,
@@ -4094,15 +4093,13 @@ export default function EmployerApplicantManagement() {
                 return (
                   <article
                     key={inv.id}
-                    className="applicant-card"
+                    className="applicant-card invitation-applicant-card"
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
                       padding: "16px 20px",
-                      border: "1px solid #e2e8f0",
                       borderRadius: "10px",
-                      background: "#fff",
                       gap: "16px",
                       flexWrap: "wrap",
                     }}
@@ -4116,12 +4113,11 @@ export default function EmployerApplicantManagement() {
                           : null;
                         return (
                           <span
+                            className="inv-avatar-badge"
                             style={{
                               width: "44px",
                               height: "44px",
                               borderRadius: "50%",
-                              background: "#e0f2fe",
-                              color: "#0369a1",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
@@ -4152,7 +4148,7 @@ export default function EmployerApplicantManagement() {
                         );
                       })()}
                       <div>
-                        <h3 style={{ margin: 0, fontSize: "1.05rem", color: "#01294a" }}>{candidateName}</h3>
+                        <h3 className="invitation-candidate-name" style={{ margin: 0, fontSize: "1.05rem" }}>{candidateName}</h3>
                         <p style={{ margin: "2px 0 0", fontSize: "0.86rem", color: "#0284c7", fontWeight: 600 }}>
                           {inv.job_title}
                         </p>
@@ -4182,15 +4178,12 @@ export default function EmployerApplicantManagement() {
                     <div style={{ display: "flex", gap: "8px", alignItems: "center", flexShrink: 0 }}>
                       <button
                         type="button"
-                        className="solid-btn"
+                        className="solid-btn invitation-action-btn"
                         style={{
                           padding: "8px 16px",
                           fontSize: "0.84rem",
                           fontWeight: 700,
                           borderRadius: "6px",
-                          background: "#01294a",
-                          color: "#ffffff",
-                          border: "none",
                           cursor: "pointer",
                           whiteSpace: "nowrap",
                         }}
@@ -4198,26 +4191,21 @@ export default function EmployerApplicantManagement() {
                       >
                         Details
                       </button>
-                      <a
-                        href="/messages"
-                        className="solid-btn"
+                      <button
+                        type="button"
+                        className="solid-btn invitation-action-btn"
                         style={{
-                          textDecoration: "none",
                           padding: "8px 16px",
                           fontSize: "0.84rem",
                           fontWeight: 700,
                           borderRadius: "6px",
-                          background: "#01294a",
-                          color: "#ffffff",
-                          border: "none",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
+                          cursor: "pointer",
                           whiteSpace: "nowrap",
                         }}
+                        onClick={() => handleOpenReview(synthApp, false, true, false, true)}
                       >
                         Message
-                      </a>
+                      </button>
                     </div>
                   </article>
                 );

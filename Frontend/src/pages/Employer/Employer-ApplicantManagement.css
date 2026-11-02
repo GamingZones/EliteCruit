@@ -4567,3 +4567,43 @@
   background: #1e293b !important;
   transform: translateY(-1px) !important;
 }
+
+/* ==========================================================================
+   DIRECT RECRUITMENT INVITATIONS (TAB 3)
+   ========================================================================== */
+#direct-invitations .direct-invitations-heading {
+  color: #01294a;
+}
+
+#direct-invitations .invitation-candidate-name {
+  color: #01294a;
+  font-weight: 700;
+}
+
+#direct-invitations .inv-avatar-badge {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+#direct-invitations .invitation-filter-btn {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
+}
+
+#direct-invitations .invitation-filter-btn.active {
+  border: 1px solid #0284c7;
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+#direct-invitations .invitation-action-btn {
+  background: #01294a;
+  color: #ffffff;
+  border: none;
+  transition: all 0.15s ease;
+}
+
+#direct-invitations .invitation-action-btn:hover {
+  background: #0284c7;
+}
