@@ -4201,22 +4201,6 @@ export default function EmployerApplicantFinder() {
                   )}
                   <button
                     type="button"
-                    className={`jd-floating-breakdown-tab ${isOtherJobsOpen && !isOtherJobsClosing ? "active" : ""}`}
-                    onClick={() => {
-                      if (isOtherJobsOpen) {
-                        handleCloseOtherJobs();
-                      } else {
-                        setIsMatchDrawerOpen(false);
-                        setIsMessagePanelOpen(false);
-                        setIsOtherJobsOpen(true);
-                        setIsOtherJobsClosing(false);
-                      }
-                    }}
-                  >
-                    <span>{isOtherJobsOpen && !isOtherJobsClosing ? "Hide Other Jobs" : "Other Jobs"}</span>
-                  </button>
-                  <button
-                    type="button"
                     className={`jd-floating-breakdown-tab ${isMessagePanelOpen && !isMessagePanelClosing ? "active" : ""}`}
                     onClick={handleToggleMessagePanel}
                   >
@@ -4830,10 +4814,9 @@ export default function EmployerApplicantFinder() {
                     className="finder-btn finder-btn-green"
                     onClick={() => {
                       if (selectedCandidate) {
-                        setIsMatchDrawerOpen(false);
-                        setIsMessagePanelOpen(false);
-                        setIsOtherJobsOpen(true);
-                        setIsOtherJobsClosing(false);
+                        const cand = selectedCandidate;
+                        setSelectedCandidate(null);
+                        openCandidateRecruit(cand);
                       }
                     }}
                   >
@@ -4843,144 +4826,6 @@ export default function EmployerApplicantFinder() {
               </div>
             </div>
           </div>
-
-          {/* ── Other Employer Jobs Panel (Container 2) ── */}
-          {(isOtherJobsOpen || isOtherJobsClosing) && (
-            <aside className={`jd-side-comparison-panel ${isOtherJobsClosing ? "closing" : "opening"}`} style={{ marginTop: "44px", fontFamily: '"Inter", sans-serif' }}>
-              <div className="jd-side-panel-header" style={{ fontFamily: '"Inter", sans-serif' }}>
-                <div className="jd-side-title-row">
-                  <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Inter", sans-serif' }}>Other Employer Jobs</h3>
-                  <span className="jd-side-subtitle" style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Inter", sans-serif' }}>Candidate compatibility across your active job postings</span>
-                </div>
-                <div className="jd-side-header-actions">
-                  <button
-                    type="button"
-                    className="jd-side-close-btn"
-                    aria-label="Close panel"
-                    onClick={handleCloseOtherJobs}
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-
-              <div className="jd-side-panel-body" style={{ display: "flex", flexDirection: "column", gap: "14px", padding: "18px", fontFamily: '"Inter", sans-serif', overflowY: "auto", flex: 1 }}>
-                {(() => {
-                  if (activeJobs.length === 0) {
-                    return (
-                      <div style={{ textAlign: "center", color: "#64748b", padding: "30px 10px", fontSize: "0.9rem", fontFamily: '"Inter", sans-serif' }}>
-                        No active job postings found for this employer.
-                      </div>
-                    );
-                  }
-
-                  return activeJobs.map((otherJob: any) => {
-                    const percent = calculateCandidateMatch(
-                      {
-                        desired_job_title: selectedCandidate.desired_job_title || "",
-                        work_arrangement: selectedCandidate.work_arrangement || "",
-                        expected_salary: selectedCandidate.expected_salary || 0,
-                        skills: selectedCandidate.skills || "",
-                        qualifications: selectedCandidate.qualifications || "",
-                        certifications: selectedCandidate.certifications || "",
-                        city: selectedCandidate.city || selectedCandidate.address || "",
-                      },
-                      {
-                        title: otherJob.title || "",
-                        work_arrangement: otherJob.work_arrangement || "",
-                        required_skills: otherJob.required_skills || "",
-                        required_qualifications: otherJob.qualifications || otherJob.required_qualifications || "",
-                        required_certifications: otherJob.certifications || otherJob.required_certifications || "",
-                        location: otherJob.location || "",
-                        salary_min: Number(otherJob.salary_min) || 0,
-                        salary_max: Number(otherJob.salary_max) || 0,
-                      }
-                    );
-
-                    return (
-                      <div
-                        key={otherJob.id}
-                        className="jd-other-job-card"
-                        style={{
-                          background: "#ffffff",
-                          border: "1px solid #e2e8f0",
-                          borderRadius: "12px",
-                          padding: "16px",
-                          boxShadow: "0 4px 12px rgba(10, 30, 60, 0.05)",
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          gap: "12px",
-                          fontFamily: '"Inter", sans-serif',
-                        }}
-                      >
-                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                          <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800, color: "#01294a", fontFamily: '"Inter", sans-serif' }}>
-                            {otherJob.title}
-                          </h4>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginTop: "2px", fontSize: "0.8rem", color: "#64748b", fontWeight: 600, fontFamily: '"Inter", sans-serif' }}>
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Inter", sans-serif' }}>
-                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" />
-                                <circle cx="12" cy="10" r="2.5" />
-                              </svg>
-                              {otherJob.location || "Cavite"}
-                            </span>
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Inter", sans-serif' }}>
-                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-                                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-                              </svg>
-                              {otherJob.work_arrangement || "On-Site"}
-                            </span>
-                            {otherJob.salary_min ? (
-                              <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontFamily: '"Inter", sans-serif' }}>
-                                PHP {Number(otherJob.salary_min).toLocaleString()} - {Number(otherJob.salary_max).toLocaleString()}
-                              </span>
-                            ) : null}
-                          </div>
-                        </div>
-
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px", flexShrink: 0 }}>
-                          <span
-                            className={`jd-other-job-match-pill ${percent >= 80 ? "green" : percent >= 50 ? "yellow" : "red"}`}
-                          >
-                            {percent}% Match
-                          </span>
-                          <button
-                            type="button"
-                            className="details-btn jd-other-job-details-btn"
-                            style={{
-                              background: "#0284c7",
-                              color: "#ffffff",
-                              fontWeight: 800,
-                              fontSize: "0.84rem",
-                              padding: "6px 22px",
-                              borderRadius: "999px",
-                              border: "none",
-                              whiteSpace: "nowrap",
-                              cursor: "pointer",
-                              boxShadow: "0 2px 8px rgba(2, 132, 199, 0.3)",
-                              transition: "all 0.15s ease",
-                              minWidth: "85px",
-                              textAlign: "center",
-                              fontFamily: '"Inter", sans-serif',
-                            }}
-                            onClick={() => {
-                              setViewingJobDetails(otherJob);
-                              setIsMatchDrawerOpen(false);
-                            }}
-                          >
-                            Details
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  });
-                })()}
-              </div>
-            </aside>
-          )}
 
           {/* ── Candidate Side-Docked Message Panel ── */}
           {(isMessagePanelOpen || isMessagePanelClosing) && selectedCandidate && (
