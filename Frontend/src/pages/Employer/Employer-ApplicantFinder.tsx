@@ -8,6 +8,7 @@ import { useUnreadMessagesCount } from "../../hooks/useUnreadMessagesCount";
 import EmployerChatbotDrawer, { EmployerFAQItem as FAQItem } from "../../components/EmployerChatbotDrawer";
 import CalendarDrawer from "../../components/CalendarDrawer";
 import ConfirmationModal from "../../components/ConfirmationModal";
+import JobDetailsModal from "../../components/modals/JobDetailsModal";
 import { resolveLocalGeocode, resolveLocalGeocodeDetailed, CAVITE_MUNICIPALITIES, getAreaInitials } from "../../data/mapData";
 import {
   BSIT_BSCS_JOB_TITLES,
@@ -5483,642 +5484,88 @@ export default function EmployerApplicantFinder() {
           </div>
         )}
 
-        {/* ── 3rd & 4th Floating Containers: Job Details (LEFT) & Match Breakdown (RIGHT) Side-by-Side Overlay ── */}
-        {(viewingJobDetails || isJobDetailsClosing) && viewingJobDetails && (
-          (() => {
-            const targetCandidate = inviteCandidate || selectedCandidate || inviteJobsCandidate;
-            const detailsMatchPct = targetCandidate ? calculateCandidateMatch(targetCandidate, viewingJobDetails) : 0;
-            const matchStyle = detailsMatchPct >= 85
-              ? { track: "#dcfce7", color: "#15803d", fill: "#86efac" }
-              : detailsMatchPct >= 70
-              ? { track: "#fef3c7", color: "#b45309", fill: "#fde68a" }
-              : { track: "#fee2e2", color: "#b91c1c", fill: "#fca5a5" };
-
-            const jobSalaryMin = Number(viewingJobDetails.salary_min ?? viewingJobDetails.min_salary) || 0;
-            const jobSalaryMax = Number(viewingJobDetails.salary_max ?? viewingJobDetails.max_salary) || 0;
-            const jobLocation = formatLocationWithCavite(viewingJobDetails.location || viewingJobDetails.city || "Cavite");
-
-            return (
-              <div
-                className="finder-job-details-overlay"
-                style={{
-                  position: "fixed",
-                  inset: 0,
-                  background: "rgba(10, 30, 50, 0.68)",
-                  backdropFilter: "blur(5px)",
-                  WebkitBackdropFilter: "blur(5px)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "20px",
-                  zIndex: 45000,
-                  padding: "24px 36px",
-                  overflowX: "hidden",
-                  fontFamily: '"Inter", sans-serif',
-                  animation: isJobDetailsClosing
-                    ? "jdFadeOut 0.2s ease forwards"
-                    : "jdFadeIn 0.22s ease forwards",
-                }}
-                onClick={handleCloseJobDetails}
-              >
-                {/* ── 3rd Container: Job Details Card (POSITIONED ON THE LEFT) ── */}
-                <div
-                  className="finder-side-job-details-modal"
+        {/* ── Standardized Job Details Modal (from JobDetailsModal.tsx) ── */}
+        {(() => {
+          const targetCandidate = inviteCandidate || selectedCandidate || inviteJobsCandidate;
+          return (
+            <JobDetailsModal
+              isOpen={Boolean(viewingJobDetails)}
+              onClose={() => setViewingJobDetails(null)}
+              job={viewingJobDetails ? {
+                id: viewingJobDetails.id,
+                title: viewingJobDetails.title,
+                company: (viewingJobDetails as any).company || (viewingJobDetails as any).company_name || employerProfile?.business_name || companyLabel,
+                employerUserId: (viewingJobDetails as any).employerUserId || (viewingJobDetails as any).employer_user_id || currentEmployerId,
+                companyLogoPath: (viewingJobDetails as any).companyLogoPath || (viewingJobDetails as any).company_logo_path,
+                companyCoverPath: (viewingJobDetails as any).companyCoverPath || (viewingJobDetails as any).company_cover_path,
+                location: viewingJobDetails.location,
+                rating: (viewingJobDetails as any).rating,
+                status: viewingJobDetails.status || "open",
+                urgent: Boolean(viewingJobDetails.urgent || viewingJobDetails.is_urgent),
+                setup: viewingJobDetails.work_arrangement || (viewingJobDetails as any).setup || "On-Site",
+                work_arrangement: viewingJobDetails.work_arrangement,
+                salary_min: viewingJobDetails.salary_min,
+                salary_max: viewingJobDetails.salary_max,
+                experience_level: (viewingJobDetails as any).experience_level || (viewingJobDetails as any).experienceLevel,
+                summary: viewingJobDetails.summary || viewingJobDetails.description,
+                description: viewingJobDetails.description || viewingJobDetails.summary,
+                required_skills: viewingJobDetails.required_skills || (viewingJobDetails as any).skills,
+                skills: (viewingJobDetails as any).skills || viewingJobDetails.required_skills,
+                qualifications: viewingJobDetails.qualifications,
+                certifications: (viewingJobDetails as any).certifications,
+                applicantCount: (viewingJobDetails as any).applicantCount ?? (viewingJobDetails as any).applicant_count ?? 0,
+                applicationLimit: (viewingJobDetails as any).applicationLimit ?? (viewingJobDetails as any).application_limit,
+                closeDate: (viewingJobDetails as any).closeDate || (viewingJobDetails as any).close_date,
+                faqs: (viewingJobDetails as any).faqs || [],
+              } : null}
+              applicantProfile={targetCandidate ? {
+                desiredJobTitle: targetCandidate.desired_job_title || targetCandidate.job_title,
+                workArrangement: targetCandidate.work_arrangement,
+                expectedSalary: Number(targetCandidate.expected_salary) || 0,
+                city: targetCandidate.city || targetCandidate.address,
+                skills: parseItemList(targetCandidate.skills),
+                qualifications: parseItemList(targetCandidate.qualifications),
+                certifications: parseItemList(targetCandidate.certifications),
+                rawSkills: typeof targetCandidate.skills === "string" ? targetCandidate.skills : Array.isArray(targetCandidate.skills) ? targetCandidate.skills.join(", ") : undefined,
+                rawCertifications: typeof targetCandidate.certifications === "string" ? targetCandidate.certifications : Array.isArray(targetCandidate.certifications) ? targetCandidate.certifications.join(", ") : undefined,
+                nearbyLocation: targetCandidate.nearby_location,
+                preferredLocations: targetCandidate.preferred_locations,
+              } : null}
+              customFooterActions={
+                <button
+                  type="button"
+                  className="solid-btn jd-recruit-btn"
                   style={{
-                    borderRadius: "16px",
-                    width: "100%",
-                    maxWidth: "540px",
-                    maxHeight: "85vh",
-                    display: "flex",
-                    flexDirection: "column",
-                    boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.35)",
-                    overflow: "hidden",
-                    position: "relative",
-                    flexShrink: 0,
-                    fontFamily: '"Inter", sans-serif',
-                    animation: isJobDetailsClosing
-                      ? "jdPopOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards"
-                      : "jdPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+                    background: "#0284c7",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "8px",
+                    padding: "10px 22px",
+                    fontWeight: 700,
+                    fontSize: "0.9rem",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    transition: "all 0.15s ease",
                   }}
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={() => {
+                    if (targetCandidate && viewingJobDetails) {
+                      openInviteModal(targetCandidate, viewingJobDetails.id);
+                    }
+                    setInviteSuccessMsg("");
+                    setInviteJobsCandidate(null);
+                    setViewingJobDetails(null);
+                  }}
                 >
-                  <div
-                    className="finder-side-modal-header"
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "16px 24px",
-                      borderBottom: "1px solid #f1f5f9",
-                      background: "#f8fbff",
-                    }}
-                  >
-                    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                      <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800, color: "#01294a", fontFamily: '"Inter", sans-serif' }}>
-                        Job Details
-                      </h3>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <div
-                        className="jd-side-match-badge"
-                        style={{
-                          background: matchStyle.track,
-                          color: matchStyle.color,
-                          fontWeight: 800,
-                          fontSize: "0.82rem",
-                          padding: "4px 10px",
-                          borderRadius: "999px",
-                          border: `1px solid ${matchStyle.fill}`,
-                          whiteSpace: "nowrap",
-                          fontFamily: '"Inter", sans-serif',
-                        }}
-                      >
-                        {detailsMatchPct}% Match
-                      </div>
-                      <button
-                        type="button"
-                        style={{
-                          background: "#01294a",
-                          color: "#ffffff",
-                          fontWeight: 800,
-                          fontSize: "0.82rem",
-                          padding: "4px 12px",
-                          borderRadius: "999px",
-                          border: "1px solid #01294a",
-                          whiteSpace: "nowrap",
-                          cursor: "pointer",
-                          boxShadow: "0 2px 6px rgba(1, 41, 74, 0.2)",
-                          transition: "all 0.15s ease",
-                          fontFamily: '"Inter", sans-serif',
-                        }}
-                        onClick={() => {
-                          setIsMatchDrawerOpen((prev) => !prev);
-                        }}
-                      >
-                        Match Breakdown
-                      </button>
-                      <button
-                        type="button"
-                        className="jd-side-close-btn"
-                        aria-label="Close job details"
-                        onClick={handleCloseJobDetails}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-
-                  <div style={{ padding: "20px 24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px", flex: 1, fontFamily: '"Inter", sans-serif' }}>
-                    <div>
-                      <h4 style={{ margin: "0 0 8px 0", fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Inter", sans-serif' }}>
-                        {viewingJobDetails.title}
-                      </h4>
-                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
-                        <span className="jd-side-status-pill" style={{ background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0", padding: "4px 10px", borderRadius: "999px", fontSize: "0.76rem", fontWeight: 700, fontFamily: '"Inter", sans-serif' }}>
-                          {viewingJobDetails.status ? viewingJobDetails.status.toUpperCase() : "OPEN"}
-                        </span>
-                        {(viewingJobDetails.is_urgent === 1 || viewingJobDetails.is_urgent === true || String(viewingJobDetails.is_urgent) === "1") && (
-                          <span className="jd-side-urgent-pill" style={{ background: "#fef2f2", color: "#b91c1c", border: "1px solid #fca5a5", padding: "4px 10px", borderRadius: "999px", fontSize: "0.76rem", fontWeight: 700, fontFamily: '"Inter", sans-serif' }}>
-                            Urgent
-                          </span>
-                        )}
-                        <span className="jd-side-setup-pill" style={{ background: "#e0f2fe", color: "#0369a1", padding: "4px 12px", borderRadius: "999px", fontSize: "0.78rem", fontWeight: 700, fontFamily: '"Inter", sans-serif' }}>
-                          {viewingJobDetails.work_arrangement || "On-Site"}
-                        </span>
-                        {(jobSalaryMin || jobSalaryMax) ? (
-                          <span className="jd-side-salary-pill" style={{ background: "#fef3c7", color: "#b45309", padding: "4px 12px", borderRadius: "999px", fontSize: "0.78rem", fontWeight: 700, fontFamily: '"Inter", sans-serif' }}>
-                            PHP {Number(jobSalaryMin).toLocaleString()} - {Number(jobSalaryMax).toLocaleString()}
-                          </span>
-                        ) : null}
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "0.8rem", color: "#64748b", fontFamily: '"Inter", sans-serif' }}>
-                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" />
-                            <circle cx="12" cy="10" r="2.5" />
-                          </svg>
-                          {jobLocation}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* JOB DESCRIPTION */}
-                    <div>
-                      <span style={{ fontSize: "0.74rem", fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: "8px", fontFamily: '"Inter", sans-serif' }}>
-                        JOB DESCRIPTION
-                      </span>
-                      <p style={{ margin: 0, fontSize: "0.86rem", color: "#334155", lineHeight: 1.6, whiteSpace: "pre-line", fontFamily: '"Inter", sans-serif' }}>
-                        {viewingJobDetails.description || "No job description provided."}
-                      </p>
-                    </div>
-
-                    {/* REQUIRED SKILLS */}
-                    <div>
-                      <span style={{ fontSize: "0.74rem", fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: "8px", fontFamily: '"Inter", sans-serif' }}>
-                        REQUIRED SKILLS
-                      </span>
-                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                        {parseCompetencyDisplayTags(viewingJobDetails.required_skills || (viewingJobDetails as any).skills || "").length > 0 ? (
-                          parseCompetencyDisplayTags(viewingJobDetails.required_skills || (viewingJobDetails as any).skills || "").map((sk, idx) => (
-                            <span key={idx} className="jd-side-tag jd-side-skill-tag" style={{ background: "#f0f9ff", color: "#0369a1", border: "1px solid #bae6fd", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Inter", sans-serif' }}>
-                              {sk}
-                            </span>
-                          ))
-                        ) : (
-                          <span style={{ fontSize: "0.82rem", color: "#94a3b8", fontStyle: "italic", fontFamily: '"Inter", sans-serif' }}>
-                            No specific skills required
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* QUALIFICATIONS */}
-                    <div>
-                      <span style={{ fontSize: "0.74rem", fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: "8px", fontFamily: '"Inter", sans-serif' }}>
-                        QUALIFICATIONS
-                      </span>
-                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                        {parseCompetencyDisplayTags(viewingJobDetails.qualifications || (viewingJobDetails as any).required_qualifications || "").length > 0 ? (
-                          parseCompetencyDisplayTags(viewingJobDetails.qualifications || (viewingJobDetails as any).required_qualifications || "").map((qu, idx) => (
-                            <span key={idx} className="jd-side-tag jd-side-qual-tag" style={{ background: "#faf5ff", color: "#7e22ce", border: "1px solid #e9d5ff", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Inter", sans-serif' }}>
-                              {qu}
-                            </span>
-                          ))
-                        ) : (
-                          <span style={{ fontSize: "0.82rem", color: "#94a3b8", fontStyle: "italic", fontFamily: '"Inter", sans-serif' }}>
-                            No specific qualifications required
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* CERTIFICATIONS */}
-                    <div>
-                      <span style={{ fontSize: "0.74rem", fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: "8px", fontFamily: '"Inter", sans-serif' }}>
-                        CERTIFICATIONS
-                      </span>
-                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                        {parseCompetencyDisplayTags((viewingJobDetails as any).certifications || (viewingJobDetails as any).required_certifications || "").length > 0 ? (
-                          parseCompetencyDisplayTags((viewingJobDetails as any).certifications || (viewingJobDetails as any).required_certifications || "").map((cert, idx) => (
-                            <span key={idx} className="jd-side-tag jd-side-cert-tag" style={{ background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a", padding: "4px 10px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 600, fontFamily: '"Inter", sans-serif' }}>
-                              {cert}
-                            </span>
-                          ))
-                        ) : (
-                          <span style={{ fontSize: "0.82rem", color: "#94a3b8", fontStyle: "italic", fontFamily: '"Inter", sans-serif' }}>
-                            No specific certifications required
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Modal Footer with Application count, Close date, and Recruit Button */}
-                  <div
-                    className="finder-side-modal-footer"
-                    style={{
-                      padding: "14px 24px",
-                      borderTop: "1px solid #f1f5f9",
-                      background: "#ffffff",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      gap: "12px",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
-                      {viewingJobDetails.close_date && (
-                        <span style={{ fontSize: "0.8rem", color: "#64748b", fontFamily: '"Inter", sans-serif', display: "inline-flex", alignItems: "center", gap: "5px" }}>
-                          <strong style={{ color: "#0f172a" }}>Close Date:</strong> {viewingJobDetails.close_date}
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      style={{
-                        background: "#01294a",
-                        color: "#ffffff",
-                        fontWeight: 800,
-                        fontSize: "0.88rem",
-                        padding: "8px 22px",
-                        borderRadius: "999px",
-                        border: "none",
-                        cursor: "pointer",
-                        boxShadow: "0 2px 8px rgba(1, 41, 74, 0.25)",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        transition: "all 0.15s ease",
-                        fontFamily: '"Inter", sans-serif',
-                      }}
-                      onClick={() => {
-                        if (targetCandidate) {
-                          openInviteModal(targetCandidate, viewingJobDetails.id);
-                        }
-                        setInviteSuccessMsg("");
-                        setInviteJobsCandidate(null);
-                        handleCloseJobDetails();
-                      }}
-                    >
-                      Invite
-                    </button>
-                  </div>
-                </div>
-
-                {/* ── 4th Container: Job Match Breakdown (POSITIONED ON THE RIGHT OF 3rd CONTAINER) ── */}
-                {isMatchDrawerOpen && targetCandidate && (
-                  (() => {
-                    const candSkills = parseCompetencyDisplayTags(targetCandidate.skills || "");
-                    const candQuals = parseCompetencyDisplayTags(targetCandidate.qualifications || "");
-                    const candCerts = parseCompetencyDisplayTags(targetCandidate.certifications || "");
-                    const candCity = formatLocationWithCavite(targetCandidate.city || targetCandidate.address || "Cavite");
-                    const candSetup = targetCandidate.work_arrangement || "On-Site";
-                    const candSalary = targetCandidate.expected_salary || "";
-                    const candSalaryDisplay = (() => {
-                      if (targetCandidate.expected_salary_min || targetCandidate.expected_salary_max) {
-                        const minVal = Number(targetCandidate.expected_salary_min) || 0;
-                        const maxVal = Number(targetCandidate.expected_salary_max) || 0;
-                        return `PHP ${minVal.toLocaleString()} - ${maxVal.toLocaleString()}`;
-                      }
-                      if (!candSalary) return "Not set";
-                      return String(candSalary).toUpperCase().includes("PHP") ? String(candSalary) : `PHP ${Number(parseExpectedSalary(candSalary)).toLocaleString()}`;
-                    })();
-
-                    const jobSkills = parseCompetencyDisplayTags(viewingJobDetails.required_skills || (viewingJobDetails as any).skills || "");
-                    const jobQuals = parseCompetencyDisplayTags(viewingJobDetails.qualifications || (viewingJobDetails as any).required_qualifications || "");
-                    const jobCerts = parseCompetencyDisplayTags((viewingJobDetails as any).certifications || (viewingJobDetails as any).required_certifications || "");
-                    const jobSalaryDisplay = (jobSalaryMin || jobSalaryMax) ? `PHP ${jobSalaryMin.toLocaleString()} - ${jobSalaryMax.toLocaleString()}` : "Market Rate";
-
-                    const matchDetails = calculateJobMatchDetails(
-                      {
-                        id: viewingJobDetails.id,
-                        title: viewingJobDetails.title,
-                        location: jobLocation,
-                        salaryMin: jobSalaryMin,
-                        setup: viewingJobDetails.work_arrangement || "On-Site",
-                        skillTags: jobSkills,
-                        qualTags: jobQuals,
-                        certTags: jobCerts,
-                      },
-                      {
-                        desiredJobTitle: targetCandidate.desired_job_title || "",
-                        workArrangement: candSetup,
-                        expectedSalary: parseExpectedSalary(candSalary),
-                        city: candCity,
-                        skills: candSkills,
-                        qualifications: candQuals,
-                        certifications: candCerts,
-                      }
-                    );
-
-                    const checkMatch = (jobItem: string, appItems: string[], type?: "skills" | "qualifications" | "certifications") => {
-                      if (!appItems || appItems.length === 0) return false;
-                      if (type === "certifications") {
-                        return appItems.some((appItem) => isCertificationMatch(jobItem, appItem));
-                      }
-                      return appItems.some((appItem) => isSkillMatch(jobItem, appItem));
-                    };
-
-                    const isCandRelevant = (appItem: string, jItems: string[], type?: "skills" | "qualifications" | "certifications") => {
-                      if (!jItems || jItems.length === 0) return false;
-                      if (type === "certifications") {
-                        return jItems.some((jobItem) => isCertificationMatch(jobItem, appItem));
-                      }
-                      return jItems.some((jobItem) => isSkillMatch(jobItem, appItem));
-                    };
-
-                    const bdStyle = getMatchColorClass(matchDetails.score);
-
-                    return (
-                      <div
-                        className="finder-side-match-breakdown-modal"
-                        style={{
-                          borderRadius: "16px",
-                          width: "100%",
-                          maxWidth: "680px",
-                          maxHeight: "85vh",
-                          display: "flex",
-                          flexDirection: "column",
-                          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.35)",
-                          overflow: "hidden",
-                          flexShrink: 0,
-                          fontFamily: '"Inter", sans-serif',
-                          animation: isJobDetailsClosing
-                            ? "jdSlideOutRight 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards"
-                            : "jdSlideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards",
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {/* Header */}
-                        <div
-                          className="finder-side-modal-header"
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            padding: "16px 24px",
-                            borderBottom: "1px solid #f1f5f9",
-                            background: "#f8fbff",
-                          }}
-                        >
-                          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                            <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#01294a", fontFamily: '"Inter", sans-serif' }}>
-                              Match Breakdown
-                            </h3>
-                            <span style={{ fontSize: "0.82rem", color: "#557796", fontWeight: 600, fontFamily: '"Inter", sans-serif' }}>
-                              Side-by-side comparison: {targetCandidate.applicant_name} vs {viewingJobDetails.title}
-                            </span>
-                          </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                            <span className={`match-badge-pill ${bdStyle}`} style={{ fontFamily: '"Inter", sans-serif' }}>
-                              {matchDetails.score}% Match
-                            </span>
-                            <button
-                              type="button"
-                              className="jd-side-close-btn"
-                              onClick={() => setIsMatchDrawerOpen(false)}
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Body */}
-                        <div style={{ padding: "20px 24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px", flex: 1, fontFamily: '"Inter", sans-serif' }}>
-                          {/* Legend strip */}
-                          <div className="jd-compare-legend" style={{ fontFamily: '"Inter", sans-serif' }}>
-                            <div className="legend-item">
-                              <span className="legend-dot green"></span>
-                              <span><strong>Green Tag:</strong> Fully satisfied (Skill & Experience)</span>
-                            </div>
-                            <div className="legend-item">
-                              <span className="legend-dot yellow"></span>
-                              <span><strong>Yellow Tag:</strong> Skill matched, lacking experience</span>
-                            </div>
-                            <div className="legend-item">
-                              <span className="legend-dot red"></span>
-                              <span><strong>Red Tag:</strong> Required by job, missing from candidate</span>
-                            </div>
-                          </div>
-
-                          {/* Master 2-Column Unified Container */}
-                          <div className="jd-unified-compare-container" style={{ fontFamily: '"Inter", sans-serif' }}>
-                            {/* ── Column 1: Candidate Profile ── */}
-                            <div className="jd-master-col applicant-col">
-                              <div className="jd-master-col-header">
-                                <span>Candidate Profile</span>
-                              </div>
-                              <div className="jd-master-col-content">
-                                <div className="jd-master-row">
-                                  <div className="jd-row-label-wrap">
-                                    <span className="jd-row-label">Skills</span>
-                                    <span className="col-count-text">{candSkills.length} listed</span>
-                                  </div>
-                                  <div className="jd-col-tags-container">
-                                    {candSkills.length > 0 ? (
-                                      candSkills.map((item) => {
-                                        const isRel = isCandRelevant(item, jobSkills);
-                                        const isSource = hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.item === item;
-                                        const isLinked = Boolean(hoveredCompareTag?.side === "employer" && hoveredCompareTag?.category === "skills" && isSkillMatch(item, hoveredCompareTag.item));
-                                        return (
-                                          <span
-                                            key={item}
-                                            className={`jd-comp-tag ${isRel ? "app-matched" : "app-neutral"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
-                                            onMouseEnter={() => setHoveredCompareTag({ item, side: "applicant", category: "skills" })}
-                                            onMouseLeave={() => setHoveredCompareTag(null)}
-                                          >
-                                            <span className="tag-text">{item}</span>
-                                          </span>
-                                        );
-                                      })
-                                    ) : (
-                                      <span className="jd-no-data-text">No skills in candidate profile</span>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* 5. Qualifications */}
-                                <div className="jd-master-row">
-                                  <div className="jd-row-label-wrap">
-                                    <span className="jd-row-label">Qualifications</span>
-                                    <span className="col-count-text">{candQuals.length} listed</span>
-                                  </div>
-                                  <div className="jd-col-tags-container">
-                                    {candQuals.length > 0 ? (
-                                      candQuals.map((item) => {
-                                        const isRel = isCandRelevant(item, jobQuals);
-                                        const isSource = hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.item === item;
-                                        const isLinked = Boolean(hoveredCompareTag?.side === "employer" && hoveredCompareTag?.category === "qualifications" && isSkillMatch(item, hoveredCompareTag.item));
-                                        return (
-                                          <span
-                                            key={item}
-                                            className={`jd-comp-tag ${isRel ? "app-matched" : "app-neutral"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
-                                            onMouseEnter={() => setHoveredCompareTag({ item, side: "applicant", category: "qualifications" })}
-                                            onMouseLeave={() => setHoveredCompareTag(null)}
-                                          >
-                                            <span className="tag-text">{item}</span>
-                                          </span>
-                                        );
-                                      })
-                                    ) : (
-                                      <span className="jd-no-data-text">No qualifications in candidate profile</span>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* 6. Certifications */}
-                                <div className="jd-master-row">
-                                  <div className="jd-row-label-wrap">
-                                    <span className="jd-row-label">Certifications</span>
-                                    <span className="col-count-text">{candCerts.length} listed</span>
-                                  </div>
-                                  <div className="jd-col-tags-container">
-                                    {candCerts.length > 0 ? (
-                                      candCerts.map((item) => {
-                                        const isRel = isCandRelevant(item, jobCerts);
-                                        const isSource = hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.item === item;
-                                        const isLinked = Boolean(hoveredCompareTag?.side === "employer" && hoveredCompareTag?.category === "certifications" && isSkillMatch(item, hoveredCompareTag.item));
-                                        return (
-                                          <span
-                                            key={item}
-                                            className={`jd-comp-tag ${isRel ? "app-matched" : "app-neutral"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
-                                            onMouseEnter={() => setHoveredCompareTag({ item, side: "applicant", category: "certifications" })}
-                                            onMouseLeave={() => setHoveredCompareTag(null)}
-                                          >
-                                            <span className="tag-text">{item}</span>
-                                          </span>
-                                        );
-                                      })
-                                    ) : (
-                                      <span className="jd-no-data-text">No certifications in candidate profile</span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* ── Column 2: Employer Requirements ── */}
-                            <div className="jd-master-col employer-col">
-                              <div className="jd-master-col-header employer">
-                                <span>Employer's Requirements</span>
-                              </div>
-                              <div className="jd-master-col-content">
-                                <div className="jd-master-row">
-                                  <div className="jd-row-label-wrap">
-                                    <span className="jd-row-label">Skills</span>
-                                    <span className="col-count-text">{jobSkills.length} required</span>
-                                  </div>
-                                  <div className="jd-col-tags-container">
-                                    {jobSkills.length > 0 ? (
-                                      jobSkills.map((item) => {
-                                        const evalResult = evaluateSkillRequirementMatch(item, candSkills, candCerts);
-                                        const statusClass =
-                                          evalResult.status === "matched"
-                                            ? "tag-matched-green"
-                                            : evalResult.status === "partial"
-                                            ? "tag-partial-yellow"
-                                            : "tag-missing-red";
-                                        const icon =
-                                          evalResult.status === "matched"
-                                            ? "✓"
-                                            : evalResult.status === "partial"
-                                            ? "▲"
-                                            : "✗";
-                                        const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
-                                        const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "skills" && isSkillMatch(item, hoveredCompareTag.item));
-                                        return (
-                                          <span
-                                            key={item}
-                                            className={`jd-comp-tag ${statusClass} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
-                                            title={
-                                              evalResult.status === "matched"
-                                                ? `Fully Satisfied: ${item}`
-                                                : evalResult.status === "partial"
-                                                ? `Skill matched, but lacking ${evalResult.reqYears} yrs experience (Candidate: ${evalResult.candYears} yr${evalResult.candYears === 1 ? "" : "s"})`
-                                                : `Missing: ${item}`
-                                            }
-                                            onMouseEnter={() => setHoveredCompareTag({ item, side: "employer", category: "skills" })}
-                                            onMouseLeave={() => setHoveredCompareTag(null)}
-                                          >
-                                            <span className="tag-icon">{icon}</span>
-                                            <span className="tag-text">{item}</span>
-                                          </span>
-                                        );
-                                      })
-                                    ) : (
-                                      <span className="jd-no-data-text">No specific skills required</span>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* 5. Qualifications */}
-                                <div className="jd-master-row">
-                                  <div className="jd-row-label-wrap">
-                                    <span className="jd-row-label">Qualifications</span>
-                                    <span className="col-count-text">{jobQuals.length} required</span>
-                                  </div>
-                                  <div className="jd-col-tags-container">
-                                    {jobQuals.length > 0 ? (
-                                      jobQuals.map((item) => {
-                                        const matched = checkMatch(item, candQuals);
-                                        const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
-                                        const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "qualifications" && isSkillMatch(item, hoveredCompareTag.item));
-                                        return (
-                                          <span
-                                            key={item}
-                                            className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
-                                            onMouseEnter={() => setHoveredCompareTag({ item, side: "employer", category: "qualifications" })}
-                                            onMouseLeave={() => setHoveredCompareTag(null)}
-                                          >
-                                            <span className="tag-text">{item}</span>
-                                          </span>
-                                        );
-                                      })
-                                    ) : (
-                                      <span className="jd-no-data-text">No specific qualifications required</span>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* 6. Certifications */}
-                                <div className="jd-master-row">
-                                  <div className="jd-row-label-wrap">
-                                    <span className="jd-row-label">Certifications</span>
-                                    <span className="col-count-text">{jobCerts.length} required</span>
-                                  </div>
-                                  <div className="jd-col-tags-container">
-                                    {jobCerts.length > 0 ? (
-                                      jobCerts.map((item) => {
-                                        const matched = checkMatch(item, candCerts, "certifications");
-                                        const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
-                                        const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "certifications" && isCertificationMatch(item, hoveredCompareTag.item));
-                                        return (
-                                          <span
-                                            key={item}
-                                            className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
-                                            onMouseEnter={() => setHoveredCompareTag({ item, side: "employer", category: "certifications" })}
-                                            onMouseLeave={() => setHoveredCompareTag(null)}
-                                          >
-                                            <span className="tag-text">{item}</span>
-                                          </span>
-                                        );
-                                      })
-                                    ) : (
-                                      <span className="jd-no-data-text">No specific certifications required</span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()
-                )}
-              </div>
-            );
-          })()
-        )}
+                  Recruit
+                </button>
+              }
+              hideEmployerHeader={true}
+              zIndex={50000}
+            />
+          );
+        })()}
 
         {/* DOUBLE VERIFICATION: RECRUIT CANDIDATE CONFIRMATION MODAL */}
         <ConfirmationModal
