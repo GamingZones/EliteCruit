@@ -163,8 +163,14 @@ function parseBreakdownSkillItems(raw?: string | null, fallbackTags: string[] = 
     }
   }
 
-  if (items.length === 0 && fallbackTags.length > 0) {
-    fallbackTags.forEach((tok) => items.push(parseSingleBreakdownSkillToken(tok)));
+  const safeFallbackTags: string[] = Array.isArray(fallbackTags)
+    ? fallbackTags
+    : typeof fallbackTags === "string"
+    ? String(fallbackTags).split(/[\n,;•|]+/).map((s) => s.trim()).filter(Boolean)
+    : [];
+
+  if (items.length === 0 && safeFallbackTags.length > 0) {
+    safeFallbackTags.forEach((tok) => items.push(parseSingleBreakdownSkillToken(tok)));
   }
 
   const grouped: Record<string, BreakdownCourseSkillItem[]> = {};
@@ -260,8 +266,14 @@ function parseBreakdownCertItems(raw?: string | null, fallbackTags: string[] = [
     }
   }
 
-  if (items.length === 0 && fallbackTags.length > 0) {
-    fallbackTags.forEach((tok) => {
+  const safeFallbackTags: string[] = Array.isArray(fallbackTags)
+    ? fallbackTags
+    : typeof fallbackTags === "string"
+    ? String(fallbackTags).split(/[\n,;•|]+/).map((s) => s.trim()).filter(Boolean)
+    : [];
+
+  if (items.length === 0 && safeFallbackTags.length > 0) {
+    safeFallbackTags.forEach((tok) => {
       const parsedTok = parseToken(tok);
       if (parsedTok) items.push(parsedTok);
     });
@@ -982,9 +994,21 @@ export default function JobDetailsModal({
   // Render Built-in Option 2 Match Breakdown Panel (Matching JobSearch Pic 4)
   const renderBreakdownSidePanel = () => {
     const scoreVal = matchScore !== undefined ? matchScore : 0;
-    const appSkills = applicantProfile?.skills || [];
-    const appQuals = applicantProfile?.qualifications || [];
-    const appCerts = applicantProfile?.certifications || [];
+    const appSkills: string[] = Array.isArray(applicantProfile?.skills)
+      ? applicantProfile.skills
+      : typeof applicantProfile?.skills === "string"
+      ? String(applicantProfile.skills).split(/[\n,;•|]+/).map((s) => s.trim()).filter(Boolean)
+      : [];
+    const appQuals: string[] = Array.isArray(applicantProfile?.qualifications)
+      ? applicantProfile.qualifications
+      : typeof applicantProfile?.qualifications === "string"
+      ? String(applicantProfile.qualifications).split(/[\n,;•|]+/).map((s) => s.trim()).filter(Boolean)
+      : [];
+    const appCerts: string[] = Array.isArray(applicantProfile?.certifications)
+      ? applicantProfile.certifications
+      : typeof applicantProfile?.certifications === "string"
+      ? String(applicantProfile.certifications).split(/[\n,;•|]+/).map((s) => s.trim()).filter(Boolean)
+      : [];
 
     const jobSkills = skills;
     const jobQuals = qualifications;
