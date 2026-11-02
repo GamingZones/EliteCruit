@@ -344,8 +344,12 @@ function getApplicationTimelineSteps(app: any) {
         ? "Application Concluded"
         : status === "recruited"
         ? "Candidate Recruited"
-        : status === "accepted" || status === "approved"
-        ? "Formal Offer Extended"
+        : status === "accepted"
+        ? (Boolean(app?.offer_letter || app?.decision_message_type === "formal_offer" || app?.response_letter) ? "Formal Offer Accepted" : "Application Accepted")
+        : status === "approved"
+        ? (Boolean(app?.offer_letter || app?.decision_message_type === "formal_offer" || ["offered", "offer_extended"].includes(status)) ? "Formal Offer Extended" : "Application Approved")
+        : status === "shortlisted"
+        ? "Final Hiring Decision"
         : "Final Hiring Decision",
       description: status === "withdrawn"
         ? "You have withdrawn your application for this position."
@@ -356,7 +360,11 @@ function getApplicationTimelineSteps(app: any) {
         : status === "accepted"
         ? "Offer accepted! Onboarding details will be communicated shortly."
         : status === "approved"
-        ? "Offer extended! Please review and respond to the formal offer letter."
+        ? (Boolean(app?.offer_letter || app?.decision_message_type === "formal_offer" || ["offered", "offer_extended"].includes(status))
+          ? "Offer extended! Please review and respond to the formal offer letter."
+          : "Your application has been approved by the hiring team. Awaiting official offer letter or onboarding schedule.")
+        : status === "shortlisted"
+        ? "Profile shortlisted. Pending final hiring review and employer decision."
         : "Pending final review and formal employment offer.",
       timestamp: decidedDate,
       state: isFinalDecision
@@ -1414,31 +1422,54 @@ export default function ApplicantDashboard() {
                   </span>
                 </div>
                 <div className="job-actions">
-                  {["approved", "accepted", "recruited", "shortlisted"].includes((app.status || "").toLowerCase()) || app.response_letter ? (
-                    <button
-                      type="button"
-                      className="solid-btn offer-letter-action-btn"
-                      onClick={() => {
-                        if (app.response_letter) {
-                          setViewLetterModalTarget({
-                            title: app.job_title || app.title || "Applied Role",
-                            company: app.company_name || "Employer",
-                            letterText: app.response_letter,
-                            startDate: app.start_date,
-                            respondedAt: app.responded_at,
-                            decision: app.response_decision || (app.status === "declined" ? "declined" : "accepted"),
-                          });
-                        } else {
-                          setAppDecisionModalTarget({
-                            app,
-                            action: "accept",
-                          });
-                        }
-                      }}
-                    >
-                      <span>{app.response_letter ? "View Letter" : "Formal Offer Letter"}</span>
-                    </button>
-                  ) : null}
+                  {(() => {
+                    const hasFormalOffer = Boolean(
+                      app.offer_letter ||
+                      app.decision_message_type === "formal_offer" ||
+                      ["offered", "offer_extended"].includes((app.status || "").toLowerCase())
+                    );
+                    const hasResponseLetter = Boolean(app.response_letter);
+
+                    if (hasResponseLetter) {
+                      return (
+                        <button
+                          type="button"
+                          className="solid-btn offer-letter-action-btn"
+                          onClick={() => {
+                            setViewLetterModalTarget({
+                              title: app.job_title || app.title || "Applied Role",
+                              company: app.company_name || "Employer",
+                              letterText: app.response_letter,
+                              startDate: app.start_date,
+                              respondedAt: app.responded_at,
+                              decision: app.response_decision || (app.status === "declined" ? "declined" : "accepted"),
+                            });
+                          }}
+                        >
+                          <span>View Letter</span>
+                        </button>
+                      );
+                    }
+
+                    if (hasFormalOffer) {
+                      return (
+                        <button
+                          type="button"
+                          className="solid-btn offer-letter-action-btn"
+                          onClick={() => {
+                            setAppDecisionModalTarget({
+                              app,
+                              action: "accept",
+                            });
+                          }}
+                        >
+                          <span>Formal Offer Letter</span>
+                        </button>
+                      );
+                    }
+
+                    return null;
+                  })()}
                   <button
                     type="button"
                     className="solid-btn track-timeline-btn"

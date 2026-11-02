@@ -129,23 +129,36 @@ export default function ApplicantOfferLetter() {
         const list = Array.isArray(d?.applications) ? d.applications : [];
         const offeredApps = list.filter((a: any) => {
           const st = String(a.status || "").toLowerCase();
-          return st.includes("offer") || st.includes("recruit") || String(a.id) === String(appId);
+          const hasOffer = Boolean(
+            a.offer_letter ||
+            (a.decision_message_type === "formal_offer" && a.decision_message) ||
+            ["offered", "offer_extended"].includes(st) ||
+            (a.response_letter && ["accepted", "approved", "declined"].includes(st))
+          );
+          return hasOffer;
         });
 
         if (offeredApps.length > 0) {
-          const mapped: OfferRecord[] = offeredApps.map((a: any) => ({
-            id: a.id,
-            type: "application",
-            title: a.job_title || a.title || "Position",
-            company: a.company_name || "Employer",
-            status: a.response_letter ? "Responded" : "Pending response",
-            receivedDate: a.updated_at ? new Date(a.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Recent",
-            respondByDate: "Within 7 days",
-            startDate: a.start_date || "Nov 3, 2026",
-            workSetup: a.work_arrangement || "Not specified",
-            salary: a.salary ? `PHP ${a.salary}` : "Not specified",
-            letterContent: a.offer_letter || a.response_letter || `Dear ${candidateName || "Candidate"},\n\nWe are pleased to offer you the position of ${a.job_title || a.title || "Position"} at ${a.company_name || "the company"}.\n\nYour start date will be ${a.start_date || "To be determined"}.${a.work_arrangement ? ` This is a ${a.work_arrangement} work setup.` : ""}${a.salary ? ` Your compensation will be PHP ${a.salary}.` : ""}\n\nSincerely,\n${a.company_name || "Hiring Team"}`,
-          }));
+          const mapped: OfferRecord[] = offeredApps.map((a: any) => {
+            const letter =
+              a.offer_letter ||
+              (a.decision_message_type === "formal_offer" ? a.decision_message : null) ||
+              a.response_letter ||
+              "Official offer letter details extended by employer.";
+            return {
+              id: a.id,
+              type: "application",
+              title: a.job_title || a.title || "Position",
+              company: a.company_name || "Employer",
+              status: a.response_letter ? "Responded" : "Pending response",
+              receivedDate: a.updated_at ? new Date(a.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Recent",
+              respondByDate: "Within 7 days",
+              startDate: a.start_date || "Nov 3, 2026",
+              workSetup: a.work_arrangement || "Not specified",
+              salary: a.salary ? `PHP ${a.salary}` : "Not specified",
+              letterContent: letter,
+            };
+          });
           setOffers(mapped);
           setSelectedOfferId(mapped[0].id);
         } else {
@@ -153,7 +166,7 @@ export default function ApplicantOfferLetter() {
           setSelectedOfferId(null);
         }
 
-        const found = list.find((a: any) => String(a.id) === String(appId));
+        const found = offeredApps.find((a: any) => String(a.id) === String(appId));
         if (found) {
           setActiveOfferContext({
             id: found.id,
@@ -166,6 +179,8 @@ export default function ApplicantOfferLetter() {
           });
           setSelectedOfferId(found.id);
           setExpandedOfferId(found.id);
+        } else {
+          setActiveOfferContext(null);
         }
       })
       .catch(() => {});

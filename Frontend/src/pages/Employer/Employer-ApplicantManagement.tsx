@@ -528,7 +528,7 @@ function EmployerIcon({ name }: { name: EmployerIconName }) {
   return <svg viewBox="0 0 24 24" aria-hidden="true">{icons[name]}</svg>;
 }
 
-function RowActionIcon({ name }: { name: "review" | "message" | "shortlist" | "approve" | "reject" }) {
+function RowActionIcon({ name }: { name: "review" | "message" | "shortlist" | "approve" | "reject" | "schedule" | "letter" }) {
   const icons: Record<string, JSX.Element> = {
     review: (
       <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
@@ -544,6 +544,12 @@ function RowActionIcon({ name }: { name: "review" | "message" | "shortlist" | "a
     ),
     reject: (
       <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+    ),
+    schedule: (
+      <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z" />
+    ),
+    letter: (
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
     ),
   };
   return <svg viewBox="0 0 24 24" aria-hidden="true">{icons[name]}</svg>;
@@ -576,6 +582,13 @@ type Application = {
   qualifications?: string | null;
   certifications?: string | null;
   profile_picture_path?: string | null;
+  decision_message?: string | null;
+  decision_message_type?: string | null;
+  decided_at?: string | null;
+  response_letter?: string | null;
+  response_decision?: "accept" | "decline" | string | null;
+  responded_at?: string | null;
+  start_date?: string | null;
 };
 
 type DirectInvitation = {
@@ -606,6 +619,13 @@ type DirectInvitation = {
   desired_job_title?: string;
   resume_path?: string | null;
   profile_picture_path?: string | null;
+  decision_message?: string | null;
+  decision_message_type?: string | null;
+  decided_at?: string | null;
+  response_letter?: string | null;
+  response_decision?: "accept" | "decline" | string | null;
+  responded_at?: string | null;
+  start_date?: string | null;
   applicant_email?: string;
 };
 
@@ -1287,6 +1307,11 @@ export default function EmployerApplicantManagement() {
   const [schedStage, setSchedStage] = useState("Initial Interview");
   const [schedLocation, setSchedLocation] = useState("");
   const [schedNotes, setSchedNotes] = useState("");
+
+  // Standalone candidate interview scheduling & response viewing (Optional Interview Track)
+  const [directScheduleApp, setDirectScheduleApp] = useState<Application | null>(null);
+  const [scheduleSuccessPopup, setScheduleSuccessPopup] = useState<string | null>(null);
+  const [viewingResponseLetterApp, setViewingResponseLetterApp] = useState<Application | null>(null);
 
   // Sync automated decision notice text when immediate scheduling is active
   useEffect(() => {
@@ -2074,6 +2099,101 @@ export default function EmployerApplicantManagement() {
     }
 
     handleUpdateStatus(app.id, targetStatus);
+  };
+
+  const handleOpenDirectScheduleModal = (app: Application) => {
+    setDirectScheduleApp(app);
+    setSchedDate(getTomorrowDateStr());
+    setSchedStartTime("10:00");
+    setSchedEndTime("10:45");
+    setSchedType("On-Site");
+    setSchedStage("Initial Interview");
+    setSchedLocation(companyLabel ? `${companyLabel} Main Office` : "Company Office");
+    setSchedNotes("");
+  };
+
+  const handleConfirmDirectSchedule = async () => {
+    if (!directScheduleApp) return;
+    if (!schedDate || !schedDate.trim()) {
+      setWarningPopup("Please select a date for the interview.");
+      return;
+    }
+    if (!schedStartTime || !schedStartTime.trim()) {
+      setWarningPopup("Please select a start time for the interview.");
+      return;
+    }
+
+    setIsDecisionSubmitting(true);
+    try {
+      const rawUser = localStorage.getItem("elitecruit-user");
+      let employerUserId = 5;
+      if (rawUser) {
+        try {
+          const parsed = JSON.parse(rawUser);
+          if (parsed?.id) employerUserId = parsed.id;
+        } catch {}
+      }
+
+      const targetApplicantUserId = directScheduleApp.applicant_user_id || (directScheduleApp as any).user_id || 0;
+      const meetingTitle = `${schedStage} - ${directScheduleApp.applicant_name}`;
+
+      const schedRes = await fetch("/api/interviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          employer_user_id: employerUserId,
+          applicant_user_id: targetApplicantUserId,
+          candidate_user_ids: [targetApplicantUserId],
+          job_post_id: directScheduleApp.job_post_id,
+          interview_title: meetingTitle,
+          interview_stage: schedStage,
+          interview_type: schedType,
+          meeting_link_or_address: schedLocation.trim() || (schedType === "Virtual" ? "Online Meeting" : (companyLabel ? `${companyLabel} Main Office` : "Company Office")),
+          interview_date: schedDate,
+          start_time: schedStartTime,
+          end_time: schedEndTime || schedStartTime,
+          notes: schedNotes.trim(),
+        }),
+      });
+
+      const schedData = await schedRes.json().catch(() => ({}));
+      if (schedRes.ok) {
+        const interviewObj = schedData?.interview || {
+          id: Date.now(),
+          employer_user_id: employerUserId,
+          applicant_user_id: targetApplicantUserId,
+          candidate_user_ids: [targetApplicantUserId],
+          job_post_id: directScheduleApp.job_post_id,
+          interview_title: meetingTitle,
+          interview_stage: schedStage,
+          interview_type: schedType,
+          meeting_link_or_address: schedLocation.trim(),
+          interview_date: schedDate,
+          start_time: schedStartTime,
+          end_time: schedEndTime || schedStartTime,
+          status: "scheduled",
+        };
+
+        try {
+          const rawExisting = localStorage.getItem("elitecruit_scheduled_interviews");
+          const existing = rawExisting ? JSON.parse(rawExisting) : [];
+          const merged = [interviewObj, ...(Array.isArray(existing) ? existing : [])];
+          localStorage.setItem("elitecruit_scheduled_interviews", JSON.stringify(merged));
+          window.dispatchEvent(new Event("elitecruit-interviews-updated"));
+        } catch {}
+
+        const candidateName = directScheduleApp.applicant_name;
+        setDirectScheduleApp(null);
+        setScheduleSuccessPopup(`The interview with ${candidateName} has been successfully scheduled for ${schedDate} at ${schedStartTime}.`);
+      } else {
+        setWarningPopup(schedData?.message || "Failed to schedule interview.");
+      }
+    } catch (err) {
+      console.error("Direct interview scheduling error:", err);
+      setWarningPopup("Failed to schedule interview. Please check server connection.");
+    } finally {
+      setIsDecisionSubmitting(false);
+    }
   };
 
   const handleConfirmDecision = async () => {
@@ -3067,17 +3187,33 @@ export default function EmployerApplicantManagement() {
 
                                         if (isFinalized) {
                                           const finalizedText = (app.status || "").toLowerCase() === "recruited" ? "Recruited" : isApproved ? "Approved" : "Denied";
+                                          const hasResponseLetter = Boolean(app.response_letter);
                                           return (
-                                            <button
-                                              type="button"
-                                              className={`merged-status-btn ${isApproved ? "approved" : "denied"}`}
-                                              title={`Application decision finalized as ${finalizedText} (cannot be modified)`}
-                                              onClick={() => triggerLockedDecisionWarning(app)}
-                                            >
-                                              {finalizedText}
-                                            </button>
+                                            <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                                              <button
+                                                type="button"
+                                                className={`merged-status-btn ${isApproved ? "approved" : "denied"}`}
+                                                title={`Application decision finalized as ${finalizedText} (cannot be modified)`}
+                                                onClick={() => triggerLockedDecisionWarning(app)}
+                                              >
+                                                {finalizedText}
+                                              </button>
+                                              {hasResponseLetter && (
+                                                <button
+                                                  type="button"
+                                                  className="action-btn letter-action-btn letter-btn-icon"
+                                                  title="View Candidate Offer Response Letter"
+                                                  aria-label="View Response Letter"
+                                                  onClick={() => setViewingResponseLetterApp(app)}
+                                                >
+                                                  <RowActionIcon name="letter" />
+                                                </button>
+                                              )}
+                                            </div>
                                           );
                                         }
+
+                                        const hasResponseLetter = Boolean(app.response_letter);
 
                                         return (
                                           <div className="status-actions-trio" role="group" aria-label="Status actions">
@@ -3091,11 +3227,23 @@ export default function EmployerApplicantManagement() {
                                               <RowActionIcon name="shortlist" />
                                             </button>
 
+                                            {isShortlisted && (
+                                              <button
+                                                type="button"
+                                                className="action-btn schedule-action-btn schedule-btn-icon"
+                                                title="Schedule Interview"
+                                                aria-label="Schedule Interview"
+                                                onClick={() => handleOpenDirectScheduleModal(app)}
+                                              >
+                                                <RowActionIcon name="schedule" />
+                                              </button>
+                                            )}
+
                                             <button
                                               type="button"
                                               className="action-btn approve-action-btn approve-btn-icon"
-                                              title="Approve candidate"
-                                              aria-label="Approve candidate"
+                                              title="Approve & Extend Offer"
+                                              aria-label="Approve & Extend Offer"
                                               onClick={() => handleInitiateStatusChange(app, "approved")}
                                             >
                                               <RowActionIcon name="approve" />
@@ -3110,6 +3258,18 @@ export default function EmployerApplicantManagement() {
                                             >
                                               <RowActionIcon name="reject" />
                                             </button>
+
+                                            {hasResponseLetter && (
+                                              <button
+                                                type="button"
+                                                className="action-btn letter-action-btn letter-btn-icon"
+                                                title="View Candidate Offer Response Letter"
+                                                aria-label="View Response Letter"
+                                                onClick={() => setViewingResponseLetterApp(app)}
+                                              >
+                                                <RowActionIcon name="letter" />
+                                              </button>
+                                            )}
                                           </div>
                                         );
                                       })()}
@@ -3520,17 +3680,33 @@ export default function EmployerApplicantManagement() {
                       const isShortlisted = currentApp.status?.toLowerCase() === "shortlisted";
 
                       if (isFinalized) {
+                        const hasResponseLetter = Boolean(currentApp.response_letter);
                         return (
-                          <button
-                            type="button"
-                            className={`merged-status-btn preview-fused-status-btn ${isApproved ? "approved" : "denied"}`}
-                            title={`Application decision finalized as ${isApproved ? "Approved" : "Denied"} (cannot be modified)`}
-                            onClick={() => triggerLockedDecisionWarning(currentApp)}
-                          >
-                            {isApproved ? "Approved" : "Denied"}
-                          </button>
+                          <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                            <button
+                              type="button"
+                              className={`merged-status-btn preview-fused-status-btn ${isApproved ? "approved" : "denied"}`}
+                              title={`Application decision finalized as ${isApproved ? "Approved" : "Denied"} (cannot be modified)`}
+                              onClick={() => triggerLockedDecisionWarning(currentApp)}
+                            >
+                              {isApproved ? "Approved" : "Denied"}
+                            </button>
+                            {hasResponseLetter && (
+                              <button
+                                type="button"
+                                className="action-btn preview-action-btn letter-action-btn letter-btn-icon"
+                                title="View Candidate Offer Response Letter"
+                                aria-label="View Response Letter"
+                                onClick={() => setViewingResponseLetterApp(currentApp)}
+                              >
+                                <RowActionIcon name="letter" />
+                              </button>
+                            )}
+                          </div>
                         );
                       }
+
+                      const hasResponseLetter = Boolean(currentApp.response_letter);
 
                       return (
                         <div className="status-actions-trio preview-status-actions-trio" role="group" aria-label="Status actions">
@@ -3546,11 +3722,23 @@ export default function EmployerApplicantManagement() {
                             <RowActionIcon name="shortlist" />
                           </button>
 
+                          {isShortlisted && (
+                            <button
+                              type="button"
+                              className="action-btn preview-action-btn schedule-action-btn schedule-btn-icon"
+                              title="Schedule Interview"
+                              aria-label="Schedule Interview"
+                              onClick={() => handleOpenDirectScheduleModal(currentApp)}
+                            >
+                              <RowActionIcon name="schedule" />
+                            </button>
+                          )}
+
                           <button
                             type="button"
                             className="action-btn preview-action-btn approve-action-btn approve-btn-icon"
-                            title="Approve candidate"
-                            aria-label="Approve candidate"
+                            title="Approve & Extend Offer"
+                            aria-label="Approve & Extend Offer"
                             onClick={() => {
                               handleInitiateStatusChange(currentApp, "approved");
                             }}
@@ -3569,6 +3757,18 @@ export default function EmployerApplicantManagement() {
                           >
                             <RowActionIcon name="reject" />
                           </button>
+
+                          {hasResponseLetter && (
+                            <button
+                              type="button"
+                              className="action-btn preview-action-btn letter-action-btn letter-btn-icon"
+                              title="View Candidate Offer Response Letter"
+                              aria-label="View Response Letter"
+                              onClick={() => setViewingResponseLetterApp(currentApp)}
+                            >
+                              <RowActionIcon name="letter" />
+                            </button>
+                          )}
                         </div>
                       );
                     })()}
@@ -4513,15 +4713,29 @@ export default function EmployerApplicantManagement() {
                       const isFinalized = isFinalizedStatus(reviewModalApp.status);
 
                       if (isFinalized) {
+                        const hasResponseLetter = Boolean(reviewModalApp.response_letter);
                         return (
-                          <button
-                            type="button"
-                            className={`modal-fused-status-btn ${isApproved ? "approved" : "denied"}`}
-                            title={`Application decision finalized as ${isApproved ? "Approved" : "Denied"} (cannot be modified)`}
-                            onClick={() => triggerLockedDecisionWarning(reviewModalApp)}
-                          >
-                            {isApproved ? "Approved" : "Denied"}
-                          </button>
+                          <div style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                            <button
+                              type="button"
+                              className={`modal-fused-status-btn ${isApproved ? "approved" : "denied"}`}
+                              title={`Application decision finalized as ${isApproved ? "Approved" : "Denied"} (cannot be modified)`}
+                              onClick={() => triggerLockedDecisionWarning(reviewModalApp)}
+                            >
+                              {isApproved ? "Approved" : "Denied"}
+                            </button>
+                            {hasResponseLetter && (
+                              <button
+                                type="button"
+                                className="modal-status-word-btn modal-letter-btn"
+                                title="View Candidate Offer Response Letter"
+                                aria-label="View Response Letter"
+                                onClick={() => setViewingResponseLetterApp(reviewModalApp)}
+                              >
+                                <span>View Response Letter</span>
+                              </button>
+                            )}
+                          </div>
                         );
                       }
 
@@ -4537,14 +4751,26 @@ export default function EmployerApplicantManagement() {
                             <span>{isShortlisted ? "Shortlisted" : "Shortlist"}</span>
                           </button>
 
+                          {isShortlisted && (
+                            <button
+                              type="button"
+                              className="modal-status-word-btn modal-schedule-btn"
+                              title="Schedule Interview"
+                              aria-label="Schedule Interview"
+                              onClick={() => handleOpenDirectScheduleModal(reviewModalApp)}
+                            >
+                              <span>Schedule Interview</span>
+                            </button>
+                          )}
+
                           <button
                             type="button"
                             className="modal-status-word-btn modal-approve-btn"
-                            title="Approve application"
-                            aria-label="Approve application"
+                            title="Approve & Extend Formal Offer"
+                            aria-label="Approve & Extend Formal Offer"
                             onClick={() => handleInitiateStatusChange(reviewModalApp, "approved")}
                           >
-                            <span>Approve</span>
+                            <span>Approve & Extend Offer</span>
                           </button>
 
                           <button
@@ -4556,6 +4782,18 @@ export default function EmployerApplicantManagement() {
                           >
                             <span>Deny</span>
                           </button>
+
+                          {reviewModalApp.response_letter && (
+                            <button
+                              type="button"
+                              className="modal-status-word-btn modal-letter-btn"
+                              title="View Candidate Offer Response Letter"
+                              aria-label="View Response Letter"
+                              onClick={() => setViewingResponseLetterApp(reviewModalApp)}
+                            >
+                              <span>View Response Letter</span>
+                            </button>
+                          )}
                         </div>
                       );
                     })()}
@@ -6217,10 +6455,10 @@ export default function EmployerApplicantManagement() {
                     <h3 className="decision-card-title">
                       {decisionModalApps.length > 1
                         ? decisionModalAction === "approved"
-                          ? `Accept Multiple Candidates (${decisionModalApps.length})`
+                          ? `Extend Formal Offers (${decisionModalApps.length})`
                           : `Deny Multiple Candidates (${decisionModalApps.length})`
                         : decisionModalAction === "approved"
-                        ? "Accept Candidate"
+                        ? "Extend Formal Job Offer (Direct Hire / Offer)"
                         : "Deny Candidate"}
                     </h3>
                   </div>
@@ -6437,8 +6675,8 @@ export default function EmployerApplicantManagement() {
                         ? `Submitting Decision${decisionModalApps.length > 1 ? ` (${decisionModalApps.length})` : ""}...`
                         : decisionModalAction === "approved"
                         ? decisionModalApps.length > 1
-                          ? `Confirm Acceptance (${decisionModalApps.length})`
-                          : "Confirm Acceptance"
+                          ? `Send Formal Offers (${decisionModalApps.length})`
+                          : "Send Formal Offer Letter"
                         : decisionModalApps.length > 1
                         ? `Confirm Denial (${decisionModalApps.length})`
                         : "Confirm Denial"}
@@ -6449,6 +6687,208 @@ export default function EmployerApplicantManagement() {
             </div>
           </div>
         )}
+
+        {/* ── STANDALONE SCHEDULE INTERVIEW MODAL (OPTIONAL INTERVIEW TRACK) ── */}
+        {directScheduleApp && (
+          <div className="decision-modal-overlay" onClick={() => { if (!isDecisionSubmitting) setDirectScheduleApp(null); }}>
+            <div className="decision-modal-containers-row" onClick={(e) => e.stopPropagation()}>
+              <aside className="decision-card decision-schedule-card" style={{ maxWidth: "520px", width: "100%" }}>
+                <div className="decision-card-header">
+                  <div className="decision-card-title-wrap">
+                    <span className="decision-schedule-icon">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                      </svg>
+                    </span>
+                    <div>
+                      <h3 className="decision-card-title">Schedule Candidate Interview</h3>
+                      <span className="decision-card-sub">
+                        {directScheduleApp.applicant_name} • {directScheduleApp.job_title}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="decision-card-close-btn"
+                    onClick={() => { if (!isDecisionSubmitting) setDirectScheduleApp(null); }}
+                    title="Close Schedule Form"
+                    aria-label="Close Schedule Form"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="decision-card-body">
+                  <div className="decision-sched-field">
+                    <label>Interview Date *</label>
+                    <input
+                      type="date"
+                      className="decision-sched-input"
+                      value={schedDate}
+                      min={getTodayDateStr()}
+                      onChange={(e) => setSchedDate(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="decision-schedule-row two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                    <div className="decision-sched-field">
+                      <label>Start Time *</label>
+                      <input
+                        type="time"
+                        className="decision-sched-input"
+                        value={schedStartTime}
+                        onChange={(e) => setSchedStartTime(e.target.value)}
+                      />
+                    </div>
+                    <div className="decision-sched-field">
+                      <label>End Time</label>
+                      <input
+                        type="time"
+                        className="decision-sched-input"
+                        value={schedEndTime}
+                        onChange={(e) => setSchedEndTime(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="decision-schedule-row two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                    <div className="decision-sched-field">
+                      <label>Interview Stage</label>
+                      <select
+                        className="decision-sched-input"
+                        value={schedStage}
+                        onChange={(e) => setSchedStage(e.target.value)}
+                      >
+                        <option value="Initial Interview">Initial Interview</option>
+                        <option value="Technical Interview">Technical Interview</option>
+                        <option value="Final Interview">Final Interview</option>
+                        <option value="HR Screening">HR Screening</option>
+                        <option value="On-Site Interview">On-Site Interview</option>
+                      </select>
+                    </div>
+                    <div className="decision-sched-field">
+                      <label>Interview Mode</label>
+                      <select
+                        className="decision-sched-input"
+                        value={schedType}
+                        onChange={(e) => setSchedType(e.target.value as "On-Site" | "Virtual")}
+                      >
+                        <option value="On-Site">On-Site</option>
+                        <option value="Virtual">Virtual / Online</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="decision-sched-field">
+                    <label>{schedType === "Virtual" ? "Meeting Link / Platform" : "Office Address / Room"}</label>
+                    <input
+                      type="text"
+                      className="decision-sched-input"
+                      value={schedLocation}
+                      onChange={(e) => setSchedLocation(e.target.value)}
+                      placeholder={schedType === "Virtual" ? "e.g., Google Meet link or Zoom" : "e.g., CEBUANA Main Office, Room 4B"}
+                    />
+                  </div>
+
+                  <div className="decision-sched-field">
+                    <label>Preparation Notes / Instructions (Optional)</label>
+                    <textarea
+                      className="decision-sched-input"
+                      rows={3}
+                      style={{ resize: "vertical" }}
+                      value={schedNotes}
+                      onChange={(e) => setSchedNotes(e.target.value)}
+                      placeholder="e.g., Please prepare a portfolio or sample project and arrive 10 minutes early."
+                    />
+                  </div>
+                </div>
+
+                <div className="decision-card-footer" style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                  <button
+                    type="button"
+                    className="decision-cancel-btn"
+                    disabled={isDecisionSubmitting}
+                    onClick={() => setDirectScheduleApp(null)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="decision-confirm-btn schedule-action"
+                    disabled={isDecisionSubmitting}
+                    onClick={handleConfirmDirectSchedule}
+                  >
+                    {isDecisionSubmitting ? "Scheduling Interview..." : "Confirm Schedule"}
+                  </button>
+                </div>
+              </aside>
+            </div>
+          </div>
+        )}
+
+        {/* ── CANDIDATE RESPONSE LETTER VIEW MODAL ── */}
+        {viewingResponseLetterApp && (
+          <div className="decision-modal-overlay" onClick={() => setViewingResponseLetterApp(null)}>
+            <div className="decision-modal-containers-row" onClick={(e) => e.stopPropagation()}>
+              <div className="decision-card decision-main-card" style={{ maxWidth: "560px", width: "100%" }}>
+                <div className="decision-card-header">
+                  <div>
+                    <h3 className="decision-card-title">
+                      {viewingResponseLetterApp.response_decision === "declined" ? "Candidate Response: Offer Declined" : "Candidate Response: Offer Accepted"}
+                    </h3>
+                    <span className="decision-card-sub">{viewingResponseLetterApp.applicant_name} • {viewingResponseLetterApp.job_title}</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="decision-card-close-btn"
+                    onClick={() => setViewingResponseLetterApp(null)}
+                    aria-label="Close"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="decision-card-body">
+                  {viewingResponseLetterApp.start_date && (
+                    <div style={{ marginBottom: "14px", padding: "8px 12px", background: "#f0f9ff", borderRadius: "8px", border: "1px solid #bae6fd", fontSize: "0.85rem", color: "#0369a1" }}>
+                      <strong>Confirmed Target Start Date:</strong> {new Date(viewingResponseLetterApp.start_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </div>
+                  )}
+                  {viewingResponseLetterApp.responded_at && (
+                    <div style={{ marginBottom: "10px", fontSize: "0.78rem", color: "#64748b" }}>
+                      Responded on: {new Date(viewingResponseLetterApp.responded_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </div>
+                  )}
+                  <div style={{ whiteSpace: "pre-wrap", background: "#f8fafc", padding: "16px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.9rem", color: "#334155", lineHeight: 1.6 }}>
+                    {viewingResponseLetterApp.response_letter || "No response letter text provided."}
+                  </div>
+                </div>
+                <div className="decision-card-footer" style={{ justifyContent: "flex-end" }}>
+                  <button
+                    type="button"
+                    className="decision-confirm-btn"
+                    onClick={() => setViewingResponseLetterApp(null)}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── SCHEDULE SUCCESS POPUP (RULE 6 COMPLIANT) ── */}
+        <ConfirmationModal
+          isOpen={Boolean(scheduleSuccessPopup)}
+          type="info"
+          title="Interview Scheduled"
+          message={scheduleSuccessPopup || ""}
+          confirmLabel="OK"
+          hideCancel={true}
+          onConfirm={() => setScheduleSuccessPopup(null)}
+        />
 
         {/* ── RULE 6 COMPLIANT WARNING POPUP MODAL ── */}
         {warningPopup && (

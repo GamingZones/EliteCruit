@@ -4411,6 +4411,7 @@ app.get("/api/applicants/:userId/applications", authenticateToken, requireUserOr
         ...row,
         status: effectiveStatus,
         rating: row.rating ? Number(row.rating).toFixed(1) : null,
+        offer_letter: row.decision_message_type === "formal_offer" ? (row.decision_message || null) : null,
       };
     });
 
@@ -4815,6 +4816,13 @@ app.get("/api/employers/:userId/applications", authenticateToken, requireUserOrA
           ap.resume_path,
           ap.profile_picture_path,
           a.applicant_user_id,
+          a.decision_message,
+          a.decision_message_type,
+          a.decided_at,
+          a.response_letter,
+          a.response_decision,
+          a.responded_at,
+          a.start_date,
           (
             SELECT CASE
               WHEN COUNT(*) > 0 THEN ROUND(((SUM(cr.rating)::numeric + 12.0) / (COUNT(*) + 3.0)), 1)
@@ -4977,7 +4985,7 @@ app.put("/api/applications/:id/status", authenticateToken, requireApplicationDec
         }
       }
 
-      const msgType = message_type === "manual" ? "manual" : "automated";
+      const msgType = isApproved ? "formal_offer" : (message_type === "manual" ? "manual" : "automated");
 
       await run(
         `UPDATE applications
@@ -4990,8 +4998,11 @@ app.put("/api/applications/:id/status", authenticateToken, requireApplicationDec
         [cleanStatus, finalMsg, msgType, applicationId]
       );
 
-      const notifType = isApproved ? "application_accepted" : "application_denied";
-      const notifTitle = isApproved ? `Application Accepted: ${jobTitle}` : `Application Update: ${jobTitle}`;
+      const notifType = isApproved ? "formal_offer" : "application_denied";
+      const notifTitle = isApproved ? `Formal Job Offer: ${jobTitle}` : `Application Update: ${jobTitle}`;
+      const notifBody = isApproved
+        ? `${companyName} has extended a formal employment offer for "${jobTitle}". Review your offer letter to accept or decline.`
+        : `${companyName} has updated the status of your application for "${jobTitle}".`;
 
       if (appDetails?.applicant_user_id) {
         await run(
@@ -5505,6 +5516,15 @@ app.post("/api/applicants/:userId/applications/:id/offer-response", authenticate
 
     if (!appRecord) {
       return res.status(404).json({ message: "Application not found for this applicant." });
+    }
+
+    const hasOffer = (
+      appRecord.decision_message_type === "formal_offer" ||
+      ["offered", "offer_extended"].includes(String(appRecord.status || "").toLowerCase()) ||
+      Boolean(appRecord.response_letter)
+    );
+    if (!hasOffer) {
+      return res.status(400).json({ message: "No formal offer has been extended for this application." });
     }
 
     const applicant = await get(
@@ -7970,10 +7990,12 @@ async function ensureMeetingsForZakiAccounts() {
   const applicantEmail = "zaki_ablando897@yahoo.com";
 
   try {
+    const defaultPassword = "Password123!";
+    const passHash = await bcrypt.hash(defaultPassword, 10);
+
     // 1. Find or create employer
     let employer = await get("SELECT id, email FROM users WHERE lower(email) = ?", [employerEmail.toLowerCase()]);
     if (!employer) {
-      const passHash = await bcrypt.hash("Password123!", 10);
       const res = await run(
         "INSERT INTO users (email, password_hash, role, is_active, is_email_verified, two_factor_enabled) VALUES (?, ?, 'employer', true, true, false)",
         [employerEmail.toLowerCase(), passHash]
@@ -7989,12 +8011,16 @@ async function ensureMeetingsForZakiAccounts() {
          ON CONFLICT (user_id) DO NOTHING`,
         [employer.id]
       );
+    } else {
+      await run(
+        "UPDATE users SET password_hash = ?, is_active = true, is_email_verified = true WHERE id = ?",
+        [passHash, employer.id]
+      );
     }
 
     // 2. Find or create applicant
     let applicant = await get("SELECT id, email FROM users WHERE lower(email) = ?", [applicantEmail.toLowerCase()]);
     if (!applicant) {
-      const passHash = await bcrypt.hash("Password123!", 10);
       const res = await run(
         "INSERT INTO users (email, password_hash, role, is_active, is_email_verified, two_factor_enabled) VALUES (?, ?, 'applicant', true, true, false)",
         [applicantEmail.toLowerCase(), passHash]
@@ -8004,56 +8030,141 @@ async function ensureMeetingsForZakiAccounts() {
         `INSERT INTO applicant_profiles (
           user_id, first_name, last_name, phone, city, address,
           desired_job_title, expected_salary, work_arrangement, terms_accepted, terms_accepted_at
-        ) VALUES (?, 'Zaki', 'Ablando', '+63 999 999 9999', 'Alfonso', 'Alfonso, Cavite',
-          'Full Stack Web Developer', 'PHP 50,000', 'On-Site', true, CURRENT_TIMESTAMP)
+        ) VALUES (?, 'Zaki', 'Ablando', '+63 918 987 6543', 'Dasmarinas', 'Dasmarinas, Cavite',
+          'Full Stack Web Developer', 'PHP 50,000', 'Hybrid', true, CURRENT_TIMESTAMP)
          ON CONFLICT (user_id) DO NOTHING`,
         [applicant.id]
       );
-    }
-
-    // 3. Find or create active job post for employer
-    let job = await get("SELECT id, title FROM job_posts WHERE employer_user_id = ? AND status = 'open' LIMIT 1", [employer.id]);
-    if (!job) {
-      const jobRes = await run(
-        `INSERT INTO job_posts (
-          employer_user_id, title, location, status, is_urgent, hide_salary,
-          work_arrangement, experience_level, salary_min, salary_max,
-          description, qualifications, required_skills, close_date
-        ) VALUES (?, 'Full Stack Web Developer', 'Alfonso, Cavite', 'open', 0, 0,
-          'On-Site', 'Mid-Level', 45000, 60000,
-          'Full stack developer for fintech web platform.',
-          ?::jsonb, ?::jsonb, '2026-12-31')`,
-        [
-          employer.id,
-          JSON.stringify(["Bachelor of Science in Information Technology (BSIT)"]),
-          JSON.stringify(["React", "Node.js", "TypeScript", "PostgreSQL"]),
-        ]
+    } else {
+      await run(
+        "UPDATE users SET password_hash = ?, is_active = true, is_email_verified = true WHERE id = ?",
+        [passHash, applicant.id]
       );
-      job = { id: jobRes.lastID, title: "Full Stack Web Developer" };
     }
 
-    // 4. Ensure application exists
-    let appRecord = await get("SELECT id FROM applications WHERE applicant_user_id = ? AND job_post_id = ?", [applicant.id, job.id]);
-    if (!appRecord) {
-      const appRes = await run(
-        "INSERT INTO applications (job_post_id, applicant_user_id, status, submitted_at, updated_at) VALUES (?, ?, 'approved', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-        [job.id, applicant.id]
+    // Helper: find or create job post
+    async function ensureJob(title, location, workArrangement, expLevel, minSal, maxSal, description, skills) {
+      let jobRow = await get("SELECT id, title FROM job_posts WHERE employer_user_id = ? AND title = ? LIMIT 1", [employer.id, title]);
+      if (!jobRow) {
+        const jobRes = await run(
+          `INSERT INTO job_posts (
+            employer_user_id, title, location, status, is_urgent, hide_salary,
+            work_arrangement, experience_level, salary_min, salary_max,
+            description, qualifications, required_skills, close_date
+          ) VALUES (?, ?, ?, 'open', 0, 0, ?, ?, ?, ?, ?, ?::jsonb, ?::jsonb, '2026-12-31')`,
+          [
+            employer.id,
+            title,
+            location,
+            workArrangement,
+            expLevel,
+            minSal,
+            maxSal,
+            description,
+            JSON.stringify(["Bachelor of Science in Information Technology (BSIT)"]),
+            JSON.stringify(skills),
+          ]
+        );
+        jobRow = { id: jobRes.lastID, title };
+      }
+      return jobRow;
+    }
+
+    // 3. Define the 4 jobs for the 4 recruitment test scenarios
+    // Scenario 1: Shortlisted - No interview (Employer tests "Schedule Interview" OR direct "Approve & Extend Offer")
+    const jobA = await ensureJob(
+      "Frontend UI/UX Developer",
+      "Indang, Cavite",
+      "Hybrid",
+      "Mid-Level",
+      40000,
+      55000,
+      "Design and build accessible, responsive user interfaces for modern web and mobile fintech portals.",
+      ["React", "Tailwind CSS", "TypeScript", "Figma"]
+    );
+
+    // Scenario 2: Shortlisted - Active scheduled interview (Employer tests interview completion & decision)
+    const jobB = await ensureJob(
+      "Cloud DevOps Engineer",
+      "Dasmarinas, Cavite",
+      "On-Site",
+      "Senior",
+      60000,
+      80000,
+      "Manage cloud infrastructure, CI/CD pipelines, Kubernetes clusters, and security policies.",
+      ["Docker", "Kubernetes", "PostgreSQL", "AWS"]
+    );
+
+    // Scenario 3: Approved - Formal offer extended (Applicant tests receiving offer & submitting response letter)
+    const jobC = await ensureJob(
+      "Full Stack Web Developer",
+      "Alfonso, Cavite",
+      "Hybrid",
+      "Mid-Senior",
+      50000,
+      65000,
+      "Develop scalable web microservices and client-facing financial dashboards.",
+      ["React", "Node.js", "TypeScript", "PostgreSQL"]
+    );
+
+    // Scenario 4: Accepted - Response letter submitted (Employer tests "View Response Letter")
+    const jobD = await ensureJob(
+      "Lead Enterprise Architect",
+      "Indang - Dasmarinas Tech Hub, Cavite",
+      "Hybrid",
+      "Lead/Principal",
+      75000,
+      95000,
+      "Lead the overarching software and fintech system architecture for next-gen banking services.",
+      ["TypeScript", "Node.js", "PostgreSQL", "System Architecture"]
+    );
+
+    // 4. Ensure Application 1 (Job A: Shortlisted, No Interview -> Ready for optional interview or direct hire)
+    let appA = await get("SELECT id FROM applications WHERE applicant_user_id = ? AND job_post_id = ?", [applicant.id, jobA.id]);
+    if (!appA) {
+      await run(
+        `INSERT INTO applications (job_post_id, applicant_user_id, status, submitted_at, updated_at)
+         VALUES (?, ?, 'shortlisted', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        [jobA.id, applicant.id]
       );
-      appRecord = { id: appRes.lastID };
+    } else {
+      await run(
+        `UPDATE applications SET status = 'shortlisted', decision_message = NULL, decision_message_type = NULL,
+         response_letter = NULL, response_decision = NULL, responded_at = NULL, start_date = NULL, updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [appA.id]
+      );
     }
 
-    // 5. Check existing interviews between them
+    // 5. Ensure Application 2 (Job B: Shortlisted with scheduled interview)
+    let appB = await get("SELECT id FROM applications WHERE applicant_user_id = ? AND job_post_id = ?", [applicant.id, jobB.id]);
+    if (!appB) {
+      await run(
+        `INSERT INTO applications (job_post_id, applicant_user_id, status, submitted_at, updated_at)
+         VALUES (?, ?, 'shortlisted', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        [jobB.id, applicant.id]
+      );
+    } else {
+      await run(
+        `UPDATE applications SET status = 'shortlisted', decision_message = NULL, decision_message_type = NULL,
+         response_letter = NULL, response_decision = NULL, responded_at = NULL, start_date = NULL, updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [appB.id]
+      );
+    }
+
+    // Ensure interviews for Job B
     const existingInterviews = await all(
       "SELECT id, interview_title, interview_date FROM scheduled_interviews WHERE employer_user_id = ? AND applicant_user_id = ? AND deleted_by_employer = FALSE AND deleted_by_applicant = FALSE",
       [employer.id, applicant.id]
     );
 
-    const hasMeeting1 = existingInterviews.some((i) => i.interview_title?.includes("Technical Interview") && i.interview_date === "2026-11-06");
-    const hasMeeting2 = existingInterviews.some((i) => i.interview_title?.includes("Final Panel Interview") && i.interview_date === "2026-11-10");
+    const hasDevOpsInterview = existingInterviews.some((i) => i.interview_title?.includes("Technical Architecture Interview") && i.interview_date === "2026-11-06");
+    const hasPanelInterview = existingInterviews.some((i) => i.interview_title?.includes("Final Panel Interview") && i.interview_date === "2026-11-10");
 
-    let createdCount = 0;
+    let createdInterviews = 0;
 
-    if (!hasMeeting1) {
+    if (!hasDevOpsInterview) {
       await run(
         `INSERT INTO scheduled_interviews (
           employer_user_id, applicant_user_id, candidate_user_ids,
@@ -8064,26 +8175,25 @@ async function ensureMeetingsForZakiAccounts() {
           deleted_by_employer, deleted_by_applicant, created_at, updated_at
         ) VALUES (
           ?, ?, ?::jsonb,
-          ?, 'Technical Interview - Full Stack Web Developer', 'Technical Evaluation', 'On-Site',
+          ?, 'Technical Architecture Interview - Cloud DevOps', 'Technical Evaluation', 'On-Site',
           'Cebuana Hub, Alfonso Branch, Cavite', '2026-11-06', '10:00 AM', '10:45 AM',
-          'Review architecture, frontend React components, and database models.', 'accepted', ?,
-          'Zaki Ablando', '+63 999 999 9999', 'Alfonso, Cavite', ?, 'Cebuana Lhuillier',
+          'Review candidate expertise in cloud architecture, CI/CD, and system resiliency.', 'accepted', ?,
+          'Zaki Ablando', '+63 918 987 6543', 'Dasmarinas, Cavite', ?, 'Cebuana Lhuillier',
           FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
         )`,
         [
           employer.id,
           applicant.id,
           JSON.stringify([applicant.id]),
-          job.id,
-          job.title,
+          jobB.id,
+          jobB.title,
           applicantEmail,
         ]
       );
-      createdCount++;
-      console.log("[Zaki Meetings] Created Meeting 1 for Nov 6, 2026");
+      createdInterviews++;
     }
 
-    if (!hasMeeting2) {
+    if (!hasPanelInterview) {
       await run(
         `INSERT INTO scheduled_interviews (
           employer_user_id, applicant_user_id, candidate_user_ids,
@@ -8094,53 +8204,130 @@ async function ensureMeetingsForZakiAccounts() {
           deleted_by_employer, deleted_by_applicant, created_at, updated_at
         ) VALUES (
           ?, ?, ?::jsonb,
-          ?, 'Final Panel Interview - IT Systems & Infrastructure Specialist', 'Final Interview', 'On-Site',
+          ?, 'Final Panel Interview - Cloud DevOps & Infrastructure', 'Final Interview', 'On-Site',
           'Cebuana Main Office, Trece Martires, Cavite', '2026-11-10', '02:00 PM', '03:00 PM',
-          'Final panel interview with the senior infrastructure team.', 'accepted', 'IT Systems & Infrastructure Specialist',
-          'Zaki Ablando', '+63 999 999 9999', 'Alfonso, Cavite', ?, 'Cebuana Lhuillier',
+          'Final panel interview with the senior infrastructure team.', 'accepted', ?,
+          'Zaki Ablando', '+63 918 987 6543', 'Dasmarinas, Cavite', ?, 'Cebuana Lhuillier',
           FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
         )`,
         [
           employer.id,
           applicant.id,
           JSON.stringify([applicant.id]),
-          job.id,
+          jobB.id,
+          jobB.title,
           applicantEmail,
         ]
       );
-      createdCount++;
-      console.log("[Zaki Meetings] Created Meeting 2 for Nov 10, 2026");
+      createdInterviews++;
     }
 
-    // Insert notifications if created
-    if (createdCount > 0) {
-      await run(
-        `INSERT INTO notifications (user_id, type, title, body, is_read, related_user_id, related_application_id, created_at) VALUES
-        (?, 'interview_scheduled', 'Interview Confirmed: Technical Interview', 'CEBUANA scheduled an interview for Full Stack Web Developer on Nov 6, 2026 at 10:00 AM.', 0, ?, ?, CURRENT_TIMESTAMP)`,
-        [applicant.id, employer.id, appRecord.id]
-      ).catch(() => {});
+    // 6. Ensure Application 3 (Job C: Approved with formal offer letter, waiting for applicant response)
+    const offerLetterTextC = "Dear Zaki Ablando,\n\nOn behalf of Cebuana Lhuillier, we are delighted to formally offer you the position of Full Stack Web Developer. We were extremely impressed by your technical proficiency, architectural knowledge, and team-oriented approach.\n\nYour compensation package includes a monthly salary of PHP 60,000, comprehensive health HMO coverage, hybrid work flexibility, and full equipment support.\n\nProposed Start Date: November 16, 2026.\n\nPlease review this offer letter and submit your response letter through EliteCruit to confirm your decision.\n\nSincerely,\nTalent Acquisition Team\nCebuana Lhuillier";
 
+    let appC = await get("SELECT id FROM applications WHERE applicant_user_id = ? AND job_post_id = ?", [applicant.id, jobC.id]);
+    if (!appC) {
       await run(
-        `INSERT INTO notifications (user_id, type, title, body, is_read, related_user_id, related_application_id, created_at) VALUES
-        (?, 'interview_status_update', 'Meeting Scheduled: Zaki Ablando', 'Interview with Zaki Ablando for Full Stack Web Developer is set for Nov 6, 2026 at 10:00 AM.', 0, ?, ?, CURRENT_TIMESTAMP)`,
-        [employer.id, applicant.id, appRecord.id]
-      ).catch(() => {});
+        `INSERT INTO applications (
+          job_post_id, applicant_user_id, status, submitted_at, decided_at,
+          decision_message, decision_message_type, start_date, response_decision, response_letter, responded_at, updated_at
+        ) VALUES (?, ?, 'approved', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'formal_offer', '2026-11-16', NULL, NULL, NULL, CURRENT_TIMESTAMP)`,
+        [jobC.id, applicant.id, offerLetterTextC]
+      );
+    } else {
+      await run(
+        `UPDATE applications SET
+          status = 'approved',
+          decision_message = ?,
+          decision_message_type = 'formal_offer',
+          start_date = '2026-11-16',
+          decided_at = CURRENT_TIMESTAMP,
+          response_decision = NULL,
+          response_letter = NULL,
+          responded_at = NULL,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?`,
+        [offerLetterTextC, appC.id]
+      );
     }
 
+    // 7. Ensure Application 4 (Job D: Accepted with candidate response letter submitted)
+    const offerLetterTextD = "Dear Zaki Ablando,\n\nCebuana Lhuillier is pleased to offer you the position of Lead Enterprise Architect with a monthly compensation of PHP 85,000 and comprehensive benefits.\n\nProposed Start Date: December 1, 2026.\n\nSincerely,\nCebuana Lhuillier Hiring Committee";
+    const acceptLetterTextD = "Dear Cebuana Lhuillier Hiring Committee,\n\nI am thrilled to formally accept the job offer for the Lead Enterprise Architect position. I truly appreciate this wonderful opportunity and am eager to contribute to the innovation and digital fintech modernization.\n\nI confirm my start date on December 1, 2026.\n\nWarm regards,\nZaki Ablando";
+
+    let appD = await get("SELECT id FROM applications WHERE applicant_user_id = ? AND job_post_id = ?", [applicant.id, jobD.id]);
+    if (!appD) {
+      await run(
+        `INSERT INTO applications (
+          job_post_id, applicant_user_id, status, submitted_at, decided_at,
+          decision_message, decision_message_type, start_date, response_decision, response_letter, responded_at, updated_at
+        ) VALUES (?, ?, 'accepted', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'formal_offer', '2026-12-01', 'accept', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        [jobD.id, applicant.id, offerLetterTextD, acceptLetterTextD]
+      );
+    } else {
+      await run(
+        `UPDATE applications SET
+          status = 'accepted',
+          decision_message = ?,
+          decision_message_type = 'formal_offer',
+          start_date = '2026-12-01',
+          decided_at = CURRENT_TIMESTAMP,
+          response_decision = 'accept',
+          response_letter = ?,
+          responded_at = CURRENT_TIMESTAMP,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?`,
+        [offerLetterTextD, acceptLetterTextD, appD.id]
+      );
+    }
+
+    console.log("[Zaki Accounts] Seeded 4 recruitment workflow test scenarios successfully!");
     return {
       success: true,
-      employerId: employer.id,
-      applicantId: applicant.id,
-      createdCount,
-      totalExisting: existingInterviews.length + createdCount,
+      message: "Recruitment test data seeded successfully!",
+      employer: { email: employerEmail, password: defaultPassword },
+      applicant: { email: applicantEmail, password: defaultPassword },
+      scenarios: [
+        {
+          scenario: "1. Shortlisted without interview (Test 'Schedule Interview' or 'Approve & Extend Offer')",
+          job: jobA.title,
+          status: "shortlisted",
+          interview: null
+        },
+        {
+          scenario: "2. Shortlisted with scheduled interview (Test interview completion & post-interview decision)",
+          job: jobB.title,
+          status: "shortlisted",
+          interview: "Nov 6, 2026 at 10:00 AM"
+        },
+        {
+          scenario: "3. Approved with formal offer letter (Test applicant receiving offer & submitting response letter)",
+          job: jobC.title,
+          status: "approved",
+          offer: "PHP 60,000 / month, Start Date Nov 16, 2026",
+          applicantAction: "Log in as applicant and click 'Formal Offer Letter' -> Submit Response"
+        },
+        {
+          scenario: "4. Accepted with response letter (Test employer clicking 'View Response Letter')",
+          job: jobD.title,
+          status: "accepted",
+          responseDecision: "accept",
+          employerAction: "Log in as employer -> Shortlisted / Hired -> Click 'View Response Letter'"
+        }
+      ]
     };
   } catch (err) {
-    console.error("[Zaki Meetings] Error ensuring meetings:", err);
+    console.error("[Zaki Meetings] Error ensuring meetings and test data:", err);
     return { success: false, error: err.message };
   }
 }
 
 app.get("/api/admin/ensure-zaki-meetings", async (req, res) => {
+  const result = await ensureMeetingsForZakiAccounts();
+  res.json(result);
+});
+
+app.get("/api/admin/seed-recruitment-test-data", async (req, res) => {
   const result = await ensureMeetingsForZakiAccounts();
   res.json(result);
 });
