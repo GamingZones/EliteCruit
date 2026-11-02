@@ -4271,3 +4271,40 @@
 [data-theme="dark"] .jd-body-wrapper {
   background: #14151b !important;
 }
+
+/* Job Details Modal & Target Job Dark Mode (Strict Rule 9) */
+[data-theme="dark"] .jd-details-side-card {
+  background: #1c1e27 !important;
+  border-color: #2e3244 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .jd-details-side-header {
+  background: #181a22 !important;
+  border-bottom: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .jd-details-side-header h3 {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .jd-details-side-card h4 {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .jd-details-side-card p {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .recruit-target-job-box {
+  background: #181a22 !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .recruit-target-job-box h4 {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .recruit-target-job-box span {
+  color: #94a3b8 !important;
+}

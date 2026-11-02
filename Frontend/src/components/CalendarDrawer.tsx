@@ -536,8 +536,9 @@ export default function CalendarDrawer({
   // Reschedule Interview Modal state (Matches UI 864653198 / 872246452 / 875598777)
   const [interviewToReschedule, setInterviewToReschedule] = useState<ScheduledInterview | null>(null);
   const [rescheduleDate, setRescheduleDate] = useState("");
-  const [rescheduleTime, setRescheduleTime] = useState("10:00 AM");
-  const [rescheduleAltTime, setRescheduleAltTime] = useState("2:00 PM");
+  const [rescheduleTime, setRescheduleTime] = useState("10:00");
+  const [rescheduleEndTime, setRescheduleEndTime] = useState("10:45");
+  const [rescheduleAltTime, setRescheduleAltTime] = useState("14:00");
   const [rescheduleReason, setRescheduleReason] = useState(
     "I have a prior commitment at the original interview time. I'm available at either suggested time."
   );
@@ -545,27 +546,29 @@ export default function CalendarDrawer({
   const handleOpenRescheduleModal = (item: ScheduledInterview) => {
     setInterviewToReschedule(item);
     setRescheduleDate(item.interview_date || "");
-    setRescheduleTime(formatDisplayTime(item.start_time) || "10:00 AM");
-    setRescheduleAltTime("2:00 PM");
+    const startM = parseTimeToMinutes(item.start_time);
+    const endM = parseTimeToMinutes(item.end_time);
+    const validStart = startM > 0 ? minutesTo24h(startM) : "10:00";
+    const validEnd = (endM > startM) ? minutesTo24h(endM) : (startM > 0 ? minutesTo24h(startM + 45) : "10:45");
+    setRescheduleTime(validStart);
+    setRescheduleEndTime(validEnd);
+    setRescheduleAltTime("14:00");
     setRescheduleReason(
-      "I have a prior commitment at the original interview time. I'm available at either suggested time."
+      isEmployer ? "" : "I have a prior commitment at the original interview time. I'm available at either suggested time."
     );
   };
 
   const handleConfirmReschedule = () => {
     if (!interviewToReschedule) return;
     if (rescheduleDate && rescheduleTime) {
-      const oldStartMin = parseTimeToMinutes(interviewToReschedule.start_time);
-      const oldEndMin = parseTimeToMinutes(interviewToReschedule.end_time);
-      const durationMin = (oldEndMin > oldStartMin && oldEndMin - oldStartMin <= 480)
-        ? (oldEndMin - oldStartMin)
-        : 45;
+      const startM = parseTimeToMinutes(rescheduleTime);
+      let endM = parseTimeToMinutes(rescheduleEndTime);
+      if (!endM || endM <= startM) {
+        endM = startM + 45;
+      }
 
-      const newStartMin = parseTimeToMinutes(rescheduleTime);
-      const newEndMin = newStartMin + durationMin;
-
-      const normalizedStartTime = minutesTo24h(newStartMin);
-      const normalizedEndTime = minutesTo24h(newEndMin);
+      const normalizedStartTime = minutesTo24h(startM);
+      const normalizedEndTime = minutesTo24h(endM);
 
       setInterviews((prev) =>
         prev.map((it) =>
@@ -3042,6 +3045,43 @@ export default function CalendarDrawer({
               </button>
             </div>
 
+            {/* Attached Interview & Job Details Card */}
+            <div className="cal-modal-job-summary-card">
+              <div className="cal-modal-job-summary-top">
+                <span className="cal-modal-job-badge">
+                  {interviewToCancel.interview_type || "On-Site Interview"}
+                </span>
+                <span className="cal-modal-job-status-pill status-scheduled">
+                  {interviewToCancel.status === "accepted" ? "Confirmed" : "Scheduled"}
+                </span>
+              </div>
+              <h4 className="cal-modal-job-title">
+                {interviewToCancel.job_title || interviewToCancel.interview_title || "Job Position"}
+              </h4>
+              <div className="cal-modal-job-meta-grid">
+                <div className="cal-modal-job-meta-cell">
+                  <span className="cal-modal-job-meta-label">Candidate</span>
+                  <span className="cal-modal-job-meta-val">{interviewToCancel.applicant_name || "Applicant"}</span>
+                </div>
+                <div className="cal-modal-job-meta-cell">
+                  <span className="cal-modal-job-meta-label">Interview Date</span>
+                  <span className="cal-modal-job-meta-val">{formatDisplayDate(interviewToCancel.interview_date)}</span>
+                </div>
+                <div className="cal-modal-job-meta-cell">
+                  <span className="cal-modal-job-meta-label">Time</span>
+                  <span className="cal-modal-job-meta-val">
+                    {formatDisplayTime(interviewToCancel.start_time)} – {formatDisplayTime(interviewToCancel.end_time)}
+                  </span>
+                </div>
+                {interviewToCancel.meeting_link_or_address && (
+                  <div className="cal-modal-job-meta-cell">
+                    <span className="cal-modal-job-meta-label">Venue</span>
+                    <span className="cal-modal-job-meta-val">{interviewToCancel.meeting_link_or_address}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "16px" }}>
               <div>
                 <label className="cal-modal-label">
@@ -3134,80 +3174,120 @@ export default function CalendarDrawer({
               </button>
             </div>
 
+            {/* Attached Interview & Job Details Card */}
+            <div className="cal-modal-job-summary-card">
+              <div className="cal-modal-job-summary-top">
+                <span className="cal-modal-job-badge">
+                  {interviewToReschedule.interview_type || "On-Site Interview"}
+                </span>
+                <span className={`cal-modal-job-status-pill status-${interviewToReschedule.status}`}>
+                  {interviewToReschedule.status === "rescheduled"
+                    ? "Rescheduled"
+                    : interviewToReschedule.status === "accepted"
+                    ? "Confirmed"
+                    : "Scheduled"}
+                </span>
+              </div>
+              <h4 className="cal-modal-job-title">
+                {interviewToReschedule.job_title || interviewToReschedule.interview_title || "Job Position"}
+              </h4>
+              <div className="cal-modal-job-meta-grid">
+                <div className="cal-modal-job-meta-cell">
+                  <span className="cal-modal-job-meta-label">Candidate</span>
+                  <span className="cal-modal-job-meta-val">{interviewToReschedule.applicant_name || "Applicant"}</span>
+                </div>
+                <div className="cal-modal-job-meta-cell">
+                  <span className="cal-modal-job-meta-label">Current Date</span>
+                  <span className="cal-modal-job-meta-val">{formatDisplayDate(interviewToReschedule.interview_date)}</span>
+                </div>
+                <div className="cal-modal-job-meta-cell">
+                  <span className="cal-modal-job-meta-label">Current Time</span>
+                  <span className="cal-modal-job-meta-val">
+                    {formatDisplayTime(interviewToReschedule.start_time)} – {formatDisplayTime(interviewToReschedule.end_time)}
+                  </span>
+                </div>
+                {interviewToReschedule.meeting_link_or_address && (
+                  <div className="cal-modal-job-meta-cell">
+                    <span className="cal-modal-job-meta-label">Venue</span>
+                    <span className="cal-modal-job-meta-val">{interviewToReschedule.meeting_link_or_address}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginTop: "16px" }}>
+              {/* 1. Date Field */}
+              <div>
+                <label className="cal-modal-label">
+                  {isEmployer ? "New Date" : "Preferred Date"}
+                </label>
+                <input
+                  type="date"
+                  value={rescheduleDate}
+                  onChange={(e) => setRescheduleDate(e.target.value)}
+                  className="cal-modal-input"
+                  required
+                />
+              </div>
+
+              {/* 2. Start Time & End Time (same as scheduling) */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
                   <label className="cal-modal-label">
-                    {isEmployer ? "New Date" : "Preferred Date"}
+                    {isEmployer ? "New Time (Start)" : "Preferred Start Time"}
                   </label>
                   <input
-                    type="date"
-                    value={rescheduleDate}
-                    onChange={(e) => setRescheduleDate(e.target.value)}
+                    type="time"
+                    value={rescheduleTime}
+                    onChange={(e) => {
+                      const newStart = e.target.value;
+                      setRescheduleTime(newStart);
+                      const sM = parseTimeToMinutes(newStart);
+                      const eM = parseTimeToMinutes(rescheduleEndTime);
+                      if (sM > 0 && (eM <= sM || isNaN(eM))) {
+                        setRescheduleEndTime(minutesTo24h(sM + 45));
+                      }
+                    }}
                     className="cal-modal-input"
+                    required
                   />
                 </div>
                 <div>
                   <label className="cal-modal-label">
-                    {isEmployer ? "New Time" : "Preferred Time"}
+                    {isEmployer ? "New End Time" : "Preferred End Time"}
                   </label>
-                  <select
-                    value={rescheduleTime}
-                    onChange={(e) => setRescheduleTime(e.target.value)}
-                    className="cal-modal-select"
-                  >
-                    <option value="8:00 AM">8:00 AM</option>
-                    <option value="8:30 AM">8:30 AM</option>
-                    <option value="9:00 AM">9:00 AM</option>
-                    <option value="9:30 AM">9:30 AM</option>
-                    <option value="10:00 AM">10:00 AM</option>
-                    <option value="10:30 AM">10:30 AM</option>
-                    <option value="11:00 AM">11:00 AM</option>
-                    <option value="11:30 AM">11:30 AM</option>
-                    <option value="12:00 PM">12:00 PM</option>
-                    <option value="12:30 PM">12:30 PM</option>
-                    <option value="1:00 PM">1:00 PM</option>
-                    <option value="1:30 PM">1:30 PM</option>
-                    <option value="2:00 PM">2:00 PM</option>
-                    <option value="2:30 PM">2:30 PM</option>
-                    <option value="3:00 PM">3:00 PM</option>
-                    <option value="3:30 PM">3:30 PM</option>
-                    <option value="4:00 PM">4:00 PM</option>
-                    <option value="4:30 PM">4:30 PM</option>
-                    <option value="5:00 PM">5:00 PM</option>
-                    <option value="5:30 PM">5:30 PM</option>
-                    <option value="6:00 PM">6:00 PM</option>
-                  </select>
-                  {(() => {
-                    const oldStart = parseTimeToMinutes(interviewToReschedule.start_time);
-                    const oldEnd = parseTimeToMinutes(interviewToReschedule.end_time);
-                    const dur = (oldEnd > oldStart && oldEnd - oldStart <= 480) ? (oldEnd - oldStart) : 45;
-                    const newStart = parseTimeToMinutes(rescheduleTime);
-                    const newEnd = newStart + dur;
-                    return (
-                      <span className="cal-modal-window-hint">
-                        Window: <strong>{formatDisplayTime(minutesTo24h(newStart))} – {formatDisplayTime(minutesTo24h(newEnd))}</strong> ({dur} min)
-                      </span>
-                    );
-                  })()}
+                  <input
+                    type="time"
+                    value={rescheduleEndTime}
+                    onChange={(e) => setRescheduleEndTime(e.target.value)}
+                    className="cal-modal-input"
+                    required
+                  />
                 </div>
               </div>
+
+              {(() => {
+                const sM = parseTimeToMinutes(rescheduleTime);
+                const eM = parseTimeToMinutes(rescheduleEndTime);
+                const dur = (eM > sM) ? (eM - sM) : 45;
+                return (
+                  <span className="cal-modal-window-hint">
+                    Interview Window: <strong>{formatDisplayTime(rescheduleTime)} – {formatDisplayTime(rescheduleEndTime)}</strong> ({dur} min)
+                  </span>
+                );
+              })()}
 
               {!isEmployer && (
                 <div>
                   <label className="cal-modal-label">
                     Alternative Time <span style={{ fontWeight: 400, opacity: 0.8 }}>(optional backup time)</span>
                   </label>
-                  <select
+                  <input
+                    type="time"
                     value={rescheduleAltTime}
                     onChange={(e) => setRescheduleAltTime(e.target.value)}
-                    className="cal-modal-select"
-                  >
-                    <option value="2:00 PM">2:00 PM</option>
-                    <option value="3:30 PM">3:30 PM</option>
-                    <option value="4:00 PM">4:00 PM</option>
-                    <option value="5:00 PM">5:00 PM</option>
-                  </select>
+                    className="cal-modal-input"
+                  />
                 </div>
               )}
 
