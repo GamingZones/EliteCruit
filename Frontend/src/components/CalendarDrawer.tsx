@@ -515,7 +515,6 @@ export default function CalendarDrawer({
   const [cancelMessage, setCancelMessage] = useState(
     "We need to cancel this interview because the interviewer is unavailable. We apologize for the inconvenience."
   );
-  const [notifyOnCancel, setNotifyOnCancel] = useState(true);
 
   const handleOpenCancelModal = (item: ScheduledInterview) => {
     setInterviewToCancel(item);
@@ -523,7 +522,6 @@ export default function CalendarDrawer({
     setCancelMessage(
       "We need to cancel this interview because the interviewer is unavailable. We apologize for the inconvenience."
     );
-    setNotifyOnCancel(true);
   };
 
   const handleConfirmCancelInterview = () => {
@@ -543,7 +541,6 @@ export default function CalendarDrawer({
   const [rescheduleReason, setRescheduleReason] = useState(
     "I have a prior commitment at the original interview time. I'm available at either suggested time."
   );
-  const [notifyOnReschedule, setNotifyOnReschedule] = useState(true);
 
   const handleOpenRescheduleModal = (item: ScheduledInterview) => {
     setInterviewToReschedule(item);
@@ -553,7 +550,6 @@ export default function CalendarDrawer({
     setRescheduleReason(
       "I have a prior commitment at the original interview time. I'm available at either suggested time."
     );
-    setNotifyOnReschedule(true);
   };
 
   const handleConfirmReschedule = () => {
@@ -3086,20 +3082,6 @@ export default function CalendarDrawer({
                   style={{ resize: "vertical" }}
                 />
               </div>
-
-              <label className="cal-modal-checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={notifyOnCancel}
-                  onChange={(e) => setNotifyOnCancel(e.target.checked)}
-                />
-                <span>Notify applicant by in-app notification and email</span>
-              </label>
-
-              <div className="cal-modal-info-box">
-                <span>ℹ</span>
-                <span>A cancellation notification will be added to the applicant&apos;s Notifications page.</span>
-              </div>
             </div>
 
             <div className="cal-modal-actions">
@@ -3156,7 +3138,7 @@ export default function CalendarDrawer({
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
                   <label className="cal-modal-label">
-                    Preferred date
+                    {isEmployer ? "New Date" : "Preferred Date"}
                   </label>
                   <input
                     type="date"
@@ -3167,7 +3149,7 @@ export default function CalendarDrawer({
                 </div>
                 <div>
                   <label className="cal-modal-label">
-                    Preferred time
+                    {isEmployer ? "New Time" : "Preferred Time"}
                   </label>
                   <select
                     value={rescheduleTime}
@@ -3211,21 +3193,23 @@ export default function CalendarDrawer({
                 </div>
               </div>
 
-              <div>
-                <label className="cal-modal-label">
-                  Alternative time <span style={{ fontWeight: 400, opacity: 0.8 }}>(optional)</span>
-                </label>
-                <select
-                  value={rescheduleAltTime}
-                  onChange={(e) => setRescheduleAltTime(e.target.value)}
-                  className="cal-modal-select"
-                >
-                  <option value="2:00 PM">2:00 PM</option>
-                  <option value="3:30 PM">3:30 PM</option>
-                  <option value="4:00 PM">4:00 PM</option>
-                  <option value="5:00 PM">5:00 PM</option>
-                </select>
-              </div>
+              {!isEmployer && (
+                <div>
+                  <label className="cal-modal-label">
+                    Alternative Time <span style={{ fontWeight: 400, opacity: 0.8 }}>(optional backup time)</span>
+                  </label>
+                  <select
+                    value={rescheduleAltTime}
+                    onChange={(e) => setRescheduleAltTime(e.target.value)}
+                    className="cal-modal-select"
+                  >
+                    <option value="2:00 PM">2:00 PM</option>
+                    <option value="3:30 PM">3:30 PM</option>
+                    <option value="4:00 PM">4:00 PM</option>
+                    <option value="5:00 PM">5:00 PM</option>
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="cal-modal-label">
@@ -3235,31 +3219,9 @@ export default function CalendarDrawer({
                   rows={3}
                   value={rescheduleReason}
                   onChange={(e) => setRescheduleReason(e.target.value)}
-                  placeholder="Provide reason for request..."
+                  placeholder={isEmployer ? "e.g. Schedule adjustment, interviewer conflict..." : "Provide reason for request..."}
                   className="cal-modal-textarea"
                 />
-              </div>
-
-              <label className="cal-modal-checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={notifyOnReschedule}
-                  onChange={(e) => setNotifyOnReschedule(e.target.checked)}
-                />
-                <span>
-                  {isEmployer
-                    ? "Notify applicant by in-app notification and email"
-                    : "Notify the employer and send me status updates"}
-                </span>
-              </label>
-
-              <div className={`cal-modal-notice-box ${isEmployer ? "info" : "warning"}`}>
-                <span>{isEmployer ? "ℹ️" : "⚠️"}</span>
-                <span>
-                  {isEmployer
-                    ? "The interview will be updated immediately in both calendars and candidate records."
-                    : "Submitting this request does not automatically change your interview."}
-                </span>
               </div>
             </div>
 
