@@ -396,27 +396,32 @@ export default function ApplicantDetailsModal({
       }}
     >
       <div
-        className={`jd-modal-container applicant-details-modal-container ${activeSideTab ? "with-side-panel" : ""}`}
+        className={`jd-modal-container ${activeSideTab ? "with-side-panel" : ""}`}
         style={{
-          maxWidth: activeSideTab ? "min(1320px, calc(100vw - 48px))" : "920px",
+          maxWidth: activeSideTab ? "min(1280px, calc(100vw - 48px))" : "920px",
           display: "flex",
           gap: "16px",
           alignItems: "flex-start",
           justifyContent: "center",
           position: "relative",
           margin: "auto",
+          background: "transparent",
+          border: "none",
+          boxShadow: "none",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <div
-          className="applicant-details-modal-outer-wrap jd-panel-outer-wrap"
+          className="jd-panel-outer-wrap"
           style={{
             position: "relative",
-            width: activeSideTab ? "min(720px, 54vw)" : "100%",
-            maxWidth: activeSideTab ? "min(720px, 54vw)" : "920px",
+            width: activeSideTab ? "min(700px, 54vw)" : "100%",
+            maxWidth: activeSideTab ? "min(700px, 54vw)" : "920px",
             flexShrink: 0,
             display: "flex",
             flexDirection: "column",
+            background: "transparent",
+            border: "none",
           }}
         >
           {/* ── FLOATING ACTION TABS ABOVE: Match Breakdown | Other Jobs | Messages ── */}
@@ -760,7 +765,7 @@ export default function ApplicantDetailsModal({
                   )}
 
                   {parsedWorkExp.length === 0 ? (
-                    <div style={{ textAlign: "center", padding: "36px 20px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                    <div className="cand-exp-empty-card" style={{ textAlign: "center", padding: "36px 20px", borderRadius: "10px" }}>
                       <p style={{ margin: 0, color: "#64748b", fontSize: "0.9rem" }}>
                         No employment history entries added by the applicant.
                       </p>
@@ -768,7 +773,7 @@ export default function ApplicantDetailsModal({
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                       {parsedWorkExp.map((exp, idx) => (
-                        <div key={exp.id || idx} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "16px" }}>
+                        <div key={exp.id || idx} className="cand-exp-item-card">
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px", flexWrap: "wrap", gap: "8px" }}>
                             <div>
                               <h4 style={{ margin: "0 0 2px", fontSize: "1rem", color: "#0f172a" }}>{exp.title}</h4>
@@ -894,10 +899,7 @@ export default function ApplicantDetailsModal({
             width: "480px",
             height: "700px",
             maxHeight: "88vh",
-            background: "#ffffff",
-            borderRadius: "16px",
             boxShadow: "0 25px 60px rgba(0, 0, 0, 0.35)",
-            border: "1px solid #cbd5e1",
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
@@ -912,16 +914,14 @@ export default function ApplicantDetailsModal({
               alignItems: "center",
               justifyContent: "space-between",
               padding: "16px 20px",
-              background: "#f8fbff",
-              borderBottom: "1px solid #e8f0f8",
               flexShrink: 0,
             }}
           >
             <div className="side-title-row jd-side-title-row">
-              <h3 style={{ margin: 0, fontSize: "1.12rem", fontWeight: 800, color: "#01294a" }}>
+              <h3 style={{ margin: 0, fontSize: "1.12rem", fontWeight: 800 }}>
                 Match Breakdown
               </h3>
-              <span className="side-subtitle jd-side-subtitle" style={{ fontSize: "0.78rem", color: "#557796", fontWeight: 600 }}>
+              <span className="side-subtitle jd-side-subtitle" style={{ fontSize: "0.78rem", fontWeight: 600 }}>
                 Side-by-side candidate profile vs job requirements
               </span>
             </div>
@@ -942,7 +942,7 @@ export default function ApplicantDetailsModal({
 
           <div className="side-panel-body jd-side-panel-body" style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "14px" }}>
             {/* Legend strip */}
-            <div className="jd-compare-legend" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "14px", padding: "10px 14px", background: "#f4f8fc", borderRadius: "8px", border: "1px solid #dbe7f3", fontSize: "0.78rem", color: "#315170" }}>
+            <div className="jd-compare-legend">
               <div className="legend-item" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 <span className="legend-dot green" style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#10b981", display: "inline-block" }} />
                 <span><strong>Green:</strong> Fully satisfied</span>
@@ -960,8 +960,8 @@ export default function ApplicantDetailsModal({
             {/* Master 2-Column Unified Container */}
             <div className="jd-unified-compare-container" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
               {/* ── Column 1: Candidate Profile ── */}
-              <div className="jd-master-col applicant-col" style={{ display: "flex", flexDirection: "column", gap: "12px", background: "#f8fafc", padding: "12px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-                <div className="jd-master-col-header" style={{ fontWeight: 800, fontSize: "0.85rem", color: "#0f172a", borderBottom: "1px solid #cbd5e1", paddingBottom: "6px" }}>
+              <div className="jd-master-col applicant-col">
+                <div className="jd-master-col-header">
                   <span>Candidate Profile</span>
                 </div>
                 <div className="jd-master-col-content" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -1022,8 +1022,8 @@ export default function ApplicantDetailsModal({
               </div>
 
               {/* ── Column 2: Employer Requirements ── */}
-              <div className="jd-master-col employer-col" style={{ display: "flex", flexDirection: "column", gap: "12px", background: "#f8fafc", padding: "12px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-                <div className="jd-master-col-header employer" style={{ fontWeight: 800, fontSize: "0.85rem", color: "#0284c7", borderBottom: "1px solid #cbd5e1", paddingBottom: "6px" }}>
+              <div className="jd-master-col employer-col">
+                <div className="jd-master-col-header employer">
                   <span>Employer Requirements</span>
                 </div>
                 <div className="jd-master-col-content" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -1079,10 +1079,7 @@ export default function ApplicantDetailsModal({
             width: "480px",
             height: "700px",
             maxHeight: "88vh",
-            background: "#ffffff",
-            borderRadius: "16px",
             boxShadow: "0 25px 60px rgba(0, 0, 0, 0.35)",
-            border: "1px solid #cbd5e1",
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
@@ -1097,16 +1094,14 @@ export default function ApplicantDetailsModal({
               alignItems: "center",
               justifyContent: "space-between",
               padding: "16px 20px",
-              background: "#f8fbff",
-              borderBottom: "1px solid #e8f0f8",
               flexShrink: 0,
             }}
           >
             <div className="side-title-row jd-side-title-row">
-              <h3 style={{ margin: 0, fontSize: "1.12rem", fontWeight: 800, color: "#01294a" }}>
+              <h3 style={{ margin: 0, fontSize: "1.12rem", fontWeight: 800 }}>
                 Other Employer Jobs
               </h3>
-              <span className="side-subtitle jd-side-subtitle" style={{ fontSize: "0.78rem", color: "#557796", fontWeight: 600 }}>
+              <span className="side-subtitle jd-side-subtitle" style={{ fontSize: "0.78rem", fontWeight: 600 }}>
                 Candidate compatibility across active job postings
               </span>
             </div>
@@ -1133,20 +1128,10 @@ export default function ApplicantDetailsModal({
               return (
                 <div
                   key={otherJob.id}
-                  style={{
-                    background: "#ffffff",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: "12px",
-                    padding: "16px",
-                    boxShadow: "0 4px 12px rgba(10, 30, 60, 0.05)",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: "12px",
-                  }}
+                  className="other-job-item-card"
                 >
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800, color: "#01294a" }}>
+                    <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800 }}>
                       {otherJob.title}
                     </h4>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginTop: "2px", fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>
@@ -1168,20 +1153,9 @@ export default function ApplicantDetailsModal({
                   </div>
 
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px", flexShrink: 0 }}>
-                    <div
-                      style={{
-                        background: matchStyle.track,
-                        color: matchStyle.color,
-                        fontWeight: 800,
-                        fontSize: "0.82rem",
-                        padding: "4px 10px",
-                        borderRadius: "999px",
-                        border: `1px solid ${matchStyle.fill}`,
-                        whiteSpace: "nowrap",
-                      }}
-                    >
+                    <span className={`match-badge-pill ${getMatchColorClass(percent)}`}>
                       {percent}% Match
-                    </div>
+                    </span>
                   </div>
                 </div>
               );
@@ -1198,10 +1172,7 @@ export default function ApplicantDetailsModal({
             width: "480px",
             height: "700px",
             maxHeight: "88vh",
-            background: "#ffffff",
-            borderRadius: "16px",
             boxShadow: "0 25px 60px rgba(0, 0, 0, 0.35)",
-            border: "1px solid #cbd5e1",
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
@@ -1216,16 +1187,14 @@ export default function ApplicantDetailsModal({
               alignItems: "center",
               justifyContent: "space-between",
               padding: "16px 20px",
-              background: "#f8fbff",
-              borderBottom: "1px solid #e8f0f8",
               flexShrink: 0,
             }}
           >
             <div className="side-title-row jd-side-title-row">
-              <h3 style={{ margin: 0, fontSize: "1.12rem", fontWeight: 800, color: "#01294a" }}>
+              <h3 style={{ margin: 0, fontSize: "1.12rem", fontWeight: 800 }}>
                 Messages
               </h3>
-              <span className="side-subtitle jd-side-subtitle" style={{ fontSize: "0.78rem", color: "#557796", fontWeight: 600 }}>
+              <span className="side-subtitle jd-side-subtitle" style={{ fontSize: "0.78rem", fontWeight: 600 }}>
                 Chat with {displayName}
               </span>
             </div>
@@ -1239,17 +1208,7 @@ export default function ApplicantDetailsModal({
             </button>
           </div>
 
-          <div
-            className="cand-msg-chat-body"
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              minHeight: 0,
-              overflow: "hidden",
-              background: "#f8fafc",
-            }}
-          >
+          <div className="cand-msg-chat-body">
             <div
               className="cand-msg-messages-scroll"
               style={{
@@ -1327,19 +1286,6 @@ export default function ApplicantDetailsModal({
                         )}
                         <div
                           className={`cand-msg-bubble ${isMe ? "outgoing" : "incoming"}`}
-                          style={{
-                            maxWidth: "82%",
-                            padding: "10px 14px",
-                            borderRadius: isMe ? "14px 14px 2px 14px" : "14px 14px 14px 2px",
-                            background: isMe ? "#0284c7" : "#ffffff",
-                            color: isMe ? "#ffffff" : "#1e293b",
-                            border: isMe ? "none" : "1px solid #e2e8f0",
-                            boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
-                            fontSize: "0.86rem",
-                            lineHeight: 1.5,
-                            whiteSpace: "pre-wrap",
-                            wordBreak: "break-word",
-                          }}
                         >
                           {msg.message_text}
                         </div>
@@ -1358,14 +1304,6 @@ export default function ApplicantDetailsModal({
             <form
               onSubmit={handleSendCandidateMessage}
               className="cand-msg-compose-bar"
-              style={{
-                padding: "12px 16px",
-                borderTop: "1px solid #e2e8f0",
-                background: "#ffffff",
-                display: "flex",
-                gap: "10px",
-                alignItems: "center",
-              }}
             >
               <input
                 type="text"
@@ -1374,14 +1312,6 @@ export default function ApplicantDetailsModal({
                 value={candMsgInput}
                 onChange={(e) => setCandMsgInput(e.target.value)}
                 disabled={isCandMsgSending}
-                style={{
-                  flex: 1,
-                  padding: "10px 14px",
-                  borderRadius: "8px",
-                  border: "1px solid #cbd5e1",
-                  fontSize: "0.88rem",
-                  outline: "none",
-                }}
               />
               <button
                 type="submit"

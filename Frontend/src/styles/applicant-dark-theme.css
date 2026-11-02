@@ -4310,8 +4310,9 @@
 }
 
 [data-theme="dark"] .applicant-details-modal-container {
-  background: #1c1e27 !important;
-  border: 1px solid #2e3244 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 [data-theme="dark"] .applicant-details-strip {

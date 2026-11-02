@@ -805,3 +805,223 @@
 [data-theme="dark"] .cand-msg-empty-title {
   color: #f1f5f9 !important;
 }
+
+/* ── Container Isolation: Never Paint Background Outer Box ── */
+.cand-details-overlay .jd-modal-container {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+[data-theme="dark"] .cand-details-overlay .jd-modal-container {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* ── Base (Light Theme) Side Comparison Panel Styles ── */
+.applicant-side-comparison-panel {
+  background: #ffffff;
+  border: 1px solid #d2deed;
+  border-radius: 16px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+  font-family: "Inter", sans-serif;
+}
+
+.side-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #f8fbff;
+  border-bottom: 1px solid #e8f0f8;
+  flex-shrink: 0;
+}
+
+.side-title-row h3 {
+  margin: 0;
+  font-size: 1.12rem;
+  font-weight: 800;
+  color: #01294a;
+}
+
+.side-subtitle {
+  font-size: 0.78rem;
+  color: #557796;
+  font-weight: 600;
+}
+
+.jd-compare-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 10px 14px;
+  background: #f4f8fc;
+  border-radius: 8px;
+  border: 1px solid #dbe7f3;
+  font-size: 0.78rem;
+  color: #315170;
+}
+
+.jd-master-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.jd-master-col-header {
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: #0f172a;
+  border-bottom: 1px solid #cbd5e1;
+  padding-bottom: 6px;
+}
+
+.jd-master-col-header.employer {
+  color: #0284c7;
+}
+
+.cand-exp-item-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+
+.cand-exp-item-card h4 {
+  margin: 0 0 2px;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.cand-exp-empty-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.other-job-item-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(10, 30, 60, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.other-job-item-card h4 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #01294a;
+}
+
+.cand-msg-chat-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.cand-msg-bubble {
+  max-width: 82%;
+  padding: 10px 14px;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.cand-msg-bubble.incoming {
+  border-radius: 14px 14px 14px 2px;
+  background: #ffffff;
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.cand-msg-bubble.outgoing {
+  border-radius: 14px 14px 2px 14px;
+  background: #0284c7;
+  color: #ffffff;
+  border: none;
+}
+
+.cand-msg-compose-bar {
+  padding: 12px 16px;
+  border-top: 1px solid #e2e8f0;
+  background: #ffffff;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.cand-msg-input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 0.88rem;
+  outline: none;
+}
+
+/* ── Dark Theme Overrides for Cards & Side Panels ── */
+[data-theme="dark"] .cand-exp-item-card {
+  background: #14151b !important;
+  border: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .cand-exp-item-card h4 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .cand-exp-empty-card {
+  background: #14151b !important;
+  border: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .other-job-item-card {
+  background: #14151b !important;
+  border: 1px solid #2e3244 !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .match-badge-pill.green {
+  background: rgba(16, 185, 129, 0.16) !important;
+  color: #34d399 !important;
+  border-color: rgba(52, 211, 153, 0.35) !important;
+}
+
+[data-theme="dark"] .match-badge-pill.yellow,
+[data-theme="dark"] .match-badge-pill.orange {
+  background: rgba(245, 158, 11, 0.16) !important;
+  color: #fbbf24 !important;
+  border-color: rgba(251, 191, 36, 0.35) !important;
+}
+
+[data-theme="dark"] .match-badge-pill.red {
+  background: rgba(239, 68, 68, 0.16) !important;
+  color: #f87171 !important;
+  border-color: rgba(248, 113, 113, 0.35) !important;
+}
+
+[data-theme="dark"] .other-job-item-card h4 {
+  color: #ffffff !important;
+}

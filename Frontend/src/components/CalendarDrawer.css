@@ -3049,8 +3049,9 @@
 
 /* ── Candidate Details Modal Dark Mode (Image 3 Fixes) ── */
 [data-theme="dark"] .applicant-details-modal-container {
-  background: #14151b !important;
-  border-color: #2e3244 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
   color: #f8fafc !important;
 }
 
