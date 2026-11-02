@@ -9,6 +9,7 @@ export interface ApplicantDecisionModalProps {
   candidateName?: string;
   currentUserId?: number;
   title?: string;
+  isInvitation?: boolean;
   onClose: () => void;
   onConfirm: (payload: {
     action: "accept" | "decline";
@@ -38,6 +39,24 @@ I appreciate your consideration and wish {company_name} continued success.
 Sincerely,
 {applicant_name}`;
 
+const DEFAULT_INVITATION_ACCEPTANCE_TEMPLATE = `Dear {company_name} Hiring Team,
+
+Thank you for directly inviting me to be considered for the position of "{job_title}" at {company_name}. I am pleased to accept your invitation and look forward to discussing the next steps in your recruitment process.
+
+Sincerely,
+{applicant_name}`;
+
+const DEFAULT_INVITATION_DECLINE_TEMPLATE = `Dear {company_name} Hiring Team,
+
+Thank you for reaching out and inviting me to the position of "{job_title}" at {company_name}.
+
+After consideration, I must respectfully decline this invitation at this time as I am currently pursuing opportunities that more closely align with my career goals.
+
+I appreciate your consideration and wish {company_name} continued success.
+
+Sincerely,
+{applicant_name}`;
+
 function substituteTags(template: string, applicant: string, company: string, title: string): string {
   return template
     .replace(/\{applicant_name\}|\{candidate_name\}/g, applicant || "Candidate")
@@ -53,13 +72,14 @@ export default function ApplicantDecisionModal({
   candidateName = "Candidate",
   currentUserId,
   title,
+  isInvitation = false,
   onClose,
   onConfirm,
 }: ApplicantDecisionModalProps) {
   const [currentAction, setCurrentAction] = useState<"accept" | "decline">(action === "decline" ? "decline" : "accept");
   const [responseType, setResponseType] = useState<"automated" | "manual">("automated");
-  const [masterAcceptance, setMasterAcceptance] = useState(DEFAULT_ACCEPTANCE_TEMPLATE);
-  const [masterDecline, setMasterDecline] = useState(DEFAULT_DECLINE_TEMPLATE);
+  const [masterAcceptance, setMasterAcceptance] = useState(isInvitation ? DEFAULT_INVITATION_ACCEPTANCE_TEMPLATE : DEFAULT_ACCEPTANCE_TEMPLATE);
+  const [masterDecline, setMasterDecline] = useState(isInvitation ? DEFAULT_INVITATION_DECLINE_TEMPLATE : DEFAULT_DECLINE_TEMPLATE);
   const [automatedText, setAutomatedText] = useState("");
   const [manualText, setManualText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,9 +91,9 @@ export default function ApplicantDecisionModal({
     }
   }, [action]);
 
-  // Load applicant master templates if available
+  // Load applicant master templates if available and NOT in invitation mode
   useEffect(() => {
-    if (!isOpen || !currentUserId) return;
+    if (!isOpen || !currentUserId || isInvitation) return;
 
     let active = true;
     fetch(`/api/applicants/${currentUserId}/letter-templates`)
@@ -88,17 +108,19 @@ export default function ApplicantDecisionModal({
     return () => {
       active = false;
     };
-  }, [isOpen, currentUserId]);
+  }, [isOpen, currentUserId, isInvitation]);
 
   // Compute automated preview message whenever action, master template, or details change
   useEffect(() => {
-    const baseTemplate = currentAction === "accept" ? masterAcceptance : masterDecline;
+    const baseTemplate = currentAction === "accept"
+      ? (isInvitation ? DEFAULT_INVITATION_ACCEPTANCE_TEMPLATE : masterAcceptance)
+      : (isInvitation ? DEFAULT_INVITATION_DECLINE_TEMPLATE : masterDecline);
     const rendered = substituteTags(baseTemplate, candidateName, companyName, jobTitle);
     setAutomatedText(rendered);
-    if (!manualText) {
+    if (!manualText || responseType === "automated") {
       setManualText(rendered);
     }
-  }, [currentAction, masterAcceptance, masterDecline, candidateName, companyName, jobTitle]);
+  }, [currentAction, masterAcceptance, masterDecline, candidateName, companyName, jobTitle, isInvitation, responseType]);
 
   // Reset states when opened
   useEffect(() => {
@@ -107,13 +129,19 @@ export default function ApplicantDecisionModal({
       setErrorMessage("");
       setIsSubmitting(false);
       if (action) setCurrentAction(action);
+      if (isInvitation) {
+        setMasterAcceptance(DEFAULT_INVITATION_ACCEPTANCE_TEMPLATE);
+        setMasterDecline(DEFAULT_INVITATION_DECLINE_TEMPLATE);
+      }
     }
-  }, [isOpen, action]);
+  }, [isOpen, action, isInvitation]);
 
   if (!isOpen) return null;
 
   const isAccept = currentAction === "accept";
-  const titleText = title || (isAccept ? "Accept Recruitment Invitation" : "Decline Recruitment Invitation");
+  const titleText = title || (isInvitation
+    ? (isAccept ? "Respond to Direct Recruitment Invitation" : "Decline Direct Recruitment Invitation")
+    : (isAccept ? "Accept Formal Employment Offer" : "Decline Formal Employment Offer"));
 
   const handleSubmit = async () => {
     const finalLetterText = responseType === "automated" ? automatedText : manualText;
@@ -238,14 +266,20 @@ export default function ApplicantDecisionModal({
             />
 
             <div className="adm-message-footnote">
-              <a
-                href="/applicant-offer-letter"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="adm-footnote-link"
-              >
-                Configure master templates in Offer Letters ↗
-              </a>
+              {isInvitation ? (
+                <span style={{ fontSize: "0.78rem", color: "#64748b" }}>
+                  Direct recruitment invitation response to {companyName}
+                </span>
+              ) : (
+                <a
+                  href="/applicant-offer-letter"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="adm-footnote-link"
+                >
+                  Configure master templates in Offer Letters ↗
+                </a>
+              )}
             </div>
           </div>
 

@@ -298,6 +298,7 @@ function getApplicationTimelineSteps(app: any) {
   const isFinalDecision = ["approved", "accepted", "recruited", "denied", "rejected", "withdrawn"].includes(status);
   const isApproved = ["approved", "accepted", "recruited"].includes(status);
   const isDenied = ["denied", "rejected", "withdrawn"].includes(status);
+  const isDirectRecruited = status === "recruited" || Boolean(app?.is_direct_invitation) || String(app?.origin || "").toLowerCase() === "invitation";
 
   // Check if candidate actually passed through shortlisted / interview stages
   const wasShortlisted = Boolean(app?.was_shortlisted) ||
@@ -321,26 +322,34 @@ function getApplicationTimelineSteps(app: any) {
 
   return [
     {
-      title: "Application Submitted",
-      description: "Application and profile details submitted to employer.",
-      timestamp: submittedDate,
+      title: isDirectRecruited ? "Direct Invitation Accepted" : "Application Submitted",
+      description: isDirectRecruited
+        ? "Accepted employer's direct recruitment invitation to join the candidate pool."
+        : "Application and profile details submitted to employer.",
+      timestamp: isDirectRecruited
+        ? (app?.responded_at ? formatDate(app.responded_at) : submittedDate)
+        : submittedDate,
       state: "completed" as const,
     },
     {
       title: "Candidate Screening & Shortlist",
-      description: isFinalDecision && !wasShortlisted
+      description: isDirectRecruited
+        ? "Direct Recruitment Pathway — Initial screening waived by employer."
+        : isFinalDecision && !wasShortlisted
         ? (isDenied ? "Stage bypassed — Application concluded during initial review." : "Stage bypassed — Employer opted for immediate direct hiring decision.")
         : wasShortlisted
         ? "Profile screened and candidate shortlisted by recruitment team."
         : (status === "under_review" || status === "reviewed")
         ? "Application is under active candidate screening."
         : "Pending initial profile review by hiring manager.",
-      timestamp: wasShortlisted
+      timestamp: isDirectRecruited
+        ? "Bypassed"
+        : wasShortlisted
         ? (app?.updated_at ? formatDate(app.updated_at) : "Completed")
         : isFinalDecision
         ? "Bypassed"
         : null,
-      state: isFinalDecision && !wasShortlisted
+      state: isDirectRecruited || (isFinalDecision && !wasShortlisted)
         ? ("bypassed" as const)
         : wasShortlisted
         ? ("completed" as const)
@@ -348,7 +357,9 @@ function getApplicationTimelineSteps(app: any) {
     },
     {
       title: "Interviewing",
-      description: isFinalDecision && !hadInterview
+      description: isDirectRecruited
+        ? "Direct Recruitment Pathway — Preliminary interviews waived by employer for direct talent pool recruitment."
+        : isFinalDecision && !hadInterview
         ? (isDenied ? "Stage bypassed — Application concluded prior to interview stage." : "Stage bypassed — Interview evaluation was waived by employer for direct decision.")
         : interview
         ? `${interview.interview_stage || "Technical Interview"} (${interview.interview_type || "On-Site"})${interview.interview_date ? ` scheduled for ${interview.interview_date} ${interview.start_time ? `at ${interview.start_time}` : ""}` : ""}`
@@ -359,14 +370,16 @@ function getApplicationTimelineSteps(app: any) {
         : wasShortlisted
         ? "Candidate shortlisted. Awaiting interview schedule or hiring update."
         : "Awaiting interview invitation from hiring team.",
-      timestamp: interview?.interview_date
+      timestamp: isDirectRecruited
+        ? "Bypassed"
+        : interview?.interview_date
         ? formatDate(interview.interview_date)
         : (hadInterview && isFinalDecision)
         ? fallbackInterviewDate
         : isFinalDecision && !hadInterview
         ? "Bypassed"
         : null,
-      state: isFinalDecision && !hadInterview
+      state: isDirectRecruited || (isFinalDecision && !hadInterview)
         ? ("bypassed" as const)
         : isFinalDecision && hadInterview
         ? ("completed" as const)
@@ -1884,10 +1897,12 @@ export default function ApplicantDashboard() {
       <ApplicantDecisionModal
         isOpen={!!decisionModalTarget}
         action={decisionModalTarget?.action || null}
+        title={decisionModalTarget?.action === "decline" ? "Decline Direct Recruitment Invitation" : "Respond to Direct Recruitment Invitation"}
         jobTitle={decisionModalTarget?.inv.job_title}
         companyName={decisionModalTarget?.inv.business_name}
         candidateName={applicantLabel}
         currentUserId={applicantUserId || undefined}
+        isInvitation={true}
         onClose={() => setDecisionModalTarget(null)}
         onConfirm={async ({ action, letter_text, letter_type, start_date }) => {
           if (!decisionModalTarget) return;

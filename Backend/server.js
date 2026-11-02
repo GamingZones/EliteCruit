@@ -5474,12 +5474,12 @@ app.post("/api/invitations/:id/respond", authenticateToken, requireInvitationRec
       );
       if (!existingApp) {
         await run(
-          "INSERT INTO applications (job_post_id, applicant_user_id, status) VALUES (?, ?, 'recruited')",
+          "INSERT INTO applications (job_post_id, applicant_user_id, status, submitted_at, updated_at) VALUES (?, ?, 'recruited', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
           [invitation.job_post_id, invitation.applicant_user_id]
         );
         await run("UPDATE job_posts SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", [invitation.job_post_id]);
       } else {
-        await run("UPDATE applications SET status = 'recruited' WHERE id = ?", [existingApp.id]);
+        await run("UPDATE applications SET status = 'recruited', updated_at = CURRENT_TIMESTAMP WHERE id = ?", [existingApp.id]);
       }
 
       await run(
