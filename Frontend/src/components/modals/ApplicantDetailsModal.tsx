@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import "./ApplicantDetailsModal.css";
 import {
   isSkillMatch,
@@ -7,6 +7,195 @@ import {
   calculateJobMatchDetails,
   getMatchColorClass,
 } from "../../utils/filters";
+
+export type BreakdownCourseSkillItem = {
+  name: string;
+  course?: string;
+  year?: string;
+};
+
+export type BreakdownCertItem = {
+  name: string;
+  category: string;
+  acquiredYear?: string;
+  expiry?: string;
+};
+
+function parseSingleBreakdownSkillToken(token: string): BreakdownCourseSkillItem {
+  let course = "General IT";
+  const courseMatch = token.match(/\[([^\[\]]+)\]/);
+  if (courseMatch && courseMatch[1].trim()) {
+    course = courseMatch[1].trim();
+  }
+
+  let year = "2026";
+  const lastParen = token.match(/\(([^()]+)\)$/);
+  if (lastParen && lastParen[1].trim()) {
+    year = lastParen[1].replace(/^Since\s*/i, "").replace(/^Acquired\s*/i, "").trim() || "2026";
+  }
+
+  let cleanName = token
+    .replace(/\s*\[[^\[\]]*\]/g, "")
+    .replace(/\s*\([^()]*\)$/, "")
+    .trim();
+
+  const openCount = (cleanName.match(/\(/g) || []).length;
+  const closeCount = (cleanName.match(/\)/g) || []).length;
+  if (openCount > closeCount) {
+    cleanName = cleanName + ")".repeat(openCount - closeCount);
+  } else if (closeCount > openCount) {
+    cleanName = cleanName.replace(/\)+$/, "");
+  }
+
+  return {
+    name: cleanName || token.trim(),
+    course,
+    year,
+  };
+}
+
+function parseBreakdownSkillItems(raw?: string | null, fallbackTags: string[] = []): Record<string, BreakdownCourseSkillItem[]> {
+  const items: BreakdownCourseSkillItem[] = [];
+  if (raw && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((p) => {
+          if (typeof p === "object" && p !== null && p.name) {
+            items.push({
+              name: String(p.name).trim(),
+              course: p.course || "General IT",
+              year: p.year || p.years || "2026",
+            });
+          } else if (p) {
+            items.push(parseSingleBreakdownSkillToken(String(p)));
+          }
+        });
+      }
+    } catch {}
+
+    if (items.length === 0) {
+      const rawTokens = raw.includes(")")
+        ? raw.split(/(?<=\))\s*,\s*/)
+        : raw.split(/[\n,;•|]+/);
+      rawTokens.forEach((tok) => {
+        if (tok.trim()) items.push(parseSingleBreakdownSkillToken(tok));
+      });
+    }
+  }
+
+  if (items.length === 0 && fallbackTags.length > 0) {
+    fallbackTags.forEach((tok) => items.push(parseSingleBreakdownSkillToken(tok)));
+  }
+
+  const grouped: Record<string, BreakdownCourseSkillItem[]> = {};
+  items.forEach((item) => {
+    if (!item.name) return;
+    const cat = item.course && item.course.trim() ? item.course.trim() : "General IT";
+    if (!grouped[cat]) grouped[cat] = [];
+    if (!grouped[cat].some((existing) => existing.name.toLowerCase() === item.name.toLowerCase())) {
+      grouped[cat].push(item);
+    }
+  });
+
+  return grouped;
+}
+
+function parseBreakdownCertItems(raw?: string | null, fallbackTags: string[] = []): Record<string, BreakdownCertItem[]> {
+  const items: BreakdownCertItem[] = [];
+
+  const parseToken = (token: string): BreakdownCertItem | null => {
+    if (!token || !token.trim()) return null;
+    const trimmed = token.trim();
+    if (trimmed === "[]" || trimmed === "()" || trimmed === "null" || trimmed === '""') return null;
+
+    let category = "General";
+    const catMatch = trimmed.match(/\[([^\[\]]+)\]/);
+    if (catMatch && catMatch[1].trim()) {
+      category = catMatch[1].trim();
+    }
+
+    let acquiredYear = "2010";
+    let expiry = "2026";
+
+    const lastParen = trimmed.match(/\(([^()]+)\)$/);
+    if (lastParen) {
+      const inside = lastParen[1].trim();
+      const acqMatch = inside.match(/Acquired\s*([0-9]{4})/i);
+      if (acqMatch) acquiredYear = acqMatch[1].trim();
+      const expMatch = inside.match(/(?:Expiration|Expires|Expiry)\s*([^\)]+)/i);
+      if (expMatch) {
+        expiry = expMatch[1].trim();
+      } else if (!acqMatch) {
+        expiry = inside;
+      }
+    }
+
+    let cleanName = trimmed.replace(/\s*\[[^\[\]]*\]/g, "").replace(/\s*\([^()]*\)$/, "").trim();
+    const openCount = (cleanName.match(/\(/g) || []).length;
+    const closeCount = (cleanName.match(/\)/g) || []).length;
+    if (openCount > closeCount) cleanName = cleanName + ")".repeat(openCount - closeCount);
+    else if (closeCount > openCount) cleanName = cleanName.replace(/\)+$/, "");
+
+    cleanName = cleanName.trim();
+    if (!cleanName || cleanName === "[]" || cleanName === "()") return null;
+
+    return {
+      name: cleanName,
+      category,
+      acquiredYear,
+      expiry,
+    };
+  };
+
+  if (raw && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((p) => {
+          if (typeof p === "object" && p !== null && p.name) {
+            items.push({
+              name: String(p.name).trim(),
+              category: p.category || "General",
+              acquiredYear: p.acquiredYear || p.year,
+              expiry: p.expiry,
+            });
+          } else if (p) {
+            const item = parseToken(String(p));
+            if (item) items.push(item);
+          }
+        });
+      }
+    } catch {}
+
+    if (items.length === 0) {
+      const rawTokens = raw.split(/[\n,;•|]+/);
+      rawTokens.forEach((tok) => {
+        const item = parseToken(tok);
+        if (item) items.push(item);
+      });
+    }
+  }
+
+  if (items.length === 0 && fallbackTags.length > 0) {
+    fallbackTags.forEach((tok) => {
+      const item = parseToken(tok);
+      if (item) items.push(item);
+    });
+  }
+
+  const grouped: Record<string, BreakdownCertItem[]> = {};
+  items.forEach((item) => {
+    if (!item.name) return;
+    const cat = item.category && item.category.trim() ? item.category.trim() : "General";
+    if (!grouped[cat]) grouped[cat] = [];
+    if (!grouped[cat].some((existing) => existing.name.toLowerCase() === item.name.toLowerCase())) {
+      grouped[cat].push(item);
+    }
+  });
+
+  return grouped;
+}
 
 export type WorkExpItem = {
   id?: string | number;
@@ -71,7 +260,16 @@ export type ApplicantDetailsModalProps = {
   onClose: () => void;
   candidate: CandidateModalData | null;
   customFooterActions?: React.ReactNode;
-  employerJobs?: Array<{ id: number | string; title: string; location?: string; work_arrangement?: string }>;
+  employerJobs?: Array<{
+    id: number | string;
+    title: string;
+    location?: string;
+    work_arrangement?: string;
+    required_skills?: string | string[];
+    skills?: string | string[];
+    qualifications?: string | string[];
+    certifications?: string | string[];
+  }>;
   currentEmployerUserId?: number | string | null;
 };
 
@@ -91,6 +289,10 @@ export default function ApplicantDetailsModal({
 
   // Side Panel Tabs state: "breakdown" | "messages" | null
   const [activeSideTab, setActiveSideTab] = useState<"breakdown" | "messages" | null>(null);
+  const [activeBreakdownPopup, setActiveBreakdownPopup] = useState<{
+    type: "skills" | "certifications";
+    category: string;
+  } | null>(null);
   const [hoveredCompareTag, setHoveredCompareTag] = useState<{ item: string; side: "applicant" | "employer"; category: string } | null>(null);
 
   // Candidate Messages state & handlers
@@ -121,6 +323,7 @@ export default function ApplicantDetailsModal({
       setPreviewDoc(null);
       setCandDetailTab("personal");
       setActiveSideTab(null);
+      setActiveBreakdownPopup(null);
       setCandMessages([]);
       setCandMsgThread(null);
       setCandMsgInput("");
@@ -345,9 +548,32 @@ export default function ApplicantDetailsModal({
     location: locationStr,
     work_arrangement: candidate.work_arrangement || "On-Site",
   };
-  const jobSkills = candSkills.length > 0 ? candSkills.slice(0, 5) : ["Frontend Development", "UI/UX Design", "React", "TypeScript", "HTML/CSS"];
-  const jobQuals = candQuals.length > 0 ? candQuals.slice(0, 2) : ["BS in Information Technology or Computer Science"];
-  const jobCerts = candCerts.length > 0 ? candCerts.slice(0, 2) : ["IT Specialist Certification"];
+  const jobSkills = parseItemList(
+    (targetJob as any).required_skills || (targetJob as any).skills,
+    candSkills.length > 0 ? candSkills.slice(0, 5) : ["Frontend Development", "UI/UX Design", "React", "TypeScript", "HTML/CSS"]
+  );
+  const jobQuals = parseItemList(
+    (targetJob as any).qualifications,
+    candQuals.length > 0 ? candQuals.slice(0, 2) : ["BS in Information Technology or Computer Science"]
+  );
+  const jobCerts = parseItemList(
+    (targetJob as any).certifications,
+    []
+  );
+
+  const groupedBreakdownSkills = useMemo(() => {
+    return parseBreakdownSkillItems(
+      typeof candidate.skills === "string" ? candidate.skills : null,
+      candSkills
+    );
+  }, [candidate.skills, candSkills]);
+
+  const groupedBreakdownCerts = useMemo(() => {
+    return parseBreakdownCertItems(
+      typeof candidate.certifications === "string" ? candidate.certifications : null,
+      candCerts
+    );
+  }, [candidate.certifications, candCerts]);
 
   const matchDetails = calculateJobMatchDetails(
     {
@@ -374,6 +600,122 @@ export default function ApplicantDetailsModal({
   const checkMatch = (jobItem: string, appItems: string[]) => {
     if (!appItems || appItems.length === 0) return false;
     return appItems.some((appItem) => isSkillMatch(jobItem, appItem));
+  };
+
+  const renderBreakdownPopupModal = () => {
+    if (!activeBreakdownPopup) return null;
+    const { type, category } = activeBreakdownPopup;
+    const itemsList = type === "skills" ? groupedBreakdownSkills[category] || [] : groupedBreakdownCerts[category] || [];
+    const comparisonTargetList = type === "skills" ? jobSkills : jobCerts;
+    const label = type === "skills" ? (itemsList.length === 1 ? "skill" : "skills") : (itemsList.length === 1 ? "certification" : "certifications");
+
+    return (
+      <div
+        className="skill-popup-modal-overlay"
+        onClick={() => setActiveBreakdownPopup(null)}
+      >
+        <div
+          className="skill-popup-modal-content"
+          onClick={(e) => e.stopPropagation()}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="breakdown-category-modal-title"
+        >
+          <div className="skill-popup-modal-header">
+            <div className="skill-popup-title-group">
+              <span className="skill-popup-icon">
+                {type === "skills" ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="8" r="7"></circle>
+                    <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+                  </svg>
+                )}
+              </span>
+              <h3 id="breakdown-category-modal-title" className="skill-popup-title">
+                {category}
+              </h3>
+              <span className="skill-popup-count-badge">
+                {itemsList.length} {label}
+              </span>
+            </div>
+            <button
+              type="button"
+              className="skill-popup-close-btn"
+              onClick={() => setActiveBreakdownPopup(null)}
+              aria-label="Close popup"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="skill-popup-modal-body">
+            <div className="skill-popup-list">
+              {itemsList.length === 0 ? (
+                <div className="jd-no-data-text">
+                  No items found in this category.
+                </div>
+              ) : (
+                itemsList.map((item, idx) => {
+                  const isCert = activeBreakdownPopup.type === "certifications";
+                  const isRel = comparisonTargetList.length > 0 && comparisonTargetList.some((jt) =>
+                    isCert ? isCertificationMatch(jt, item.name) : isSkillMatch(jt, item.name)
+                  );
+                  const isSource = hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.item === item.name;
+                  const isLinked = Boolean(
+                    hoveredCompareTag?.side === "employer" &&
+                    hoveredCompareTag?.category === activeBreakdownPopup.type &&
+                    (isCert ? isCertificationMatch(hoveredCompareTag.item, item.name) : isSkillMatch(item.name, hoveredCompareTag.item))
+                  );
+                  const certItem = item as BreakdownCertItem;
+
+                  return (
+                    <div
+                      key={`${item.name}-${idx}`}
+                      className={`skill-popup-item-row ${isRel ? "item-matched" : ""} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
+                      onMouseEnter={() => setHoveredCompareTag({ item: item.name, side: "applicant", category: activeBreakdownPopup.type })}
+                      onMouseLeave={() => setHoveredCompareTag(null)}
+                    >
+                      <span className="skill-popup-item-name">{item.name}</span>
+                      <div className="skill-popup-item-actions">
+                        {item.year && !isCert && (
+                          <span className="skill-popup-since-label">
+                            Since {item.year}
+                          </span>
+                        )}
+                        {isCert && certItem.expiry && (
+                          <span className="skill-popup-since-label">
+                            Expires: {certItem.expiry}
+                          </span>
+                        )}
+                        {isRel && (
+                          <span className="jd-match-status-pill matched">
+                            <span className="status-icon">✓</span> Matched with Job
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          <div className="skill-popup-modal-footer">
+            <button
+              type="button"
+              className="skill-popup-done-btn"
+              onClick={() => setActiveBreakdownPopup(null)}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -641,26 +983,6 @@ export default function ApplicantDetailsModal({
 
                   <div className="cand-details-card">
                     <h4 className="cand-details-card-title">
-                      Geographic & Discovery Location
-                    </h4>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
-                      <div className="company-info-card">
-                        <small className="company-info-card-label">Designated Nearby Location</small>
-                        <span className="company-info-card-val" style={{ color: "#0284c7" }}>
-                          {candidate.nearby_location || candidate.city || "Not designated"}
-                        </span>
-                      </div>
-                      <div className="company-info-card">
-                        <small className="company-info-card-label">Home Address / Municipality</small>
-                        <span className="company-info-card-val">
-                          {candidate.address || candidate.city || "Not specified"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="cand-details-card">
-                    <h4 className="cand-details-card-title">
                       Preferred Work Locations
                     </h4>
                     <div className="jd-tags-wrap">
@@ -877,7 +1199,7 @@ export default function ApplicantDetailsModal({
         </div>
       </div>
 
-      {/* ── SIDE PANEL 1: MATCH BREAKDOWN ── */}
+      {/* ── SIDE PANEL 1: MATCH BREAKDOWN (COMPETENCIES & REQUIREMENTS) ── */}
       {activeSideTab === "breakdown" && (
         <aside
           className="applicant-side-comparison-panel jd-side-comparison-panel"
@@ -896,22 +1218,13 @@ export default function ApplicantDetailsModal({
             fontFamily: '"Inter", sans-serif',
           }}
         >
-          <div
-            className="side-panel-header jd-side-panel-header"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "16px 20px",
-              flexShrink: 0,
-            }}
-          >
+          <div className="side-panel-header jd-side-panel-header">
             <div className="side-title-row jd-side-title-row">
               <h3 style={{ margin: 0, fontSize: "1.12rem", fontWeight: 800 }}>
-                Match Breakdown
+                Competencies & Requirements
               </h3>
               <span className="side-subtitle jd-side-subtitle" style={{ fontSize: "0.78rem", fontWeight: 600 }}>
-                Side-by-side candidate profile vs job requirements
+                Side-by-side profile match vs employer postings
               </span>
             </div>
             <div className="side-header-actions jd-side-header-actions" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -934,7 +1247,7 @@ export default function ApplicantDetailsModal({
             <div className="jd-compare-legend">
               <div className="legend-item" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 <span className="legend-dot green" style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#10b981", display: "inline-block" }} />
-                <span><strong>Green:</strong> Fully satisfied</span>
+                <span><strong>Green:</strong> Fully satisfied (Skill & Experience)</span>
               </div>
               <div className="legend-item" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 <span className="legend-dot yellow" style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#f59e0b", display: "inline-block" }} />
@@ -942,117 +1255,231 @@ export default function ApplicantDetailsModal({
               </div>
               <div className="legend-item" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 <span className="legend-dot red" style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#ef4444", display: "inline-block" }} />
-                <span><strong>Red:</strong> Missing</span>
+                <span><strong>Red:</strong> Missing requirement</span>
               </div>
             </div>
 
             {/* Master 2-Column Unified Container */}
-            <div className="jd-unified-compare-container" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-              {/* ── Column 1: Candidate Profile ── */}
-              <div className="jd-master-col applicant-col">
-                <div className="jd-master-col-header">
-                  <span>Candidate Profile</span>
+            <div className="jd-unified-compare-container">
+              <div className="jd-master-col-header applicant-header">
+                <span>Your Profile</span>
+              </div>
+              <div className="jd-master-col-header employer-header">
+                <span>Employer's Requirements</span>
+              </div>
+
+              {/* Row 1: Skills */}
+              <div className="jd-master-row-card applicant-col">
+                <div className="jd-row-label-wrap">
+                  <span className="jd-row-label">Skills</span>
+                  <span className="col-count-text">{candSkills.length} listed</span>
                 </div>
-                <div className="jd-master-col-content" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <div className="jd-master-row">
-                    <div className="jd-row-label-wrap" style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                      <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569" }}>Skills</span>
-                      <span style={{ fontSize: "0.72rem", color: "#94a3b8" }}>{candSkills.length} listed</span>
+                <div className="jd-col-tags-container">
+                  {Object.keys(groupedBreakdownSkills).length > 0 ? (
+                    <div className="category-pills-row">
+                      {Object.entries(groupedBreakdownSkills).map(([catName, groupItems]) => {
+                        const isLinked = Boolean(
+                          hoveredCompareTag?.side === "employer" &&
+                          hoveredCompareTag?.category === "skills" &&
+                          groupItems.some((it) => isSkillMatch(it.name, hoveredCompareTag.item))
+                        );
+                        return (
+                          <button
+                            key={catName}
+                            type="button"
+                            className={`category-popup-trigger-btn ${activeBreakdownPopup?.type === "skills" && activeBreakdownPopup?.category === catName ? "active" : ""} ${isLinked ? "category-hover-linked" : ""}`}
+                            onClick={() => setActiveBreakdownPopup({ type: "skills", category: catName })}
+                            title={`Click to open ${catName} skills list (${groupItems.length})`}
+                          >
+                            <span className="category-pill-name">{catName}</span>
+                            <span className="category-pill-meta">
+                              <span className="category-pill-badge">{groupItems.length}</span>
+                              <span className="category-pill-arrow">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                              </span>
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                      {candSkills.length > 0 ? (
-                        candSkills.map((item) => (
-                          <span key={item} className="jd-comp-tag app-matched" style={{ fontSize: "0.75rem", padding: "3px 8px", borderRadius: "6px" }}>
-                            {item}
-                          </span>
-                        ))
-                      ) : (
-                        <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontStyle: "italic" }}>No skills listed</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="jd-master-row">
-                    <div className="jd-row-label-wrap" style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                      <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569" }}>Qualifications</span>
-                      <span style={{ fontSize: "0.72rem", color: "#94a3b8" }}>{candQuals.length} listed</span>
-                    </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                      {candQuals.length > 0 ? (
-                        candQuals.map((item) => (
-                          <span key={item} className="jd-comp-tag app-matched" style={{ fontSize: "0.75rem", padding: "3px 8px", borderRadius: "6px" }}>
-                            {item}
-                          </span>
-                        ))
-                      ) : (
-                        <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontStyle: "italic" }}>No qualifications listed</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="jd-master-row">
-                    <div className="jd-row-label-wrap" style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                      <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569" }}>Certifications</span>
-                      <span style={{ fontSize: "0.72rem", color: "#94a3b8" }}>{candCerts.length} listed</span>
-                    </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                      {candCerts.length > 0 ? (
-                        candCerts.map((item) => (
-                          <span key={item} className="jd-comp-tag app-matched" style={{ fontSize: "0.75rem", padding: "3px 8px", borderRadius: "6px" }}>
-                            {item}
-                          </span>
-                        ))
-                      ) : (
-                        <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontStyle: "italic" }}>No certifications listed</span>
-                      )}
-                    </div>
-                  </div>
+                  ) : (
+                    <span className="jd-no-data-text">No skills listed</span>
+                  )}
                 </div>
               </div>
 
-              {/* ── Column 2: Employer Requirements ── */}
-              <div className="jd-master-col employer-col">
-                <div className="jd-master-col-header employer">
-                  <span>Employer Requirements</span>
+              <div className="jd-master-row-card employer-col">
+                <div className="jd-row-label-wrap">
+                  <span className="jd-row-label">Skills</span>
+                  <span className="col-count-text">{jobSkills.length} required</span>
                 </div>
-                <div className="jd-master-col-content" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <div className="jd-master-row">
-                    <div className="jd-row-label-wrap" style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                      <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569" }}>Skills</span>
-                      <span style={{ fontSize: "0.72rem", color: "#94a3b8" }}>{jobSkills.length} required</span>
-                    </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                      {jobSkills.map((item) => {
-                        const evalResult = evaluateSkillRequirementMatch(item, candSkills, candCerts);
-                        const statusClass = evalResult.status === "matched" ? "tag-matched-green" : evalResult.status === "partial" ? "tag-partial-yellow" : "tag-missing-red";
-                        const icon = evalResult.status === "matched" ? "✓" : evalResult.status === "partial" ? "▲" : "✗";
-                        return (
-                          <span key={item} className={`jd-comp-tag ${statusClass}`} style={{ fontSize: "0.75rem", padding: "3px 8px", borderRadius: "6px" }}>
-                            <span style={{ marginRight: "4px", fontWeight: 800 }}>{icon}</span>
-                            {item}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </div>
+                <div className="jd-col-tags-container">
+                  {jobSkills.length > 0 ? (
+                    jobSkills.map((item) => {
+                      const evalResult = evaluateSkillRequirementMatch(item, candSkills, candCerts);
+                      const statusClass =
+                        evalResult.status === "matched"
+                          ? "tag-matched-green"
+                          : evalResult.status === "partial"
+                          ? "tag-partial-yellow"
+                          : "tag-missing-red";
+                      const icon =
+                        evalResult.status === "matched"
+                          ? "✓"
+                          : evalResult.status === "partial"
+                          ? "▲"
+                          : "✗";
+                      const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
+                      const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "skills" && isSkillMatch(item, hoveredCompareTag.item));
+                      return (
+                        <span
+                          key={item}
+                          className={`jd-comp-tag ${statusClass} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
+                          onMouseEnter={() => setHoveredCompareTag({ item, side: "employer", category: "skills" })}
+                          onMouseLeave={() => setHoveredCompareTag(null)}
+                        >
+                          <span className="tag-icon">{icon}</span>
+                          <span className="tag-text">{item}</span>
+                        </span>
+                      );
+                    })
+                  ) : (
+                    <span className="jd-no-data-text">No specific skills required</span>
+                  )}
+                </div>
+              </div>
 
-                  <div className="jd-master-row">
-                    <div className="jd-row-label-wrap" style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                      <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569" }}>Qualifications</span>
-                      <span style={{ fontSize: "0.72rem", color: "#94a3b8" }}>{jobQuals.length} required</span>
-                    </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                      {jobQuals.map((item) => {
-                        const matched = checkMatch(item, candQuals);
+              {/* Row 2: Qualifications */}
+              <div className="jd-master-row-card applicant-col">
+                <div className="jd-row-label-wrap">
+                  <span className="jd-row-label">Qualifications</span>
+                  <span className="col-count-text">{candQuals.length} listed</span>
+                </div>
+                <div className="jd-col-tags-container">
+                  {candQuals.length > 0 ? (
+                    candQuals.map((item) => {
+                      const isRel = checkMatch(item, jobQuals);
+                      const isSource = hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.item === item;
+                      const isLinked = Boolean(hoveredCompareTag?.side === "employer" && hoveredCompareTag?.category === "qualifications" && isSkillMatch(item, hoveredCompareTag.item));
+                      return (
+                        <span
+                          key={item}
+                          className={`jd-comp-tag ${isRel ? "app-matched" : "app-neutral"} ${isSource ? "tag-hover-source" : ""} ${isLinked ? "tag-hover-linked" : ""}`}
+                          onMouseEnter={() => setHoveredCompareTag({ item, side: "applicant", category: "qualifications" })}
+                          onMouseLeave={() => setHoveredCompareTag(null)}
+                        >
+                          {isRel && <span className="tag-check">✓ </span>}
+                          <span className="tag-text">{item}</span>
+                        </span>
+                      );
+                    })
+                  ) : (
+                    <span className="jd-no-data-text">No qualifications listed</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="jd-master-row-card employer-col">
+                <div className="jd-row-label-wrap">
+                  <span className="jd-row-label">Qualifications</span>
+                  <span className="col-count-text">{jobQuals.length} required</span>
+                </div>
+                <div className="jd-col-tags-container">
+                  {jobQuals.length > 0 ? (
+                    jobQuals.map((jQual) => {
+                      const isMatched = checkMatch(jQual, candQuals);
+                      const isHoverSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === jQual;
+                      const isHoverLinked = hoveredCompareTag?.side === "applicant" && isSkillMatch(jQual, hoveredCompareTag.item);
+                      return (
+                        <span
+                          key={jQual}
+                          className={`jd-comp-tag ${isMatched ? "tag-matched-green" : "tag-missing-red"} ${isHoverSource ? "tag-hover-source" : ""} ${isHoverLinked ? "tag-hover-linked" : ""}`}
+                          onMouseEnter={() => setHoveredCompareTag({ item: jQual, side: "employer", category: "qualifications" })}
+                          onMouseLeave={() => setHoveredCompareTag(null)}
+                        >
+                          <span className="tag-icon">{isMatched ? "✓" : "✗"}</span>
+                          <span className="tag-text">{jQual}</span>
+                        </span>
+                      );
+                    })
+                  ) : (
+                    <span className="jd-no-data-text">None specified</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Row 3: Certifications */}
+              <div className="jd-master-row-card applicant-col">
+                <div className="jd-row-label-wrap">
+                  <span className="jd-row-label">Certifications</span>
+                  <span className="col-count-text">{candCerts.length} listed</span>
+                </div>
+                <div className="jd-col-tags-container">
+                  {Object.keys(groupedBreakdownCerts).length > 0 ? (
+                    <div className="category-pills-row">
+                      {Object.entries(groupedBreakdownCerts).map(([catName, groupItems]) => {
+                        const isLinked = Boolean(
+                          hoveredCompareTag?.side === "employer" &&
+                          hoveredCompareTag?.category === "certifications" &&
+                          groupItems.some((it) => isCertificationMatch(hoveredCompareTag.item, it.name))
+                        );
                         return (
-                          <span key={item} className={`jd-comp-tag ${matched ? "tag-matched-green" : "tag-missing-red"}`} style={{ fontSize: "0.75rem", padding: "3px 8px", borderRadius: "6px" }}>
-                            <span style={{ marginRight: "4px", fontWeight: 800 }}>{matched ? "✓" : "✗"}</span>
-                            {item}
-                          </span>
+                          <button
+                            key={catName}
+                            type="button"
+                            className={`category-popup-trigger-btn ${activeBreakdownPopup?.type === "certifications" && activeBreakdownPopup?.category === catName ? "active" : ""} ${isLinked ? "category-hover-linked" : ""}`}
+                            onClick={() => setActiveBreakdownPopup({ type: "certifications", category: catName })}
+                            title={`Click to open ${catName} certifications list (${groupItems.length})`}
+                          >
+                            <span className="category-pill-name">{catName}</span>
+                            <span className="category-pill-meta">
+                              <span className="category-pill-badge">{groupItems.length}</span>
+                              <span className="category-pill-arrow">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                              </span>
+                            </span>
+                          </button>
                         );
                       })}
                     </div>
-                  </div>
+                  ) : (
+                    <span className="jd-no-data-text">No certifications listed</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="jd-master-row-card employer-col">
+                <div className="jd-row-label-wrap">
+                  <span className="jd-row-label">Certifications</span>
+                  <span className="col-count-text">{jobCerts.length} required</span>
+                </div>
+                <div className="jd-col-tags-container">
+                  {jobCerts.length > 0 ? (
+                    jobCerts.map((jCert) => {
+                      const isMatched = checkMatch(jCert, candCerts);
+                      const isHoverSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === jCert;
+                      const isHoverLinked = hoveredCompareTag?.side === "applicant" && isCertificationMatch(jCert, hoveredCompareTag.item);
+                      return (
+                        <span
+                          key={jCert}
+                          className={`jd-comp-tag ${isMatched ? "tag-matched-green" : "tag-missing-red"} ${isHoverSource ? "tag-hover-source" : ""} ${isHoverLinked ? "tag-hover-linked" : ""}`}
+                          onMouseEnter={() => setHoveredCompareTag({ item: jCert, side: "employer", category: "certifications" })}
+                          onMouseLeave={() => setHoveredCompareTag(null)}
+                        >
+                          <span className="tag-icon">{isMatched ? "✓" : "✗"}</span>
+                          <span className="tag-text">{jCert}</span>
+                        </span>
+                      );
+                    })
+                  ) : (
+                    <span className="jd-no-data-text" style={{ fontStyle: "italic", color: "#94a3b8" }}>
+                      No certifications required for this position
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -1235,6 +1662,7 @@ export default function ApplicantDetailsModal({
         </aside>
       )}
     </div>
+    {renderBreakdownPopupModal()}
   </div>
   );
 }

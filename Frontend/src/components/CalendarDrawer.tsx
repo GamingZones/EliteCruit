@@ -209,6 +209,11 @@ export function getCandidatesForInterview(
 type EmployerActiveJob = {
   id: number;
   title: string;
+  location?: string;
+  work_arrangement?: string;
+  required_skills?: string | string[];
+  qualifications?: string | string[];
+  certifications?: string | string[];
 };
 
 export type CalendarDrawerProps = {
@@ -474,6 +479,11 @@ export default function CalendarDrawer({
           const mappedJobs: EmployerActiveJob[] = data.jobs.map((j: any) => ({
             id: Number(j.id),
             title: String(j.title || "Job Opening"),
+            location: j.location,
+            work_arrangement: j.work_arrangement,
+            required_skills: j.required_skills,
+            qualifications: j.qualifications,
+            certifications: j.certifications,
           }));
           setEmployerJobs(mappedJobs);
           setFormJobId((prev) => (prev ? prev : String(mappedJobs[0].id)));
