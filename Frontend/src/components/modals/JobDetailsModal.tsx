@@ -84,6 +84,7 @@ export type JobDetailsModalProps = {
   isFaqOpen?: boolean;
   onFaqOpenChange?: (open: boolean) => void;
   zIndex?: number;
+  hideEmployerHeader?: boolean;
 };
 
 type BreakdownCourseSkillItem = {
@@ -330,6 +331,7 @@ export default function JobDetailsModal({
   isFaqOpen: isFaqOpenProp,
   onFaqOpenChange,
   zIndex,
+  hideEmployerHeader = false,
 }: JobDetailsModalProps) {
   const [internalFaqOpen, setInternalFaqOpen] = useState(false);
   const isFaqOpen = isFaqOpenProp !== undefined ? isFaqOpenProp : internalFaqOpen;
@@ -591,8 +593,8 @@ export default function JobDetailsModal({
   // Measure natural unconstrained height of Container 1 (Job details)
   const measureH1 = useCallback(() => {
     if (!panelRef.current) return 0;
-    const bannerH = bannerRef.current ? bannerRef.current.offsetHeight : 140;
-    const stripH = stripRef.current ? stripRef.current.offsetHeight : 65;
+    const bannerH = hideEmployerHeader ? 0 : (bannerRef.current ? bannerRef.current.offsetHeight : 140);
+    const stripH = hideEmployerHeader ? 0 : (stripRef.current ? stripRef.current.offsetHeight : 65);
     const footerH = footerRef.current ? footerRef.current.offsetHeight : 65;
 
     let bodyH = 0;
@@ -605,7 +607,7 @@ export default function JobDetailsModal({
     }
 
     return bannerH + stripH + bodyH + footerH;
-  }, [isFaqOpen]);
+  }, [isFaqOpen, hideEmployerHeader]);
 
   // Measure natural unconstrained height of Container 2 (Side Panel)
   const measureH2 = useCallback((h1: number) => {
@@ -631,7 +633,7 @@ export default function JobDetailsModal({
     }
 
     const maxAllowed = Math.floor(window.innerHeight * 0.88 - 40);
-    const minAllowed = 440;
+    const minAllowed = hideEmployerHeader ? 320 : 440;
 
     const h1 = measureH1();
     if (!h1) return;
@@ -645,7 +647,7 @@ export default function JobDetailsModal({
       if (prev !== null && Math.abs(prev - equalH) <= 2) return prev;
       return equalH;
     });
-  }, [sidePanel, isMsgPanelOpen, isMsgPanelClosing, isBreakdownOpen, isBreakdownClosing, measureH1]);
+  }, [sidePanel, isMsgPanelOpen, isMsgPanelClosing, isBreakdownOpen, isBreakdownClosing, measureH1, hideEmployerHeader]);
 
   const hasAnySidePanel = Boolean(sidePanel || isMsgPanelOpen || isMsgPanelClosing || isBreakdownOpen || isBreakdownClosing);
 
@@ -1428,13 +1430,14 @@ export default function JobDetailsModal({
     if (topFloatingActions !== undefined) return topFloatingActions;
 
     const hasBreakdown = Boolean(applicantProfile || job.matchScore !== undefined);
-    const canMessage = Boolean(empUserId && currentUserId);
+    const canMessage = Boolean(empUserId && currentUserId && !hideEmployerHeader);
+    const canShowEmployerDetails = Boolean(empUserId && onEmployerClick && !hideEmployerHeader);
 
-    if (!empUserId && !hasBreakdown && !canMessage) return null;
+    if (!canShowEmployerDetails && !hasBreakdown && !canMessage) return null;
 
     return (
       <div style={{ display: "flex", gap: "8px" }}>
-        {empUserId && onEmployerClick && (
+        {canShowEmployerDetails && (
           <button
             type="button"
             className="jd-floating-breakdown-tab"
@@ -1481,107 +1484,124 @@ export default function JobDetailsModal({
       style={matchedHeight ? { height: `${matchedHeight}px`, maxHeight: `${matchedHeight}px` } : undefined}
     >
       {/* Cover banner */}
-      <div ref={bannerRef} className="jd-cover-banner">
-        {coverSrc ? (
-          <img
-            src={coverSrc}
-            alt={`${companyName} cover`}
-            onError={(e) => {
-              (e.currentTarget as HTMLElement).style.display = "none";
-              const placeholder = e.currentTarget.parentElement?.querySelector(".jd-cover-placeholder") as HTMLElement;
-              if (placeholder) placeholder.style.display = "flex";
-            }}
-          />
-        ) : null}
-        <div className="jd-cover-placeholder" style={{ display: coverSrc ? "none" : "flex" }}>
-          <span>Cover photo</span>
+      {!hideEmployerHeader && (
+        <div ref={bannerRef} className="jd-cover-banner">
+          {coverSrc ? (
+            <img
+              src={coverSrc}
+              alt={`${companyName} cover`}
+              onError={(e) => {
+                (e.currentTarget as HTMLElement).style.display = "none";
+                const placeholder = e.currentTarget.parentElement?.querySelector(".jd-cover-placeholder") as HTMLElement;
+                if (placeholder) placeholder.style.display = "flex";
+              }}
+            />
+          ) : null}
+          <div className="jd-cover-placeholder" style={{ display: coverSrc ? "none" : "flex" }}>
+            <span>Cover photo</span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Employer strip */}
-      <div ref={stripRef} className="jd-employer-strip">
-        <div className="jd-employer-logo-info">
-          <div
-            className={`jd-employer-logo ${onEmployerClick ? "clickable" : ""}`}
-            aria-label="Company logo"
-            onClick={() => onEmployerClick && (onEmployerClick as any)(empUserId)}
-            style={{
-              cursor: onEmployerClick ? "pointer" : "default",
-              overflow: "hidden",
-              position: "relative",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            {logoSrc ? (
-              <img
-                src={logoSrc}
-                alt={companyName}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                onError={(e) => {
-                  (e.currentTarget as HTMLElement).style.display = "none";
-                  if (e.currentTarget.nextElementSibling) {
-                    (e.currentTarget.nextElementSibling as HTMLElement).style.display = "block";
-                  }
-                }}
-              />
-            ) : null}
-            <svg viewBox="0 0 24 24" aria-hidden="true" style={{ display: logoSrc ? "none" : "block", width: "32px", height: "32px", stroke: "#0284c7" }}>
-              <path d="M3 21h18M5 21V7l7-4 7 4v14M9 11h2m2 0h2M9 15h2m2 0h2" />
-            </svg>
-          </div>
-          <div>
-            <div className="jd-employer-name-row">
-              <strong
-                className={`jd-employer-name ${onEmployerClick ? "clickable" : ""}`}
-                onClick={() => onEmployerClick && (onEmployerClick as any)(empUserId)}
-                style={{ cursor: onEmployerClick ? "pointer" : "default" }}
-              >
-                {companyName}
-              </strong>
-              <span className="company-inline-rating-pill" title="Company rating">
-                <span className="star-icon">★</span>
-                <span>{ratingText}</span>
+      {!hideEmployerHeader && (
+        <div ref={stripRef} className="jd-employer-strip">
+          <div className="jd-employer-logo-info">
+            <div
+              className={`jd-employer-logo ${onEmployerClick ? "clickable" : ""}`}
+              aria-label="Company logo"
+              onClick={() => onEmployerClick && (onEmployerClick as any)(empUserId)}
+              style={{
+                cursor: onEmployerClick ? "pointer" : "default",
+                overflow: "hidden",
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {logoSrc ? (
+                <img
+                  src={logoSrc}
+                  alt={companyName}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLElement).style.display = "none";
+                    if (e.currentTarget.nextElementSibling) {
+                      (e.currentTarget.nextElementSibling as HTMLElement).style.display = "block";
+                    }
+                  }}
+                />
+              ) : null}
+              <svg viewBox="0 0 24 24" aria-hidden="true" style={{ display: logoSrc ? "none" : "block", width: "32px", height: "32px", stroke: "#0284c7" }}>
+                <path d="M3 21h18M5 21V7l7-4 7 4v14M9 11h2m2 0h2M9 15h2m2 0h2" />
+              </svg>
+            </div>
+            <div>
+              <div className="jd-employer-name-row">
+                <strong
+                  className={`jd-employer-name ${onEmployerClick ? "clickable" : ""}`}
+                  onClick={() => onEmployerClick && (onEmployerClick as any)(empUserId)}
+                  style={{ cursor: onEmployerClick ? "pointer" : "default" }}
+                >
+                  {companyName}
+                </strong>
+                <span className="company-inline-rating-pill" title="Company rating">
+                  <span className="star-icon">★</span>
+                  <span>{ratingText}</span>
+                </span>
+              </div>
+              <span className="jd-employer-location">
+                <svg viewBox="0 0 24 24" aria-hidden="true" width="12" height="12" fill="none" stroke="#5b8ab0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                {locationStr}
               </span>
             </div>
-            <span className="jd-employer-location">
-              <svg viewBox="0 0 24 24" aria-hidden="true" width="12" height="12" fill="none" stroke="#5b8ab0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                <circle cx="12" cy="10" r="3" />
-              </svg>
-              {locationStr}
-            </span>
+          </div>
+
+          <div className="jd-header-right-actions">
+            {matchScore !== undefined && (
+              <div
+                className={`match-score-box ${getMatchColorClass(matchScore)}`}
+                title="Match Score"
+              >
+                <small>MATCH</small>
+                <b>{matchScore}%</b>
+              </div>
+            )}
+            <button
+              type="button"
+              className={`jd-faq-btn ${isFaqOpen ? "active" : ""}`}
+              onClick={handleToggleFaq}
+            >
+              FAQ's
+            </button>
           </div>
         </div>
-
-        <div className="jd-header-right-actions">
-          {matchScore !== undefined && (
-            <div
-              className={`match-score-box ${getMatchColorClass(matchScore)}`}
-              title="Match Score"
-            >
-              <small>MATCH</small>
-              <b>{matchScore}%</b>
-            </div>
-          )}
-          <button
-            type="button"
-            className={`jd-faq-btn ${isFaqOpen ? "active" : ""}`}
-            onClick={handleToggleFaq}
-          >
-            FAQ's
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* Scrollable body & drawer container */}
       <div ref={bodyWrapperRef} className="jd-body-wrapper">
-        <div ref={bodyRef} className="jd-body">
+        <div ref={bodyRef} className="jd-body" style={hideEmployerHeader ? { paddingTop: "24px" } : undefined}>
           {/* Title row */}
           <div className="jd-top-section">
-            <div className="jd-title-row">
-              <h2 className="jd-title-h2">{jobTitle}</h2>
+            <div
+              className="jd-title-row"
+              style={hideEmployerHeader ? { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px", flexWrap: "nowrap" } : undefined}
+            >
+              <h2 className="jd-title-h2" style={hideEmployerHeader ? { flex: 1, minWidth: 0, margin: 0 } : undefined}>{jobTitle}</h2>
+              {hideEmployerHeader && matchScore !== undefined && (
+                <div
+                  className={`match-score-box ${getMatchColorClass(matchScore)}`}
+                  title="Match Score"
+                  style={{ flexShrink: 0, margin: 0 }}
+                >
+                  <small>MATCH</small>
+                  <b>{matchScore}%</b>
+                </div>
+              )}
             </div>
             <div className="jd-chips-inline">
               <span className={`status-chip ${isOpenStatus ? "open" : "closed"}`}>

@@ -94,15 +94,16 @@
 }
 
 .jd-side-comparison-panel {
-  width: min(420px, calc(100vw - 40px));
-  max-width: min(420px, calc(100vw - 40px));
+  width: min(480px, calc(100vw - 40px));
+  max-width: min(480px, calc(100vw - 40px));
   min-width: 320px;
   background: #ffffff;
   border-radius: 16px;
   box-shadow: 0 24px 60px rgba(10, 30, 60, 0.22);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden !important;
+  overflow-y: hidden;
   box-sizing: border-box;
   transform-origin: left center;
   margin-top: 0 !important;
@@ -153,6 +154,14 @@
   flex: 1 !important;
   min-height: 0 !important;
   overflow-y: auto !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 14px 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
 }
 
 .jd-side-panel-slot .cand-msg-chat-body {
@@ -974,19 +983,21 @@
   align-items: center !important;
   justify-content: space-between !important;
   width: 100% !important;
-  gap: 10px !important;
+  max-width: 100% !important;
+  gap: 6px !important;
   background: #f0f9ff;
   border: 1.5px solid #bae6fd;
   color: #0369a1;
-  padding: 10px 14px !important;
+  padding: 8px 10px !important;
   border-radius: 8px !important;
-  font-size: 0.84rem;
+  font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 1px 3px rgba(3, 105, 161, 0.08);
   box-sizing: border-box !important;
   text-align: left !important;
+  overflow: hidden !important;
 }
 
 .category-popup-trigger-btn:hover,
@@ -1297,8 +1308,12 @@
 .jd-unified-compare-container {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 12px;
+  gap: 10px;
   background: transparent;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 @media (max-width: 680px) {
@@ -1318,6 +1333,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .jd-master-col-header.employer,
@@ -1331,12 +1348,15 @@
   border: 1px solid #e1ebf5;
   border-radius: 12px;
   background: #ffffff;
-  padding: 14px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   box-sizing: border-box;
   box-shadow: 0 2px 8px rgba(13, 60, 97, 0.04);
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .jd-master-row-card.applicant-col {
@@ -1375,6 +1395,10 @@
   flex-wrap: wrap;
   gap: 6px;
   align-items: flex-start;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .jd-no-data-text {
@@ -1387,16 +1411,21 @@
 /* ── Tags / Chips ── */
 .jd-comp-tag {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 5px;
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   font-weight: 600;
-  padding: 4px 9px;
+  padding: 4px 8px;
   border-radius: 6px;
   line-height: 1.25;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   cursor: pointer;
+  max-width: 100%;
+  box-sizing: border-box;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .jd-comp-tag.tag-hover-source {
@@ -1425,11 +1454,16 @@
 
 .jd-comp-tag .tag-icon {
   font-weight: 800;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
 .jd-comp-tag .tag-text {
   word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  min-width: 0;
 }
 
 .jd-comp-tag .tag-check {
@@ -1474,13 +1508,16 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 16px;
-  padding: 10px 14px;
+  gap: 8px 12px;
+  padding: 9px 12px;
   background: #f4f8fc;
   border-radius: 8px;
   border: 1px solid #dbe7f3;
-  font-size: 0.78rem;
+  font-size: 0.73rem;
   color: #315170;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .legend-item {

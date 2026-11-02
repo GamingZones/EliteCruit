@@ -1901,6 +1901,7 @@ export default function EmployerApplicantDetailsModal({
         nearbyLocation: candidate?.nearby_location,
         preferredLocations: candidate?.preferred_locations,
       }}
+      hideEmployerHeader={true}
       zIndex={45000}
     />
   </div>
