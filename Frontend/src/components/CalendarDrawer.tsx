@@ -251,17 +251,45 @@ function formatDisplayDate(dateStr: string): string {
   }
 }
 
-function formatDisplayTime(timeStr: string): string {
-  if (!timeStr) return "";
-  try {
-    const [h, m] = timeStr.split(":").map(Number);
-    const period = h >= 12 ? "PM" : "AM";
-    const hour = h % 12 || 12;
-    const min = m < 10 ? `0${m}` : m;
-    return `${hour}:${min} ${period}`;
-  } catch {
-    return timeStr;
+function parseTimeToMinutes(t: string | null | undefined): number {
+  if (!t) return 0;
+  const cleaned = String(t).trim();
+  if (cleaned.toLowerCase().includes("nan")) return 0;
+  const m12 = cleaned.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/i);
+  if (m12) {
+    let h = parseInt(m12[1], 10);
+    const m = parseInt(m12[2], 10);
+    const p = m12[3].toUpperCase();
+    if (p === "PM" && h < 12) h += 12;
+    if (p === "AM" && h === 12) h = 0;
+    return h * 60 + m;
   }
+  const m24 = cleaned.match(/^(\d{1,2}):(\d{2})/);
+  if (m24) {
+    const h = parseInt(m24[1], 10);
+    const m = parseInt(m24[2], 10);
+    return h * 60 + m;
+  }
+  return 0;
+}
+
+function minutesTo24h(mins: number): string {
+  const h = Math.floor(mins / 60) % 24;
+  const m = mins % 60;
+  return `${h < 10 ? "0" : ""}${h}:${m < 10 ? "0" : ""}${m}`;
+}
+
+function formatDisplayTime(timeStr: string | null | undefined): string {
+  if (!timeStr) return "";
+  const cleaned = String(timeStr).trim();
+  if (!cleaned || cleaned.toLowerCase().includes("nan")) return "";
+  const mins = parseTimeToMinutes(cleaned);
+  const h = Math.floor(mins / 60) % 24;
+  const m = mins % 60;
+  const period = h >= 12 ? "PM" : "AM";
+  const hour = h % 12 || 12;
+  const minStr = m < 10 ? `0${m}` : m;
+  return `${hour}:${minStr} ${period}`;
 }
 
 
@@ -520,7 +548,7 @@ export default function CalendarDrawer({
   const handleOpenRescheduleModal = (item: ScheduledInterview) => {
     setInterviewToReschedule(item);
     setRescheduleDate(item.interview_date || "");
-    setRescheduleTime(item.start_time || "10:00 AM");
+    setRescheduleTime(formatDisplayTime(item.start_time) || "10:00 AM");
     setRescheduleAltTime("2:00 PM");
     setRescheduleReason(
       "I have a prior commitment at the original interview time. I'm available at either suggested time."
@@ -531,10 +559,28 @@ export default function CalendarDrawer({
   const handleConfirmReschedule = () => {
     if (!interviewToReschedule) return;
     if (rescheduleDate && rescheduleTime) {
+      const oldStartMin = parseTimeToMinutes(interviewToReschedule.start_time);
+      const oldEndMin = parseTimeToMinutes(interviewToReschedule.end_time);
+      const durationMin = (oldEndMin > oldStartMin && oldEndMin - oldStartMin <= 480)
+        ? (oldEndMin - oldStartMin)
+        : 45;
+
+      const newStartMin = parseTimeToMinutes(rescheduleTime);
+      const newEndMin = newStartMin + durationMin;
+
+      const normalizedStartTime = minutesTo24h(newStartMin);
+      const normalizedEndTime = minutesTo24h(newEndMin);
+
       setInterviews((prev) =>
         prev.map((it) =>
           it.id === interviewToReschedule.id
-            ? { ...it, interview_date: rescheduleDate, start_time: rescheduleTime, status: isEmployer ? "rescheduled" : "pending" }
+            ? {
+                ...it,
+                interview_date: rescheduleDate,
+                start_time: normalizedStartTime,
+                end_time: normalizedEndTime,
+                status: isEmployer ? "rescheduled" : "pending",
+              }
             : it
         )
       );
@@ -545,10 +591,13 @@ export default function CalendarDrawer({
           body: JSON.stringify({
             status: isEmployer ? "rescheduled" : "pending",
             new_date: rescheduleDate,
-            new_start_time: rescheduleTime,
+            new_start_time: normalizedStartTime,
+            new_end_time: normalizedEndTime,
             interview_date: rescheduleDate,
-            start_time: rescheduleTime,
+            start_time: normalizedStartTime,
+            end_time: normalizedEndTime,
             updated_by_user_id: currentUserId,
+            notes: rescheduleReason ? `Rescheduled: ${rescheduleReason}` : undefined,
           }),
         })
           .then(() => {
@@ -3183,14 +3232,40 @@ export default function CalendarDrawer({
                       boxSizing: "border-box",
                     }}
                   >
+                    <option value="8:00 AM">8:00 AM</option>
+                    <option value="8:30 AM">8:30 AM</option>
                     <option value="9:00 AM">9:00 AM</option>
+                    <option value="9:30 AM">9:30 AM</option>
                     <option value="10:00 AM">10:00 AM</option>
+                    <option value="10:30 AM">10:30 AM</option>
                     <option value="11:00 AM">11:00 AM</option>
+                    <option value="11:30 AM">11:30 AM</option>
+                    <option value="12:00 PM">12:00 PM</option>
+                    <option value="12:30 PM">12:30 PM</option>
                     <option value="1:00 PM">1:00 PM</option>
+                    <option value="1:30 PM">1:30 PM</option>
                     <option value="2:00 PM">2:00 PM</option>
+                    <option value="2:30 PM">2:30 PM</option>
+                    <option value="3:00 PM">3:00 PM</option>
                     <option value="3:30 PM">3:30 PM</option>
                     <option value="4:00 PM">4:00 PM</option>
+                    <option value="4:30 PM">4:30 PM</option>
+                    <option value="5:00 PM">5:00 PM</option>
+                    <option value="5:30 PM">5:30 PM</option>
+                    <option value="6:00 PM">6:00 PM</option>
                   </select>
+                  {(() => {
+                    const oldStart = parseTimeToMinutes(interviewToReschedule.start_time);
+                    const oldEnd = parseTimeToMinutes(interviewToReschedule.end_time);
+                    const dur = (oldEnd > oldStart && oldEnd - oldStart <= 480) ? (oldEnd - oldStart) : 45;
+                    const newStart = parseTimeToMinutes(rescheduleTime);
+                    const newEnd = newStart + dur;
+                    return (
+                      <span style={{ fontSize: "0.76rem", color: "#64748b", marginTop: "4px", display: "block" }}>
+                        Window: <strong>{formatDisplayTime(minutesTo24h(newStart))} – {formatDisplayTime(minutesTo24h(newEnd))}</strong> ({dur} min)
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
 

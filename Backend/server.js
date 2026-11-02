@@ -7176,8 +7176,12 @@ app.get("/api/interviews", async (req, res) => {
           candIds = [];
         }
       }
+      const rawStart = r.start_time && !String(r.start_time).toLowerCase().includes("nan") ? r.start_time : "10:00";
+      const rawEnd = r.end_time && !String(r.end_time).toLowerCase().includes("nan") ? r.end_time : "10:45";
       return {
         ...r,
+        start_time: rawStart,
+        end_time: rawEnd,
         candidate_user_ids: candIds,
       };
     });
@@ -7357,8 +7361,54 @@ app.patch("/api/interviews/:id/status", async (req, res) => {
       : notes !== undefined ? notes : null;
 
     const finalNewDate = new_date || req.body.interview_date || null;
-    const finalNewStartTime = new_start_time || req.body.start_time || null;
-    const finalNewEndTime = new_end_time || req.body.end_time || null;
+    let finalNewStartTime = new_start_time || req.body.start_time || null;
+    let finalNewEndTime = new_end_time || req.body.end_time || null;
+
+    const parseMins = (t) => {
+      if (!t) return null;
+      const str = String(t).trim();
+      if (str.toLowerCase().includes("nan")) return null;
+      const m12 = str.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/i);
+      if (m12) {
+        let h = parseInt(m12[1], 10);
+        const m = parseInt(m12[2], 10);
+        const p = m12[3].toUpperCase();
+        if (p === "PM" && h < 12) h += 12;
+        if (p === "AM" && h === 12) h = 0;
+        return h * 60 + m;
+      }
+      const m24 = str.match(/^(\d{1,2}):(\d{2})/);
+      if (m24) {
+        return parseInt(m24[1], 10) * 60 + parseInt(m24[2], 10);
+      }
+      return null;
+    };
+
+    const to24h = (mins) => {
+      const h = Math.floor(mins / 60) % 24;
+      const m = mins % 60;
+      return `${h < 10 ? "0" : ""}${h}:${m < 10 ? "0" : ""}${m}`;
+    };
+
+    if (finalNewStartTime) {
+      const startMins = parseMins(finalNewStartTime);
+      if (startMins !== null) {
+        finalNewStartTime = to24h(startMins);
+
+        let endMins = parseMins(finalNewEndTime);
+        if (endMins === null || endMins <= startMins) {
+          const oldStartMins = parseMins(existing.start_time);
+          const oldEndMins = parseMins(existing.end_time);
+          const durationMins = (oldStartMins !== null && oldEndMins !== null && oldEndMins > oldStartMins)
+            ? (oldEndMins - oldStartMins)
+            : 45;
+          endMins = startMins + durationMins;
+          finalNewEndTime = to24h(endMins);
+        } else {
+          finalNewEndTime = to24h(endMins);
+        }
+      }
+    }
 
     if (targetStatus === "rescheduled" && (finalNewDate || finalNewStartTime)) {
       await run(
