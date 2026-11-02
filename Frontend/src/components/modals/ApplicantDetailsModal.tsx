@@ -253,7 +253,22 @@ export type CandidateModalData = {
   work_experience_json?: string;
   resume_path?: string | null;
   documents?: Array<{ id: string | number; file_name: string; url?: string }>;
+  job_id?: number | string | null;
+  submitted_at?: string | null;
+  applied_date?: string | null;
+  status?: string | null;
+  response_letter?: string | null;
 };
+
+function formatDate(iso?: string | null): string {
+  if (!iso) return "—";
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  } catch {
+    return iso;
+  }
+}
 
 export type ApplicantDetailsModalProps = {
   isOpen: boolean;
@@ -271,6 +286,7 @@ export type ApplicantDetailsModalProps = {
     certifications?: string | string[];
   }>;
   currentEmployerUserId?: number | string | null;
+  initialSideTab?: "breakdown" | "messages" | null;
 };
 
 export default function ApplicantDetailsModal({
@@ -280,6 +296,7 @@ export default function ApplicantDetailsModal({
   customFooterActions,
   employerJobs = [],
   currentEmployerUserId = null,
+  initialSideTab = null,
 }: ApplicantDetailsModalProps) {
   const [candDetailTab, setCandDetailTab] = useState<"personal" | "preferences" | "competencies" | "experience">("personal");
   const [isDocsDrawerOpen, setIsDocsDrawerOpen] = useState(false);
@@ -288,7 +305,7 @@ export default function ApplicantDetailsModal({
   const [previewDoc, setPreviewDoc] = useState<{ file_name: string; url: string } | null>(null);
 
   // Side Panel Tabs state: "breakdown" | "messages" | null
-  const [activeSideTab, setActiveSideTab] = useState<"breakdown" | "messages" | null>(null);
+  const [activeSideTab, setActiveSideTab] = useState<"breakdown" | "messages" | null>(initialSideTab || null);
   const [activeBreakdownPopup, setActiveBreakdownPopup] = useState<{
     type: "skills" | "certifications";
     category: string;
@@ -318,7 +335,9 @@ export default function ApplicantDetailsModal({
   }, [isOpen]);
 
   React.useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      setActiveSideTab(initialSideTab || null);
+    } else {
       setIsDocsDrawerOpen(false);
       setPreviewDoc(null);
       setCandDetailTab("personal");
@@ -328,7 +347,7 @@ export default function ApplicantDetailsModal({
       setCandMsgThread(null);
       setCandMsgInput("");
     }
-  }, [isOpen]);
+  }, [isOpen, initialSideTab]);
 
   // Load candidate messages when Messages side tab is opened
   const fetchApplicantMessages = async () => {
@@ -466,14 +485,34 @@ export default function ApplicantDetailsModal({
 
   const parseItemList = (data: any, fallback: string[] = []): string[] => {
     if (!data) return fallback;
-    if (Array.isArray(data)) return data;
+    if (Array.isArray(data)) {
+      return data
+        .flatMap((item) => {
+          if (typeof item === "string" && (item.startsWith("[") || item.startsWith("{"))) {
+            try {
+              const inner = JSON.parse(item);
+              if (Array.isArray(inner)) return inner;
+            } catch {}
+          }
+          return item;
+        })
+        .map(String)
+        .map((s) => s.replace(/^[\["']+|[\]"']+$/g, "").trim())
+        .filter(Boolean);
+    }
     try {
       const parsed = JSON.parse(data);
-      if (Array.isArray(parsed)) return parsed.map(String).filter(Boolean);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map(String)
+          .map((s) => s.replace(/^[\["']+|[\]"']+$/g, "").trim())
+          .filter(Boolean);
+      }
     } catch {}
     return String(data)
-      .split(/[,;\n]/)
-      .map((t) => t.trim())
+      .replace(/^[\[\(\{]+|[\]\)\}]+$/g, "")
+      .split(/[,;\n•|]+/)
+      .map((t) => t.trim().replace(/^["']+|["']+$/g, "").trim())
       .filter(Boolean);
   };
 
@@ -1179,14 +1218,18 @@ export default function ApplicantDetailsModal({
           </div>
 
           {/* Modal Footer */}
-          <div className="cand-details-footer" style={{ display: "flex", justifyContent: candidate.job_title ? "space-between" : "flex-end", alignItems: "center", width: "100%", gap: "10px" }}>
-            {candidate.job_title && (
-              <span className="cand-footer-target-job">
-                Target Job: <strong>{candidate.job_title}</strong>
-              </span>
-            )}
+          <div className="cand-details-footer" style={{ display: "flex", justifyContent: (candidate.submitted_at || candidate.applied_date || candidate.job_title) ? "space-between" : "flex-end", alignItems: "center", width: "100%", gap: "10px" }}>
+            <div className="cand-footer-meta jd-footer-meta" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              {(candidate.submitted_at || candidate.applied_date) && (
+                <span><strong>Applied On:</strong> {formatDate(candidate.submitted_at || candidate.applied_date)}</span>
+              )}
+              {candidate.job_title && (
+                <span className="cand-footer-target-job">
+                  Target Job: <strong>{candidate.job_title}</strong>
+                </span>
+              )}
+            </div>
             <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-              {customFooterActions}
               <button
                 type="button"
                 className="cand-details-cancel-btn"
@@ -1194,6 +1237,7 @@ export default function ApplicantDetailsModal({
               >
                 Close
               </button>
+              {customFooterActions}
             </div>
           </div>
         </div>
