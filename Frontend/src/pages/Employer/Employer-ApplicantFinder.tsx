@@ -4180,25 +4180,6 @@ export default function EmployerApplicantFinder() {
             >
               <div className="jd-panel-outer-wrap">
                 <div className="jd-floating-tabs-container">
-                  {activeJobs.length > 0 && (
-                    <button
-                      type="button"
-                      className={`jd-floating-breakdown-tab ${isMatchDrawerOpen && !isMatchDrawerClosing ? "active" : ""}`}
-                      onClick={() => {
-                        if (isMatchDrawerOpen) {
-                          handleCloseMatchDrawer();
-                        } else {
-                          setViewingJobDetails(activeJobs[0]);
-                          setIsOtherJobsOpen(false);
-                          setIsMessagePanelOpen(false);
-                          setIsMatchDrawerOpen(true);
-                          setIsMatchDrawerClosing(false);
-                        }
-                      }}
-                    >
-                      <span>{isMatchDrawerOpen && !isMatchDrawerClosing ? "Hide Breakdown" : "Match Breakdown"}</span>
-                    </button>
-                  )}
                   <button
                     type="button"
                     className={`jd-floating-breakdown-tab ${isMessagePanelOpen && !isMessagePanelClosing ? "active" : ""}`}
