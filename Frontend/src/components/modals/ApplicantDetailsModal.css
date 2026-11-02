@@ -12,7 +12,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+  z-index: 100020;
   animation: jdFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   padding: 40px 20px 24px;
   box-sizing: border-box;

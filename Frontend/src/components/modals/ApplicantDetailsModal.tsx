@@ -269,6 +269,16 @@ export default function ApplicantDetailsModal({
               >
                 Docs
               </button>
+              <button
+                type="button"
+                className="applicant-modal-close-btn"
+                style={{ marginLeft: "8px", background: "none", border: "none", fontSize: "1.1rem", cursor: "pointer", color: "#64748b" }}
+                onClick={onClose}
+                aria-label="Close"
+                title="Close"
+              >
+                ✕
+              </button>
             </div>
           </div>
 

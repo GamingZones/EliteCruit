@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import "./CalendarDrawer.css";
+import ApplicantDetailsModal, { CandidateModalData } from "./modals/ApplicantDetailsModal";
 import {
   formatLocationWithCavite,
   parseItemList,
@@ -442,6 +443,10 @@ export default function CalendarDrawer({
   const [formNotes, setFormNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formFeedback, setFormFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Standalone Applicant Details Modal state (ApplicantDetailsModal.tsx)
+  const [detailsCandidate, setDetailsCandidate] = useState<CandidateModalData | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   // Load employer active jobs and schedulable candidates dynamically from database
   useEffect(() => {
     if (!isEmployer || !currentUserId) return;
@@ -615,25 +620,73 @@ export default function CalendarDrawer({
   };
 
   const handleOpenCandidateDetails = async (cand: SchedulableCandidate) => {
-    setViewingApplicantDetails(cand);
-    setViewingApplicantProfile(null);
-    setCandDetailTab("personal");
-    setIsDocsDrawerOpen(false);
-    setIsPreviewingDoc(false);
-    setPreviewDoc(null);
-    setApplicantDocuments([]);
-    if (cand.user_id) {
-      fetchApplicantDocuments(cand.user_id);
+    const candUserId = cand.user_id;
+    const initialCandData: CandidateModalData = {
+      user_id: candUserId,
+      id: candUserId,
+      applicant_name: cand.full_name || cand.applicant_name,
+      name: cand.full_name || cand.applicant_name,
+      first_name: cand.first_name,
+      last_name: cand.last_name,
+      email: cand.email,
+      phone: cand.phone,
+      city: cand.city,
+      province: cand.province,
+      address: cand.address,
+      rating: cand.rating,
+      profile_picture_path: cand.profile_picture_path,
+      summary: cand.summary,
+      languages: cand.languages,
+      desired_job_title: cand.desired_job_title || cand.job_title,
+      expected_salary: cand.expected_salary,
+      expected_salary_min: cand.expected_salary_min,
+      expected_salary_max: cand.expected_salary_max,
+      work_arrangement: cand.work_arrangement,
+      preferred_locations: cand.preferred_locations,
+      skills: cand.skills,
+      qualifications: cand.qualifications,
+      certifications: cand.certifications,
+      shs_strand: cand.shs_strand,
+      shs_school: cand.shs_school,
+      shs_grad_year: cand.shs_grad_year,
+      college_course: cand.college_course,
+      college_school: cand.college_school,
+      college_grad_year: cand.college_grad_year,
+      vocational_course: cand.vocational_course,
+      vocational_grad_year: cand.vocational_grad_year,
+      years_of_experience: cand.years_of_experience,
+      work_experience_json: cand.work_experience_json,
+      resume_path: cand.resume_path,
+    };
+    setDetailsCandidate(initialCandData);
+    setIsDetailsModalOpen(true);
+
+    if (candUserId) {
+      try {
+        const res = await fetch(`/api/applicants/${candUserId}/profile`);
+        const data = await res.json();
+        if (data?.profile) {
+          setDetailsCandidate((prev) => ({
+            ...(prev || {}),
+            ...data.profile,
+            user_id: candUserId,
+            id: candUserId,
+            applicant_name: cand.full_name || data.profile.full_name || prev?.applicant_name,
+            email: data.profile.email || prev?.email,
+            phone: data.profile.phone || prev?.phone,
+            city: data.profile.city || prev?.city,
+            profile_picture_path: data.profile.profile_picture_path || prev?.profile_picture_path,
+            summary: data.profile.summary || prev?.summary,
+            languages: data.profile.languages || prev?.languages,
+            desired_job_title: data.profile.desired_job_title || prev?.desired_job_title,
+            skills: data.profile.skills || prev?.skills,
+            qualifications: data.profile.qualifications || prev?.qualifications,
+            certifications: data.profile.certifications || prev?.certifications,
+            work_experience_json: data.profile.work_experience_json || prev?.work_experience_json,
+          }));
+        }
+      } catch {}
     }
-    setIsMatchDrawerOpen(false);
-    setIsOtherJobsOpen(false);
-    try {
-      const res = await fetch(`/api/applicants/${cand.user_id}/profile`);
-      const data = await res.json();
-      if (data?.profile) {
-        setViewingApplicantProfile(data.profile);
-      }
-    } catch {}
   };
 
   // Filter candidates for selected job post who are approved
@@ -2970,6 +3023,19 @@ export default function CalendarDrawer({
             </div>
           </div>
         </div>,
+        document.body
+      )}
+
+      {/* ── STANDALONE APPLICANT DETAILS MODAL (ApplicantDetailsModal.tsx) ── */}
+      {typeof document !== "undefined" && isDetailsModalOpen && createPortal(
+        <ApplicantDetailsModal
+          isOpen={isDetailsModalOpen}
+          onClose={() => {
+            setIsDetailsModalOpen(false);
+            setDetailsCandidate(null);
+          }}
+          candidate={detailsCandidate}
+        />,
         document.body
       )}
 
