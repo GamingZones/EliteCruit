@@ -3027,12 +3027,12 @@ export default function CalendarDrawer({
           <div
             className="applicant-modal-container cancel-interview-modal-container"
             onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: "480px", width: "100%", padding: "24px", borderRadius: "16px" }}
+            style={{ maxWidth: "480px", width: "100%", padding: "24px", borderRadius: "16px", maxHeight: "90vh", overflowY: "auto" }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#0c2a47" }}>Cancel interview?</h3>
-                <p style={{ margin: "4px 0 0", fontSize: "0.86rem", color: "#64748b" }}>
+                <h3 className="cal-modal-title">Cancel interview?</h3>
+                <p className="cal-modal-subtitle">
                   The applicant will be notified and shown the reason.
                 </p>
               </div>
@@ -3048,11 +3048,12 @@ export default function CalendarDrawer({
 
             <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "16px" }}>
               <div>
-                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#0f172a", marginBottom: "6px" }}>
+                <label className="cal-modal-label">
                   Reason for cancellation
                 </label>
                 <select
                   value={cancelReason}
+                  className="cal-modal-select"
                   onChange={(e) => {
                     setCancelReason(e.target.value);
                     if (e.target.value === "Interviewer unavailable") {
@@ -3062,14 +3063,6 @@ export default function CalendarDrawer({
                     } else if (e.target.value === "Position already filled") {
                       setCancelMessage("Thank you for your interest. This position has already been filled.");
                     }
-                  }}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid #cbd5e1",
-                    fontSize: "0.88rem",
-                    boxSizing: "border-box",
                   }}
                 >
                   <option value="Interviewer unavailable">Interviewer unavailable</option>
@@ -3082,26 +3075,19 @@ export default function CalendarDrawer({
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#0f172a", marginBottom: "6px" }}>
+                <label className="cal-modal-label">
                   Message to applicant
                 </label>
                 <textarea
                   rows={3}
                   value={cancelMessage}
+                  className="cal-modal-textarea"
                   onChange={(e) => setCancelMessage(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid #cbd5e1",
-                    fontSize: "0.88rem",
-                    boxSizing: "border-box",
-                    resize: "vertical",
-                  }}
+                  style={{ resize: "vertical" }}
                 />
               </div>
 
-              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.86rem", color: "#334155", cursor: "pointer" }}>
+              <label className="cal-modal-checkbox-label">
                 <input
                   type="checkbox"
                   checked={notifyOnCancel}
@@ -3110,56 +3096,24 @@ export default function CalendarDrawer({
                 <span>Notify applicant by in-app notification and email</span>
               </label>
 
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "10px 14px",
-                  borderRadius: "8px",
-                  background: "#f0f9ff",
-                  border: "1px solid #bae6fd",
-                  color: "#0369a1",
-                  fontSize: "0.82rem",
-                }}
-              >
+              <div className="cal-modal-info-box">
                 <span>ℹ</span>
                 <span>A cancellation notification will be added to the applicant&apos;s Notifications page.</span>
               </div>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "20px" }}>
+            <div className="cal-modal-actions">
               <button
                 type="button"
+                className="cal-modal-btn secondary"
                 onClick={() => setInterviewToCancel(null)}
-                style={{
-                  width: "100%",
-                  padding: "11px",
-                  borderRadius: "8px",
-                  border: "1.5px solid #cbd5e1",
-                  background: "#ffffff",
-                  color: "#0f172a",
-                  fontWeight: 700,
-                  fontSize: "0.9rem",
-                  cursor: "pointer",
-                }}
               >
                 Keep Interview
               </button>
               <button
                 type="button"
+                className="cal-modal-btn danger"
                 onClick={handleConfirmCancelInterview}
-                style={{
-                  width: "100%",
-                  padding: "11px",
-                  borderRadius: "8px",
-                  border: "none",
-                  background: "#dc2626",
-                  color: "#ffffff",
-                  fontWeight: 700,
-                  fontSize: "0.9rem",
-                  cursor: "pointer",
-                }}
               >
                 Cancel Interview
               </button>
@@ -3173,17 +3127,19 @@ export default function CalendarDrawer({
       {typeof document !== "undefined" && interviewToReschedule && createPortal(
         <div className="applicant-modal-backdrop" onClick={() => setInterviewToReschedule(null)}>
           <div
-            className="applicant-modal-container reschedule-modal-container"
+            className="applicant-modal-container reschedule-modal-container cal-modal-container"
             onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: "480px", width: "100%", padding: "24px", borderRadius: "16px" }}
+            style={{ maxWidth: "480px", width: "100%", padding: "24px", borderRadius: "16px", maxHeight: "90vh", overflowY: "auto" }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#0c2a47" }}>
+                <h3 className="cal-modal-title">
                   {isEmployer ? "Reschedule Interview" : "Request a new interview time"}
                 </h3>
-                <p style={{ margin: "4px 0 0", fontSize: "0.86rem", color: "#64748b" }}>
-                  Your current interview remains confirmed until the employer approves a new time.
+                <p className="cal-modal-subtitle">
+                  {isEmployer
+                    ? "Select a new date and time for this interview. The applicant will be notified immediately."
+                    : "Your current interview remains confirmed until the employer approves a new time."}
                 </p>
               </div>
               <button
@@ -3199,38 +3155,24 @@ export default function CalendarDrawer({
             <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginTop: "16px" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#0f172a", marginBottom: "6px" }}>
+                  <label className="cal-modal-label">
                     Preferred date
                   </label>
                   <input
                     type="date"
                     value={rescheduleDate}
                     onChange={(e) => setRescheduleDate(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "9px 12px",
-                      borderRadius: "8px",
-                      border: "1px solid #cbd5e1",
-                      fontSize: "0.86rem",
-                      boxSizing: "border-box",
-                    }}
+                    className="cal-modal-input"
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#0f172a", marginBottom: "6px" }}>
+                  <label className="cal-modal-label">
                     Preferred time
                   </label>
                   <select
                     value={rescheduleTime}
                     onChange={(e) => setRescheduleTime(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "9px 12px",
-                      borderRadius: "8px",
-                      border: "1px solid #cbd5e1",
-                      fontSize: "0.86rem",
-                      boxSizing: "border-box",
-                    }}
+                    className="cal-modal-select"
                   >
                     <option value="8:00 AM">8:00 AM</option>
                     <option value="8:30 AM">8:30 AM</option>
@@ -3261,7 +3203,7 @@ export default function CalendarDrawer({
                     const newStart = parseTimeToMinutes(rescheduleTime);
                     const newEnd = newStart + dur;
                     return (
-                      <span style={{ fontSize: "0.76rem", color: "#64748b", marginTop: "4px", display: "block" }}>
+                      <span className="cal-modal-window-hint">
                         Window: <strong>{formatDisplayTime(minutesTo24h(newStart))} – {formatDisplayTime(minutesTo24h(newEnd))}</strong> ({dur} min)
                       </span>
                     );
@@ -3270,20 +3212,13 @@ export default function CalendarDrawer({
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#0f172a", marginBottom: "6px" }}>
-                  Alternative time <span style={{ fontWeight: 400, color: "#64748b" }}>(optional)</span>
+                <label className="cal-modal-label">
+                  Alternative time <span style={{ fontWeight: 400, opacity: 0.8 }}>(optional)</span>
                 </label>
                 <select
                   value={rescheduleAltTime}
                   onChange={(e) => setRescheduleAltTime(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "9px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid #cbd5e1",
-                    fontSize: "0.86rem",
-                    boxSizing: "border-box",
-                  }}
+                  className="cal-modal-select"
                 >
                   <option value="2:00 PM">2:00 PM</option>
                   <option value="3:30 PM">3:30 PM</option>
@@ -3293,7 +3228,7 @@ export default function CalendarDrawer({
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#0f172a", marginBottom: "6px" }}>
+                <label className="cal-modal-label">
                   Reason for rescheduling <span style={{ color: "#ef4444" }}>*</span>
                 </label>
                 <textarea
@@ -3301,79 +3236,47 @@ export default function CalendarDrawer({
                   value={rescheduleReason}
                   onChange={(e) => setRescheduleReason(e.target.value)}
                   placeholder="Provide reason for request..."
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid #cbd5e1",
-                    fontSize: "0.88rem",
-                    boxSizing: "border-box",
-                    resize: "vertical",
-                  }}
+                  className="cal-modal-textarea"
                 />
               </div>
 
-              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.86rem", color: "#334155", cursor: "pointer" }}>
+              <label className="cal-modal-checkbox-label">
                 <input
                   type="checkbox"
                   checked={notifyOnReschedule}
                   onChange={(e) => setNotifyOnReschedule(e.target.checked)}
                 />
-                <span>Notify the employer and send me status updates</span>
+                <span>
+                  {isEmployer
+                    ? "Notify applicant by in-app notification and email"
+                    : "Notify the employer and send me status updates"}
+                </span>
               </label>
 
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "10px 14px",
-                  borderRadius: "8px",
-                  background: "#fffbeb",
-                  border: "1px solid #fde68a",
-                  color: "#92400e",
-                  fontSize: "0.82rem",
-                }}
-              >
-                <span>⚠️</span>
-                <span>Submitting this request does not automatically change your interview.</span>
+              <div className={`cal-modal-notice-box ${isEmployer ? "info" : "warning"}`}>
+                <span>{isEmployer ? "ℹ️" : "⚠️"}</span>
+                <span>
+                  {isEmployer
+                    ? "The interview will be updated immediately in both calendars and candidate records."
+                    : "Submitting this request does not automatically change your interview."}
+                </span>
               </div>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "20px" }}>
+            <div className="cal-modal-actions">
               <button
                 type="button"
+                className="cal-modal-btn secondary"
                 onClick={() => setInterviewToReschedule(null)}
-                style={{
-                  width: "100%",
-                  padding: "11px",
-                  borderRadius: "8px",
-                  border: "1.5px solid #cbd5e1",
-                  background: "#ffffff",
-                  color: "#0f172a",
-                  fontWeight: 700,
-                  fontSize: "0.9rem",
-                  cursor: "pointer",
-                }}
               >
                 Keep Current Schedule
               </button>
               <button
                 type="button"
+                className="cal-modal-btn primary"
                 onClick={handleConfirmReschedule}
-                style={{
-                  width: "100%",
-                  padding: "11px",
-                  borderRadius: "8px",
-                  border: "none",
-                  background: "#00385e",
-                  color: "#ffffff",
-                  fontWeight: 700,
-                  fontSize: "0.9rem",
-                  cursor: "pointer",
-                }}
               >
-                Send Request
+                {isEmployer ? "Confirm Reschedule" : "Send Request"}
               </button>
             </div>
           </div>
@@ -3447,7 +3350,7 @@ function InterviewItemCard({
     <div className={`calendar-interview-card int-card-status-${item.status}`}>
       <div className="interview-card-top">
         <div className="interview-card-title-row">
-          <h4 className="interview-card-title">{item.interview_stage || item.interview_title}</h4>
+          <h4 className="interview-card-title">{item.interview_title || item.interview_stage || "Interview"}</h4>
           {!isEmployer && (
             <span className={`applicant-meeting-pill ${applicantStatus}`}>
               {applicantStatus === "ongoing" && <span className="applicant-pill-pulse-dot" />}

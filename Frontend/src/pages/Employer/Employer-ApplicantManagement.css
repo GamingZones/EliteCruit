@@ -4159,3 +4159,115 @@
   }
 }
 
+
+
+/* ==========================================================================
+   CANDIDATE DETAILS MODAL DARK MODE (Image 3 Fixes - Rule 9 Isolation)
+   ========================================================================== */
+[data-theme="dark"] .jd-employer-name {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .jd-employer-location {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .jd-employer-location span {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .applicant-details-candidate-name {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .applicant-details-sub-meta {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .applicant-details-sub-meta span {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .applicant-details-modal-container {
+  background: #14151b !important;
+  border-color: #2e3244 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .applicant-details-main-panel {
+  background: #1c1e27 !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .applicant-details-strip {
+  background: #1c1e27 !important;
+  border-bottom: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .applicant-details-scroll-body {
+  background: #14151b !important;
+}
+
+[data-theme="dark"] .applicant-details-footer {
+  background: #181a22 !important;
+  border-top: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .applicant-footer-meta {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .applicant-footer-meta span {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .applicant-footer-meta strong {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .applicant-footer-cancel-btn {
+  background: #242735 !important;
+  border-color: #3b4259 !important;
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .applicant-footer-cancel-btn:hover {
+  background: #2e3244 !important;
+}
+
+[data-theme="dark"] .cand-modal-tabs {
+  background: #181a22 !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .cand-modal-tabs .section-nav-btn {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .cand-modal-tabs .section-nav-btn:hover {
+  background: #242735 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .cand-modal-tabs .section-nav-btn.active {
+  background: #00385e !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .cand-details-card {
+  background: #1c1e27 !important;
+  border-color: #2e3244 !important;
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .cand-details-card h4 {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .cand-summary-text {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .jd-body-wrapper {
+  background: #14151b !important;
+}
