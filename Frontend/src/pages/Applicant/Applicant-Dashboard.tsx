@@ -437,6 +437,7 @@ function ApplicationCardTimeline({
   );
   const activeIndex = steps.findIndex((s) => s.state === "active");
   const isFinalDecision = ["approved", "accepted", "recruited", "denied", "rejected", "withdrawn"].includes(status);
+  const isDenied = ["denied", "rejected", "withdrawn"].includes(status);
 
   let progressPct = 0;
   if (isFinalDecision || lastCompletedIndex === 3) {
