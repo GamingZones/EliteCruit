@@ -41,3 +41,10 @@
   - **NEVER** hardcode theme-specific inline styles (e.g., hardcoded light text `#f8fafc` or dark backgrounds) directly in JSX where they leak across both modes.
   - Keep default/light mode styles in the component's base stylesheet and isolate dark mode styles under `[data-theme="dark"]` in the dark theme stylesheet (or use scoped CSS variables).
   - Ensure any change made to one theme leaves the other theme 100% intact, fully legible, and unaffected.
+
+## 10. Shared Modal Isolation & Page-Specific Customizations
+- When a shared modal (such as `ApplicantDetailsModal` or `JobDetailsModal`) is used across multiple pages or components (e.g., Applicant Management vs. Calendar Drawer):
+  - **Never** hardcode page-specific workflow actions, decision buttons, or status mutations directly inside the shared modal component where they could alter or break other consuming pages.
+  - Keep the shared modal as a clean, neutral base shell (header, tabs, layout) and inject page-specific elements exclusively via slot props (e.g., `customFooterActions`) or guarded variant props (`variant="management"`).
+  - All page-specific buttons, callbacks, and handlers must be defined in the consuming parent page file (e.g., `Employer-ApplicantManagement.tsx`), ensuring other views (like `CalendarDrawer.tsx`) remain 100% unaffected and preserve their default behavior.
+

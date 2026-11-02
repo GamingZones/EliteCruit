@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import ApplicantDetailsModal, { CandidateModalData } from "../../components/modals/ApplicantDetailsModal";
+import EmployerApplicantDetailsModal, { CandidateModalData } from "./EmployerApplicantDetailsModal";
 import { ChevronIcon, SideIcon } from "../../components/Icons";
 import { useEmployerCompanyLabel } from "../../hooks/useEmployerCompanyLabel";
 import { useUnreadNotificationsCount } from "../../hooks/useUnreadNotificationsCount";
@@ -2523,6 +2523,9 @@ export default function EmployerApplicantManagement() {
       skills: j.skills || j.required_skills,
       qualifications: j.qualifications,
       certifications: j.certifications,
+      salary_min: j.salary_min ?? j.salaryMin,
+      salary_max: j.salary_max ?? j.salaryMax,
+      description: j.description || j.summary,
     }));
   }, [allJobsMap]);
 
@@ -4185,9 +4188,9 @@ export default function EmployerApplicantManagement() {
         </section>
         )}
 
-        {/* CANDIDATE DETAILS MODAL (ApplicantDetailsModal.tsx) */}
+        {/* CANDIDATE DETAILS MODAL (EmployerApplicantDetailsModal.tsx) */}
         {typeof document !== "undefined" && reviewModalApp && createPortal(
-          <ApplicantDetailsModal
+          <EmployerApplicantDetailsModal
             isOpen={!!reviewModalApp}
             onClose={() => {
               setReviewModalApp(null);
