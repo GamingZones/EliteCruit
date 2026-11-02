@@ -1595,15 +1595,15 @@
 }
 
 .inv-action-btn.inv-decline-btn {
-  background: #ffffff;
-  color: #ef4444;
-  border: 1.5px solid #ef4444;
+  background: #dc2626;
+  color: #ffffff;
+  border: 1.5px solid #dc2626;
 }
 
 .inv-action-btn.inv-decline-btn:hover:not(:disabled) {
-  background: #fef2f2;
-  border-color: #dc2626;
-  color: #dc2626;
+  background: #b91c1c;
+  border-color: #b91c1c;
+  color: #ffffff;
 }
 
 .inv-action-btn.inv-accepted-status-btn {
@@ -1670,15 +1670,15 @@
 }
 
 .jd-inv-decline-btn {
-  background: #ffffff;
-  color: #ef4444;
-  border: 1.5px solid #ef4444;
+  background: #dc2626;
+  color: #ffffff;
+  border: 1.5px solid #dc2626;
 }
 
 .jd-inv-decline-btn:hover {
-  background: #fef2f2;
-  border-color: #dc2626;
-  color: #dc2626;
+  background: #b91c1c;
+  border-color: #b91c1c;
+  color: #ffffff;
 }
 
 .jd-inv-status-btn.accepted {

@@ -1854,10 +1854,7 @@ export default function ApplicantDashboard() {
                         type="button"
                         className="jd-inv-btn jd-inv-decline-btn"
                         onClick={() => {
-                          const target = activeReviewingInv;
-                          setDetailsJob(null);
-                          setReviewingInv(null);
-                          setDecisionModalTarget({ inv: target, action: "decline" });
+                          setDecisionModalTarget({ inv: activeReviewingInv, action: "decline" });
                         }}
                       >
                         Decline
@@ -1866,10 +1863,7 @@ export default function ApplicantDashboard() {
                         type="button"
                         className="jd-inv-btn jd-inv-accept-btn"
                         onClick={() => {
-                          const target = activeReviewingInv;
-                          setDetailsJob(null);
-                          setReviewingInv(null);
-                          setDecisionModalTarget({ inv: target, action: "accept" });
+                          setDecisionModalTarget({ inv: activeReviewingInv, action: "accept" });
                         }}
                       >
                         Accept
