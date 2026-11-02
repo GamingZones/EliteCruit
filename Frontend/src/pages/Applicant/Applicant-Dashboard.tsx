@@ -624,6 +624,7 @@ export default function ApplicantDashboard() {
   const [bookmarkedIds, setBookmarkedIds] = useState<number[]>([]);
   const [applyingJobId, setApplyingJobId] = useState<number | null>(null);
   const [detailsJob, setDetailsJob] = useState<JobCard | null>(null);
+  const [reviewingInv, setReviewingInv] = useState<JobInvitationItem | null>(null);
   const [applicantMatchProfile, setApplicantMatchProfile] = useState<ApplicantMatchProfile | null>(null);
   const [selectedEmployerDetails, setSelectedEmployerDetails] = useState<any>(null);
 
@@ -1010,6 +1011,7 @@ export default function ApplicantDashboard() {
   };
 
   const handleReviewInvitation = (inv: JobInvitationItem) => {
+    setReviewingInv(inv);
     const jobObj: JobCard = {
       id: Number(inv.job_post_id),
       title: inv.job_title || "Invited Role",
@@ -1827,28 +1829,79 @@ export default function ApplicantDashboard() {
       </main>
 
       {/* ── JOB DETAILS MODAL ── */}
-      <JobDetailsModal
-        isOpen={Boolean(detailsJob)}
-        job={jobModalData}
-        onClose={() => {
-          setDetailsJob(null);
-          setIsFaqDrawerOpen(false);
-        }}
-        currentUserId={applicantUserId || undefined}
-        applicantProfile={applicantMatchProfile}
-        onApply={() => {
-          if (detailsJob) {
-            setApplyJobTarget({ jobId: detailsJob.id, title: detailsJob.title });
-          }
-        }}
-        isApplied={detailsJob ? appliedJobIds.includes(detailsJob.id) : false}
-        isApplying={detailsJob ? applyingJobId === detailsJob.id : false}
-        appliedLabel="Applied"
-        onEmployerClick={(empId) => {
-          if (empId) handleOpenEmployerDetails(empId);
-        }}
-        zIndex={10000}
-      />
+      {(() => {
+        const activeReviewingInv = reviewingInv
+          ? invitationsList.find((i) => i.id === reviewingInv.id) || reviewingInv
+          : null;
+
+        return (
+          <JobDetailsModal
+            isOpen={Boolean(detailsJob)}
+            job={jobModalData}
+            onClose={() => {
+              setDetailsJob(null);
+              setReviewingInv(null);
+              setIsFaqDrawerOpen(false);
+            }}
+            currentUserId={applicantUserId || undefined}
+            applicantProfile={applicantMatchProfile}
+            customFooterActions={
+              activeReviewingInv ? (
+                <div className="jd-inv-footer-actions">
+                  {(activeReviewingInv.status || "pending").toLowerCase() === "pending" ? (
+                    <>
+                      <button
+                        type="button"
+                        className="jd-inv-btn jd-inv-decline-btn"
+                        onClick={() => {
+                          const target = activeReviewingInv;
+                          setDetailsJob(null);
+                          setReviewingInv(null);
+                          setDecisionModalTarget({ inv: target, action: "decline" });
+                        }}
+                      >
+                        Decline
+                      </button>
+                      <button
+                        type="button"
+                        className="jd-inv-btn jd-inv-accept-btn"
+                        onClick={() => {
+                          const target = activeReviewingInv;
+                          setDetailsJob(null);
+                          setReviewingInv(null);
+                          setDecisionModalTarget({ inv: target, action: "accept" });
+                        }}
+                      >
+                        Accept
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className={`jd-inv-btn jd-inv-status-btn ${(activeReviewingInv.status || "").toLowerCase() === "accepted" ? "accepted" : "declined"}`}
+                      disabled
+                    >
+                      {(activeReviewingInv.status || "").toLowerCase() === "accepted" ? "Accepted" : "Declined"}
+                    </button>
+                  )}
+                </div>
+              ) : undefined
+            }
+            onApply={() => {
+              if (detailsJob) {
+                setApplyJobTarget({ jobId: detailsJob.id, title: detailsJob.title });
+              }
+            }}
+            isApplied={detailsJob ? appliedJobIds.includes(detailsJob.id) : false}
+            isApplying={detailsJob ? applyingJobId === detailsJob.id : false}
+            appliedLabel="Applied"
+            onEmployerClick={(empId) => {
+              if (empId) handleOpenEmployerDetails(empId);
+            }}
+            zIndex={10000}
+          />
+        );
+      })()}
 
       {/* ── EMPLOYER DETAILS MODAL ── */}
       <EmployerDetailsModal

@@ -302,6 +302,77 @@
   color: #38bdf8 !important;
 }
 
+[data-theme="dark"] .job-actions .inv-action-btn.inv-accept-btn {
+  background: #059669 !important;
+  border: 1.5px solid #059669 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .job-actions .inv-action-btn.inv-accept-btn:hover:not(:disabled) {
+  background: #10b981 !important;
+  border-color: #10b981 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .job-actions .inv-action-btn.inv-decline-btn {
+  background: #dc2626 !important;
+  border: 1.5px solid #dc2626 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .job-actions .inv-action-btn.inv-decline-btn:hover:not(:disabled) {
+  background: #ef4444 !important;
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .job-actions .inv-action-btn.inv-accepted-status-btn {
+  background: #059669 !important;
+  border: 1.5px solid #059669 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .job-actions .inv-action-btn.inv-declined-status-btn {
+  background: #dc2626 !important;
+  border: 1.5px solid #dc2626 !important;
+  color: #ffffff !important;
+}
+
+/* Modal Footer Buttons in Dark Mode */
+[data-theme="dark"] .jd-inv-accept-btn {
+  background: #059669 !important;
+  color: #ffffff !important;
+  border: 1.5px solid #059669 !important;
+}
+
+[data-theme="dark"] .jd-inv-accept-btn:hover {
+  background: #10b981 !important;
+  border-color: #10b981 !important;
+}
+
+[data-theme="dark"] .jd-inv-decline-btn {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border: 1.5px solid #dc2626 !important;
+}
+
+[data-theme="dark"] .jd-inv-decline-btn:hover {
+  background: #ef4444 !important;
+  border-color: #ef4444 !important;
+}
+
+[data-theme="dark"] .jd-inv-status-btn.accepted {
+  background: #059669 !important;
+  color: #ffffff !important;
+  border: 1.5px solid #059669 !important;
+}
+
+[data-theme="dark"] .jd-inv-status-btn.declined {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border: 1.5px solid #dc2626 !important;
+}
+
 /* --------------------------------------------------------------------------
    5. Notifications Page
    -------------------------------------------------------------------------- */
