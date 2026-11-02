@@ -1334,6 +1334,7 @@ export default function EmployerApplicantManagement() {
 
   // Immediate interview scheduling within decision modal
   const [isSchedulingImmediate, setIsSchedulingImmediate] = useState(false);
+  const [schedTitle, setSchedTitle] = useState("");
   const [schedDate, setSchedDate] = useState(getTomorrowDateStr());
   const [schedStartTime, setSchedStartTime] = useState("10:00");
   const [schedEndTime, setSchedEndTime] = useState("10:45");
@@ -2083,12 +2084,13 @@ export default function EmployerApplicantManagement() {
 
     const firstApp = unfinalized[0];
     setIsSchedulingImmediate(false);
+    setSchedTitle("");
     setSchedDate(getTomorrowDateStr());
     setSchedStartTime("10:00");
     setSchedEndTime("10:45");
     setSchedType("On-Site");
-    setSchedStage("Initial Interview");
-    setSchedLocation(companyLabel ? (companyLabel + " Main Office") : "Company Office");
+    setSchedStage("On-Site Interview");
+    setSchedLocation("");
     setSchedNotes("");
 
     const initialTemplate = getAutomatedDecisionTemplate(
@@ -2124,12 +2126,13 @@ export default function EmployerApplicantManagement() {
 
   const handleOpenDirectScheduleModal = (app: Application) => {
     setDirectScheduleApp(app);
+    setSchedTitle("");
     setSchedDate(getTomorrowDateStr());
     setSchedStartTime("10:00");
     setSchedEndTime("10:45");
     setSchedType("On-Site");
     setSchedStage("On-Site Interview");
-    setSchedLocation(companyLabel ? `${companyLabel} Main Office` : "Company Office");
+    setSchedLocation("");
     setSchedNotes("");
   };
 
@@ -2141,6 +2144,10 @@ export default function EmployerApplicantManagement() {
     }
     if (!schedStartTime || !schedStartTime.trim()) {
       setWarningPopup("Please select a start time for the interview.");
+      return;
+    }
+    if (!schedLocation || !schedLocation.trim()) {
+      setWarningPopup("Please enter the meeting location or address.");
       return;
     }
 
@@ -2156,7 +2163,7 @@ export default function EmployerApplicantManagement() {
       }
 
       const targetApplicantUserId = directScheduleApp.applicant_user_id || (directScheduleApp as any).user_id || 0;
-      const meetingTitle = `Interview - ${directScheduleApp.applicant_name}`;
+      const meetingTitle = schedTitle.trim() || `On-Site Interview - ${directScheduleApp.applicant_name}`;
 
       const schedRes = await fetch("/api/interviews", {
         method: "POST",
@@ -2312,21 +2319,22 @@ export default function EmployerApplicantManagement() {
         for (const item of succeeded) {
           const app = item.app;
           const targetApplicantUserId = app.applicant_user_id || (app as any).user_id || 0;
-          const meetingTitle = schedStage + " - " + app.applicant_name;
+          const meetingTitle = schedTitle.trim() || `On-Site Interview - ${app.applicant_name}`;
 
           try {
             const schedRes = await fetch("/api/interviews", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
+                application_id: app.id,
                 employer_user_id: employerUserId,
                 applicant_user_id: targetApplicantUserId,
                 candidate_user_ids: [targetApplicantUserId],
                 job_post_id: app.job_post_id,
                 interview_title: meetingTitle,
-                interview_stage: schedStage,
-                interview_type: schedType,
-                meeting_link_or_address: schedLocation.trim() || (schedType === "Virtual" ? "Online Meeting" : (companyLabel ? (companyLabel + " Main Office") : "Company Office")),
+                interview_stage: "On-Site Interview",
+                interview_type: "On-Site",
+                meeting_link_or_address: schedLocation.trim() || (companyLabel ? `${companyLabel} Main Office` : "Company Office"),
                 interview_date: schedDate,
                 start_time: schedStartTime,
                 end_time: schedEndTime || schedStartTime,
@@ -4459,6 +4467,17 @@ export default function EmployerApplicantManagement() {
 
                   <div className="decision-card-body">
                     <div className="decision-sched-field">
+                      <label>Meeting Title</label>
+                      <input
+                        type="text"
+                        className="decision-sched-input"
+                        placeholder="e.g. On-Site Interview - Junior Frontend Developer"
+                        value={schedTitle}
+                        onChange={(e) => setSchedTitle(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="decision-sched-field">
                       <label>Interview Date *</label>
                       <input
                         type="date"
@@ -4491,13 +4510,13 @@ export default function EmployerApplicantManagement() {
                     </div>
 
                     <div className="decision-sched-field">
-                      <label>Office Address / Room</label>
+                      <label>Meeting Location *</label>
                       <input
                         type="text"
                         className="decision-sched-input"
                         value={schedLocation}
                         onChange={(e) => setSchedLocation(e.target.value)}
-                        placeholder={companyLabel ? `${companyLabel} Main Office, Room / Floor` : "e.g., Main Office or 4th Floor HQ, Room B"}
+                        placeholder="Enter meeting location or address"
                       />
                     </div>
 
@@ -4509,7 +4528,7 @@ export default function EmployerApplicantManagement() {
                         style={{ resize: "vertical" }}
                         value={schedNotes}
                         onChange={(e) => setSchedNotes(e.target.value)}
-                        placeholder="e.g., Please bring 2 valid IDs and an updated copy of your resume."
+                        placeholder="e.g. Please bring a valid government ID for building security pass and arrive 15 minutes before the scheduled time."
                       />
                     </div>
                   </div>
@@ -4806,6 +4825,17 @@ export default function EmployerApplicantManagement() {
 
                 <div className="decision-card-body">
                   <div className="decision-sched-field">
+                    <label>Meeting Title</label>
+                    <input
+                      type="text"
+                      className="decision-sched-input"
+                      placeholder="e.g. On-Site Interview - Junior Frontend Developer"
+                      value={schedTitle}
+                      onChange={(e) => setSchedTitle(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="decision-sched-field">
                     <label>Interview Date *</label>
                     <input
                       type="date"
@@ -4838,13 +4868,13 @@ export default function EmployerApplicantManagement() {
                   </div>
 
                   <div className="decision-sched-field">
-                    <label>Office Address / Room</label>
+                    <label>Meeting Location *</label>
                     <input
                       type="text"
                       className="decision-sched-input"
                       value={schedLocation}
                       onChange={(e) => setSchedLocation(e.target.value)}
-                      placeholder={companyLabel ? `${companyLabel} Main Office, Room / Floor` : "e.g., Main Office or 4th Floor HQ, Room B"}
+                      placeholder="Enter meeting location or address"
                     />
                   </div>
 
@@ -4856,7 +4886,7 @@ export default function EmployerApplicantManagement() {
                       style={{ resize: "vertical" }}
                       value={schedNotes}
                       onChange={(e) => setSchedNotes(e.target.value)}
-                      placeholder="e.g., Please prepare a portfolio or sample project and arrive 10 minutes early."
+                      placeholder="e.g. Please bring a valid government ID for building security pass and arrive 15 minutes before the scheduled time."
                     />
                   </div>
                 </div>
