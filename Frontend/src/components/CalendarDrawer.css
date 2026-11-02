@@ -697,21 +697,35 @@
   margin-left: auto;
 }
 
+/* Unified Card Action Buttons - Perfect Height, Font, and Alignment Match */
+.int-card-btn,
+.int-candidate-list-btn,
+.int-btn {
+  height: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  padding: 0 11px !important;
+  border-radius: 6px !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  font-family: inherit !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  flex-shrink: 0 !important;
+  text-decoration: none !important;
+}
+
 .int-candidate-list-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
   background: #f0f9ff;
-  border: 1.5px solid #0284c7;
+  border: 1px solid #0284c7;
   color: #0284c7;
-  border-radius: 8px;
-  padding: 5px 11px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  font-family: inherit;
-  line-height: 1.2;
+  gap: 6px;
 }
 
 .int-candidate-list-btn:hover {
@@ -719,8 +733,86 @@
   color: #ffffff;
   box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
 }
+
 .int-candidate-list-btn:active {
   transform: scale(0.98);
+}
+
+.int-btn-reschedule {
+  background: transparent;
+  border: 1px solid #0284c7;
+  color: #0284c7;
+}
+
+.int-btn-reschedule:hover {
+  background: rgba(2, 132, 199, 0.1);
+}
+
+.int-btn-cancel {
+  background: #fee2e2;
+  border: 1px solid #ef4444;
+  color: #b91c1c;
+}
+
+.int-btn-cancel:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.int-btn-completed {
+  background: #0284c7;
+  border: 1px solid #0284c7;
+  color: #ffffff;
+}
+
+.int-btn-completed:hover {
+  background: #0369a1;
+  border-color: #0369a1;
+}
+
+/* Dark Theme Overrides for Action Buttons */
+[data-theme="dark"] .int-candidate-list-btn {
+  background: #242735 !important;
+  border: 1px solid #2e3244 !important;
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .int-candidate-list-btn:hover {
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .int-btn-reschedule {
+  background: transparent !important;
+  border: 1px solid #38bdf8 !important;
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .int-btn-reschedule:hover {
+  background: rgba(56, 189, 248, 0.15) !important;
+}
+
+[data-theme="dark"] .int-btn-cancel {
+  background: rgba(239, 68, 68, 0.16) !important;
+  border: 1px solid #ef4444 !important;
+  color: #f87171 !important;
+}
+
+[data-theme="dark"] .int-btn-cancel:hover {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .int-btn-completed {
+  background: #0284c7 !important;
+  border: 1px solid #0284c7 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .int-btn-completed:hover {
+  background: #0369a1 !important;
+  border-color: #0369a1 !important;
 }
 
 .candidate-multiselect-card.readonly {

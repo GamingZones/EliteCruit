@@ -89,8 +89,8 @@ export default function ApplicantDetailsModal({
   const [isDocsLoading, setIsDocsLoading] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<{ file_name: string; url: string } | null>(null);
 
-  // Side Panel Tabs state: "breakdown" | "otherJobs" | "messages" | null
-  const [activeSideTab, setActiveSideTab] = useState<"breakdown" | "otherJobs" | "messages" | null>(null);
+  // Side Panel Tabs state: "breakdown" | "messages" | null
+  const [activeSideTab, setActiveSideTab] = useState<"breakdown" | "messages" | null>(null);
   const [hoveredCompareTag, setHoveredCompareTag] = useState<{ item: string; side: "applicant" | "employer"; category: string } | null>(null);
 
   // Candidate Messages state & handlers
@@ -376,15 +376,6 @@ export default function ApplicantDetailsModal({
     return appItems.some((appItem) => isSkillMatch(jobItem, appItem));
   };
 
-  const otherJobsList = (employerJobs || []).filter(
-    (j) => String(j.title).toLowerCase() !== String(targetJobTitle).toLowerCase()
-  );
-  const displayOtherJobs = otherJobsList.length > 0 ? otherJobsList : [
-    { id: 101, title: "UI/UX Designer", location: "Cavite", work_arrangement: "Hybrid", match: 92 },
-    { id: 102, title: "Full-Stack Web Developer", location: "Cavite", work_arrangement: "On-Site", match: 88 },
-    { id: 103, title: "QA / Software Tester", location: "Cavite", work_arrangement: "Remote", match: 81 },
-  ];
-
   return (
     <div
       className="cand-details-overlay"
@@ -426,7 +417,7 @@ export default function ApplicantDetailsModal({
             border: "none",
           }}
         >
-          {/* ── FLOATING ACTION TABS ABOVE: Match Breakdown | Other Jobs | Messages ── */}
+          {/* ── FLOATING ACTION TABS ABOVE: Match Breakdown | Messages ── */}
           <div className="cal-modal-floating-tabs-container jd-floating-tabs-container">
             <button
               type="button"
@@ -434,13 +425,6 @@ export default function ApplicantDetailsModal({
               onClick={() => setActiveSideTab((prev) => (prev === "breakdown" ? null : "breakdown"))}
             >
               <span>{activeSideTab === "breakdown" ? "Hide Breakdown" : "Match Breakdown"}</span>
-            </button>
-            <button
-              type="button"
-              className={`cal-modal-floating-tab jd-floating-breakdown-tab ${activeSideTab === "otherJobs" ? "active" : ""}`}
-              onClick={() => setActiveSideTab((prev) => (prev === "otherJobs" ? null : "otherJobs"))}
-            >
-              <span>{activeSideTab === "otherJobs" ? "Hide Other Jobs" : "Other Jobs"}</span>
             </button>
             <button
               type="button"
@@ -1076,103 +1060,7 @@ export default function ApplicantDetailsModal({
         </aside>
       )}
 
-      {/* ── SIDE PANEL 2: OTHER JOBS ── */}
-      {activeSideTab === "otherJobs" && (
-        <aside
-          className="applicant-side-comparison-panel jd-side-comparison-panel"
-          style={{
-            width: "480px",
-            maxWidth: "min(480px, calc(100vw - 976px))",
-            minWidth: "320px",
-            flex: "1 1 440px",
-            height: "700px",
-            maxHeight: "88vh",
-            boxShadow: "0 25px 60px rgba(0, 0, 0, 0.35)",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-            flexShrink: 1,
-            fontFamily: '"Inter", sans-serif',
-          }}
-        >
-          <div
-            className="side-panel-header jd-side-panel-header"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "16px 20px",
-              flexShrink: 0,
-            }}
-          >
-            <div className="side-title-row jd-side-title-row">
-              <h3 style={{ margin: 0, fontSize: "1.12rem", fontWeight: 800 }}>
-                Other Employer Jobs
-              </h3>
-              <span className="side-subtitle jd-side-subtitle" style={{ fontSize: "0.78rem", fontWeight: 600 }}>
-                Candidate compatibility across active job postings
-              </span>
-            </div>
-            <button
-              type="button"
-              className="side-close-btn jd-side-close-btn"
-              onClick={() => setActiveSideTab(null)}
-              aria-label="Close panel"
-            >
-              ✕
-            </button>
-          </div>
-
-          <div className="side-panel-body jd-side-panel-body" style={{ flex: 1, overflowY: "auto", padding: "18px", display: "flex", flexDirection: "column", gap: "14px" }}>
-            {displayOtherJobs.map((otherJob: any) => {
-              const baseMatch = Number(candidate.match_percentage) || 90;
-              const percent = otherJob.match || Math.max(70, Math.min(99, baseMatch - (((Number(otherJob.id) || 1) * 3) % 12)));
-              const matchStyle = percent >= 85
-                ? { track: "#dcfce7", color: "#15803d", fill: "#86efac" }
-                : percent >= 70
-                ? { track: "#fef3c7", color: "#b45309", fill: "#fde68a" }
-                : { track: "#fee2e2", color: "#b91c1c", fill: "#fca5a5" };
-
-              return (
-                <div
-                  key={otherJob.id}
-                  className="other-job-item-card"
-                >
-                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800 }}>
-                      {otherJob.title}
-                    </h4>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginTop: "2px", fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" />
-                          <circle cx="12" cy="10" r="2.5" />
-                        </svg>
-                        {otherJob.location || "Cavite"}
-                      </span>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-                          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-                        </svg>
-                        {otherJob.work_arrangement || "On-Site"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px", flexShrink: 0 }}>
-                    <span className={`match-badge-pill ${getMatchColorClass(percent)}`}>
-                      {percent}% Match
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </aside>
-      )}
-
-      {/* ── SIDE PANEL 3: MESSAGES ── */}
+      {/* ── SIDE PANEL 2: MESSAGES ── */}
       {activeSideTab === "messages" && (
         <aside
           className="applicant-side-comparison-panel cand-message-side-panel jd-side-comparison-panel"

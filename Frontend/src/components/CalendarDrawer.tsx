@@ -3505,13 +3505,13 @@ function InterviewItemCard({
             {isEmployer && (
               <button
                 type="button"
-                className="int-candidate-list-btn"
+                className="int-card-btn int-candidate-list-btn"
                 onClick={() => onOpenMeetingCandidatesModal(item, meetingCandidates)}
                 title="Show list of applicants for this meeting"
               >
                 <svg
-                  width="14"
-                  height="14"
+                  width="13"
+                  height="13"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -3536,42 +3536,22 @@ function InterviewItemCard({
               <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
                 <button
                   type="button"
-                  className="int-btn"
+                  className="int-card-btn int-btn-reschedule"
                   onClick={() => onOpenRescheduleModal(item)}
-                  style={{
-                    padding: "5px 11px",
-                    borderRadius: "6px",
-                    border: "1px solid #0284c7",
-                    background: "transparent",
-                    color: "#0284c7",
-                    fontSize: "0.78rem",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
                 >
                   Reschedule
                 </button>
                 <button
                   type="button"
-                  className="int-btn int-btn-red"
+                  className="int-card-btn int-btn-cancel"
                   onClick={() => onOpenCancelModal(item)}
-                  style={{
-                    padding: "5px 11px",
-                    borderRadius: "6px",
-                    border: "1px solid #ef4444",
-                    background: "#fee2e2",
-                    color: "#b91c1c",
-                    fontSize: "0.78rem",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
                 >
                   Cancel
                 </button>
                 {isEmployer && (
                   <button
                     type="button"
-                    className="int-btn int-btn-blue"
+                    className="int-card-btn int-btn-completed"
                     onClick={() => onUpdateStatus(item.id, "completed")}
                   >
                     Mark Completed
