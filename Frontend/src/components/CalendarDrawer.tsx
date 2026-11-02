@@ -634,6 +634,8 @@ export default function CalendarDrawer({
       province: cand.province,
       address: cand.address,
       rating: cand.rating,
+      match_percentage: cand.match_percentage || 95,
+      job_title: cand.job_title || activeMeetingCandidatesModal?.job_title,
       profile_picture_path: cand.profile_picture_path,
       summary: cand.summary,
       languages: cand.languages,
@@ -3131,43 +3133,6 @@ export default function CalendarDrawer({
               </button>
             </div>
 
-            {/* Attached Interview & Job Details Card */}
-            <div className="cal-modal-job-summary-card">
-              <div className="cal-modal-job-summary-top">
-                <span className="cal-modal-job-badge">
-                  {interviewToCancel.interview_type || "On-Site Interview"}
-                </span>
-                <span className="cal-modal-job-status-pill status-scheduled">
-                  {interviewToCancel.status === "accepted" ? "Confirmed" : "Scheduled"}
-                </span>
-              </div>
-              <h4 className="cal-modal-job-title">
-                {interviewToCancel.job_title || interviewToCancel.interview_title || "Job Position"}
-              </h4>
-              <div className="cal-modal-job-meta-grid">
-                <div className="cal-modal-job-meta-cell">
-                  <span className="cal-modal-job-meta-label">Candidate</span>
-                  <span className="cal-modal-job-meta-val">{interviewToCancel.applicant_name || "Applicant"}</span>
-                </div>
-                <div className="cal-modal-job-meta-cell">
-                  <span className="cal-modal-job-meta-label">Interview Date</span>
-                  <span className="cal-modal-job-meta-val">{formatDisplayDate(interviewToCancel.interview_date)}</span>
-                </div>
-                <div className="cal-modal-job-meta-cell">
-                  <span className="cal-modal-job-meta-label">Time</span>
-                  <span className="cal-modal-job-meta-val">
-                    {formatDisplayTime(interviewToCancel.start_time)} – {formatDisplayTime(interviewToCancel.end_time)}
-                  </span>
-                </div>
-                {interviewToCancel.meeting_link_or_address && (
-                  <div className="cal-modal-job-meta-cell">
-                    <span className="cal-modal-job-meta-label">Venue</span>
-                    <span className="cal-modal-job-meta-val">{interviewToCancel.meeting_link_or_address}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
             <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "16px" }}>
               <div>
                 <label className="cal-modal-label">
@@ -3258,47 +3223,6 @@ export default function CalendarDrawer({
               >
                 ✕
               </button>
-            </div>
-
-            {/* Attached Interview & Job Details Card */}
-            <div className="cal-modal-job-summary-card">
-              <div className="cal-modal-job-summary-top">
-                <span className="cal-modal-job-badge">
-                  {interviewToReschedule.interview_type || "On-Site Interview"}
-                </span>
-                <span className={`cal-modal-job-status-pill status-${interviewToReschedule.status}`}>
-                  {interviewToReschedule.status === "rescheduled"
-                    ? "Rescheduled"
-                    : interviewToReschedule.status === "accepted"
-                    ? "Confirmed"
-                    : "Scheduled"}
-                </span>
-              </div>
-              <h4 className="cal-modal-job-title">
-                {interviewToReschedule.job_title || interviewToReschedule.interview_title || "Job Position"}
-              </h4>
-              <div className="cal-modal-job-meta-grid">
-                <div className="cal-modal-job-meta-cell">
-                  <span className="cal-modal-job-meta-label">Candidate</span>
-                  <span className="cal-modal-job-meta-val">{interviewToReschedule.applicant_name || "Applicant"}</span>
-                </div>
-                <div className="cal-modal-job-meta-cell">
-                  <span className="cal-modal-job-meta-label">Current Date</span>
-                  <span className="cal-modal-job-meta-val">{formatDisplayDate(interviewToReschedule.interview_date)}</span>
-                </div>
-                <div className="cal-modal-job-meta-cell">
-                  <span className="cal-modal-job-meta-label">Current Time</span>
-                  <span className="cal-modal-job-meta-val">
-                    {formatDisplayTime(interviewToReschedule.start_time)} – {formatDisplayTime(interviewToReschedule.end_time)}
-                  </span>
-                </div>
-                {interviewToReschedule.meeting_link_or_address && (
-                  <div className="cal-modal-job-meta-cell">
-                    <span className="cal-modal-job-meta-label">Venue</span>
-                    <span className="cal-modal-job-meta-val">{interviewToReschedule.meeting_link_or_address}</span>
-                  </div>
-                )}
-              </div>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginTop: "16px" }}>

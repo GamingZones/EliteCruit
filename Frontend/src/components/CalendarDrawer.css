@@ -3392,3 +3392,10 @@
 [data-theme="dark"] .cand-exp-bullet-line {
   color: #cbd5e1 !important;
 }
+
+/* Ensure Standalone Applicant Details Modal is strictly elevated above Meeting Candidate List modal */
+.cand-details-overlay,
+[data-theme="dark"] .cand-details-overlay {
+  z-index: 200000 !important;
+}
+

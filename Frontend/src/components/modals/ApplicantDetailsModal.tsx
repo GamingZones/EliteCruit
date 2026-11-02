@@ -30,6 +30,8 @@ export type CandidateModalData = {
   province?: string;
   address?: string;
   rating?: number | string | null;
+  match_percentage?: number | string | null;
+  job_title?: string;
   profile_picture_path?: string | null;
   summary?: string;
   languages?: string | string[];
@@ -262,6 +264,21 @@ export default function ApplicantDetailsModal({
                 <span className="star-icon">★</span>
                 <span>{candidate.rating ? Number(candidate.rating).toFixed(1) : "0.0"}</span>
               </div>
+              {candidate.match_percentage != null && (
+                <div
+                  className={`match-score-box ${
+                    Number(candidate.match_percentage) >= 80
+                      ? "green"
+                      : Number(candidate.match_percentage) >= 50
+                      ? "yellow"
+                      : "orange"
+                  }`}
+                  title="Match score"
+                >
+                  <small>MATCH</small>
+                  <b>{candidate.match_percentage}%</b>
+                </div>
+              )}
               <button
                 type="button"
                 className={`cand-details-docs-btn ${isDocsDrawerOpen ? "active" : ""}`}
@@ -607,15 +624,22 @@ export default function ApplicantDetailsModal({
           </div>
 
           {/* Modal Footer */}
-          <div className="cand-details-footer" style={{ justifyContent: "flex-end", gap: "10px" }}>
-            {customFooterActions}
-            <button
-              type="button"
-              className="cand-details-cancel-btn"
-              onClick={onClose}
-            >
-              Close
-            </button>
+          <div className="cand-details-footer" style={{ display: "flex", justifyContent: candidate.job_title ? "space-between" : "flex-end", alignItems: "center", width: "100%", gap: "10px" }}>
+            {candidate.job_title && (
+              <span style={{ fontSize: "0.88rem", color: "#64748b" }}>
+                Target Job: <strong style={{ color: "inherit" }}>{candidate.job_title}</strong>
+              </span>
+            )}
+            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+              {customFooterActions}
+              <button
+                type="button"
+                className="cand-details-cancel-btn"
+                onClick={onClose}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       </div>
