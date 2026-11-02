@@ -575,17 +575,17 @@ export default function ApplicantDetailsModal({
               {/* TAB 1: PERSONAL & CONTACT */}
               {candDetailTab === "personal" && (
                 <div className="cand-tab-content">
-                  <div className="cand-details-card" style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: "16px 20px", borderRadius: "10px", marginBottom: "16px" }}>
-                    <h4 style={{ margin: "0 0 8px", fontSize: "0.85rem", textTransform: "uppercase", color: "#64748b", fontWeight: 700 }}>
+                  <div className="cand-details-card">
+                    <h4 className="cand-details-card-title">
                       Professional Summary
                     </h4>
-                    <p style={{ margin: 0, color: "#334155", lineHeight: 1.6, fontSize: "0.95rem" }}>
+                    <p className="cand-summary-text">
                       {candidate.summary || "No professional summary provided by the applicant."}
                     </p>
                   </div>
 
-                  <div className="cand-details-card" style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: "16px 20px", borderRadius: "10px" }}>
-                    <h4 style={{ margin: "0 0 10px", fontSize: "0.85rem", textTransform: "uppercase", color: "#64748b", fontWeight: 700 }}>
+                  <div className="cand-details-card">
+                    <h4 className="cand-details-card-title">
                       Languages Spoken
                     </h4>
                     <div className="jd-tags-wrap">
@@ -594,7 +594,7 @@ export default function ApplicantDetailsModal({
                           <span key={idx} className="js-tag-chip js-tag-skill">{lang}</span>
                         ))
                       ) : (
-                        <span style={{ fontSize: "0.85rem", color: "#94a3b8" }}>No specific languages specified</span>
+                        <span className="cand-empty-muted-text">No specific languages specified</span>
                       )}
                     </div>
                   </div>
@@ -604,8 +604,8 @@ export default function ApplicantDetailsModal({
               {/* TAB 2: CAREER PREFERENCES */}
               {candDetailTab === "preferences" && (
                 <div className="cand-tab-content">
-                  <div className="cand-details-card" style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: "16px 20px", borderRadius: "10px", marginBottom: "16px" }}>
-                    <h4 style={{ margin: "0 0 12px", fontSize: "0.85rem", textTransform: "uppercase", color: "#64748b", fontWeight: 700 }}>
+                  <div className="cand-details-card">
+                    <h4 className="cand-details-card-title">
                       Career Target
                     </h4>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
@@ -639,8 +639,8 @@ export default function ApplicantDetailsModal({
                     </div>
                   </div>
 
-                  <div className="cand-details-card" style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: "16px 20px", borderRadius: "10px", marginBottom: "16px" }}>
-                    <h4 style={{ margin: "0 0 12px", fontSize: "0.85rem", textTransform: "uppercase", color: "#64748b", fontWeight: 700 }}>
+                  <div className="cand-details-card">
+                    <h4 className="cand-details-card-title">
                       Geographic & Discovery Location
                     </h4>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
@@ -659,8 +659,8 @@ export default function ApplicantDetailsModal({
                     </div>
                   </div>
 
-                  <div className="cand-details-card" style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: "16px 20px", borderRadius: "10px" }}>
-                    <h4 style={{ margin: "0 0 10px", fontSize: "0.85rem", textTransform: "uppercase", color: "#64748b", fontWeight: 700 }}>
+                  <div className="cand-details-card">
+                    <h4 className="cand-details-card-title">
                       Preferred Work Locations
                     </h4>
                     <div className="jd-tags-wrap">
@@ -669,7 +669,7 @@ export default function ApplicantDetailsModal({
                           <span key={idx} className="js-tag-chip js-tag-skill">{loc}</span>
                         ))
                       ) : (
-                        <span style={{ fontSize: "0.85rem", color: "#94a3b8" }}>No preferred location restrictions specified</span>
+                        <span className="cand-empty-muted-text">No preferred location restrictions specified</span>
                       )}
                     </div>
                   </div>
@@ -679,8 +679,8 @@ export default function ApplicantDetailsModal({
               {/* TAB 3: SKILLS & CREDENTIALS */}
               {candDetailTab === "competencies" && (
                 <div className="cand-tab-content">
-                  <div className="cand-details-card" style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: "16px 20px", borderRadius: "10px", marginBottom: "16px" }}>
-                    <h4 style={{ margin: "0 0 10px", fontSize: "0.85rem", textTransform: "uppercase", color: "#64748b", fontWeight: 700 }}>
+                  <div className="cand-details-card">
+                    <h4 className="cand-details-card-title">
                       Senior High School & Vocational
                     </h4>
                     <div className="jd-tags-wrap">
@@ -689,13 +689,13 @@ export default function ApplicantDetailsModal({
                           <span key={idx} className="js-tag-chip js-tag-qualification">{q}</span>
                         ))
                       ) : (
-                        <span style={{ fontSize: "0.85rem", color: "#94a3b8" }}>No senior high / vocational records listed</span>
+                        <span className="cand-empty-muted-text">No senior high / vocational records listed</span>
                       )}
                     </div>
                   </div>
 
-                  <div className="cand-details-card" style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: "16px 20px", borderRadius: "10px", marginBottom: "16px" }}>
-                    <h4 style={{ margin: "0 0 10px", fontSize: "0.85rem", textTransform: "uppercase", color: "#64748b", fontWeight: 700 }}>
+                  <div className="cand-details-card">
+                    <h4 className="cand-details-card-title">
                       College & Tertiary Education
                     </h4>
                     <div className="jd-tags-wrap">
@@ -704,13 +704,13 @@ export default function ApplicantDetailsModal({
                           <span key={idx} className="js-tag-chip js-tag-qualification">{q}</span>
                         ))
                       ) : (
-                        <span style={{ fontSize: "0.85rem", color: "#94a3b8" }}>No college / tertiary degree listed</span>
+                        <span className="cand-empty-muted-text">No college / tertiary degree listed</span>
                       )}
                     </div>
                   </div>
 
-                  <div className="cand-details-card" style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: "16px 20px", borderRadius: "10px", marginBottom: "16px" }}>
-                    <h4 style={{ margin: "0 0 10px", fontSize: "0.85rem", textTransform: "uppercase", color: "#64748b", fontWeight: 700 }}>
+                  <div className="cand-details-card">
+                    <h4 className="cand-details-card-title">
                       Core Technical Skills
                     </h4>
                     <div className="jd-tags-wrap">
@@ -719,13 +719,13 @@ export default function ApplicantDetailsModal({
                           <span key={idx} className="js-tag-chip js-tag-skill">{s}</span>
                         ))
                       ) : (
-                        <span style={{ fontSize: "0.85rem", color: "#94a3b8" }}>No technical skills listed</span>
+                        <span className="cand-empty-muted-text">No technical skills listed</span>
                       )}
                     </div>
                   </div>
 
-                  <div className="cand-details-card" style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: "16px 20px", borderRadius: "10px" }}>
-                    <h4 style={{ margin: "0 0 10px", fontSize: "0.85rem", textTransform: "uppercase", color: "#64748b", fontWeight: 700 }}>
+                  <div className="cand-details-card">
+                    <h4 className="cand-details-card-title">
                       Professional Certifications
                     </h4>
                     <div className="jd-tags-wrap">
@@ -734,7 +734,7 @@ export default function ApplicantDetailsModal({
                           <span key={idx} className="js-tag-chip js-tag-certification">{c}</span>
                         ))
                       ) : (
-                        <span style={{ fontSize: "0.85rem", color: "#94a3b8" }}>No certifications listed</span>
+                        <span className="cand-empty-muted-text">No certifications listed</span>
                       )}
                     </div>
                   </div>
@@ -745,14 +745,14 @@ export default function ApplicantDetailsModal({
               {candDetailTab === "experience" && (
                 <div className="cand-tab-content">
                   {candidate.years_of_experience && (
-                    <div style={{ background: "#e0f2fe", border: "1px solid #bae6fd", padding: "12px 16px", borderRadius: "8px", marginBottom: "16px", color: "#0369a1", fontSize: "0.92rem" }}>
+                    <div className="cand-exp-banner">
                       <strong>Total Professional Experience:</strong> {candidate.years_of_experience}
                     </div>
                   )}
 
                   {parsedWorkExp.length === 0 ? (
-                    <div className="cand-exp-empty-card" style={{ textAlign: "center", padding: "36px 20px", borderRadius: "10px" }}>
-                      <p style={{ margin: 0, color: "#64748b", fontSize: "0.9rem" }}>
+                    <div className="cand-exp-empty-card">
+                      <p className="cand-exp-empty-text">
                         No employment history entries added by the applicant.
                       </p>
                     </div>
@@ -762,13 +762,13 @@ export default function ApplicantDetailsModal({
                         <div key={exp.id || idx} className="cand-exp-item-card">
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px", flexWrap: "wrap", gap: "8px" }}>
                             <div>
-                              <h4 style={{ margin: "0 0 2px", fontSize: "1rem", color: "#0f172a" }}>{exp.title}</h4>
-                              <span style={{ fontSize: "0.88rem", color: "#64748b", fontWeight: 600 }}>{exp.company}</span>
+                              <h4 className="cand-exp-title">{exp.title}</h4>
+                              <span className="cand-exp-company">{exp.company}</span>
                               {(exp.city || exp.province) && (
-                                <span style={{ fontSize: "0.84rem", color: "#94a3b8" }}> • {[exp.city, exp.province].filter(Boolean).join(", ")}</span>
+                                <span className="cand-exp-loc"> • {[exp.city, exp.province].filter(Boolean).join(", ")}</span>
                               )}
                             </div>
-                            <div style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>
+                            <div className="cand-exp-date">
                               {exp.isCurrent
                                 ? `${exp.startMonth || ""} ${exp.startYear || ""} - Present`
                                 : `${exp.startMonth || ""} ${exp.startYear || ""} - ${exp.endMonth || ""} ${exp.endYear || ""}`}
@@ -778,7 +778,7 @@ export default function ApplicantDetailsModal({
                             </div>
                           </div>
                           {exp.responsibilities && (
-                            <p style={{ margin: "8px 0 0", color: "#475569", fontSize: "0.88rem", whiteSpace: "pre-line", lineHeight: 1.5 }}>
+                            <p className="cand-exp-responsibilities">
                               {exp.responsibilities}
                             </p>
                           )}
@@ -859,8 +859,8 @@ export default function ApplicantDetailsModal({
           {/* Modal Footer */}
           <div className="cand-details-footer" style={{ display: "flex", justifyContent: candidate.job_title ? "space-between" : "flex-end", alignItems: "center", width: "100%", gap: "10px" }}>
             {candidate.job_title && (
-              <span style={{ fontSize: "0.88rem", color: "#64748b" }}>
-                Target Job: <strong style={{ color: "inherit" }}>{candidate.job_title}</strong>
+              <span className="cand-footer-target-job">
+                Target Job: <strong>{candidate.job_title}</strong>
               </span>
             )}
             <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>

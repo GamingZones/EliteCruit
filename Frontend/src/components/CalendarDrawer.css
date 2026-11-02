@@ -3235,7 +3235,7 @@
 }
 
 [data-theme="dark"] .cand-summary-text {
-  color: #cbd5e1 !important;
+  color: #e2e8f0 !important;
 }
 
 [data-theme="dark"] .jd-body-wrapper {
@@ -3461,7 +3461,8 @@
   color: #38bdf8 !important;
 }
 
-[data-theme="dark"] .cand-work-exp-card {
+[data-theme="dark"] .cand-work-exp-card,
+[data-theme="dark"] .cand-exp-item-card {
   background: #1c1e27 !important;
   border-color: #2e3244 !important;
   color: #cbd5e1 !important;
@@ -3477,6 +3478,7 @@
 
 [data-theme="dark"] .cand-exp-loc,
 [data-theme="dark"] .cand-exp-period,
+[data-theme="dark"] .cand-exp-date,
 [data-theme="dark"] .cand-exp-skills-label {
   color: #94a3b8 !important;
 }
@@ -3487,8 +3489,9 @@
   color: #cbd5e1 !important;
 }
 
-[data-theme="dark"] .cand-exp-bullet-line {
-  color: #cbd5e1 !important;
+[data-theme="dark"] .cand-exp-bullet-line,
+[data-theme="dark"] .cand-exp-responsibilities {
+  color: #e2e8f0 !important;
 }
 
 /* Ensure Standalone Applicant Details Modal is strictly elevated above Meeting Candidate List modal */

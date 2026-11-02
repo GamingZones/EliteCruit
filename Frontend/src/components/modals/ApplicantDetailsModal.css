@@ -937,6 +937,60 @@
   color: #0284c7;
 }
 
+/* Candidate Details Card & Content Base Styles */
+.cand-details-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 16px 20px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.cand-details-card:last-child {
+  margin-bottom: 0;
+}
+
+.cand-details-card-title {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  color: #64748b;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.cand-summary-text {
+  margin: 0;
+  color: #334155;
+  line-height: 1.6;
+  font-size: 0.95rem;
+  white-space: pre-wrap;
+}
+
+.cand-empty-muted-text {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.cand-footer-target-job {
+  font-size: 0.88rem;
+  color: #64748b;
+}
+
+.cand-footer-target-job strong {
+  color: #0f172a;
+}
+
+.cand-exp-banner {
+  background: #e0f2fe;
+  border: 1px solid #bae6fd;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  color: #0369a1;
+  font-size: 0.92rem;
+}
+
 .cand-exp-item-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -945,15 +999,53 @@
   transition: all 0.2s ease;
 }
 
-.cand-exp-item-card h4 {
+.cand-exp-item-card h4,
+.cand-exp-title {
   margin: 0 0 2px;
   font-size: 1rem;
   color: #0f172a;
+  font-weight: 700;
+}
+
+.cand-exp-company {
+  font-size: 0.88rem;
+  color: #0284c7;
+  font-weight: 600;
+}
+
+.cand-exp-loc {
+  font-size: 0.84rem;
+  color: #64748b;
+}
+
+.cand-exp-date {
+  font-size: 0.82rem;
+  color: #64748b;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+.cand-exp-responsibilities {
+  margin: 8px 0 0;
+  color: #334155;
+  font-size: 0.88rem;
+  white-space: pre-line;
+  line-height: 1.5;
 }
 
 .cand-exp-empty-card {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
+  text-align: center;
+  padding: 36px 20px;
+  border-radius: 10px;
+}
+
+.cand-exp-empty-text {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
 }
 
 .other-job-item-card {
@@ -1029,18 +1121,74 @@
 }
 
 /* ── Dark Theme Overrides for Cards & Side Panels ── */
+[data-theme="dark"] .cand-details-card {
+  background: #14151b !important;
+  border: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .cand-details-card-title {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .cand-summary-text {
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .cand-empty-muted-text {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .cand-footer-target-job {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .cand-footer-target-job strong {
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .cand-exp-banner {
+  background: rgba(2, 132, 199, 0.15) !important;
+  border: 1px solid rgba(56, 189, 248, 0.3) !important;
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .cand-exp-banner strong {
+  color: #7dd3fc !important;
+}
+
 [data-theme="dark"] .cand-exp-item-card {
   background: #14151b !important;
   border: 1px solid #2e3244 !important;
 }
 
-[data-theme="dark"] .cand-exp-item-card h4 {
+[data-theme="dark"] .cand-exp-item-card h4,
+[data-theme="dark"] .cand-exp-title {
   color: #ffffff !important;
+}
+
+[data-theme="dark"] .cand-exp-company {
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .cand-exp-loc {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .cand-exp-date {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .cand-exp-responsibilities {
+  color: #e2e8f0 !important;
 }
 
 [data-theme="dark"] .cand-exp-empty-card {
   background: #14151b !important;
   border: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .cand-exp-empty-text {
+  color: #94a3b8 !important;
 }
 
 [data-theme="dark"] .other-job-item-card {
