@@ -3726,6 +3726,113 @@
   transform: translateY(-1px);
 }
 
+/* ── Standalone Other Employer Jobs Modal (when clicking Invite on candidate card) ── */
+.standalone-other-jobs-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 45000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(1, 41, 74, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+.standalone-other-jobs-modal {
+  width: 480px;
+  max-width: min(480px, calc(100vw - 32px));
+  max-height: 85vh;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: "Inter", sans-serif;
+  animation: jdModalScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+[data-theme="dark"] .standalone-other-jobs-overlay {
+  background: rgba(0, 0, 0, 0.65) !important;
+}
+
+[data-theme="dark"] .standalone-other-jobs-modal {
+  background: #1c1e27 !important;
+  border: 1px solid #2e3244 !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="dark"] .standalone-other-jobs-modal .jd-side-panel-header {
+  background: #14151b !important;
+  border-bottom: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .standalone-other-jobs-modal .jd-side-panel-header h3 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .standalone-other-jobs-modal .jd-side-subtitle {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .standalone-other-jobs-modal .jd-side-close-btn {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .standalone-other-jobs-modal .jd-side-close-btn:hover {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .standalone-other-jobs-modal .jd-side-panel-body {
+  background: #1c1e27 !important;
+}
+
+[data-theme="dark"] .standalone-other-jobs-modal .jd-other-job-card {
+  background: #14161f !important;
+  border: 1px solid #2b3040 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .standalone-other-jobs-modal .jd-other-job-card:hover {
+  border-color: #3b4259 !important;
+}
+
+[data-theme="dark"] .standalone-other-jobs-modal .jd-other-job-card h4 {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .standalone-other-jobs-modal .jd-other-job-meta,
+[data-theme="dark"] .standalone-other-jobs-modal .jd-other-job-meta span {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .standalone-other-jobs-modal .jd-other-job-match-pill.green {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+}
+
+[data-theme="dark"] .standalone-other-jobs-modal .jd-other-job-match-pill.yellow {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
+
+[data-theme="dark"] .standalone-other-jobs-modal .jd-other-job-match-pill.red {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+[data-theme="dark"] .standalone-other-jobs-modal .jd-other-job-details-btn {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .standalone-other-jobs-modal .jd-other-job-details-btn:hover {
+  background: #0369a1 !important;
+}
+
 /* ==========================================================================
    PHONE & MOBILE UI ADJUSTMENTS (max-width: 768px)
    Scope: Applied STRICTLY to phones/mobile screens; desktop/laptop UI is 100% untouched.

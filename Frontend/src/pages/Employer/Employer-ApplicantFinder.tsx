@@ -1556,6 +1556,7 @@ export default function EmployerApplicantFinder() {
 
   // Invite to Apply Modal
   const [inviteCandidate, setInviteCandidate] = useState<Candidate | null>(null);
+  const [inviteJobsCandidate, setInviteJobsCandidate] = useState<Candidate | null>(null);
   const [selectedJobId, setSelectedJobId] = useState<number | "">("");
   const [jobCarouselIndex, setJobCarouselIndex] = useState(0);
   const [viewingJobDetails, setViewingJobDetails] = useState<ActiveJob | null>(null);
@@ -1773,13 +1774,15 @@ export default function EmployerApplicantFinder() {
       return;
     }
 
-    setSelectedCandidate(cand);
+    // Open ONLY the standalone Other Employer Jobs modal (Image 1)
+    setInviteJobsCandidate(cand);
+    setSelectedCandidate(null);
+    setIsOtherJobsOpen(false);
+    setIsOtherJobsClosing(false);
     setIsDocsDrawerOpen(false);
     setIsPreviewingDoc(false);
     setIsMatchDrawerOpen(false);
     setIsMessagePanelOpen(false);
-    setIsOtherJobsOpen(true);
-    setIsOtherJobsClosing(false);
   };
 
   const handleSendCandidateMessage = async (e?: React.FormEvent) => {
@@ -5205,6 +5208,145 @@ export default function EmployerApplicantFinder() {
       </div>
     )}
 
+        {/* ── STANDALONE OTHER EMPLOYER JOBS MODAL (Image 1 - triggered by clicking Invite on candidate card) ── */}
+        {inviteJobsCandidate && !viewingJobDetails && !inviteCandidate && (
+          <div
+            className="standalone-other-jobs-overlay"
+            onClick={() => setInviteJobsCandidate(null)}
+          >
+            <div
+              className="standalone-other-jobs-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="jd-side-panel-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px" }}>
+                <div className="jd-side-title-row">
+                  <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800 }}>Other Employer Jobs</h3>
+                  <span className="jd-side-subtitle" style={{ fontSize: "0.82rem", fontWeight: 600 }}>Candidate compatibility across your active job postings</span>
+                </div>
+                <div className="jd-side-header-actions">
+                  <button
+                    type="button"
+                    className="jd-side-close-btn"
+                    aria-label="Close panel"
+                    onClick={() => setInviteJobsCandidate(null)}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              <div className="jd-side-panel-body" style={{ display: "flex", flexDirection: "column", gap: "14px", padding: "18px", overflowY: "auto", flex: 1 }}>
+                {(() => {
+                  if (activeJobs.length === 0) {
+                    return (
+                      <div style={{ textAlign: "center", color: "#64748b", padding: "30px 10px", fontSize: "0.9rem" }}>
+                        No active job postings found for this employer.
+                      </div>
+                    );
+                  }
+
+                  return activeJobs.map((otherJob: any) => {
+                    const percent = calculateCandidateMatch(
+                      {
+                        desired_job_title: inviteJobsCandidate.desired_job_title || "",
+                        work_arrangement: inviteJobsCandidate.work_arrangement || "",
+                        expected_salary: inviteJobsCandidate.expected_salary || 0,
+                        skills: inviteJobsCandidate.skills || "",
+                        qualifications: inviteJobsCandidate.qualifications || "",
+                        certifications: inviteJobsCandidate.certifications || "",
+                        city: inviteJobsCandidate.city || inviteJobsCandidate.address || "",
+                      },
+                      {
+                        title: otherJob.title || "",
+                        work_arrangement: otherJob.work_arrangement || "",
+                        required_skills: otherJob.required_skills || "",
+                        required_qualifications: otherJob.qualifications || otherJob.required_qualifications || "",
+                        required_certifications: otherJob.certifications || otherJob.required_certifications || "",
+                        location: otherJob.location || "",
+                        salary_min: Number(otherJob.salary_min) || 0,
+                        salary_max: Number(otherJob.salary_max) || 0,
+                      }
+                    );
+
+                    return (
+                      <div
+                        key={otherJob.id}
+                        className="jd-other-job-card"
+                        style={{
+                          borderRadius: "12px",
+                          padding: "16px",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          gap: "12px",
+                        }}
+                      >
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800 }}>
+                            {otherJob.title}
+                          </h4>
+                          <div className="jd-other-job-meta" style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginTop: "2px", fontSize: "0.8rem", fontWeight: 600 }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" />
+                                <circle cx="12" cy="10" r="2.5" />
+                              </svg>
+                              {otherJob.location || "Cavite"}
+                            </span>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                              </svg>
+                              {otherJob.work_arrangement || "On-Site"}
+                            </span>
+                            {otherJob.salary_min ? (
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                                PHP {Number(otherJob.salary_min).toLocaleString()} - {Number(otherJob.salary_max).toLocaleString()}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px", flexShrink: 0 }}>
+                          <span
+                            className={`jd-other-job-match-pill ${percent >= 80 ? "green" : percent >= 50 ? "yellow" : "red"}`}
+                          >
+                            {percent}% Match
+                          </span>
+                          <button
+                            type="button"
+                            className="details-btn jd-other-job-details-btn"
+                            style={{
+                              fontWeight: 800,
+                              fontSize: "0.84rem",
+                              padding: "6px 22px",
+                              borderRadius: "999px",
+                              border: "none",
+                              whiteSpace: "nowrap",
+                              cursor: "pointer",
+                              boxShadow: "0 2px 8px rgba(2, 132, 199, 0.3)",
+                              transition: "all 0.15s ease",
+                              minWidth: "85px",
+                              textAlign: "center",
+                            }}
+                            onClick={() => {
+                              setViewingJobDetails(otherJob);
+                              setIsMatchDrawerOpen(false);
+                            }}
+                          >
+                            Details
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* INVITE / RECRUIT CONFIRMATION MODAL */}
         {inviteCandidate && (
           <div className="cand-details-overlay" style={{ zIndex: 12000 }} onClick={() => setInviteCandidate(null)}>
@@ -5344,7 +5486,7 @@ export default function EmployerApplicantFinder() {
         {/* ── 3rd & 4th Floating Containers: Job Details (LEFT) & Match Breakdown (RIGHT) Side-by-Side Overlay ── */}
         {(viewingJobDetails || isJobDetailsClosing) && viewingJobDetails && (
           (() => {
-            const targetCandidate = inviteCandidate || selectedCandidate;
+            const targetCandidate = inviteCandidate || selectedCandidate || inviteJobsCandidate;
             const detailsMatchPct = targetCandidate ? calculateCandidateMatch(targetCandidate, viewingJobDetails) : 0;
             const matchStyle = detailsMatchPct >= 85
               ? { track: "#dcfce7", color: "#15803d", fill: "#86efac" }
@@ -5613,6 +5755,7 @@ export default function EmployerApplicantFinder() {
                           openInviteModal(targetCandidate, viewingJobDetails.id);
                         }
                         setInviteSuccessMsg("");
+                        setInviteJobsCandidate(null);
                         handleCloseJobDetails();
                       }}
                     >
