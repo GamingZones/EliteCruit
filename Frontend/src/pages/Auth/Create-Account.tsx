@@ -576,6 +576,40 @@ export default function CreateAccount() {
                 </div>
               </div>
 
+              <div className="form-row two-col">
+                <div className="form-field">
+                  <label htmlFor="employerProvince">Province</label>
+                  <select
+                    id="employerProvince"
+                    name="province"
+                    value={formData.province}
+                    onChange={handleProvinceChange}
+                  >
+                    {ALL_PHILIPPINES_PROVINCES.map((prov) => (
+                      <option key={prov} value={prov}>
+                        {prov}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-field">
+                  <label htmlFor="employerCity">City / Municipality</label>
+                  <select
+                    id="employerCity"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                  >
+                    {getCitiesByProvince(formData.province).map((city) => (
+                      <option key={city} value={city}>
+                        {city}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <div className="form-row one-col">
                 <div className="form-field">
                   <label htmlFor="employerEmail">Email Address</label>
@@ -608,40 +642,6 @@ export default function CreateAccount() {
                       </button>
                     )}
                   </div>
-                </div>
-              </div>
-
-              <div className="form-row two-col">
-                <div className="form-field">
-                  <label htmlFor="employerProvince">Province</label>
-                  <select
-                    id="employerProvince"
-                    name="province"
-                    value={formData.province}
-                    onChange={handleProvinceChange}
-                  >
-                    {ALL_PHILIPPINES_PROVINCES.map((prov) => (
-                      <option key={prov} value={prov}>
-                        {prov}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-field">
-                  <label htmlFor="employerCity">City / Municipality</label>
-                  <select
-                    id="employerCity"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleChange}
-                  >
-                    {getCitiesByProvince(formData.province).map((city) => (
-                      <option key={city} value={city}>
-                        {city}
-                      </option>
-                    ))}
-                  </select>
                 </div>
               </div>
             </>
