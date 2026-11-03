@@ -3777,29 +3777,28 @@ export default function EmployerApplicantFinder() {
 
                     const currentActiveJob = selectedJobId ? activeJobs.find((j) => j.id === selectedJobId) || null : null;
                     const matchPercent = (() => {
+                      const candInput = {
+                        desired_job_title: cand.desired_job_title || "",
+                        work_arrangement: cand.work_arrangement || "",
+                        expected_salary: cand.expected_salary || 0,
+                        skills: cand.skills || "",
+                        qualifications: cand.qualifications || "",
+                        certifications: cand.certifications || "",
+                        city: cand.city || cand.address || "",
+                        preferred_locations: cand.preferred_locations || "",
+                      };
                       if (currentActiveJob) {
-                        return calculateCandidateMatch(
-                          {
-                            desired_job_title: cand.desired_job_title || "",
-                            work_arrangement: cand.work_arrangement || "",
-                            expected_salary: cand.expected_salary || 0,
-                            skills: cand.skills || "",
-                            qualifications: cand.qualifications || "",
-                            certifications: cand.certifications || "",
-                            city: cand.city || cand.address || "",
-                          },
-                          currentActiveJob
-                        );
+                        return calculateCandidateMatch(candInput, currentActiveJob);
                       }
-                      let score = 75;
-                      if (cand.profile_picture_path) score += 5;
-                      if (cand.resume_path) score += 5;
-                      if (cand.rating) score += Math.round(Number(cand.rating) * 2);
-                      const qL = parseItemList(cand.qualifications, []);
-                      if (qL.length > 0) score += 5;
-                      const sL = parseItemList(cand.skills, []);
-                      if (sL.length >= 3) score += 5;
-                      return Math.min(99, Math.max(60, score));
+                      if (activeJobs.length > 0) {
+                        let best = 0;
+                        for (const j of activeJobs) {
+                          const s = calculateCandidateMatch(candInput, j);
+                          if (s > best) best = s;
+                        }
+                        return best;
+                      }
+                      return 0;
                     })();
                     const matchClass = matchPercent >= 85 ? "high" : matchPercent >= 70 ? "med" : "low";
 
@@ -4140,6 +4139,32 @@ export default function EmployerApplicantFinder() {
                   const isInvited = invitedCandidateIds.includes(cand.user_id) || Number(cand.invited_count || 0) > 0;
                   const skillsList = parseItemList(cand.skills, []);
                   const certList = parseItemList(cand.certifications, []);
+                  const currentActiveJob = selectedJobId ? activeJobs.find((j) => j.id === selectedJobId) || null : null;
+                  const matchPercent = (() => {
+                    const candInput = {
+                      desired_job_title: cand.desired_job_title || "",
+                      work_arrangement: cand.work_arrangement || "",
+                      expected_salary: cand.expected_salary || 0,
+                      skills: cand.skills || "",
+                      qualifications: cand.qualifications || "",
+                      certifications: cand.certifications || "",
+                      city: cand.city || cand.address || "",
+                      preferred_locations: cand.preferred_locations || "",
+                    };
+                    if (currentActiveJob) {
+                      return calculateCandidateMatch(candInput, currentActiveJob);
+                    }
+                    if (activeJobs.length > 0) {
+                      let best = 0;
+                      for (const j of activeJobs) {
+                        const s = calculateCandidateMatch(candInput, j);
+                        if (s > best) best = s;
+                      }
+                      return best;
+                    }
+                    return 0;
+                  })();
+                  const matchClass = matchPercent >= 85 ? "high" : matchPercent >= 70 ? "med" : "low";
 
                   return (
                     <article key={cand.user_id} className="finder-card">
@@ -4167,6 +4192,11 @@ export default function EmployerApplicantFinder() {
                                 <span className="finder-star-pill">
                                   <span className="star-icon">★</span> {cand.rating ? Number(cand.rating).toFixed(1) : "0.0"}
                                 </span>
+                                {(currentActiveJob || activeJobs.length > 0) && matchPercent > 0 && (
+                                  <span className={`finder-match-pill ${matchClass}`}>
+                                    {matchPercent}% Match
+                                  </span>
+                                )}
                               </div>
                               <div className="finder-candidate-meta-inline">
                                 <span className="finder-meta-inline-item">

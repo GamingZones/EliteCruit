@@ -861,9 +861,9 @@ export default function Messages() {
                       workArrangement: p.work_arrangement || "",
                       expectedSalary: parseExpectedSalary(p.expected_salary),
                       city: p.city || "",
-                      skills: parseCompetencyDisplayTags(p.skills),
-                      qualifications: parseCompetencyDisplayTags(p.qualifications),
-                      certifications: parseCompetencyDisplayTags(p.certifications),
+                      skills: parseCompetencyDisplayTags(p.skills, "skills"),
+                      qualifications: parseCompetencyDisplayTags(p.qualifications, "qualifications"),
+                      certifications: parseCompetencyDisplayTags(p.certifications, "certifications"),
                     }
                   );
                   calculatedScore = matchInfo.score;
@@ -3585,9 +3585,9 @@ export default function Messages() {
               {/* ── Picture 1: Match Breakdown Drawer (Right Container) ── */}
               {isMatchDrawerOpen && targetCandidate && (
                 (() => {
-                  const candSkills = parseCompetencyDisplayTags(targetCandidate.skills || "");
-                  const candQuals = parseCompetencyDisplayTags(targetCandidate.qualifications || "");
-                  const candCerts = parseCompetencyDisplayTags(targetCandidate.certifications || "");
+                  const candSkills = parseCompetencyDisplayTags(targetCandidate.skills || "", "skills");
+                  const candQuals = parseCompetencyDisplayTags(targetCandidate.qualifications || "", "qualifications");
+                  const candCerts = parseCompetencyDisplayTags(targetCandidate.certifications || "", "certifications");
                   const candCity = formatLocationWithCavite(targetCandidate.city || "Cavite");
                   const candSetup = targetCandidate.work_arrangement || "On-Site";
                   const candSalary = targetCandidate.expected_salary || "";
@@ -3601,9 +3601,9 @@ export default function Messages() {
                     return String(candSalary).toUpperCase().includes("PHP") ? String(candSalary) : `PHP ${Number(parseExpectedSalary(candSalary)).toLocaleString()}`;
                   })();
 
-                  const jobSkills = parseCompetencyDisplayTags(employerViewingJob.required_skills || employerViewingJob.skills || "");
-                  const jobQuals = parseCompetencyDisplayTags(employerViewingJob.qualifications || employerViewingJob.required_qualifications || "");
-                  const jobCerts = parseCompetencyDisplayTags(employerViewingJob.certifications || employerViewingJob.required_certifications || "");
+                  const jobSkills = parseCompetencyDisplayTags(employerViewingJob.required_skills || employerViewingJob.skills || "", "skills");
+                  const jobQuals = parseCompetencyDisplayTags(employerViewingJob.qualifications || employerViewingJob.required_qualifications || "", "qualifications");
+                  const jobCerts = parseCompetencyDisplayTags(employerViewingJob.certifications || employerViewingJob.required_certifications || "", "certifications");
                   const jobSalaryDisplay = (jobSalaryMin || jobSalaryMax) ? `PHP ${jobSalaryMin.toLocaleString()} - ${jobSalaryMax.toLocaleString()}` : "Market Rate";
 
                   const matchDetails = calculateJobMatchDetails(

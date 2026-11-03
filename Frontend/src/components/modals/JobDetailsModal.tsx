@@ -706,28 +706,26 @@ export default function JobDetailsModal({
   const descriptionText = job?.summary || job?.description || "No job description provided.";
   const ratingText = job?.rating ? Number(job.rating).toFixed(1) : "0.0";
 
-  const parseTags = (data: any): string[] => {
+  const parseTags = (data: any, category?: "skills" | "qualifications" | "certifications"): string[] => {
     if (!data) return [];
     if (Array.isArray(data)) {
-      return data
-        .map((item) => (typeof item === "object" && item !== null && item.name ? String(item.name) : String(item).trim()))
-        .filter(Boolean);
+      return parseCompetencyDisplayTags(data, category);
     }
-    return parseCompetencyDisplayTags(String(data));
+    return parseCompetencyDisplayTags(String(data), category);
   };
 
   const skills = useMemo(() => {
-    const list = job?.skillTags && job.skillTags.length > 0 ? job.skillTags : parseTags(job?.required_skills);
+    const list = job?.skillTags && job.skillTags.length > 0 ? job.skillTags : parseTags(job?.required_skills, "skills");
     return list.filter((s) => s && s.trim().toLowerCase() !== "not provided");
   }, [job]);
 
   const cleanQualifications = useMemo(() => {
-    const list = job?.qualTags && job.qualTags.length > 0 ? job.qualTags : parseTags(job?.qualifications || (job as any)?.required_qualifications);
+    const list = job?.qualTags && job.qualTags.length > 0 ? job.qualTags : parseTags(job?.qualifications || (job as any)?.required_qualifications, "qualifications");
     return list.filter((q) => q && q.trim().toLowerCase() !== "not provided");
   }, [job]);
 
   const cleanCertifications = useMemo(() => {
-    const list = job?.certTags && job.certTags.length > 0 ? job.certTags : parseTags(job?.certifications || (job as any)?.required_certifications);
+    const list = job?.certTags && job.certTags.length > 0 ? job.certTags : parseTags(job?.certifications || (job as any)?.required_certifications, "certifications");
     return list.filter((c) => c && c.trim().toLowerCase() !== "not provided");
   }, [job]);
 

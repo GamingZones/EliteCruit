@@ -9,6 +9,9 @@ import {
   calculateJobMatchDetails,
   calculateCandidateMatch,
   getMatchColorClass,
+  parseCompetencyDisplayTags,
+  parseExpectedSalary,
+  parseItemList,
 } from "../../utils/filters";
 
 export type BreakdownCourseSkillItem = {
@@ -667,11 +670,14 @@ export default function EmployerApplicantDetailsModal({
     .slice(0, 2)
     .toUpperCase();
 
-  const allQuals = parseItemList(candidate.qualifications, []);
+  const candSkills = parseCompetencyDisplayTags(candidate.skills, "skills");
+  const candQuals = parseCompetencyDisplayTags(candidate.qualifications, "qualifications");
+  const candCerts = parseCompetencyDisplayTags(candidate.certifications, "certifications");
+  const allQuals = candQuals;
   const shsList = allQuals.filter(isShsItem);
   const collegeList = allQuals.filter((q) => !isShsItem(q));
-  const skillsList = parseItemList(candidate.skills, []);
-  const certList = parseItemList(candidate.certifications, []);
+  const skillsList = candSkills;
+  const certList = candCerts;
   const langList = parseItemList(candidate.languages, []);
   const prefLocs = parseItemList(candidate.preferred_locations, []);
 
@@ -683,30 +689,32 @@ export default function EmployerApplicantDetailsModal({
     } catch {}
   }
 
-  const candSkills = skillsList;
-  const candQuals = allQuals;
-  const candCerts = certList;
   const targetJobTitle = candidate.job_title || candidate.desired_job_title || "Job Position";
-  const targetJob = (employerJobs || []).find(
-    (j) => j.title.toLowerCase() === targetJobTitle.toLowerCase()
-  ) || {
-    id: 1,
-    title: targetJobTitle,
-    location: locationStr,
-    work_arrangement: candidate.work_arrangement || "On-Site",
-  };
-  const jobSkills = parseItemList(
-    (targetJob as any).required_skills || (targetJob as any).skills,
-    candSkills.length > 0 ? candSkills.slice(0, 5) : ["Frontend Development", "UI/UX Design", "React", "TypeScript", "HTML/CSS"]
-  );
-  const jobQuals = parseItemList(
-    (targetJob as any).qualifications,
-    candQuals.length > 0 ? candQuals.slice(0, 2) : ["BS in Information Technology or Computer Science"]
-  );
-  const jobCerts = parseItemList(
-    (targetJob as any).certifications,
-    []
-  );
+  const candidateJobId = (candidate as any).job_id ?? (candidate as any).job_post_id;
+  const targetJob =
+    (employerJobs || []).find((j) => candidateJobId && Number(j.id) === Number(candidateJobId)) ||
+    (employerJobs || []).find((j) => j.title && targetJobTitle && j.title.toLowerCase().trim() === targetJobTitle.toLowerCase().trim()) ||
+    (employerJobs || []).find((j) => j.title && targetJobTitle && (j.title.toLowerCase().includes(targetJobTitle.toLowerCase()) || targetJobTitle.toLowerCase().includes(j.title.toLowerCase()))) ||
+    null;
+
+  const jobSkills = targetJob
+    ? parseCompetencyDisplayTags(
+        (targetJob as any).skillTags || (targetJob as any).required_skills || (targetJob as any).skills,
+        "skills"
+      )
+    : [];
+  const jobQuals = targetJob
+    ? parseCompetencyDisplayTags(
+        (targetJob as any).qualTags || (targetJob as any).qualifications || (targetJob as any).required_qualifications,
+        "qualifications"
+      )
+    : [];
+  const jobCerts = targetJob
+    ? parseCompetencyDisplayTags(
+        (targetJob as any).certTags || (targetJob as any).certifications || (targetJob as any).required_certifications,
+        "certifications"
+      )
+    : [];
 
   const groupedBreakdownSkills = useMemo(() => {
     return parseBreakdownSkillItems(
@@ -724,11 +732,11 @@ export default function EmployerApplicantDetailsModal({
 
   const matchDetails = calculateJobMatchDetails(
     {
-      id: Number(targetJob.id) || 1,
-      title: targetJob.title,
-      location: targetJob.location || "Cavite",
-      salaryMin: 25000,
-      setup: targetJob.work_arrangement || "On-Site",
+      id: Number(targetJob?.id) || 1,
+      title: targetJob?.title || targetJobTitle,
+      location: targetJob?.location || locationStr,
+      salaryMin: Number(targetJob?.salary_min) || 0,
+      setup: targetJob?.work_arrangement || candidate.work_arrangement || "On-Site",
       skillTags: jobSkills,
       qualTags: jobQuals,
       certTags: jobCerts,
@@ -736,7 +744,7 @@ export default function EmployerApplicantDetailsModal({
     {
       desiredJobTitle: candidate.desired_job_title || candidate.job_title || "",
       workArrangement: candidate.work_arrangement || "On-Site",
-      expectedSalary: candidate.expected_salary ? Number(candidate.expected_salary) : 30000,
+      expectedSalary: candidate.expected_salary ? parseExpectedSalary(candidate.expected_salary) : 0,
       city: candidate.city || "Cavite",
       skills: candSkills,
       qualifications: candQuals,
@@ -1200,21 +1208,24 @@ export default function EmployerApplicantDetailsModal({
                 <span className="star-icon">★</span>
                 <span>{candidate.rating ? Number(candidate.rating).toFixed(1) : "0.0"}</span>
               </div>
-              {candidate.match_percentage != null && (
-                <div
-                  className={`match-score-box ${
-                    Number(candidate.match_percentage) >= 80
-                      ? "green"
-                      : Number(candidate.match_percentage) >= 50
-                      ? "yellow"
-                      : "orange"
-                  }`}
-                  title="Match score"
-                >
-                  <small>MATCH</small>
-                  <b>{candidate.match_percentage}%</b>
-                </div>
-              )}
+              {(() => {
+                const scoreToShow = candidate.match_percentage != null ? Number(candidate.match_percentage) : matchDetails.score;
+                return (
+                  <div
+                    className={`match-score-box ${
+                      scoreToShow >= 80
+                        ? "green"
+                        : scoreToShow >= 50
+                        ? "yellow"
+                        : "orange"
+                    }`}
+                    title="Match score"
+                  >
+                    <small>MATCH</small>
+                    <b>{scoreToShow}%</b>
+                  </div>
+                );
+              })()}
               <button
                 type="button"
                 className={`cand-details-docs-btn ${isDocsDrawerOpen ? "active" : ""}`}

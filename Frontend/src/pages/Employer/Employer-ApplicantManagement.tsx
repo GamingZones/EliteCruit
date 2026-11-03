@@ -823,13 +823,20 @@ function getMatchPercent(app: Application, profileOverride?: any, jobsMap?: Reco
       qualifications: candSource.qualifications || app.qualifications || "",
       certifications: candSource.certifications || app.certifications || "",
       city: candSource.city || app.city || "",
+      preferred_locations: candSource.preferred_locations || app.preferred_locations || "",
     },
     {
       title: jobSource.title || app.job_title || "",
       work_arrangement: jobSource.work_arrangement || app.job_work_arrangement || "",
-      required_skills: jobSource.required_skills || app.job_required_skills || "",
+      required_skills: jobSource.required_skills || jobSource.skills || app.job_required_skills || "",
+      skills: jobSource.skills || jobSource.required_skills || app.job_required_skills || "",
       required_qualifications: jobSource.qualifications || jobSource.required_qualifications || app.job_required_qualifications || "",
+      qualifications: jobSource.qualifications || jobSource.required_qualifications || app.job_required_qualifications || "",
       required_certifications: jobSource.certifications || jobSource.required_certifications || app.job_required_certifications || "",
+      certifications: jobSource.certifications || jobSource.required_certifications || app.job_required_certifications || "",
+      skillTags: jobSource.skillTags,
+      qualTags: jobSource.qualTags,
+      certTags: jobSource.certTags,
       location: jobSource.location || app.job_location || "",
       salary_min: Number(jobSource.salary_min) || Number(app.job_salary_min) || 0,
       salary_max: Number(jobSource.salary_max) || Number(app.job_salary_max) || 0,
@@ -866,17 +873,17 @@ function getAppMatchDetails(app: Application, profileOverride?: any, jobsMap?: R
   const candCity = candSource.city || app.city || "Cavite";
   const candSetup = candSource.work_arrangement || app.work_arrangement || "Any";
   const candSalary = candSource.expected_salary || app.expected_salary;
-  const candSkills = parseCompetencyDisplayTags(candSource.skills || app.skills);
-  const candQuals = parseCompetencyDisplayTags(candSource.qualifications || app.qualifications);
-  const candCerts = parseCompetencyDisplayTags(candSource.certifications || app.certifications);
+  const candSkills = parseCompetencyDisplayTags(candSource.skills || app.skills, "skills");
+  const candQuals = parseCompetencyDisplayTags(candSource.qualifications || app.qualifications, "qualifications");
+  const candCerts = parseCompetencyDisplayTags(candSource.certifications || app.certifications, "certifications");
 
   const jobLocation = jobSource.location || app.job_location || "Cavite";
   const jobSetup = jobSource.work_arrangement || app.job_work_arrangement || "On-Site";
   const jobSalaryMin = Number(jobSource.salary_min) || Number(app.job_salary_min) || 0;
   const jobSalaryMax = Number(jobSource.salary_max) || Number(app.job_salary_max) || 0;
-  const jobSkills = parseCompetencyDisplayTags(jobSource.required_skills || app.job_required_skills);
-  const jobQuals = parseCompetencyDisplayTags(jobSource.qualifications || jobSource.required_qualifications || app.job_required_qualifications);
-  const jobCerts = parseCompetencyDisplayTags(jobSource.certifications || jobSource.required_certifications || app.job_required_certifications);
+  const jobSkills = parseCompetencyDisplayTags(jobSource.required_skills || jobSource.skills || app.job_required_skills, "skills");
+  const jobQuals = parseCompetencyDisplayTags(jobSource.qualifications || jobSource.required_qualifications || app.job_required_qualifications, "qualifications");
+  const jobCerts = parseCompetencyDisplayTags(jobSource.certifications || jobSource.required_certifications || app.job_required_certifications, "certifications");
 
   return calculateJobMatchDetails(
     {

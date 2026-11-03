@@ -2185,15 +2185,45 @@ export function calculateDistanceKm(
   return Math.round(R * c * 10) / 10;
 }
 
+export function isPlaceholderRequirement(val?: string | null): boolean {
+  if (!val) return true;
+  const lower = String(val).toLowerCase().trim();
+  return (
+    lower === "" ||
+    lower === "not provided" ||
+    lower === "none" ||
+    lower === "none specified" ||
+    lower === "n/a" ||
+    lower === "na" ||
+    lower === "null" ||
+    lower === "undefined" ||
+    lower === "[]" ||
+    lower === "{}" ||
+    lower === "-"
+  );
+}
+
 /**
  * Parses raw text, JSON arrays, or comma/newline/bullet-delimited strings
  * into a clean array of string tokens.
  */
 export function parseItemList(
-  raw?: string | null,
+  raw?: string | any[] | null,
   fallback: string[] = []
 ): string[] {
-  if (!raw || !raw.trim()) return fallback;
+  if (!raw) return fallback;
+  if (Array.isArray(raw)) {
+    const res = raw
+      .map((item) => {
+        if (typeof item === "object" && item !== null && item.name) {
+          return item.years ? `${item.name} (${item.years})` : String(item.name);
+        }
+        return String(item).trim();
+      })
+      .filter((s) => Boolean(s) && !isPlaceholderRequirement(s));
+    return res.length > 0 ? res : fallback;
+  }
+  if (typeof raw !== "string" || !raw.trim() || isPlaceholderRequirement(raw)) return fallback;
   try {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
@@ -2204,21 +2234,23 @@ export function parseItemList(
           }
           return String(item).trim();
         })
-        .filter(Boolean);
+        .filter((s) => Boolean(s) && !isPlaceholderRequirement(s));
       if (res.length > 0) return res;
     }
   } catch {}
-  return raw
+  const res = raw
     .split(/[\n,;•|]+/)
     .map((s) => s.trim())
-    .filter(Boolean)
+    .filter((s) => Boolean(s) && !isPlaceholderRequirement(s))
     .map((token) => {
       const match = token.match(/^(.*?)\s*\((.*?)\)$/);
       if (match) {
         return `${match[1].trim()} (${match[2].trim()})`;
       }
       return token;
-    });
+    })
+    .filter((s) => Boolean(s) && !isPlaceholderRequirement(s));
+  return res.length > 0 ? res : fallback;
 }
 
 /**
@@ -2276,10 +2308,13 @@ export type CandidateMatchInput = {
   distance_km?: number;
   city?: string | null;
   address?: string | null;
-  preferred_locations?: string | null;
-  skills?: string | null;
-  qualifications?: string | null;
-  certifications?: string | null;
+  preferred_locations?: string | any[] | null;
+  skills?: string | any[] | null;
+  skillTags?: string[];
+  qualifications?: string | any[] | null;
+  qualTags?: string[];
+  certifications?: string | any[] | null;
+  certTags?: string[];
 };
 
 export type JobMatchInput = {
@@ -2287,12 +2322,15 @@ export type JobMatchInput = {
   work_arrangement?: string;
   location?: string;
   city?: string;
-  required_skills?: string | null;
-  skills?: string | null;
-  required_qualifications?: string | null;
-  qualifications?: string | null;
-  required_certifications?: string | null;
-  certifications?: string | null;
+  required_skills?: string | any[] | null;
+  skills?: string | any[] | null;
+  skillTags?: string[];
+  required_qualifications?: string | any[] | null;
+  qualifications?: string | any[] | null;
+  qualTags?: string[];
+  required_certifications?: string | any[] | null;
+  certifications?: string | any[] | null;
+  certTags?: string[];
   salary_min?: number | string;
   salary_max?: number | string;
   min_salary?: number | string;
@@ -2311,9 +2349,15 @@ export function calculateCandidateMatch(
     location: job.location || job.city || "Cavite",
     salaryMin: Number(job.salary_min ?? job.min_salary) || 0,
     setup: job.work_arrangement || "On-Site",
-    skillTags: parseCompetencyDisplayTags(job.required_skills ?? job.skills, "skills"),
-    qualTags: parseCompetencyDisplayTags(job.required_qualifications ?? job.qualifications, "qualifications"),
-    certTags: parseCompetencyDisplayTags(job.required_certifications ?? job.certifications, "certifications"),
+    skillTags: (job.skillTags && job.skillTags.length > 0)
+      ? parseCompetencyDisplayTags(job.skillTags, "skills")
+      : parseCompetencyDisplayTags(job.required_skills ?? job.skills, "skills"),
+    qualTags: (job.qualTags && job.qualTags.length > 0)
+      ? parseCompetencyDisplayTags(job.qualTags, "qualifications")
+      : parseCompetencyDisplayTags(job.required_qualifications ?? job.qualifications, "qualifications"),
+    certTags: (job.certTags && job.certTags.length > 0)
+      ? parseCompetencyDisplayTags(job.certTags, "certifications")
+      : parseCompetencyDisplayTags(job.required_certifications ?? job.certifications, "certifications"),
   };
 
   const applicantProfile: ApplicantProfileInput = {
@@ -2322,9 +2366,15 @@ export function calculateCandidateMatch(
     expectedSalary: cand.expected_salary ? parseExpectedSalary(cand.expected_salary) : 0,
     city: cand.city || cand.address || "Cavite",
     preferred_locations: parseCompetencyDisplayTags(cand.preferred_locations),
-    skills: parseCompetencyDisplayTags(cand.skills, "skills"),
-    qualifications: parseCompetencyDisplayTags(cand.qualifications, "qualifications"),
-    certifications: parseCompetencyDisplayTags(cand.certifications, "certifications"),
+    skills: ((cand as any).skillTags && (cand as any).skillTags.length > 0)
+      ? parseCompetencyDisplayTags((cand as any).skillTags, "skills")
+      : parseCompetencyDisplayTags(cand.skills, "skills"),
+    qualifications: ((cand as any).qualTags && (cand as any).qualTags.length > 0)
+      ? parseCompetencyDisplayTags((cand as any).qualTags, "qualifications")
+      : parseCompetencyDisplayTags(cand.qualifications, "qualifications"),
+    certifications: ((cand as any).certTags && (cand as any).certTags.length > 0)
+      ? parseCompetencyDisplayTags((cand as any).certTags, "certifications")
+      : parseCompetencyDisplayTags(cand.certifications, "certifications"),
   };
 
   return calculateJobMatchDetails(jobCard, applicantProfile).score;
@@ -3496,10 +3546,33 @@ export function calculateJobMatch(
  * and formats them for display with their experience years (e.g. "Web Development (1 year)").
  */
 export function parseCompetencyDisplayTags(
-  raw: string | null | undefined,
+  raw: string | any[] | null | undefined,
   category?: "skills" | "qualifications" | "certifications"
 ): string[] {
-  if (!raw || !raw.trim()) return [];
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    return raw
+      .map((item) => {
+        if (typeof item === "object" && item !== null && item.name) {
+          if (category === "qualifications" || category === "certifications") {
+            if (item.requirement && item.requirement !== "Required") {
+              return `${item.name} (${item.requirement})`;
+            }
+            return String(item.name);
+          }
+          if (item.years) {
+            return `${item.name} (${item.years})`;
+          }
+          if (item.requirement && item.requirement !== "Required") {
+            return `${item.name} (${item.requirement})`;
+          }
+          return String(item.name);
+        }
+        return String(item).trim();
+      })
+      .filter((s) => Boolean(s) && !isPlaceholderRequirement(s));
+  }
+  if (typeof raw !== "string" || !raw.trim() || isPlaceholderRequirement(raw)) return [];
   try {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
@@ -3523,7 +3596,7 @@ export function parseCompetencyDisplayTags(
           }
           return String(item).trim();
         })
-        .filter(Boolean);
+        .filter((s) => Boolean(s) && !isPlaceholderRequirement(s));
     }
   } catch {}
 
@@ -3553,14 +3626,21 @@ export function parseCompetencyDisplayTags(
 
   return res
     .map((s) => s.trim())
-    .filter(Boolean)
+    .filter((s) => Boolean(s) && !isPlaceholderRequirement(s))
     .map((token) => {
       const match = token.match(/^(.*?)\s*(?:\[(.*?)\]\s*)?\((.*?)\)$/);
       if (match) {
+        if (category === "qualifications" || category === "certifications") {
+          const inside = match[3].trim().toLowerCase();
+          if (inside.includes("year") || inside.includes("yr")) {
+            return match[1].trim();
+          }
+        }
         return `${match[1].trim()} (${match[3].trim()})`;
       }
       return token;
-    });
+    })
+    .filter((s) => Boolean(s) && !isPlaceholderRequirement(s));
 }
 
 export function parsePreferredLocationTags(raw: string | null | undefined): string[] {

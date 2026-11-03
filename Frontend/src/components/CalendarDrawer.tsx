@@ -2565,19 +2565,28 @@ export default function CalendarDrawer({
                 const candQuals = parseCompetencyDisplayTags(viewingApplicantProfile?.qualifications || viewingApplicantDetails.education || "", "qualifications");
                 const candCerts = parseCompetencyDisplayTags(viewingApplicantProfile?.certifications || viewingApplicantDetails.certifications || "", "certifications");
 
-                const jobLocation = "Cavite";
-                const jobSetup = "On-Site";
-                const jobSalaryDisplay = "PHP 25,000 - 45,000";
-                const jobSkills = candSkills.slice(0, 4);
-                const jobQuals = ["BS in Information Technology or Computer Science"];
-                const jobCerts = ["IT Specialist Certification"];
+                const jobLocation = (targetJob as any).location || "Cavite";
+                const jobSetup = (targetJob as any).work_arrangement || "On-Site";
+                const jobSalaryMin = Number((targetJob as any).salary_min) || 0;
+                const jobSkills = parseCompetencyDisplayTags(
+                  (targetJob as any).required_skills || (targetJob as any).skills || (targetJob as any).skillTags,
+                  "skills"
+                );
+                const jobQuals = parseCompetencyDisplayTags(
+                  (targetJob as any).qualifications || (targetJob as any).required_qualifications || (targetJob as any).qualTags,
+                  "qualifications"
+                );
+                const jobCerts = parseCompetencyDisplayTags(
+                  (targetJob as any).certifications || (targetJob as any).required_certifications || (targetJob as any).certTags,
+                  "certifications"
+                );
 
                 const matchDetails = calculateJobMatchDetails(
                   {
                     id: targetJob.id,
                     title: targetJob.title,
                     location: jobLocation,
-                    salaryMin: 25000,
+                    salaryMin: jobSalaryMin,
                     setup: jobSetup,
                     skillTags: jobSkills,
                     qualTags: jobQuals,
