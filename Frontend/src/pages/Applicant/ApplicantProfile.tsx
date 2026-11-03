@@ -2593,6 +2593,8 @@ export default function ApplicantProfile() {
   // Field-level single saving & dirty state tracking
   const [savingField, setSavingField] = useState<string | null>(null);
   const [fieldSuccess, setFieldSuccess] = useState<string | null>(null);
+  const [isMinSalaryFocused, setIsMinSalaryFocused] = useState(false);
+  const [isMaxSalaryFocused, setIsMaxSalaryFocused] = useState(false);
 
   const saveSingleField = async (fieldName: keyof ApplicantProfileData, value: any) => {
     if (!userId) return;
@@ -2602,6 +2604,24 @@ export default function ApplicantProfile() {
         setProfileMessageType("error");
         setProfileMessage("Phone number must have exactly 10 digits.");
         return;
+      }
+    }
+    if (fieldName === "expected_salary_min" || fieldName === "expected_salary_max") {
+      const nextDraft = { ...draft, [fieldName]: value };
+      const rawMin = nextDraft.expected_salary_min !== null && nextDraft.expected_salary_min !== undefined
+        ? String(nextDraft.expected_salary_min).replace(/[^0-9.]/g, "").trim()
+        : "";
+      const rawMax = nextDraft.expected_salary_max !== null && nextDraft.expected_salary_max !== undefined
+        ? String(nextDraft.expected_salary_max).replace(/[^0-9.]/g, "").trim()
+        : "";
+      if (rawMin && rawMax) {
+        const nMin = Number(rawMin);
+        const nMax = Number(rawMax);
+        if (Number.isFinite(nMin) && Number.isFinite(nMax) && nMax < nMin) {
+          setProfileMessageType("error");
+          setProfileMessage("Maximum expected salary cannot be lower than minimum expected salary.");
+          return;
+        }
       }
     }
     setSavingField(fieldName);
@@ -2666,10 +2686,19 @@ export default function ApplicantProfile() {
   };
 
   const cancelField = (fieldName: keyof ApplicantProfileData) => {
-    setDraft((prev) => ({
-      ...prev,
-      [fieldName]: fieldName === "phone" ? normalizePhoneNumber(profile.phone) : (profile[fieldName] ?? ""),
-    }));
+    setDraft((prev) => {
+      let resetVal: any = profile[fieldName] ?? "";
+      if (fieldName === "phone") {
+        resetVal = normalizePhoneNumber(profile.phone);
+      } else if (fieldName === "expected_salary_min" || fieldName === "expected_salary_max") {
+        resetVal = parseSalaryInteger(profile[fieldName]);
+      }
+      const next = { ...prev, [fieldName]: resetVal };
+      if (fieldName === "expected_salary_min" || fieldName === "expected_salary_max") {
+        next.expected_salary = profile.expected_salary;
+      }
+      return next;
+    });
   };
 
   useEffect(() => {
@@ -3016,7 +3045,7 @@ export default function ApplicantProfile() {
   const hasShownInitialSetupPromptRef = useRef(false);
 
   const missingFieldItems = useMemo(() => {
-    const p = isEditing ? draft : profile;
+    const p = draft;
     const list: { key: string; label: string; section: "preferences" | "competencies"; sectionName: string }[] = [];
     if (!p.desired_job_title || !String(p.desired_job_title).trim()) {
       list.push({ key: "jobTitle", label: "Job / Target Role", section: "preferences", sectionName: "Career Preferences" });
@@ -3043,12 +3072,12 @@ export default function ApplicantProfile() {
       list.push({ key: "skills", label: "Technical Skills", section: "competencies", sectionName: "Skills & Credentials" });
     }
     return list;
-  }, [profile, draft, isEditing]);
+  }, [profile, draft]);
 
   const missingMandatedFields = useMemo(() => missingFieldItems.map((item) => item.label), [missingFieldItems]);
 
   const completionChecks = useMemo(() => {
-    const p = isEditing ? draft : profile;
+    const p = draft;
     const hasJobTitle = Boolean(p.desired_job_title && String(p.desired_job_title).trim());
     const hasWorkArrangement = Boolean(p.work_arrangement && String(p.work_arrangement).trim());
     const hasSalaryMin =
@@ -3075,7 +3104,7 @@ export default function ApplicantProfile() {
       percent,
       colorBand,
     };
-  }, [profile, draft, isEditing]);
+  }, [profile, draft]);
 
   const isProfileComplete = hasLoadedProfile && (completionChecks.percent >= 100 || missingFieldItems.length === 0);
   const isProfileSetupIncomplete = hasLoadedProfile && !isProfileComplete;
@@ -3281,20 +3310,43 @@ export default function ApplicantProfile() {
   };
 
   const checkHasUnsavedSection2 = () => {
-    if (!isEditing) return false;
-    const isJobTitleDirty = (draft.desired_job_title || "") !== (profile.desired_job_title || "");
-    const isArrangementDirty = (draft.work_arrangement || "") !== (profile.work_arrangement || "");
-    const isMinSalaryDirty = String(draft.expected_salary_min || "") !== String(profile.expected_salary_min || "");
-    const isMaxSalaryDirty = String(draft.expected_salary_max || "") !== String(profile.expected_salary_max || "");
-    const isLocationsDirty = (draft.preferred_locations || "") !== (profile.preferred_locations || "");
+    const isJobTitleDirty = (draft.desired_job_title || "").trim() !== (profile.desired_job_title || "").trim();
+    const isArrangementDirty = (draft.work_arrangement || "").trim() !== (profile.work_arrangement || "").trim();
+    const isMinSalaryDirty = parseSalaryInteger(draft.expected_salary_min) !== parseSalaryInteger(profile.expected_salary_min);
+    const isMaxSalaryDirty = parseSalaryInteger(draft.expected_salary_max) !== parseSalaryInteger(profile.expected_salary_max);
     return Boolean(
       isJobTitleDirty ||
       isArrangementDirty ||
       isMinSalaryDirty ||
-      isMaxSalaryDirty ||
-      isLocationsDirty
+      isMaxSalaryDirty
     );
   };
+
+  const salaryMinError = useMemo(() => {
+    const rawMin = draft.expected_salary_min !== null && draft.expected_salary_min !== undefined ? String(draft.expected_salary_min).replace(/[^0-9.]/g, "").trim() : "";
+    const rawMax = draft.expected_salary_max !== null && draft.expected_salary_max !== undefined ? String(draft.expected_salary_max).replace(/[^0-9.]/g, "").trim() : "";
+    if (rawMin && rawMax) {
+      const nMin = Number(rawMin);
+      const nMax = Number(rawMax);
+      if (Number.isFinite(nMin) && Number.isFinite(nMax) && nMin > nMax) {
+        return "Min salary cannot exceed max salary.";
+      }
+    }
+    return "";
+  }, [draft.expected_salary_min, draft.expected_salary_max]);
+
+  const salaryMaxError = useMemo(() => {
+    const rawMin = draft.expected_salary_min !== null && draft.expected_salary_min !== undefined ? String(draft.expected_salary_min).replace(/[^0-9.]/g, "").trim() : "";
+    const rawMax = draft.expected_salary_max !== null && draft.expected_salary_max !== undefined ? String(draft.expected_salary_max).replace(/[^0-9.]/g, "").trim() : "";
+    if (rawMin && rawMax) {
+      const nMin = Number(rawMin);
+      const nMax = Number(rawMax);
+      if (Number.isFinite(nMin) && Number.isFinite(nMax) && nMax < nMin) {
+        return "Max salary cannot be lower than min salary.";
+      }
+    }
+    return "";
+  }, [draft.expected_salary_min, draft.expected_salary_max]);
 
   const checkHasUnsavedProfile = () => {
     return checkHasUnsavedSection1() || checkHasUnsavedSection2();
@@ -3463,6 +3515,24 @@ export default function ApplicantProfile() {
       );
       setIsEmailVerified(isMatch);
       setDraft((current) => ({ ...current, email: value }));
+      return;
+    }
+    if (name === "expected_salary_min") {
+      const cleanVal = value.replace(/[^0-9.]/g, "");
+      setDraft((prev) => ({
+        ...prev,
+        expected_salary_min: cleanVal,
+        expected_salary: buildConsolidatedSalaryString(cleanVal, prev.expected_salary_max),
+      }));
+      return;
+    }
+    if (name === "expected_salary_max") {
+      const cleanVal = value.replace(/[^0-9.]/g, "");
+      setDraft((prev) => ({
+        ...prev,
+        expected_salary_max: cleanVal,
+        expected_salary: buildConsolidatedSalaryString(prev.expected_salary_min, cleanVal),
+      }));
       return;
     }
     setDraft((current) => ({ ...current, [name]: value }));
@@ -4727,7 +4797,13 @@ export default function ApplicantProfile() {
           {/* =================================================================
               SECTION 2: CAREER TARGETS & JOB PREFERENCES
               ================================================================= */}
-          {activeSection === "preferences" && (
+          {activeSection === "preferences" && (() => {
+            const isJobTitleDirty = (draft.desired_job_title || "").trim() !== (profile.desired_job_title || "").trim();
+            const isArrangementDirty = (draft.work_arrangement || "").trim() !== (profile.work_arrangement || "").trim();
+            const isSalaryMinDirty = parseSalaryInteger(draft.expected_salary_min) !== parseSalaryInteger(profile.expected_salary_min);
+            const isSalaryMaxDirty = parseSalaryInteger(draft.expected_salary_max) !== parseSalaryInteger(profile.expected_salary_max);
+
+            return (
             <section className="profile-section-block">
               <div className="location-cards-row">
                 <article className="profile-card nearby-finder-card location-subcard">
@@ -4876,66 +4952,23 @@ export default function ApplicantProfile() {
                     <strong>Role & Employment Targeting</strong>
                     <small>Align your target role and salary expectations for accurate matching</small>
                   </div>
-                  <button type="button" className="edit-profile-button" onClick={() => (isEditing ? saveProfile() : setIsEditing(true))} disabled={isSaving}>
-                    {isEditing ? (isSaving ? "Saving..." : "Save Preferences") : "Edit Preferences"}
-                  </button>
-                  {isEditing && (
-                    <button
-                      type="button"
-                      className="cancel-profile-button"
-                      onClick={() => {
-                        if (checkHasUnsavedSection2()) {
-                          setIsUnsavedProfileWarningOpen(true);
-                        } else {
-                          setDraft(profile);
-                          setSalaryError("");
-                          setIsEditing(false);
-                        }
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  )}
                 </div>
 
                 <div className="profile-divider" />
 
-                {salaryError && (
-                  <div
-                    className="salary-error-notification"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      padding: "12px 16px",
-                      borderRadius: "6px",
-                      background: "#fef2f2",
-                      border: "1px solid #f87171",
-                      color: "#991b1b",
-                      fontSize: "13px",
-                      fontWeight: 700,
-                      marginBottom: "14px",
-                    }}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="12" y1="8" x2="12" y2="12" />
-                      <line x1="12" y1="16" x2="12.01" y2="16" />
-                    </svg>
-                    <span>{salaryError}</span>
-                  </div>
-                )}
-
-                <div className="fields-grid">
+                <div className="fields-grid" style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
                   <div className="profile-field" style={{ gridColumn: "1 / -1" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                      <span>Target Roles & Job Specializations</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <label className="inline-field-label">Target Roles & Job Specializations</label>
+                        {fieldSuccess === "desired_job_title" && <span className="inline-field-saved-badge">✔ Saved</span>}
+                      </div>
                       <small style={{ color: "#64748b", fontSize: "0.8rem" }}>Select one or more job roles across industries</small>
                     </div>
 
                     <div className="target-roles-pill-container">
                       {(() => {
-                        const currentRoles = (visibleProfile.desired_job_title || "")
+                        const currentRoles = (draft.desired_job_title || "")
                           .split(",")
                           .map((r) => r.trim())
                           .filter(Boolean);
@@ -4952,31 +4985,29 @@ export default function ApplicantProfile() {
                             className="target-role-pill"
                           >
                             <span>{role}</span>
-                            {isEditing && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const updated = currentRoles.filter((r) => r !== role);
-                                  updateDraft("desired_job_title", updated.join(", "));
-                                }}
-                                title={`Remove ${role}`}
-                              >
-                                ✕
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = currentRoles.filter((r) => r !== role);
+                                updateDraft("desired_job_title", updated.join(", "));
+                              }}
+                              title={`Remove ${role}`}
+                            >
+                              ✕
+                            </button>
                           </span>
                         ));
                       })()}
                     </div>
 
-                    {isEditing && (
+                    <div className="inline-field-row" style={{ marginTop: "8px" }}>
                       <select
+                        className="inline-field-control"
                         value=""
-                        disabled={!isEditing}
                         onChange={(event) => {
                           const val = event.target.value;
                           if (!val) return;
-                          const currentRoles = (visibleProfile.desired_job_title || "")
+                          const currentRoles = (draft.desired_job_title || "")
                             .split(",")
                             .map((r) => r.trim())
                             .filter(Boolean);
@@ -4997,73 +5028,209 @@ export default function ApplicantProfile() {
                           </optgroup>
                         ))}
                       </select>
-                    )}
+                      {isJobTitleDirty && (
+                        <div className="inline-field-actions">
+                          <button
+                            type="button"
+                            className="inline-field-btn inline-field-cancel-btn"
+                            onClick={() => handleInlineCancelClick("desired_job_title")}
+                            disabled={savingField === "desired_job_title"}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            className="inline-field-btn inline-field-save-btn"
+                            onClick={() => saveSingleField("desired_job_title", draft.desired_job_title)}
+                            disabled={savingField === "desired_job_title"}
+                          >
+                            {savingField === "desired_job_title" ? "Saving..." : "Save"}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="work-salary-row">
                     <div className="profile-field work-arrangements-field">
-                      <span>Work Arrangement Preferences</span>
-                      <div className="work-arrangement-pill-group">
-                        {["Remote", "On-Site", "Hybrid"].map((arr) => {
-                          const currentArrangements = (visibleProfile.work_arrangement || "")
-                            .split(",")
-                            .map((s) => s.trim())
-                            .filter(Boolean);
-                          const isSelected = currentArrangements.includes(arr);
-                          return (
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                        <label className="inline-field-label">Work Arrangement Preferences</label>
+                        {fieldSuccess === "work_arrangement" && <span className="inline-field-saved-badge">✔ Saved</span>}
+                      </div>
+                      <div className="inline-field-row" style={{ flexWrap: "wrap", gap: "8px", minHeight: "38px" }}>
+                        <div className="work-arrangement-pill-group" style={{ margin: 0 }}>
+                          {["Remote", "On-Site", "Hybrid"].map((arr) => {
+                            const currentArrangements = (draft.work_arrangement || "")
+                              .split(",")
+                              .map((s) => s.trim())
+                              .filter(Boolean);
+                            const isSelected = currentArrangements.includes(arr);
+                            return (
+                              <button
+                                key={arr}
+                                type="button"
+                                className={`arr-toggle-pill ${isSelected ? "selected" : ""}`}
+                                onClick={() => {
+                                  let updated: string[];
+                                  if (isSelected) {
+                                    updated = currentArrangements.filter((a) => a !== arr);
+                                  } else {
+                                    updated = [...currentArrangements, arr];
+                                  }
+                                  updateDraft("work_arrangement", updated.join(", "));
+                                }}
+                              >
+                                {isSelected ? "✓ " : "+ "}{arr}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {isArrangementDirty && (
+                          <div className="inline-field-actions">
                             <button
-                              key={arr}
                               type="button"
-                              disabled={!isEditing}
-                              className={`arr-toggle-pill ${isSelected ? "selected" : ""}`}
-                              onClick={() => {
-                                if (!isEditing) return;
-                                let updated: string[];
-                                if (isSelected) {
-                                  updated = currentArrangements.filter((a) => a !== arr);
-                                } else {
-                                  updated = [...currentArrangements, arr];
-                                }
-                                updateDraft("work_arrangement", updated.join(", "));
-                              }}
+                              className="inline-field-btn inline-field-cancel-btn"
+                              onClick={() => handleInlineCancelClick("work_arrangement")}
+                              disabled={savingField === "work_arrangement"}
                             >
-                              {isSelected ? "✓ " : "+ "}{arr}
+                              Cancel
                             </button>
-                          );
-                        })}
+                            <button
+                              type="button"
+                              className="inline-field-btn inline-field-save-btn"
+                              onClick={() => saveSingleField("work_arrangement", draft.work_arrangement)}
+                              disabled={savingField === "work_arrangement"}
+                            >
+                              {savingField === "work_arrangement" ? "Saving..." : "Save"}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    <Field
-                      label="Minimum Expected Salary"
-                      name="expected_salary_min"
-                      value={visibleProfile.expected_salary_min}
-                      editing={isEditing}
-                      onChange={handleSalaryMinChange}
-                      onBlur={handleSalaryBlur}
-                      prefix="PHP"
-                      currencyFormat
-                      placeholder="e.g. 25,000.00"
-                      hasError={Boolean(salaryError)}
-                    />
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                        <label className="inline-field-label">Minimum Expected Salary</label>
+                        {fieldSuccess === "expected_salary_min" && <span className="inline-field-saved-badge">✔ Saved</span>}
+                      </div>
+                      <div className="inline-field-row">
+                        <div className="inline-field-input-wrap">
+                          <span className="inline-field-currency-prefix">PHP</span>
+                          <input
+                            className="inline-field-control inline-field-currency-input"
+                            value={
+                              isMinSalaryFocused
+                                ? String(draft.expected_salary_min ?? "").replace(/,/g, "")
+                                : draft.expected_salary_min
+                                ? formatCurrencyInput(draft.expected_salary_min)
+                                : ""
+                            }
+                            inputMode="decimal"
+                            placeholder="25,000.00"
+                            onFocus={() => setIsMinSalaryFocused(true)}
+                            onBlur={() => {
+                              setIsMinSalaryFocused(false);
+                              handleSalaryBlur();
+                            }}
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(/[^0-9.]/g, "");
+                              updateDraft("expected_salary_min", raw);
+                              if (salaryError) setSalaryError("");
+                            }}
+                          />
+                        </div>
+                        {isSalaryMinDirty && (
+                          <div className="inline-field-actions">
+                            <button
+                              type="button"
+                              className="inline-field-btn inline-field-cancel-btn"
+                              onClick={() => handleInlineCancelClick("expected_salary_min")}
+                              disabled={savingField === "expected_salary_min"}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              className="inline-field-btn inline-field-save-btn"
+                              onClick={() => saveSingleField("expected_salary_min", parseSalaryInteger(draft.expected_salary_min) || draft.expected_salary_min)}
+                              disabled={savingField === "expected_salary_min" || Boolean(salaryMinError)}
+                            >
+                              {savingField === "expected_salary_min" ? "Saving..." : "Save"}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      {salaryMinError && (
+                        <small className="inline-field-subtext error">
+                          {salaryMinError}
+                        </small>
+                      )}
+                    </div>
 
-                    <Field
-                      label="Maximum Expected Salary"
-                      name="expected_salary_max"
-                      value={visibleProfile.expected_salary_max}
-                      editing={isEditing}
-                      onChange={handleSalaryMaxChange}
-                      onBlur={handleSalaryBlur}
-                      prefix="PHP"
-                      currencyFormat
-                      placeholder="e.g. 40,000.00"
-                      hasError={Boolean(salaryError)}
-                    />
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                        <label className="inline-field-label">Maximum Expected Salary</label>
+                        {fieldSuccess === "expected_salary_max" && <span className="inline-field-saved-badge">✔ Saved</span>}
+                      </div>
+                      <div className="inline-field-row">
+                        <div className="inline-field-input-wrap">
+                          <span className="inline-field-currency-prefix">PHP</span>
+                          <input
+                            className="inline-field-control inline-field-currency-input"
+                            value={
+                              isMaxSalaryFocused
+                                ? String(draft.expected_salary_max ?? "").replace(/,/g, "")
+                                : draft.expected_salary_max
+                                ? formatCurrencyInput(draft.expected_salary_max)
+                                : ""
+                            }
+                            inputMode="decimal"
+                            placeholder="40,000.00"
+                            onFocus={() => setIsMaxSalaryFocused(true)}
+                            onBlur={() => {
+                              setIsMaxSalaryFocused(false);
+                              handleSalaryBlur();
+                            }}
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(/[^0-9.]/g, "");
+                              updateDraft("expected_salary_max", raw);
+                              if (salaryError) setSalaryError("");
+                            }}
+                          />
+                        </div>
+                        {isSalaryMaxDirty && (
+                          <div className="inline-field-actions">
+                            <button
+                              type="button"
+                              className="inline-field-btn inline-field-cancel-btn"
+                              onClick={() => handleInlineCancelClick("expected_salary_max")}
+                              disabled={savingField === "expected_salary_max"}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              className="inline-field-btn inline-field-save-btn"
+                              onClick={() => saveSingleField("expected_salary_max", parseSalaryInteger(draft.expected_salary_max) || draft.expected_salary_max)}
+                              disabled={savingField === "expected_salary_max" || Boolean(salaryMaxError)}
+                            >
+                              {savingField === "expected_salary_max" ? "Saving..." : "Save"}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      {salaryMaxError && (
+                        <small className="inline-field-subtext error">
+                          {salaryMaxError}
+                        </small>
+                      )}
+                    </div>
                   </div>
                 </div>
               </article>
             </section>
-          )}
+            );
+          })()}
 
           {/* =================================================================
               SECTION 3: COMPETENCIES, EXPERIENCE & DOCUMENTS (MAX 5 WITH YEARS)

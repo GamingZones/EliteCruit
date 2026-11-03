@@ -3624,7 +3624,7 @@
 .work-salary-row {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 14px;
   align-items: start;
 }
@@ -3911,6 +3911,21 @@ textarea.inline-field-control {
   padding-left: 42px !important;
 }
 
+.inline-field-currency-prefix {
+  position: absolute;
+  left: 10px;
+  font-weight: 700;
+  color: #31516f;
+  font-size: 0.8rem;
+  pointer-events: none;
+  z-index: 1;
+  user-select: none;
+}
+
+.inline-field-currency-input {
+  padding-left: 44px !important;
+}
+
 .inline-field-email-verified-pill {
   position: absolute;
   right: 8px;
@@ -4080,6 +4095,10 @@ textarea.inline-field-control {
 
 [data-theme="dark"] .inline-field-phone-prefix {
   color: #94a3b8;
+}
+
+[data-theme="dark"] .inline-field-currency-prefix {
+  color: #f59e0b;
 }
 
 [data-theme="dark"] .inline-field-email-verified-pill {
