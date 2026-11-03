@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import Start from "./pages/Auth/Start";
 import Login from "./pages/Auth/Login";
 import CreateAccount from "./pages/Auth/Create-Account";
@@ -22,7 +22,8 @@ import AdminApplicantManagement from "./pages/Admin/Admin-ApplicantManagement";
 import AdminEmployerManagement from "./pages/Admin/Admin-EmployerManagement";
 import AdminApplicantAnalytics from "./pages/Admin/Admin-ApplicantAnalytics";
 import AdminEmployerAnalytics from "./pages/Admin/Admin-EmployerAnalytics";
-import { getAuthToken, getStoredUser } from "./utils/auth";
+import { getAuthToken, getStoredUser, clearAuth } from "./utils/auth";
+import "./App.css";
 
 type Role = "applicant" | "employer" | "admin";
 
@@ -75,28 +76,107 @@ function ProtectedRoute({
 }
 
 function PublicOnlyRoute({ element }: { element: React.ReactElement }) {
-  const token = getAuthToken();
-  const user = getStoredUser<{ id: number; role: Role; email: string; isProfileComplete?: boolean }>();
-  const isPasswordResetRedirect =
-    typeof window !== "undefined" &&
-    (new URLSearchParams(window.location.search).get("action") === "forgot" ||
-      new URLSearchParams(window.location.search).get("reset") === "true");
+  const [currentUser, setCurrentUser] = useState(() => {
+    const isPasswordResetRedirect =
+      typeof window !== "undefined" &&
+      (new URLSearchParams(window.location.search).get("action") === "forgot" ||
+        new URLSearchParams(window.location.search).get("reset") === "true");
+    const isExplicitSwitch =
+      typeof window !== "undefined" &&
+      (new URLSearchParams(window.location.search).get("switch") === "true" ||
+        new URLSearchParams(window.location.search).get("action") === "switch");
 
-  // If already authenticated and navigating to login/register (unless resetting password via email link), smoothly redirect to dashboard
-  if (token && user && !isPasswordResetRedirect) {
-    if (typeof window !== "undefined") {
-      if (user.role === "admin") {
-        window.location.replace("/admin-dashboard");
-      } else if (user.role === "employer") {
-        window.location.replace(user.isProfileComplete === false ? "/employer-company-profile?setup=required" : "/employer-dashboard");
-      } else {
-        window.location.replace(user.isProfileComplete === false ? "/my-profile?setup=required" : "/applicant-dashboard");
-      }
+    if (isExplicitSwitch) {
+      clearAuth();
+      return null;
+    }
+
+    const token = getAuthToken();
+    const user = getStoredUser<{ id: number; role: Role; email: string; isProfileComplete?: boolean }>();
+    if (token && user && !isPasswordResetRedirect) {
+      return user;
     }
     return null;
+  });
+
+  if (!currentUser) {
+    return element;
   }
 
-  return element;
+  const getDashboardUrl = () => {
+    if (currentUser.role === "admin") {
+      return "/admin-dashboard";
+    }
+    if (currentUser.role === "employer") {
+      return currentUser.isProfileComplete === false ? "/employer-company-profile?setup=required" : "/employer-dashboard";
+    }
+    return currentUser.isProfileComplete === false ? "/my-profile?setup=required" : "/applicant-dashboard";
+  };
+
+  const handleContinue = () => {
+    window.location.href = getDashboardUrl();
+  };
+
+  const handleSignOutAndSwitch = () => {
+    clearAuth();
+    setCurrentUser(null);
+  };
+
+  return (
+    <>
+      {element}
+      <div className="auth-switch-overlay" role="dialog" aria-modal="true" aria-labelledby="auth-switch-title">
+        <div className="auth-switch-card">
+          <div className="auth-switch-icon-badge" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </div>
+
+          <h3 id="auth-switch-title" className="auth-switch-title">
+            Already Signed In
+          </h3>
+
+          <p className="auth-switch-desc">
+            You are currently signed in to an active session. Would you like to continue to your dashboard or sign out to use a different account?
+          </p>
+
+          <div className="auth-switch-user-box">
+            <div className="auth-switch-user-info">
+              <div className="auth-switch-user-email">
+                {currentUser.email || "Active Account"}
+              </div>
+              <div className="auth-switch-user-role">
+                {currentUser.role} Account
+              </div>
+            </div>
+            <span className="auth-switch-status-badge">
+              Active
+            </span>
+          </div>
+
+          <div className="auth-switch-actions">
+            <button
+              type="button"
+              className="auth-switch-continue-btn"
+              onClick={handleContinue}
+            >
+              Continue as {currentUser.email?.split("@")[0] || "Current User"}
+            </button>
+
+            <button
+              type="button"
+              className="auth-switch-signout-btn"
+              onClick={handleSignOutAndSwitch}
+            >
+              Sign Out & Switch Account
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
 }
 
 export default function App() {

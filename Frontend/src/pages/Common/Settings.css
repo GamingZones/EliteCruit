@@ -552,6 +552,54 @@
   color: #f1f5f9;
 }
 
+/* Legal Subviews (Terms & Privacy) */
+.settings-legal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.settings-legal-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  text-align: left;
+}
+
+.settings-legal-item h4 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0c2a47;
+}
+
+.settings-legal-item p {
+  margin: 0 0 6px;
+  font-size: 0.88rem;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.settings-legal-item p:last-child {
+  margin-bottom: 0;
+}
+
+/* Dark mode theme isolation (Rule 9) */
+[data-theme="dark"] .settings-legal-item {
+  background: #14151B;
+  border-color: #2e3244;
+}
+
+[data-theme="dark"] .settings-legal-item h4 {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .settings-legal-item p {
+  color: #94a3b8;
+}
+
 /* ==========================================================================
    PHONE & MOBILE UI ADJUSTMENTS (max-width: 768px)
    Scope: Applied STRICTLY to phones/mobile screens; desktop/laptop UI is 100% untouched.

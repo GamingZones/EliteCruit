@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ALL_PHILIPPINES_PROVINCES, getCitiesByProvince } from "../../utils/filters";
+import { TERMS_OF_SERVICE, PRIVACY_POLICY } from "../../data/legalContent";
 import "./Create-Account.css";
 
 export default function CreateAccount() {
@@ -9,6 +10,7 @@ export default function CreateAccount() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState("");
+  const [activeLegalDoc, setActiveLegalDoc] = useState<"terms" | "privacy" | null>(null);
 
   // Email OTP Verification Modal States
   const [verifiedEmail, setVerifiedEmail] = useState("");
@@ -95,6 +97,24 @@ export default function CreateAccount() {
       ...prev,
       [e.target.name]: e.target.value,
     }));
+  };
+
+  const handleRoleChange = (newRole: "applicant" | "employer") => {
+    if (newRole === role) return;
+    setRole(newRole);
+    setSubmitError("");
+    setSubmitSuccess("");
+    // Clear role-specific fields and sensitive inputs when toggling roles (Task 5.2)
+    setFormData((prev) => ({
+      ...prev,
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      businessName: "",
+      password: "",
+      confirmPassword: "",
+    }));
+    setShowPassword(false);
   };
 
   const isApplicant = role === "applicant";
@@ -355,7 +375,7 @@ export default function CreateAccount() {
             <button
               type="button"
               className={isApplicant ? "active" : ""}
-              onClick={() => setRole("applicant")}
+              onClick={() => handleRoleChange("applicant")}
             >
               Applicant
             </button>
@@ -363,7 +383,7 @@ export default function CreateAccount() {
             <button
               type="button"
               className={!isApplicant ? "active" : ""}
-              onClick={() => setRole("employer")}
+              onClick={() => handleRoleChange("employer")}
             >
               Employer
             </button>
@@ -680,7 +700,28 @@ export default function CreateAccount() {
               onChange={(e) => setAgreeTerms(e.target.checked)}
             />
             <span>
-              I agree to the Terms of Service and Privacy Policy.
+              I agree to the{" "}
+              <button
+                type="button"
+                className="terms-link-btn"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setActiveLegalDoc("terms");
+                }}
+              >
+                Terms of Service
+              </button>{" "}
+              and{" "}
+              <button
+                type="button"
+                className="terms-link-btn"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setActiveLegalDoc("privacy");
+                }}
+              >
+                Privacy Policy
+              </button>.
             </span>
           </label>
 
@@ -782,6 +823,71 @@ export default function CreateAccount() {
                 disabled={isVerifyingOtp || otpCodeInput.length !== 6}
               >
                 {isVerifyingOtp ? "Verifying..." : "Verify Code"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Substantive Terms of Service & Privacy Policy Modal (Task 5.3) */}
+      {activeLegalDoc && (
+        <div
+          className="create-legal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setActiveLegalDoc(null)}
+        >
+          <div
+            className="create-legal-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="create-legal-head">
+              <div>
+                <h3 className="create-legal-title">
+                  {activeLegalDoc === "terms" ? TERMS_OF_SERVICE.title : PRIVACY_POLICY.title}
+                </h3>
+                <p className="create-legal-subtitle">
+                  {activeLegalDoc === "terms" ? TERMS_OF_SERVICE.subtitle : PRIVACY_POLICY.subtitle} • Last updated {activeLegalDoc === "terms" ? TERMS_OF_SERVICE.lastUpdated : PRIVACY_POLICY.lastUpdated}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="create-legal-close-btn"
+                onClick={() => setActiveLegalDoc(null)}
+                aria-label="Close modal"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="create-legal-body">
+              {(activeLegalDoc === "terms" ? TERMS_OF_SERVICE.sections : PRIVACY_POLICY.sections).map((sec, idx) => (
+                <div key={idx} className="create-legal-section">
+                  <h4>{sec.title}</h4>
+                  {sec.content.map((p, pIdx) => (
+                    <p key={pIdx}>{p}</p>
+                  ))}
+                </div>
+              ))}
+            </div>
+
+            <div className="create-legal-footer">
+              <button
+                type="button"
+                className="create-legal-action-btn secondary"
+                onClick={() => setActiveLegalDoc(null)}
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                className="create-legal-action-btn primary"
+                onClick={() => {
+                  setAgreeTerms(true);
+                  setActiveLegalDoc(null);
+                }}
+              >
+                I Understand & Agree
               </button>
             </div>
           </div>
