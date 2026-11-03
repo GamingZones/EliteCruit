@@ -1347,7 +1347,11 @@ export default function EmployerJobPosts() {
       const data = await response.json();
       if (!response.ok) throw new Error(data?.message || (isEditMode ? "Unable to update job." : "Unable to publish job."));
       setProfileMessage(isEditMode ? "Job post updated successfully." : `Job post published successfully.`);
-      window.location.href = "/employer-job-posts";
+      try {
+        window.dispatchEvent(new Event("elitecruit_job_published"));
+        sessionStorage.setItem("elitecruit_fresh_job_published", String(Date.now()));
+      } catch {}
+      window.location.href = `/employer-job-posts?refreshed=${Date.now()}`;
     } catch (error) {
       setProfileMessage(error instanceof Error ? error.message : (isEditMode ? "Unable to update job." : "Unable to publish job."));
     } finally {

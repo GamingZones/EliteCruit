@@ -281,6 +281,25 @@ export default function EmployerJobPostsList() {
       .filter(Boolean);
   };
 
+  const fetchJobPosts = async (empId?: number) => {
+    const idToUse = empId || userId;
+    if (!idToUse) return;
+    try {
+      const response = await fetch(`/api/employers/${idToUse}/job-posts?_t=${Date.now()}`, {
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.message || "Unable to load job posts.");
+      setJobs(Array.isArray(data?.jobPosts) ? data.jobPosts : []);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to load job posts.");
+    }
+  };
+
   useEffect(() => {
     const savedUserRaw = localStorage.getItem("elitecruit-user");
     if (!savedUserRaw) {
@@ -295,20 +314,33 @@ export default function EmployerJobPostsList() {
         return;
       }
       setUserId(savedUser.id);
-
-      fetch(`/api/employers/${savedUser.id}/job-posts`)
-        .then(async (response) => {
-          const data = await response.json();
-          if (!response.ok) throw new Error(data?.message || "Unable to load job posts.");
-          setJobs(Array.isArray(data?.jobPosts) ? data.jobPosts : []);
-        })
-        .catch((error) => {
-          setMessage(error instanceof Error ? error.message : "Unable to load job posts.");
-        });
+      fetchJobPosts(savedUser.id);
     } catch {
       setMessage("Unable to read account session.");
     }
   }, []);
+
+  useEffect(() => {
+    const handleRefresh = () => {
+      const savedUserRaw = localStorage.getItem("elitecruit-user");
+      if (savedUserRaw) {
+        try {
+          const savedUser = JSON.parse(savedUserRaw) as { id?: number; role?: string };
+          if (savedUser?.id) fetchJobPosts(savedUser.id);
+        } catch {}
+      }
+    };
+
+    window.addEventListener("focus", handleRefresh);
+    window.addEventListener("pageshow", handleRefresh);
+    window.addEventListener("elitecruit_job_published", handleRefresh);
+
+    return () => {
+      window.removeEventListener("focus", handleRefresh);
+      window.removeEventListener("pageshow", handleRefresh);
+      window.removeEventListener("elitecruit_job_published", handleRefresh);
+    };
+  }, [userId]);
 
   const [jobToDelete, setJobToDelete] = useState<JobPost | null>(null);
   const [isDeletingJob, setIsDeletingJob] = useState(false);

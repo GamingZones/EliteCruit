@@ -4143,6 +4143,9 @@ app.get("/api/employers/:userId/unapplied-matches/:jobPostId", async (req, res) 
 });
 
 app.get("/api/employers/:userId/job-posts", async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   const userId = Number(req.params.userId);
   if (!Number.isInteger(userId) || userId < 1) return res.status(400).json({ message: "Invalid employer." });
   try {
@@ -4154,14 +4157,14 @@ app.get("/api/employers/:userId/job-posts", async (req, res) => {
            LEFT JOIN applications a ON a.job_post_id = jp.id
            WHERE jp.employer_user_id = ?
            GROUP BY jp.id
-           ORDER BY datetime(jp.created_at) DESC`,
+           ORDER BY jp.created_at DESC`,
           [userId]
         )
       : await all(
           `SELECT jp.*, 0 AS applicant_count
            FROM job_posts jp
            WHERE jp.employer_user_id = ?
-           ORDER BY datetime(jp.created_at) DESC`,
+           ORDER BY jp.created_at DESC`,
           [userId]
         );
     const jobPosts = rows.map((row) => ({ ...row, status: deriveJobPostStatus(row.close_date, row.status) }));
