@@ -955,7 +955,7 @@ function EmployerIcon({ name }: { name: EmployerIconName }) {
   return <svg viewBox="0 0 24 24" aria-hidden="true">{icons[name]}</svg>;
 }
 
-function FinderIcon({ name }: { name: "search" | "nearby" | "filters" | "location" | "briefcase" | "money" | "star" | "message" | "invite" | "docs" | "building" | "distance" }) {
+function FinderIcon({ name }: { name: "search" | "nearby" | "filters" | "location" | "briefcase" | "money" | "star" | "message" | "invite" | "docs" | "building" | "distance" | "gender" | "user" }) {
   const icons: Record<string, JSX.Element> = {
     search: <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />,
     nearby: <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z" />,
@@ -969,6 +969,8 @@ function FinderIcon({ name }: { name: "search" | "nearby" | "filters" | "locatio
     docs: <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />,
     building: <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2V9zm0 4h-2v2h2v-2z" />,
     distance: <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z" />,
+    gender: <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />,
+    user: <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />,
   };
   return (
     <svg className="mini-icon-svg" viewBox="0 0 24 24" aria-hidden="true" style={{ width: "15px", height: "15px", fill: "currentColor" }}>
@@ -1001,6 +1003,7 @@ export type Candidate = {
   last_name?: string | null;
   applicant_name: string;
   desired_job_title: string;
+  gender?: string | null;
   city: string;
   province?: string | null;
   address?: string | null;
@@ -2093,6 +2096,7 @@ export default function EmployerApplicantFinder() {
                     email: a.email || "",
                     applicant_name: a.applicant_name || "Applicant",
                     desired_job_title: a.desired_job_title || a.job_title || "",
+                    gender: a.gender || null,
                     city: a.city || "",
                     address: a.address || null,
                     work_arrangement: a.work_arrangement || null,
@@ -2114,12 +2118,13 @@ export default function EmployerApplicantFinder() {
 
       // Ensure address, email, resume_path & work_arrangement are present and compute distance from Company
       for (const c of loadedCandidates) {
-        if ((!c.address || !c.email || !c.resume_path || !c.work_arrangement || !c.expected_salary || !c.phone) && c.user_id) {
+        if ((!c.address || !c.email || !c.resume_path || !c.work_arrangement || !c.expected_salary || !c.phone || !c.gender) && c.user_id) {
           try {
             const pRes = await fetch(`/api/applicants/${c.user_id}/profile`);
             if (pRes.ok) {
               const pData = await pRes.json();
               if (pData?.profile) {
+                if (pData.profile.gender) c.gender = pData.profile.gender;
                 if (pData.profile.phone) c.phone = pData.profile.phone;
                 if (pData.profile.address) c.address = pData.profile.address;
                 if (pData.profile.city) c.city = pData.profile.city;
@@ -2208,6 +2213,7 @@ export default function EmployerApplicantFinder() {
               prev
                 ? {
                     ...prev,
+                    gender: data.profile.gender || prev.gender,
                     resume_path: data.profile.resume_path || prev.resume_path,
                     profile_picture_path: data.profile.profile_picture_path || prev.profile_picture_path,
                     work_arrangement: data.profile.work_arrangement || prev.work_arrangement || null,
@@ -3835,6 +3841,10 @@ export default function EmployerApplicantFinder() {
                                     <span>{formatLocationWithCavite(cand.city || cand.address)}</span>
                                   </span>
                                   <span className="finder-meta-inline-item">
+                                    <FinderIcon name="gender" />
+                                    <span>{cand.gender || "Prefer not to say"}</span>
+                                  </span>
+                                  <span className="finder-meta-inline-item">
                                     <FinderIcon name="briefcase" />
                                     <span>{cand.work_arrangement ? (cand.work_arrangement.toLowerCase() === "on-site" || cand.work_arrangement.toLowerCase() === "onsite" ? "On-Site" : cand.work_arrangement) : "On-Site"}</span>
                                   </span>
@@ -4164,6 +4174,10 @@ export default function EmployerApplicantFinder() {
                                   <span>{formatLocationWithCavite(cand.city || cand.address)}</span>
                                 </span>
                                 <span className="finder-meta-inline-item">
+                                  <FinderIcon name="gender" />
+                                  <span>{cand.gender || "Prefer not to say"}</span>
+                                </span>
+                                <span className="finder-meta-inline-item">
                                   <FinderIcon name="briefcase" />
                                   <span>{cand.work_arrangement ? (cand.work_arrangement.toLowerCase() === "on-site" || cand.work_arrangement.toLowerCase() === "onsite" ? "On-Site" : cand.work_arrangement) : "On-Site"}</span>
                                 </span>
@@ -4292,6 +4306,14 @@ export default function EmployerApplicantFinder() {
                       <span style={{ color: "#cbd5e1" }}>•</span>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
                         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="8" r="4" />
+                          <path d="M6 21v-2a6 6 0 0 1 12 0v2" />
+                        </svg>
+                        {selectedCandidate.gender || "Prefer not to say"}
+                      </span>
+                      <span style={{ color: "#cbd5e1" }}>•</span>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                           <polyline points="22,6 12,13 2,6" />
                         </svg>
@@ -4393,6 +4415,30 @@ export default function EmployerApplicantFinder() {
                   {/* TAB 1: PERSONAL & CONTACT */}
                   {candDetailTab === "personal" && (
                     <div className="cand-tab-content">
+                      <div className="cand-details-card">
+                        <div className="cand-card-header">
+                          <h4>Personal Details</h4>
+                        </div>
+                        <div className="cand-info-row" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "14px" }}>
+                          <div className="cand-info-item">
+                            <span className="cand-info-label">Gender</span>
+                            <span className="cand-info-val highlight">{selectedCandidate.gender || "Prefer not to say"}</span>
+                          </div>
+                          <div className="cand-info-item">
+                            <span className="cand-info-label">Location</span>
+                            <span className="cand-info-val">{formatLocationWithCavite(selectedCandidate.city || selectedCandidate.address)}</span>
+                          </div>
+                          <div className="cand-info-item">
+                            <span className="cand-info-label">Phone Number</span>
+                            <span className="cand-info-val">{selectedCandidate.phone || "Not specified"}</span>
+                          </div>
+                          <div className="cand-info-item">
+                            <span className="cand-info-label">Email Address</span>
+                            <span className="cand-info-val">{selectedCandidate.email || "Not specified"}</span>
+                          </div>
+                        </div>
+                      </div>
+
                       <div className="cand-details-card">
                         <div className="cand-card-header">
                           <h4>Professional Summary</h4>
