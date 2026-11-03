@@ -698,6 +698,7 @@
 @media (max-width: 760px) {
   .company-top-grid,
   .two-col,
+  .form-grid-2col,
   .faq-composer,
   .upload-pane {
     grid-template-columns: 1fr;
