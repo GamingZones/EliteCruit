@@ -3700,6 +3700,17 @@
   background: #0c314e;
 }
 
+.system-popup-btn.secondary {
+  background: #f1f5f9;
+  color: #334155;
+  border-color: #cbd5e1;
+}
+
+.system-popup-btn.secondary:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
 [data-theme="dark"] .system-popup-card {
   background: #0f1e32;
   border-color: rgba(148, 163, 184, 0.22);
@@ -3711,6 +3722,17 @@
 
 [data-theme="dark"] .system-popup-message {
   color: #cbd5e1;
+}
+
+[data-theme="dark"] .system-popup-btn.secondary {
+  background: #1e293b;
+  color: #e2e8f0;
+  border-color: #475569;
+}
+
+[data-theme="dark"] .system-popup-btn.secondary:hover {
+  background: #334155;
+  color: #ffffff;
 }
 
 

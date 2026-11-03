@@ -2886,6 +2886,9 @@ export default function ApplicantProfile() {
 
   const [isUpdatingParticipation, setIsUpdatingParticipation] = useState(false);
   const [isUnsavedExpWarningOpen, setIsUnsavedExpWarningOpen] = useState(false);
+  const [pendingTargetSection, setPendingTargetSection] = useState<"personal" | "preferences" | "competencies" | "experience" | null>(null);
+  const [pendingEditMode, setPendingEditMode] = useState(false);
+  const [pendingNavHref, setPendingNavHref] = useState<string | null>(null);
 
   const confirmToggleParticipation = async (newNearbyLoc: string | null) => {
     if (!userId) return;
@@ -3215,6 +3218,64 @@ export default function ApplicantProfile() {
     setExpSkillInput("");
     setEditingExpId(null);
   };
+
+  const checkHasUnsavedExp = () => {
+    if (!isAddingExp) return false;
+    if (editingExpId !== null) return true;
+    return Boolean(
+      expTitle.trim() ||
+      expCompany.trim() ||
+      expResponsibilities.trim() ||
+      expSkills.length > 0 ||
+      expSkillInput.trim() ||
+      (expCity.trim() && expCity !== (profile.city || "")) ||
+      !expIsCurrent ||
+      expEndMonth ||
+      expEndYear ||
+      expEmploymentType !== "Full-time"
+    );
+  };
+
+  const handleSectionNavClick = (targetSection: "personal" | "preferences" | "competencies" | "experience", shouldEdit: boolean = false) => {
+    if (targetSection === activeSection) {
+      if (shouldEdit && !isEditing) setIsEditing(true);
+      return;
+    }
+    if (activeSection === "experience" && checkHasUnsavedExp()) {
+      setPendingTargetSection(targetSection);
+      setPendingEditMode(shouldEdit);
+      setIsUnsavedExpWarningOpen(true);
+    } else {
+      setActiveSection(targetSection);
+      if (shouldEdit && !isEditing) setIsEditing(true);
+    }
+  };
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (activeSection === "experience" && checkHasUnsavedExp()) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [
+    activeSection,
+    isAddingExp,
+    editingExpId,
+    expTitle,
+    expCompany,
+    expResponsibilities,
+    expSkills,
+    expSkillInput,
+    expCity,
+    expIsCurrent,
+    expEndMonth,
+    expEndYear,
+    expEmploymentType,
+    profile.city,
+  ]);
 
   const handleSaveWorkExperienceEntry = async () => {
     if (!expTitle.trim() || !expCompany.trim()) {
@@ -3845,16 +3906,29 @@ export default function ApplicantProfile() {
         className="appdash-sidebar"
         aria-label="Applicant Navigation"
         onClickCapture={(e) => {
-          if (!isProfileSetupIncomplete) return;
-          const anchor = (e.target as HTMLElement).closest("a");
-          if (!anchor) return;
-          const href = (anchor.getAttribute("href") || "").toLowerCase();
-          if (!href || href === "/my-profile" || href === "/applicant-profile" || href.startsWith("#")) return;
-          e.preventDefault();
-          e.stopPropagation();
-          setSetupWarningModalMsg(
-            `Please complete and save your required profile information before leaving this page: ${missingMandatedFields.join(", ")}.`
-          );
+          if (isProfileSetupIncomplete) {
+            const anchor = (e.target as HTMLElement).closest("a");
+            if (!anchor) return;
+            const href = (anchor.getAttribute("href") || "").toLowerCase();
+            if (!href || href === "/my-profile" || href === "/applicant-profile" || href.startsWith("#")) return;
+            e.preventDefault();
+            e.stopPropagation();
+            setSetupWarningModalMsg(
+              `Please complete and save your required profile information before leaving this page: ${missingMandatedFields.join(", ")}.`
+            );
+            return;
+          }
+          if (activeSection === "experience" && checkHasUnsavedExp()) {
+            const anchor = (e.target as HTMLElement).closest("a");
+            if (!anchor) return;
+            const rawHref = anchor.getAttribute("href") || "";
+            const href = rawHref.toLowerCase();
+            if (!href || href === "/my-profile" || href === "/applicant-profile" || href.startsWith("#")) return;
+            e.preventDefault();
+            e.stopPropagation();
+            setPendingNavHref(rawHref);
+            setIsUnsavedExpWarningOpen(true);
+          }
         }}
       >
         <div className="appdash-brand">
@@ -4011,8 +4085,7 @@ export default function ApplicantProfile() {
                         type="button"
                         className="completeness-jump-btn"
                         onClick={() => {
-                          setActiveSection(item.section);
-                          if (!isEditing) setIsEditing(true);
+                          handleSectionNavClick(item.section, true);
                         }}
                       >
                         Set in {item.sectionName} →
@@ -4029,7 +4102,7 @@ export default function ApplicantProfile() {
             <button
               type="button"
               className={`section-nav-btn ${activeSection === "personal" ? "active" : ""}`}
-              onClick={() => setActiveSection("personal")}
+              onClick={() => handleSectionNavClick("personal")}
             >
               <span className="nav-num">1</span>
               <span>Personal & Contact</span>
@@ -4037,7 +4110,7 @@ export default function ApplicantProfile() {
             <button
               type="button"
               className={`section-nav-btn ${activeSection === "preferences" ? "active" : ""}`}
-              onClick={() => setActiveSection("preferences")}
+              onClick={() => handleSectionNavClick("preferences")}
             >
               <span className="nav-num">2</span>
               <span>Career Preferences</span>
@@ -4045,7 +4118,7 @@ export default function ApplicantProfile() {
             <button
               type="button"
               className={`section-nav-btn ${activeSection === "competencies" ? "active" : ""}`}
-              onClick={() => setActiveSection("competencies")}
+              onClick={() => handleSectionNavClick("competencies")}
             >
               <span className="nav-num">3</span>
               <span>Skills & Credentials</span>
@@ -4053,7 +4126,7 @@ export default function ApplicantProfile() {
             <button
               type="button"
               className={`section-nav-btn ${activeSection === "experience" ? "active" : ""}`}
-              onClick={() => setActiveSection("experience")}
+              onClick={() => handleSectionNavClick("experience")}
             >
               <span className="nav-num">4</span>
               <span>Work Experience</span>
@@ -4987,7 +5060,7 @@ export default function ApplicantProfile() {
                     className="edit-profile-button"
                     onClick={() => {
                       if (isAddingExp) {
-                        const hasUnsaved = Boolean(expTitle.trim() || expCompany.trim() || expResponsibilities.trim() || expSkills.length > 0 || editingExpId);
+                        const hasUnsaved = checkHasUnsavedExp();
                         if (hasUnsaved) {
                           setIsUnsavedExpWarningOpen(true);
                         } else {
@@ -5222,7 +5295,7 @@ export default function ApplicantProfile() {
                         type="button"
                         className="cancel-profile-button"
                         onClick={() => {
-                          const hasUnsaved = Boolean(expTitle.trim() || expCompany.trim() || expResponsibilities.trim() || expSkills.length > 0);
+                          const hasUnsaved = checkHasUnsavedExp();
                           if (hasUnsaved) {
                             setIsUnsavedExpWarningOpen(true);
                           } else {
@@ -6114,9 +6187,17 @@ export default function ApplicantProfile() {
 
       {/* UNSAVED WORK EXPERIENCE WARNING MODAL (Rule 6 Compliant) */}
       {isUnsavedExpWarningOpen && (
-        <div className="system-popup-overlay" onClick={() => setIsUnsavedExpWarningOpen(false)}>
+        <div
+          className="system-popup-overlay"
+          onClick={() => {
+            setIsUnsavedExpWarningOpen(false);
+            setPendingTargetSection(null);
+            setPendingEditMode(false);
+            setPendingNavHref(null);
+          }}
+        >
           <div className="system-popup-card" onClick={(e) => e.stopPropagation()}>
-            <div className="system-popup-icon-wrap warning" style={{ background: "#fef9c3" }}>
+            <div className="system-popup-icon-wrap warning">
               <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#ca8a04" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                 <line x1="12" y1="9" x2="12" y2="13" />
@@ -6125,12 +6206,16 @@ export default function ApplicantProfile() {
             </div>
             <h3 className="system-popup-title">Warning</h3>
             <p className="system-popup-message">You have unsaved changes in your work experience draft. Discard changes?</p>
-            <div className="system-popup-actions" style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+            <div className="system-popup-actions">
               <button
                 type="button"
                 className="system-popup-btn secondary"
-                onClick={() => setIsUnsavedExpWarningOpen(false)}
-                style={{ padding: "8px 18px", borderRadius: "6px", background: "#f1f5f9", color: "#334155", border: "1px solid #cbd5e1", fontWeight: 600, cursor: "pointer" }}
+                onClick={() => {
+                  setIsUnsavedExpWarningOpen(false);
+                  setPendingTargetSection(null);
+                  setPendingEditMode(false);
+                  setPendingNavHref(null);
+                }}
               >
                 Keep Editing
               </button>
@@ -6141,8 +6226,17 @@ export default function ApplicantProfile() {
                   setIsAddingExp(false);
                   resetExpForm();
                   setIsUnsavedExpWarningOpen(false);
+                  if (pendingTargetSection) {
+                    setActiveSection(pendingTargetSection);
+                    if (pendingEditMode && !isEditing) setIsEditing(true);
+                    setPendingTargetSection(null);
+                    setPendingEditMode(false);
+                  } else if (pendingNavHref) {
+                    const targetHref = pendingNavHref;
+                    setPendingNavHref(null);
+                    window.location.href = targetHref;
+                  }
                 }}
-                style={{ padding: "8px 18px", borderRadius: "6px", background: "#103f65", color: "#ffffff", border: "none", fontWeight: 600, cursor: "pointer" }}
               >
                 Discard Changes
               </button>
