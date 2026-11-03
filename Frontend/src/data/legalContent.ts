@@ -138,7 +138,7 @@ export const PRIVACY_POLICY: LegalDocument = {
     {
       title: "7. Contact Our Data Protection Team",
       content: [
-        "For questions regarding this Privacy Policy, exercising your statutory data subject rights, or reporting privacy concerns, please contact our designated Data Protection Officer (DPO) at privacy@elitecruit.com or support@elitecruit.com.",
+        "For questions regarding this Privacy Policy, exercising your statutory data subject rights, or reporting privacy concerns, please contact our designated Data Protection Officer (DPO) at zakiablando897@gmail.com.",
       ],
     },
   ],

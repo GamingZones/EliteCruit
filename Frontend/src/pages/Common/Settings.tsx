@@ -518,7 +518,7 @@ export default function Settings() {
                   </tr>
                   <tr>
                     <td>Support Contact</td>
-                    <td>support@elitecruit.com</td>
+                    <td>zakiablando897@gmail.com</td>
                   </tr>
                 </tbody>
               </table>
