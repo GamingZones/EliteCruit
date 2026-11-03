@@ -3319,11 +3319,13 @@ export default function ApplicantProfile() {
     const isArrangementDirty = (draft.work_arrangement || "").trim() !== (profile.work_arrangement || "").trim();
     const isMinSalaryDirty = parseSalaryInteger(draft.expected_salary_min) !== parseSalaryInteger(profile.expected_salary_min);
     const isMaxSalaryDirty = parseSalaryInteger(draft.expected_salary_max) !== parseSalaryInteger(profile.expected_salary_max);
+    const isTargetRoleInputDirty = Boolean(targetRoleInput.trim());
     return Boolean(
       isJobTitleDirty ||
       isArrangementDirty ||
       isMinSalaryDirty ||
-      isMaxSalaryDirty
+      isMaxSalaryDirty ||
+      isTargetRoleInputDirty
     );
   };
 
@@ -3382,6 +3384,35 @@ export default function ApplicantProfile() {
     setActiveSection(targetSection);
     if (shouldEdit && !isEditing) setIsEditing(true);
   };
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if ((activeSection === "experience" && checkHasUnsavedExp()) || checkHasUnsavedProfile()) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [
+    activeSection,
+    isAddingExp,
+    editingExpId,
+    expTitle,
+    expCompany,
+    expResponsibilities,
+    expSkills,
+    expSkillInput,
+    expCity,
+    expIsCurrent,
+    expEndMonth,
+    expEndYear,
+    expEmploymentType,
+    profile,
+    draft,
+    targetRoleInput,
+    isEditing,
+  ]);
 
   const handleSaveWorkExperienceEntry = async () => {
     if (!expTitle.trim() || !expCompany.trim()) {
