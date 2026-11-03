@@ -211,6 +211,18 @@ function parseSalaryInteger(value: string | number | null | undefined): string {
   return "";
 }
 
+function normalizePhoneNumber(raw?: string | null): string {
+  if (!raw) return "";
+  let digits = String(raw).replace(/\D/g, "");
+  while (digits.startsWith("63") && digits.length > 10) {
+    digits = digits.slice(2);
+  }
+  if (digits.startsWith("0")) {
+    digits = digits.slice(1);
+  }
+  return digits.slice(0, 10);
+}
+
 function buildConsolidatedSalaryString(
   minVal: string | number | null | undefined,
   maxVal: string | number | null | undefined
@@ -2648,7 +2660,7 @@ export default function ApplicantProfile() {
   const cancelField = (fieldName: keyof ApplicantProfileData) => {
     setDraft((prev) => ({
       ...prev,
-      [fieldName]: profile[fieldName] ?? "",
+      [fieldName]: fieldName === "phone" ? normalizePhoneNumber(profile.phone) : (profile[fieldName] ?? ""),
     }));
   };
 
@@ -3153,6 +3165,7 @@ export default function ApplicantProfile() {
       const loaded = {
         ...emptyProfile,
         ...data.profile,
+        phone: normalizePhoneNumber(data.profile?.phone),
         expected_salary_min: initialMin,
         expected_salary_max: initialMax,
         province: data.profile?.province || "Cavite",
@@ -3373,7 +3386,7 @@ export default function ApplicantProfile() {
 
   const updateDraft = (name: keyof ApplicantProfileData, value: string) => {
     if (name === "phone") {
-      const cleanPhone = String(value).replace(/\D/g, "").slice(0, 10);
+      const cleanPhone = normalizePhoneNumber(value);
       setDraft((current) => ({ ...current, phone: cleanPhone }));
       return;
     }
@@ -4142,7 +4155,7 @@ export default function ApplicantProfile() {
             const isLastNameDirty = (draft.last_name || "").trim() !== (profile.last_name || "").trim();
             const isProvinceDirty = (draft.province || "Cavite") !== (profile.province || "Cavite");
             const isCityDirty = (draft.city || "") !== (profile.city || "");
-            const isPhoneDirty = (draft.phone || "").trim() !== (profile.phone || "").trim();
+            const isPhoneDirty = normalizePhoneNumber(draft.phone) !== normalizePhoneNumber(profile.phone);
             const isEmailDirty = (draft.email || "").trim().toLowerCase() !== (profile.email || "").trim().toLowerCase();
             const isEmailVerifiedForDraft = isEmailDirty
               ? verifiedEmailAddress.trim().toLowerCase() === (draft.email || "").trim().toLowerCase()
@@ -4271,7 +4284,7 @@ export default function ApplicantProfile() {
                               last_name: profile.last_name || "",
                               province: profile.province || "Cavite",
                               city: profile.city || "",
-                              phone: profile.phone || "",
+                              phone: normalizePhoneNumber(profile.phone),
                               email: profile.email || "",
                               summary: profile.summary || "",
                             }));
@@ -4304,7 +4317,7 @@ export default function ApplicantProfile() {
                         {/* First Name */}
                         <div>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                            <label style={{ fontSize: "0.84rem", fontWeight: 700, margin: 0 }}>First Name</label>
+                            <label className="inline-field-label">First Name</label>
                             {fieldSuccess === "first_name" && <span className="inline-field-saved-badge">✔ Saved</span>}
                           </div>
                           <div className="inline-field-row">
@@ -4340,7 +4353,7 @@ export default function ApplicantProfile() {
                         {/* Middle Name */}
                         <div>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                            <label style={{ fontSize: "0.84rem", fontWeight: 700, margin: 0 }}>Middle Name (Optional)</label>
+                            <label className="inline-field-label">Middle Name (Optional)</label>
                             {fieldSuccess === "middle_name" && <span className="inline-field-saved-badge">✔ Saved</span>}
                           </div>
                           <div className="inline-field-row">
@@ -4376,7 +4389,7 @@ export default function ApplicantProfile() {
                         {/* Last Name */}
                         <div>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                            <label style={{ fontSize: "0.84rem", fontWeight: 700, margin: 0 }}>Last Name</label>
+                            <label className="inline-field-label">Last Name</label>
                             {fieldSuccess === "last_name" && <span className="inline-field-saved-badge">✔ Saved</span>}
                           </div>
                           <div className="inline-field-row">
@@ -4415,7 +4428,7 @@ export default function ApplicantProfile() {
                         {/* Province */}
                         <div>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                            <label style={{ fontSize: "0.84rem", fontWeight: 700, margin: 0 }}>Province</label>
+                            <label className="inline-field-label">Province</label>
                             {fieldSuccess === "province" && <span className="inline-field-saved-badge">✔ Saved</span>}
                           </div>
                           <div className="inline-field-row">
@@ -4464,7 +4477,7 @@ export default function ApplicantProfile() {
                         {/* City / Municipality */}
                         <div>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                            <label style={{ fontSize: "0.84rem", fontWeight: 700, margin: 0 }}>City / Municipality</label>
+                            <label className="inline-field-label">City / Municipality</label>
                             {fieldSuccess === "city" && <span className="inline-field-saved-badge">✔ Saved</span>}
                           </div>
                           <div className="inline-field-row">
@@ -4509,18 +4522,17 @@ export default function ApplicantProfile() {
                         {/* Phone Number */}
                         <div>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                            <label style={{ fontSize: "0.84rem", fontWeight: 700, margin: 0 }}>Phone Number</label>
+                            <label className="inline-field-label">Phone Number</label>
                             {fieldSuccess === "phone" && <span className="inline-field-saved-badge">✔ Saved</span>}
                           </div>
                           <div className="inline-field-row">
                             <div style={{ display: "flex", alignItems: "center", width: "100%", position: "relative" }}>
-                              <span style={{ position: "absolute", left: "10px", fontWeight: 700, color: "#64748b", fontSize: "0.88rem", pointerEvents: "none" }}>
+                              <span className="inline-field-phone-prefix">
                                 +63
                               </span>
                               <input
-                                className="inline-field-control"
-                                style={{ paddingLeft: "42px", width: "100%" }}
-                                value={draft.phone || ""}
+                                className="inline-field-control inline-field-phone-input"
+                                value={normalizePhoneNumber(draft.phone)}
                                 maxLength={10}
                                 inputMode="numeric"
                                 onChange={(e) => updateDraft("phone", e.target.value)}
@@ -4540,7 +4552,7 @@ export default function ApplicantProfile() {
                                 <button
                                   type="button"
                                   className="inline-field-btn inline-field-save-btn"
-                                  onClick={() => saveSingleField("phone", draft.phone)}
+                                  onClick={() => saveSingleField("phone", normalizePhoneNumber(draft.phone))}
                                   disabled={savingField === "phone"}
                                 >
                                   {savingField === "phone" ? "Saving..." : "Save"}
@@ -4553,7 +4565,7 @@ export default function ApplicantProfile() {
                         {/* Email Address */}
                         <div>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                            <label style={{ fontSize: "0.84rem", fontWeight: 700, margin: 0 }}>Email Address</label>
+                            <label className="inline-field-label">Email Address</label>
                             {fieldSuccess === "email" && <span className="inline-field-saved-badge">✔ Saved</span>}
                           </div>
                           <div className="inline-field-row">
@@ -4567,22 +4579,7 @@ export default function ApplicantProfile() {
                                 style={{ width: "100%", paddingRight: !isEmailDirty && isEmailVerifiedForDraft ? "95px" : "14px" }}
                               />
                               {!isEmailDirty && isEmailVerifiedForDraft && (
-                                <span
-                                  style={{
-                                    position: "absolute",
-                                    right: "10px",
-                                    background: "#dcfce7",
-                                    color: "#15803d",
-                                    fontSize: "0.75rem",
-                                    fontWeight: 700,
-                                    padding: "3px 10px",
-                                    borderRadius: "9999px",
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: "4px",
-                                    pointerEvents: "none",
-                                  }}
-                                >
+                                <span className="inline-field-email-verified-pill">
                                   ✔ Verified
                                 </span>
                               )}
@@ -4632,7 +4629,7 @@ export default function ApplicantProfile() {
                               </div>
                             )}
                           </div>
-                          <small style={{ display: "block", fontSize: "0.75rem", color: "#64748b", marginTop: "4px" }}>
+                          <small className="inline-field-subtext">
                             {isEmailDirty && !isEmailVerifiedForDraft
                               ? "Changing your email requires verifying before saving."
                               : "Primary contact email used for communication and notifications."}
@@ -4643,7 +4640,7 @@ export default function ApplicantProfile() {
                       {/* 4TH LINE: Professional Summary / Career Bio */}
                       <div>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                          <label style={{ fontSize: "0.84rem", fontWeight: 700, margin: 0 }}>Professional Summary / Career Bio</label>
+                          <label className="inline-field-label">Professional Summary / Career Bio</label>
                           {fieldSuccess === "summary" && <span className="inline-field-saved-badge">✔ Saved</span>}
                         </div>
                         <div>
@@ -5695,7 +5692,7 @@ export default function ApplicantProfile() {
                 name: [profile.first_name, profile.middle_name, profile.last_name].filter(Boolean).join(" ") || "Applicant Name",
                 location: [profile.city, profile.province].filter(Boolean).join(", ") || profile.address || "Cavite, Philippines",
                 email: profile.email || "Not provided",
-                phone: profile.phone ? `+63 ${profile.phone}` : "Not provided",
+                phone: profile.phone ? `+63 ${normalizePhoneNumber(profile.phone)}` : "Not provided",
                 targetRole: profile.desired_job_title || "IT / Software Specialist",
                 salary: (() => {
                   const minVal = visibleProfile.expected_salary_min || profile.expected_salary_min;
