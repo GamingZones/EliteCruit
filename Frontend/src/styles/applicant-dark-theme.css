@@ -6551,6 +6551,10 @@
   color: #e2e8f0 !important;
 }
 
+[data-theme="dark"] .cand-exp-skills-row {
+  border-top-color: #2e3244 !important;
+}
+
 [data-theme="dark"] .cand-exp-skills-label {
   color: #94a3b8 !important;
 }
@@ -7692,6 +7696,10 @@
 [data-theme="dark"] .cand-exp-bullet-line,
 [data-theme="dark"] .cand-exp-responsibilities {
   color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .cand-exp-skills-row {
+  border-top-color: #2e3244 !important;
 }
 
 /* Candidate Details Footer (CRITICAL: Pic 2) */
