@@ -4313,7 +4313,7 @@ export default function ApplicantProfile() {
 
                   <div className="fields-grid" style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
                       {/* 1ST LINE: First Name, Middle Name, Last Name */}
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px", width: "100%" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "14px", width: "100%" }}>
                         {/* First Name */}
                         <div>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
@@ -4526,7 +4526,7 @@ export default function ApplicantProfile() {
                             {fieldSuccess === "phone" && <span className="inline-field-saved-badge">✔ Saved</span>}
                           </div>
                           <div className="inline-field-row">
-                            <div style={{ display: "flex", alignItems: "center", width: "100%", position: "relative" }}>
+                            <div className="inline-field-input-wrap">
                               <span className="inline-field-phone-prefix">
                                 +63
                               </span>
@@ -4569,7 +4569,7 @@ export default function ApplicantProfile() {
                             {fieldSuccess === "email" && <span className="inline-field-saved-badge">✔ Saved</span>}
                           </div>
                           <div className="inline-field-row">
-                            <div style={{ position: "relative", width: "100%", display: "flex", alignItems: "center" }}>
+                            <div className="inline-field-input-wrap">
                               <input
                                 type="email"
                                 className="inline-field-control"
@@ -4643,17 +4643,17 @@ export default function ApplicantProfile() {
                           <label className="inline-field-label">Professional Summary / Career Bio</label>
                           {fieldSuccess === "summary" && <span className="inline-field-saved-badge">✔ Saved</span>}
                         </div>
-                        <div>
+                        <div className="inline-field-row inline-field-row-textarea">
                           <textarea
                             className="inline-field-control"
                             rows={4}
                             value={draft.summary || ""}
                             placeholder="Briefly describe your professional background, key achievements, and core strengths..."
                             onChange={(e) => updateDraft("summary", e.target.value)}
-                            style={{ width: "100%", resize: "vertical" }}
+                            style={{ resize: "vertical" }}
                           />
                           {isSummaryDirty && (
-                            <div className="inline-field-actions" style={{ marginTop: "8px", justifyContent: "flex-end" }}>
+                            <div className="inline-field-actions inline-field-actions-textarea">
                               <button
                                 type="button"
                                 className="inline-field-btn inline-field-cancel-btn"
