@@ -3383,34 +3383,6 @@ export default function ApplicantProfile() {
     if (shouldEdit && !isEditing) setIsEditing(true);
   };
 
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if ((activeSection === "experience" && checkHasUnsavedExp()) || checkHasUnsavedProfile()) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [
-    activeSection,
-    isAddingExp,
-    editingExpId,
-    expTitle,
-    expCompany,
-    expResponsibilities,
-    expSkills,
-    expSkillInput,
-    expCity,
-    expIsCurrent,
-    expEndMonth,
-    expEndYear,
-    expEmploymentType,
-    profile,
-    draft,
-    isEditing,
-  ]);
-
   const handleSaveWorkExperienceEntry = async () => {
     if (!expTitle.trim() || !expCompany.trim()) {
       setProfileMessage("Job title and company name are required.");
@@ -5043,7 +5015,6 @@ export default function ApplicantProfile() {
                           })()}
                           value={targetRoleInput}
                           onChange={setTargetRoleInput}
-                          onSelectOption={(chosen) => handleAddTargetRole(chosen)}
                           onEnterAdd={() => handleAddTargetRole()}
                           placeholder="Select or type target job role (e.g. Web Developer, Accountant, Nurse, CSR)..."
                           disabled={savingField === "desired_job_title"}
