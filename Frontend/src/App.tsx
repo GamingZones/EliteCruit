@@ -35,12 +35,27 @@ function ProtectedRoute({
   allowedRoles?: Role[];
 }) {
   const token = getAuthToken();
-  const user = getStoredUser<{ id: number; role: Role; email: string; isProfileComplete?: boolean }>();
+  const user = getStoredUser<{
+    id: number;
+    role: Role;
+    email: string;
+    isProfileComplete?: boolean;
+    is_email_verified?: boolean;
+  }>();
 
   // Fallback 1: Unauthenticated -> Redirect immediately to /login
   if (!token || !user) {
     if (typeof window !== "undefined") {
       window.location.replace("/login?auth=required");
+    }
+    return null;
+  }
+
+  // Fallback 1b: Unverified Email (for non-admins) -> Redirect immediately to /login?verify=required
+  if (user.role !== "admin" && user.is_email_verified === false) {
+    if (typeof window !== "undefined") {
+      clearAuth();
+      window.location.replace("/login?verify=required");
     }
     return null;
   }
@@ -51,16 +66,16 @@ function ProtectedRoute({
       if (user.role === "admin") {
         window.location.replace("/admin-dashboard");
       } else if (user.role === "employer") {
-        window.location.replace(user.isProfileComplete === false ? "/employer-company-profile?setup=required" : "/employer-dashboard");
+        window.location.replace(user.isProfileComplete !== true ? "/employer-company-profile?setup=required" : "/employer-dashboard");
       } else {
-        window.location.replace(user.isProfileComplete === false ? "/my-profile?setup=required" : "/applicant-dashboard");
+        window.location.replace(user.isProfileComplete !== true ? "/my-profile?setup=required" : "/applicant-dashboard");
       }
     }
     return null;
   }
 
   // Fallback 3: Mandatory Initial Profile Setup Gate
-  if (typeof window !== "undefined" && user.isProfileComplete === false) {
+  if (typeof window !== "undefined" && user.role !== "admin" && user.isProfileComplete !== true) {
     const currentPath = window.location.pathname.toLowerCase();
     if (user.role === "applicant" && currentPath !== "/my-profile" && currentPath !== "/applicant-profile") {
       window.location.replace("/my-profile?setup=required");
@@ -77,23 +92,31 @@ function ProtectedRoute({
 
 function PublicOnlyRoute({ element }: { element: React.ReactElement }) {
   const [currentUser, setCurrentUser] = useState(() => {
+    const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
     const isPasswordResetRedirect =
-      typeof window !== "undefined" &&
-      (new URLSearchParams(window.location.search).get("action") === "forgot" ||
-        new URLSearchParams(window.location.search).get("reset") === "true");
+      searchParams &&
+      (searchParams.get("action") === "forgot" || searchParams.get("reset") === "true");
     const isExplicitSwitch =
-      typeof window !== "undefined" &&
-      (new URLSearchParams(window.location.search).get("switch") === "true" ||
-        new URLSearchParams(window.location.search).get("action") === "switch");
+      searchParams &&
+      (searchParams.get("switch") === "true" || searchParams.get("action") === "switch");
+    const isAuthRequiredRedirect =
+      searchParams &&
+      (searchParams.get("verify") === "required" || searchParams.get("auth") === "required");
 
-    if (isExplicitSwitch) {
-      clearAuth();
+    if (isExplicitSwitch || isAuthRequiredRedirect) {
+      if (isAuthRequiredRedirect) {
+        clearAuth();
+      }
       return null;
     }
 
     const token = getAuthToken();
-    const user = getStoredUser<{ id: number; role: Role; email: string; isProfileComplete?: boolean }>();
+    const user = getStoredUser<{ id: number; role: Role; email: string; isProfileComplete?: boolean; is_email_verified?: boolean }>();
     if (token && user && !isPasswordResetRedirect) {
+      if (user.role !== "admin" && user.is_email_verified === false) {
+        clearAuth();
+        return null;
+      }
       return user;
     }
     return null;
@@ -108,9 +131,9 @@ function PublicOnlyRoute({ element }: { element: React.ReactElement }) {
       return "/admin-dashboard";
     }
     if (currentUser.role === "employer") {
-      return currentUser.isProfileComplete === false ? "/employer-company-profile?setup=required" : "/employer-dashboard";
+      return currentUser.isProfileComplete !== true ? "/employer-company-profile?setup=required" : "/employer-dashboard";
     }
-    return currentUser.isProfileComplete === false ? "/my-profile?setup=required" : "/applicant-dashboard";
+    return currentUser.isProfileComplete !== true ? "/my-profile?setup=required" : "/applicant-dashboard";
   };
 
   const handleContinue = () => {

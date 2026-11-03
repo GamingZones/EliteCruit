@@ -70,6 +70,9 @@ export default function Login() {
   const [submitError, setSubmitError] = useState(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
+      if (params.get("verify") === "required") {
+        return "Please verify your email address to continue.";
+      }
       if (params.get("auth") === "required") {
         return "Please log in to access this page.";
       }
@@ -185,12 +188,12 @@ export default function Login() {
 
       if (normalizedUser?.role === "applicant") {
         window.location.href =
-          normalizedUser.isProfileComplete === false
+          normalizedUser.isProfileComplete !== true
             ? "/my-profile?setup=required"
             : "/applicant-dashboard#section-smart-matches";
       } else if (normalizedUser?.role === "employer") {
         window.location.href =
-          normalizedUser.isProfileComplete === false
+          normalizedUser.isProfileComplete !== true
             ? "/employer-company-profile?setup=required"
             : "/employer-dashboard";
       } else if (normalizedUser?.role === "admin") {
@@ -253,12 +256,12 @@ export default function Login() {
 
       if (normalizedUser?.role === "applicant") {
         window.location.href =
-          normalizedUser.isProfileComplete === false
+          normalizedUser.isProfileComplete !== true
             ? "/my-profile?setup=required"
             : "/applicant-dashboard#section-smart-matches";
       } else if (normalizedUser?.role === "employer") {
         window.location.href =
-          normalizedUser.isProfileComplete === false
+          normalizedUser.isProfileComplete !== true
             ? "/employer-company-profile?setup=required"
             : "/employer-dashboard";
       } else if (normalizedUser?.role === "admin") {

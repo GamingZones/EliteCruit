@@ -1293,6 +1293,7 @@ app.post("/api/auth/login", async (req, res) => {
         id: user.id,
         email: user.email,
         role: user.role,
+        is_email_verified: Boolean(user.is_email_verified),
         businessName,
         displayName,
         isProfileComplete,
@@ -1388,6 +1389,7 @@ app.post("/api/auth/verify-2fa", async (req, res) => {
         id: user.id,
         email: user.email,
         role: user.role,
+        is_email_verified: true,
         businessName,
         displayName,
         isProfileComplete,
@@ -1611,7 +1613,7 @@ app.post("/api/auth/verify-email-otp", optionalAuthenticateToken, async (req, re
 app.get("/api/auth/me", authenticateToken, async (req, res) => {
   try {
     const user = await get(
-      "SELECT id, email, role, is_active FROM users WHERE id = ?",
+      "SELECT id, email, role, is_active, is_email_verified FROM users WHERE id = ?",
       [req.user.id]
     );
     if (!user || !user.is_active) {
@@ -1621,6 +1623,7 @@ app.get("/api/auth/me", authenticateToken, async (req, res) => {
     res.json({
       user: {
         ...user,
+        is_email_verified: Boolean(user.is_email_verified),
         isProfileComplete,
         missingProfileFields,
       },
@@ -2656,7 +2659,13 @@ app.put("/api/employers/:userId/profile", authenticateToken, requireUserOrAdmin,
       `SELECT e.*, u.email AS business_email, COALESCE(u.is_email_verified, TRUE) AS is_email_verified FROM employer_profiles e INNER JOIN users u ON u.id = e.user_id WHERE e.user_id = ?`,
       [userId]
     );
-    res.json({ message: "Employer profile updated successfully.", profile: sanitizeEmployerProfile(profile) });
+    const completeness = await checkUserProfileCompleteness({ id: userId, role: "employer" });
+    res.json({
+      message: "Employer profile updated successfully.",
+      profile: sanitizeEmployerProfile(profile),
+      isProfileComplete: completeness.isProfileComplete,
+      missingProfileFields: completeness.missingProfileFields,
+    });
   } catch (err) {
     console.error("Update employer profile error:", err);
     if (err.code === "SQLITE_CONSTRAINT" || err.code === "23505" || String(err.message).includes("UNIQUE")) {
@@ -2846,7 +2855,12 @@ app.put("/api/applicants/:userId/profile", authenticateToken, requireUserOrAdmin
         }
       }
     }
-    res.json({ profile });
+    const completeness = await checkUserProfileCompleteness({ id: userId, role: "applicant" });
+    res.json({
+      profile,
+      isProfileComplete: completeness.isProfileComplete,
+      missingProfileFields: completeness.missingProfileFields,
+    });
   } catch (error) {
     try { await run("ROLLBACK"); } catch {}
     console.error("Save applicant profile error:", error);

@@ -3721,7 +3721,15 @@ export default function ApplicantProfile() {
           const rawUser = localStorage.getItem("elitecruit-user");
           if (rawUser) {
             const parsed = JSON.parse(rawUser);
-            localStorage.setItem("elitecruit-user", JSON.stringify({ ...parsed, email: savedProfile.email.trim() }));
+            localStorage.setItem(
+              "elitecruit-user",
+              JSON.stringify({
+                ...parsed,
+                email: savedProfile.email.trim(),
+                isProfileComplete: data.isProfileComplete !== undefined ? data.isProfileComplete : (missingMandatedFields.length === 0),
+                missingProfileFields: data.missingProfileFields !== undefined ? data.missingProfileFields : missingMandatedFields,
+              })
+            );
           }
         } catch {}
       }
