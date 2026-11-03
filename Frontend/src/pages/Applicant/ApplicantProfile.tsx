@@ -93,6 +93,7 @@ type ApplicantProfileData = {
   first_name: string | null;
   middle_name: string | null;
   last_name: string | null;
+  gender?: string | null;
   email: string | null;
   phone: string | null;
   province: string | null;
@@ -123,6 +124,7 @@ const emptyProfile: ApplicantProfileData = {
   first_name: null,
   middle_name: null,
   last_name: null,
+  gender: "Prefer not to say",
   email: null,
   phone: null,
   province: "Cavite",
@@ -149,6 +151,7 @@ const emptyProfile: ApplicantProfileData = {
   is_email_verified: false,
 };
 
+const GENDER_OPTIONS = ["Male", "Female", "Other", "Prefer not to say"];
 const DESIRED_JOB_TITLES = BSIT_BSCS_JOB_TITLES;
 
 type ItemWithExp = {
@@ -4343,6 +4346,7 @@ export default function ApplicantProfile() {
             const isFirstNameDirty = (draft.first_name || "").trim() !== (profile.first_name || "").trim();
             const isMiddleNameDirty = (draft.middle_name || "").trim() !== (profile.middle_name || "").trim();
             const isLastNameDirty = (draft.last_name || "").trim() !== (profile.last_name || "").trim();
+            const isGenderDirty = (draft.gender || "Prefer not to say") !== (profile.gender || "Prefer not to say");
             const isProvinceDirty = (draft.province || "Cavite") !== (profile.province || "Cavite");
             const isCityDirty = (draft.city || "") !== (profile.city || "");
             const isPhoneDirty = normalizePhoneNumber(draft.phone) !== normalizePhoneNumber(profile.phone);
@@ -4568,8 +4572,49 @@ export default function ApplicantProfile() {
                         </div>
                       </div>
 
-                      {/* 2ND LINE: Province, City / Municipality */}
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "14px", width: "100%" }}>
+                      {/* 2ND LINE: Gender, Province, City / Municipality */}
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "14px", width: "100%" }}>
+                        {/* Gender */}
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                            <label className="inline-field-label">Gender</label>
+                            {fieldSuccess === "gender" && <span className="inline-field-saved-badge">✔ Saved</span>}
+                          </div>
+                          <div className="inline-field-row">
+                            <select
+                              className="inline-field-control"
+                              value={draft.gender || "Prefer not to say"}
+                              onChange={(event) => updateDraft("gender", event.target.value)}
+                            >
+                              {GENDER_OPTIONS.map((g) => (
+                                <option key={g} value={g}>
+                                  {g}
+                                </option>
+                              ))}
+                            </select>
+                            {isGenderDirty && (
+                              <div className="inline-field-actions">
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-cancel-btn"
+                                  onClick={() => handleInlineCancelClick("gender")}
+                                  disabled={savingField === "gender"}
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-save-btn"
+                                  onClick={() => saveSingleField("gender", draft.gender || "Prefer not to say")}
+                                  disabled={savingField === "gender"}
+                                >
+                                  {savingField === "gender" ? "Saving..." : "Save"}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
                         {/* Province */}
                         <div>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
