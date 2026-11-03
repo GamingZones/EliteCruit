@@ -156,6 +156,26 @@
   gap: 18px;
 }
 
+.inline-field-phone-prefix {
+  position: absolute;
+  left: 10px;
+  font-weight: 700;
+  color: #64748b;
+  font-size: 0.82rem;
+  pointer-events: none;
+  z-index: 1;
+  user-select: none;
+}
+
+.inline-field-phone-input {
+  padding-left: 42px !important;
+}
+
+.inline-field-subtext.error {
+  color: #dc2626 !important;
+  font-weight: 600;
+}
+
 .form-grid label {
   display: grid;
   gap: 5px;
@@ -1468,6 +1488,14 @@
   background: rgba(245, 158, 11, 0.16);
   color: #fbbf24;
   border-color: rgba(245, 158, 11, 0.35);
+}
+
+[data-theme="dark"] .inline-field-phone-prefix {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .inline-field-subtext.error {
+  color: #f87171 !important;
 }
 
 .email-input-wrapper {

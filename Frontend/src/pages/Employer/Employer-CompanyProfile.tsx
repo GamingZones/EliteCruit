@@ -145,6 +145,18 @@ function normalizeEmployerProfile(source: any, fallback: EmployerProfileForm): E
   };
 }
 
+function normalizePhoneNumber(raw?: string | null): string {
+  if (!raw) return "";
+  let digits = String(raw).replace(/\D/g, "");
+  while (digits.startsWith("63") && digits.length > 10) {
+    digits = digits.slice(2);
+  }
+  if (digits.startsWith("0")) {
+    digits = digits.slice(1);
+  }
+  return digits.slice(0, 10);
+}
+
 export default function EmployerCompanyProfile() {
   const [isScreeningOpen, setIsScreeningOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -176,12 +188,23 @@ export default function EmployerCompanyProfile() {
       setWarningPopup("Please enter branch name.");
       return;
     }
+    if (editBranchData.contact_number?.trim()) {
+      const cleanPhone = normalizePhoneNumber(editBranchData.contact_number);
+      if (cleanPhone.length !== 10) {
+        setWarningPopup("Branch contact number must have exactly 10 digits.");
+        return;
+      }
+    }
+    const cleanBranchPhone = editBranchData.contact_number?.trim()
+      ? `+63 ${normalizePhoneNumber(editBranchData.contact_number)}`
+      : "";
+    const finalEditData = { ...editBranchData, contact_number: cleanBranchPhone };
 
     let updatedBranches = draft.branches.map((b) => {
       if (b.id === editingBranchId) {
-        return editBranchData;
+        return finalEditData;
       }
-      return editBranchData.is_main ? { ...b, is_main: false } : b;
+      return finalEditData.is_main ? { ...b, is_main: false } : b;
     });
 
     updateDraft("branches", updatedBranches);
@@ -480,6 +503,13 @@ export default function EmployerCompanyProfile() {
       setWarningPopup("Please verify your new business email address before saving.");
       return;
     }
+    if (!overrideBranches && draft.contact_number) {
+      const cleanPhone = normalizePhoneNumber(draft.contact_number);
+      if (cleanPhone && cleanPhone.length !== 10) {
+        setWarningPopup("Primary contact number must have exactly 10 digits.");
+        return;
+      }
+    }
     setIsSaving(true);
     setPageMessage("");
     try {
@@ -572,6 +602,13 @@ export default function EmployerCompanyProfile() {
 
   const saveSingleField = async (fieldName: string, value: any) => {
     if (!userId) return;
+    if (fieldName === "contact_number") {
+      const cleanPhone = normalizePhoneNumber(value);
+      if (cleanPhone.length !== 10) {
+        setWarningPopup("Primary contact number must have exactly 10 digits.");
+        return;
+      }
+    }
     setSavingField(fieldName);
     setPageMessage("");
     try {
@@ -644,7 +681,7 @@ export default function EmployerCompanyProfile() {
     const isIndustryDirty = (draft.industry || "") !== (profile.industry || "");
     const isSizeDirty = (draft.company_size || "") !== (profile.company_size || "");
     const isEmailDirty = (draft.business_email || "").trim().toLowerCase() !== (profile.business_email || "").trim().toLowerCase();
-    const isContactDirty = (draft.contact_number || "").trim() !== (profile.contact_number || "").trim();
+    const isContactDirty = normalizePhoneNumber(draft.contact_number) !== normalizePhoneNumber(profile.contact_number);
     const isProvinceDirty = (draft.province || "Cavite") !== (profile.province || "Cavite");
     const isCityDirty = (draft.city || "") !== (profile.city || "");
     const isDescDirty = (draft.company_description || "").trim() !== (profile.company_description || "").trim();
@@ -942,9 +979,20 @@ export default function EmployerCompanyProfile() {
       setWarningPopup("Please enter branch name.");
       return;
     }
+    if (newBranch.contact_number?.trim()) {
+      const cleanPhone = normalizePhoneNumber(newBranch.contact_number);
+      if (cleanPhone.length !== 10) {
+        setWarningPopup("Branch contact number must have exactly 10 digits.");
+        return;
+      }
+    }
+    const cleanBranchPhone = newBranch.contact_number?.trim()
+      ? `+63 ${normalizePhoneNumber(newBranch.contact_number)}`
+      : "";
     const branchItem: BranchLocation = {
       id: `br-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
       ...newBranch,
+      contact_number: cleanBranchPhone,
     };
 
     // If set as main, mark other branches as non-main
@@ -1645,7 +1693,9 @@ export default function EmployerCompanyProfile() {
               const isEmailVerifiedForDraft = isEmailDirty
                 ? verifiedEmailAddress.trim().toLowerCase() === (draft.business_email || "").trim().toLowerCase()
                 : true;
-              const isContactNumberDirty = (draft.contact_number || "").trim() !== (profile.contact_number || "").trim();
+              const cleanContact = normalizePhoneNumber(draft.contact_number);
+              const origContact = normalizePhoneNumber(profile.contact_number);
+              const isContactNumberDirty = cleanContact !== origContact;
               const isProvinceDirty = (draft.province || "Cavite") !== (profile.province || "Cavite");
               const isCityDirty = (draft.city || "") !== (profile.city || "");
               const isDescDirty = (draft.company_description || "").trim() !== (profile.company_description || "").trim();
@@ -1767,12 +1817,23 @@ export default function EmployerCompanyProfile() {
                             )}
                           </div>
                           <div className="inline-field-row">
-                            <input
-                              className="inline-field-control"
-                              value={draft.contact_number || ""}
-                              onChange={(e) => updateDraft("contact_number", e.target.value)}
-                              placeholder="e.g. +63 912 345 6789"
-                            />
+                            <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", alignItems: "center" }}>
+                              <span className="inline-field-phone-prefix">
+                                +63
+                              </span>
+                              <input
+                                type="tel"
+                                className="inline-field-control inline-field-phone-input"
+                                value={cleanContact}
+                                maxLength={10}
+                                inputMode="numeric"
+                                onChange={(e) => {
+                                  const clean = normalizePhoneNumber(e.target.value);
+                                  updateDraft("contact_number", clean ? `+63 ${clean}` : "");
+                                }}
+                                placeholder="9123456789"
+                              />
+                            </div>
                             {isContactNumberDirty && (
                               <div className="inline-field-actions">
                                 <button
@@ -1786,14 +1847,19 @@ export default function EmployerCompanyProfile() {
                                 <button
                                   type="button"
                                   className="inline-field-btn inline-field-save-btn"
-                                  onClick={() => saveSingleField("contact_number", draft.contact_number)}
-                                  disabled={savingField === "contact_number"}
+                                  onClick={() => saveSingleField("contact_number", cleanContact ? `+63 ${cleanContact}` : "")}
+                                  disabled={savingField === "contact_number" || cleanContact.length !== 10}
                                 >
                                   {savingField === "contact_number" ? "Saving..." : "Save"}
                                 </button>
                               </div>
                             )}
                           </div>
+                          <small className={`inline-field-subtext ${isContactNumberDirty && cleanContact.length !== 10 ? "error" : ""}`} style={{ display: "block", fontSize: "0.75rem", marginTop: "4px" }}>
+                            {isContactNumberDirty && cleanContact.length !== 10
+                              ? `Contact number must have exactly 10 digits (${cleanContact.length}/10)`
+                              : "10-digit mobile number excluding country code (+63)."}
+                          </small>
                         </div>
                       </div>
 
@@ -2005,10 +2071,15 @@ export default function EmployerCompanyProfile() {
                   <label>
                     Branch Contact (Optional)
                     <input
-                      type="text"
-                      placeholder="e.g. +63 912 345 6789"
-                      value={newBranch.contact_number}
-                      onChange={(e) => setNewBranch((b) => ({ ...b, contact_number: e.target.value }))}
+                      type="tel"
+                      maxLength={10}
+                      inputMode="numeric"
+                      placeholder="e.g. 9123456789 (10 digits)"
+                      value={normalizePhoneNumber(newBranch.contact_number)}
+                      onChange={(e) => {
+                        const clean = normalizePhoneNumber(e.target.value);
+                        setNewBranch((b) => ({ ...b, contact_number: clean }));
+                      }}
                     />
                   </label>
                   <label>
@@ -2091,9 +2162,15 @@ export default function EmployerCompanyProfile() {
                           <label>
                             Branch Contact (Optional)
                             <input
-                              type="text"
-                              value={editBranchData.contact_number || ""}
-                              onChange={(e) => setEditBranchData((prev) => prev ? ({ ...prev, contact_number: e.target.value }) : null)}
+                              type="tel"
+                              maxLength={10}
+                              inputMode="numeric"
+                              placeholder="e.g. 9123456789 (10 digits)"
+                              value={normalizePhoneNumber(editBranchData.contact_number)}
+                              onChange={(e) => {
+                                const clean = normalizePhoneNumber(e.target.value);
+                                setEditBranchData((prev) => prev ? ({ ...prev, contact_number: clean }) : null);
+                              }}
                             />
                           </label>
                           <label>
