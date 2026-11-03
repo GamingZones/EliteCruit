@@ -2174,7 +2174,6 @@ export default function EmployerApplicantFinder() {
             const jdata = await jobsRes.json();
             if (Array.isArray(jdata?.jobs)) {
               setActiveJobs(jdata.jobs);
-              if (jdata.jobs.length > 0) setSelectedJobId(jdata.jobs[0].id);
             }
           } else {
             const allJobsRes = await fetch(`/api/employers/${userId}/job-posts`);
@@ -2182,7 +2181,6 @@ export default function EmployerApplicantFinder() {
               const ajData = await allJobsRes.json();
               if (Array.isArray(ajData?.jobPosts)) {
                 setActiveJobs(ajData.jobPosts);
-                if (ajData.jobPosts.length > 0) setSelectedJobId(ajData.jobPosts[0].id);
               }
             }
           }
@@ -3464,16 +3462,12 @@ export default function EmployerApplicantFinder() {
                           onChange={(e) => {
                             const val = e.target.value ? Number(e.target.value) : "";
                             setSelectedJobId(val);
-                            if (val) {
-                              const job = activeJobs.find((j) => j.id === val);
-                              if (job) setSelectedRole(job.title);
-                            }
                           }}
                         >
                           <option value="">General Candidate Pool</option>
                           {activeJobs.map((j) => (
                             <option key={j.id} value={j.id}>
-                              {j.title} ({j.city || "Cavite"})
+                              {j.title}
                             </option>
                           ))}
                         </select>
@@ -3486,32 +3480,12 @@ export default function EmployerApplicantFinder() {
                       <select
                         className="filter-drawer-select"
                         value={selectedRole}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setSelectedRole(val);
-                          const matchedJob = activeJobs.find((j) => j.title.toLowerCase() === val.toLowerCase());
-                          if (matchedJob) {
-                            setSelectedJobId(matchedJob.id);
-                          } else if (val === "All roles") {
-                            setSelectedJobId("");
-                          }
-                        }}
+                        onChange={(e) => setSelectedRole(e.target.value)}
                       >
-                        <option value="All roles">All roles</option>
-                        {activeJobs.length > 0 && (
-                          <optgroup label="Your Active Vacancies">
-                            {activeJobs.map((j) => (
-                              <option key={`job-role-${j.id}`} value={j.title}>
-                                {j.title} ({j.city || "Cavite"})
-                              </option>
-                            ))}
-                          </optgroup>
-                        )}
-                        <optgroup label="Standard Roles">
-                          {BSIT_BSCS_JOB_TITLES.map((role) => (
-                            <option key={role} value={role}>{role}</option>
-                          ))}
-                        </optgroup>
+                        <option>All roles</option>
+                        {BSIT_BSCS_JOB_TITLES.map((role) => (
+                          <option key={role} value={role}>{role}</option>
+                        ))}
                       </select>
                     </div>
 
@@ -3651,33 +3625,9 @@ export default function EmployerApplicantFinder() {
 
                 {/* RESULTS HEADER */}
                 <div className="finder-results-header">
-                  <div>
-                    <h2>
-                      Showing {filteredCandidates.length === 0 ? 0 : `${(candidatePage - 1) * CANDIDATES_PER_PAGE + 1} - ${Math.min(candidatePage * CANDIDATES_PER_PAGE, filteredCandidates.length)}`} of {filteredCandidates.length} candidate{filteredCandidates.length === 1 ? "" : "s"}
-                    </h2>
-                    {selectedJobId && (
-                      <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
-                        <span style={{ fontSize: "0.8rem", color: "#0284c7", fontWeight: 600 }}>
-                          🎯 Evaluating against vacancy: <strong>{activeJobs.find((j) => j.id === selectedJobId)?.title}</strong>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedJobId("")}
-                          style={{
-                            background: "transparent",
-                            border: "none",
-                            color: "#64748b",
-                            cursor: "pointer",
-                            fontSize: "0.82rem",
-                            padding: "0 4px",
-                          }}
-                          title="Reset to general pool"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <h2>
+                    Showing {filteredCandidates.length === 0 ? 0 : `${(candidatePage - 1) * CANDIDATES_PER_PAGE + 1} - ${Math.min(candidatePage * CANDIDATES_PER_PAGE, filteredCandidates.length)}`} of {filteredCandidates.length} candidate{filteredCandidates.length === 1 ? "" : "s"}
+                  </h2>
                   <span className="finder-sort-hint">Sorted by: Best Match & Profile Completeness</span>
                 </div>
 
