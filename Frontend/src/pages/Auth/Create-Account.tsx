@@ -559,15 +559,32 @@ export default function CreateAccount() {
                 </div>
               </div>
 
-              <div className="form-row two-col">
+              <div className="form-row one-col">
                 <div className="form-field">
-                  <label htmlFor="employerEmail">Primary Business Email</label>
+                  <label htmlFor="employerPhone">Phone Number</label>
+                  <div className="input-prefix-box">
+                    <span className="prefix-tag">+63</span>
+                    <input
+                      id="employerPhone"
+                      type="tel"
+                      name="phone"
+                      placeholder="09682944632"
+                      value={formData.phone}
+                      onChange={handlePhoneChange}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-row one-col">
+                <div className="form-field">
+                  <label htmlFor="employerEmail">Email Address</label>
                   <div className="email-input-wrapper">
                     <input
                       id="employerEmail"
                       type="email"
                       name="email"
-                      placeholder="company@example.com"
+                      placeholder="your@email.com"
                       required
                       value={formData.email}
                       onChange={handleChange}
@@ -591,18 +608,6 @@ export default function CreateAccount() {
                       </button>
                     )}
                   </div>
-                </div>
-
-                <div className="form-field">
-                  <label htmlFor="employerPhone">Primary Contact Number</label>
-                  <input
-                    id="employerPhone"
-                    type="tel"
-                    name="phone"
-                    placeholder="09682944632"
-                    value={formData.phone}
-                    onChange={handlePhoneChange}
-                  />
                 </div>
               </div>
 
