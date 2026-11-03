@@ -265,6 +265,33 @@ export default function Feedback() {
 
   // View tabs & received reviews state (for both Employer and Applicant)
   const [activeTab, setActiveTab] = useState<"received-reviews" | "submit-feedback">("received-reviews");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleHash = () => {
+      const h = (window.location.hash || "").toLowerCase();
+      if (h.includes("rate") || h.includes("submit") || h.includes("recruitment-log") || h.includes("log")) {
+        setActiveTab("submit-feedback");
+      } else if (h.includes("received") || h.includes("reviews") || h.includes("candidate-reviews") || h.includes("employer-reviews")) {
+        setActiveTab("received-reviews");
+      }
+    };
+    handleHash();
+    window.addEventListener("hashchange", handleHash);
+    return () => window.removeEventListener("hashchange", handleHash);
+  }, []);
+
+  const handleTabChange = (tab: "received-reviews" | "submit-feedback") => {
+    setActiveTab(tab);
+    if (typeof window !== "undefined") {
+      const targetHash = tab === "submit-feedback"
+        ? (role === "employer" ? "rate-candidates" : "rate-employers")
+        : (role === "employer" ? "candidate-reviews" : "employer-reviews");
+      try {
+        window.history.replaceState(null, "", `#${targetHash}`);
+      } catch {}
+    }
+  };
   const [companyReviews, setCompanyReviews] = useState<CompanyReviewItem[]>([]);
   const [companyReviewFilter, setCompanyReviewFilter] = useState<number | "all" | "anonymous">("all");
   const [applicantReceivedReviews, setApplicantReceivedReviews] = useState<any[]>([]);
@@ -1012,12 +1039,18 @@ export default function Feedback() {
   // Only targets that have NOT been reviewed yet appear in the top selection dropdown
   const availableTargets = useMemo(() => {
     return targetOptions.filter((item) => {
+      if (role === "employer") {
+        return !feedbackList.some((f) => 
+          (item.applicantUserId && f.applicantUserId === item.applicantUserId && (item.jobPostId ? f.jobPostId === item.jobPostId : true)) ||
+          (f.targetName.trim().toLowerCase() === item.name.trim().toLowerCase() && (item.jobPostId ? f.jobPostId === item.jobPostId : true))
+        );
+      }
       return !feedbackList.some((f) => 
         (item.jobPostId && f.jobPostId === item.jobPostId) ||
         (f.targetName.trim().toLowerCase() === item.name.trim().toLowerCase())
       );
     });
-  }, [targetOptions, feedbackList]);
+  }, [targetOptions, feedbackList, role]);
 
   // Bayesian Fair Rating formula: ((v * R) + (m * C)) / (v + m)
   // where v = review count, R = arithmetic mean, m = confidence prior weight (3), C = platform prior mean (4.0)
@@ -1666,7 +1699,7 @@ export default function Feedback() {
           <button
             type="button"
             className={`feedback-subnav-btn ${activeTab === "received-reviews" ? "active" : ""}`}
-            onClick={() => setActiveTab("received-reviews")}
+            onClick={() => handleTabChange("received-reviews")}
           >
             <span>{isEmployerRole ? "Candidate Reviews on Your Company" : "Employer Reviews on You"}</span>
           </button>
@@ -1674,7 +1707,7 @@ export default function Feedback() {
           <button
             type="button"
             className={`feedback-subnav-btn ${activeTab === "submit-feedback" ? "active" : ""}`}
-            onClick={() => setActiveTab("submit-feedback")}
+            onClick={() => handleTabChange("submit-feedback")}
           >
             <span>{isEmployerRole ? "Rate Candidates & Recruitment Log" : "Rate Employers & Feedback Log"}</span>
           </button>
@@ -2047,7 +2080,19 @@ export default function Feedback() {
           </div>
 
           <div style={{ display: "grid", gap: "12px", marginTop: "16px" }}>
-            {feedbackList.map((item) => {
+            {feedbackList.length === 0 ? (
+              <div className="feedback-empty-card" style={{ padding: "28px 20px", borderRadius: "10px", textAlign: "center", marginTop: "8px" }}>
+                <p className="feedback-empty-card-title" style={{ margin: 0, fontSize: "0.95rem", fontWeight: 700, color: "#38bdf8" }}>
+                  No feedback entries recorded yet.
+                </p>
+                <small className="feedback-empty-card-sub" style={{ display: "block", marginTop: "6px", fontSize: "0.84rem", color: "#94a3b8" }}>
+                  {isEmployerRole
+                    ? "Once you rate a candidate above, your review and recruitment notes will be logged here."
+                    : "Once you submit a review for an employer above, it will be logged here in your activity history."}
+                </small>
+              </div>
+            ) : (
+              feedbackList.map((item) => {
               const isAccepted = item.status.toLowerCase().includes("accept") || item.status.toLowerCase().includes("recruit") || item.status.toLowerCase().includes("approved");
               const displayStatus = isAccepted ? (isEmployerRole ? "Recruited" : "Accepted") : "Denied";
               const isEditingThisCard = editingCardId === item.id;
@@ -2265,7 +2310,8 @@ export default function Feedback() {
                   </div>
                 </div>
               );
-            })}
+            })
+          )}
           </div>
         </section>
       </>

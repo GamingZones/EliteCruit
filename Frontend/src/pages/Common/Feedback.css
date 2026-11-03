@@ -213,6 +213,10 @@
   box-shadow: 0 2px 6px rgba(6, 42, 74, 0.25);
 }
 
+.feedback-subnav-btn span {
+  pointer-events: none;
+}
+
 /* Score Summary Card */
 .feedback-summary-grid {
   display: grid;
@@ -565,4 +569,42 @@
 
 .feedback-history-action-btn:active {
   transform: translateY(0);
+}
+
+/* ==========================================================================
+   DARK MODE OVERRIDES (Strict Theme Isolation)
+   ========================================================================== */
+[data-theme="dark"] .feedback-subnav-container {
+  background: #1e2230 !important;
+  border-color: #2e3448 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .feedback-subnav-btn {
+  color: #94a3b8 !important;
+  background: transparent !important;
+}
+
+[data-theme="dark"] .feedback-subnav-btn:hover {
+  background: #282e42 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .feedback-subnav-btn.active {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35) !important;
+}
+
+[data-theme="dark"] .feedback-empty-card {
+  background: #181a20 !important;
+  border: 1px dashed #2e3448 !important;
+}
+
+[data-theme="dark"] .feedback-empty-card-title {
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .feedback-empty-card-sub {
+  color: #94a3b8 !important;
 }

@@ -6829,7 +6829,7 @@ app.get("/api/employers/:userId/company-feedbacks", optionalAuthenticateToken, a
          LEFT JOIN applicant_profiles ap ON ap.user_id = cr.applicant_user_id
          LEFT JOIN job_posts jp ON jp.id = cr.job_post_id
          WHERE cr.employer_user_id = ?
-         ORDER BY datetime(cr.updated_at) DESC`,
+         ORDER BY cr.updated_at DESC`,
         [userId]
       );
     }
@@ -6867,7 +6867,7 @@ app.get("/api/employers/:userId/candidate-feedbacks", optionalAuthenticateToken,
          LEFT JOIN applicant_profiles ap ON ap.user_id = cr.applicant_user_id
          LEFT JOIN job_posts jp ON jp.id = cr.job_post_id
          WHERE cr.employer_user_id = ?
-         ORDER BY datetime(cr.updated_at) DESC`,
+         ORDER BY cr.updated_at DESC`,
         [userId]
       );
     }
@@ -6932,19 +6932,19 @@ app.get("/api/employers/:userId/eligible-feedback-candidates", optionalAuthentic
          JOIN users u ON u.id = a.applicant_user_id
          LEFT JOIN applicant_profiles ap ON ap.user_id = a.applicant_user_id
          WHERE jp.employer_user_id = ?
-           AND lower(a.status) IN ('approved', 'accepted', 'denied', 'rejected', 'shortlisted')
-         ORDER BY datetime(a.updated_at) DESC`,
+           AND lower(a.status) IN ('approved', 'accepted', 'recruited', 'hired', 'denied', 'rejected')
+         ORDER BY a.updated_at DESC`,
         [userId]
       );
     }
 
-    const hasInvitations = await tableExists("direct_invitations");
+    const hasInvitations = await tableExists("job_invitations");
     if (hasInvitations) {
       const invites = await all(
-        `SELECT di.id AS application_id,
-                di.status AS application_status,
-                di.applicant_user_id,
-                di.job_post_id,
+        `SELECT ji.id AS application_id,
+                ji.status AS application_status,
+                ji.applicant_user_id,
+                ji.job_post_id,
                 COALESCE(jp.title, 'Job Opening') AS job_title,
                 COALESCE(NULLIF(TRIM(COALESCE(ap.first_name, '') || ' ' || COALESCE(ap.last_name, '')), ''), u.email, 'Candidate') AS candidate_name,
                 COALESCE(ap.city, '') AS city,
@@ -6955,14 +6955,14 @@ app.get("/api/employers/:userId/eligible-feedback-candidates", optionalAuthentic
                 ap.profile_picture_path,
                 u.email,
                 COALESCE(ap.phone, '') AS phone,
-                (SELECT CASE WHEN COUNT(*) > 0 THEN ROUND(((SUM(cr.rating)::numeric + 12.0) / (COUNT(*) + 3.0)), 1) ELSE NULL END FROM candidate_ratings cr WHERE cr.applicant_user_id = di.applicant_user_id) AS rating
-         FROM direct_invitations di
-         JOIN job_posts jp ON jp.id = di.job_post_id
-         JOIN users u ON u.id = di.applicant_user_id
-         LEFT JOIN applicant_profiles ap ON ap.user_id = di.applicant_user_id
-         WHERE di.employer_user_id = ?
-           AND lower(di.status) IN ('accepted', 'declined', 'denied')
-         ORDER BY datetime(di.updated_at) DESC`,
+                (SELECT CASE WHEN COUNT(*) > 0 THEN ROUND(((SUM(cr.rating)::numeric + 12.0) / (COUNT(*) + 3.0)), 1) ELSE NULL END FROM candidate_ratings cr WHERE cr.applicant_user_id = ji.applicant_user_id) AS rating
+         FROM job_invitations ji
+         JOIN job_posts jp ON jp.id = ji.job_post_id
+         JOIN users u ON u.id = ji.applicant_user_id
+         LEFT JOIN applicant_profiles ap ON ap.user_id = ji.applicant_user_id
+         WHERE ji.employer_user_id = ?
+           AND lower(ji.status) IN ('accepted', 'declined', 'denied')
+         ORDER BY ji.updated_at DESC`,
         [userId]
       );
       rows = [...rows, ...invites];
