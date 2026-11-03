@@ -14,6 +14,7 @@ import { resolveLocalGeocodeDetailed } from "../../data/mapData";
 import {
   BSIT_BSCS_JOB_TITLES,
   CATEGORIZED_JOB_ROLES,
+  ALL_MULTI_INDUSTRY_JOB_ROLES,
   BSIT_BSCS_SKILLS,
   BSIT_BSCS_QUALIFICATIONS,
   BSIT_BSCS_CERTIFICATIONS,
@@ -336,6 +337,7 @@ interface SearchableSelectProps {
   value: string;
   onChange: (value: string) => void;
   onEnterAdd?: () => void;
+  onSelectOption?: (value: string) => void;
   disabled?: boolean;
 }
 
@@ -345,6 +347,7 @@ function SearchableSelect({
   value,
   onChange,
   onEnterAdd,
+  onSelectOption,
   disabled = false,
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -393,6 +396,7 @@ function SearchableSelect({
   const handleSelect = (optionText: string) => {
     setIsUserTyping(false);
     onChange(optionText);
+    onSelectOption?.(optionText);
     setIsOpen(false);
     setHighlightedIndex(-1);
   };
@@ -2595,6 +2599,7 @@ export default function ApplicantProfile() {
   const [fieldSuccess, setFieldSuccess] = useState<string | null>(null);
   const [isMinSalaryFocused, setIsMinSalaryFocused] = useState(false);
   const [isMaxSalaryFocused, setIsMaxSalaryFocused] = useState(false);
+  const [targetRoleInput, setTargetRoleInput] = useState("");
 
   const saveSingleField = async (fieldName: keyof ApplicantProfileData, value: any) => {
     if (!userId) return;
@@ -3584,6 +3589,33 @@ export default function ApplicantProfile() {
     } else {
       setSalaryError("");
     }
+  };
+
+  const handleAddTargetRole = async (roleToAdd?: string) => {
+    const toAdd = (roleToAdd || targetRoleInput).trim();
+    if (!toAdd) return;
+    const currentRoles = (draft.desired_job_title || "")
+      .split(",")
+      .map((r) => r.trim())
+      .filter(Boolean);
+    if (!currentRoles.some((r) => r.toLowerCase() === toAdd.toLowerCase())) {
+      const updated = [...currentRoles, toAdd];
+      const joined = updated.join(", ");
+      updateDraft("desired_job_title", joined);
+      await saveSingleField("desired_job_title", joined);
+    }
+    setTargetRoleInput("");
+  };
+
+  const handleRemoveTargetRole = async (roleToRemove: string) => {
+    const currentRoles = (draft.desired_job_title || "")
+      .split(",")
+      .map((r) => r.trim())
+      .filter(Boolean);
+    const updated = currentRoles.filter((r) => r.toLowerCase() !== roleToRemove.toLowerCase());
+    const joined = updated.join(", ");
+    updateDraft("desired_job_title", joined);
+    await saveSingleField("desired_job_title", joined);
   };
 
   const saveProfile = async () => {
@@ -4975,7 +5007,7 @@ export default function ApplicantProfile() {
                         if (currentRoles.length === 0) {
                           return (
                             <span style={{ fontSize: "0.84rem", color: "#94a3b8", padding: "4px 8px" }}>
-                              No target roles selected yet. Add roles from the categorized dropdown below.
+                              No target roles selected yet. Select or type target roles below.
                             </span>
                           );
                         }
@@ -4987,10 +5019,7 @@ export default function ApplicantProfile() {
                             <span>{role}</span>
                             <button
                               type="button"
-                              onClick={() => {
-                                const updated = currentRoles.filter((r) => r !== role);
-                                updateDraft("desired_job_title", updated.join(", "));
-                              }}
+                              onClick={() => handleRemoveTargetRole(role)}
                               title={`Remove ${role}`}
                             >
                               ✕
@@ -5000,54 +5029,35 @@ export default function ApplicantProfile() {
                       })()}
                     </div>
 
-                    <div className="inline-field-row" style={{ marginTop: "8px" }}>
-                      <select
-                        className="inline-field-control"
-                        value=""
-                        onChange={(event) => {
-                          const val = event.target.value;
-                          if (!val) return;
-                          const currentRoles = (draft.desired_job_title || "")
-                            .split(",")
-                            .map((r) => r.trim())
-                            .filter(Boolean);
-                          if (!currentRoles.includes(val)) {
-                            const updated = [...currentRoles, val];
-                            updateDraft("desired_job_title", updated.join(", "));
-                          }
-                        }}
+                    <div className="inline-field-row" style={{ marginTop: "8px", gap: "8px" }}>
+                      <div style={{ flex: 1, minWidth: "260px" }}>
+                        <SearchableSelect
+                          options={(() => {
+                            const currentRoles = (draft.desired_job_title || "")
+                              .split(",")
+                              .map((r) => r.trim())
+                              .filter(Boolean);
+                            return ALL_MULTI_INDUSTRY_JOB_ROLES.filter(
+                              (opt) => !currentRoles.some((r) => r.toLowerCase() === opt.toLowerCase())
+                            );
+                          })()}
+                          value={targetRoleInput}
+                          onChange={setTargetRoleInput}
+                          onSelectOption={(chosen) => handleAddTargetRole(chosen)}
+                          onEnterAdd={() => handleAddTargetRole()}
+                          placeholder="Select or type target job role (e.g. Web Developer, Accountant, Nurse, CSR)..."
+                          disabled={savingField === "desired_job_title"}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        className="inline-field-btn inline-field-save-btn"
+                        onClick={() => handleAddTargetRole()}
+                        disabled={savingField === "desired_job_title" || !targetRoleInput.trim()}
+                        style={{ height: "38px", padding: "0 18px", fontSize: "0.85rem", whiteSpace: "nowrap" }}
                       >
-                        <option value="">+ Add target job role from category...</option>
-                        {Object.entries(CATEGORIZED_JOB_ROLES).map(([category, roles]) => (
-                          <optgroup key={category} label={category}>
-                            {roles.map((title) => (
-                              <option key={title} value={title}>
-                                {title}
-                              </option>
-                            ))}
-                          </optgroup>
-                        ))}
-                      </select>
-                      {isJobTitleDirty && (
-                        <div className="inline-field-actions">
-                          <button
-                            type="button"
-                            className="inline-field-btn inline-field-cancel-btn"
-                            onClick={() => handleInlineCancelClick("desired_job_title")}
-                            disabled={savingField === "desired_job_title"}
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="button"
-                            className="inline-field-btn inline-field-save-btn"
-                            onClick={() => saveSingleField("desired_job_title", draft.desired_job_title)}
-                            disabled={savingField === "desired_job_title"}
-                          >
-                            {savingField === "desired_job_title" ? "Saving..." : "Save"}
-                          </button>
-                        </div>
-                      )}
+                        + Add
+                      </button>
                     </div>
                   </div>
 
@@ -5070,14 +5080,16 @@ export default function ApplicantProfile() {
                                 key={arr}
                                 type="button"
                                 className={`arr-toggle-pill ${isSelected ? "selected" : ""}`}
-                                onClick={() => {
+                                onClick={async () => {
                                   let updated: string[];
                                   if (isSelected) {
                                     updated = currentArrangements.filter((a) => a !== arr);
                                   } else {
                                     updated = [...currentArrangements, arr];
                                   }
-                                  updateDraft("work_arrangement", updated.join(", "));
+                                  const joined = updated.join(", ");
+                                  updateDraft("work_arrangement", joined);
+                                  await saveSingleField("work_arrangement", joined);
                                 }}
                               >
                                 {isSelected ? "✓ " : "+ "}{arr}
@@ -5085,26 +5097,6 @@ export default function ApplicantProfile() {
                             );
                           })}
                         </div>
-                        {isArrangementDirty && (
-                          <div className="inline-field-actions">
-                            <button
-                              type="button"
-                              className="inline-field-btn inline-field-cancel-btn"
-                              onClick={() => handleInlineCancelClick("work_arrangement")}
-                              disabled={savingField === "work_arrangement"}
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              type="button"
-                              className="inline-field-btn inline-field-save-btn"
-                              onClick={() => saveSingleField("work_arrangement", draft.work_arrangement)}
-                              disabled={savingField === "work_arrangement"}
-                            >
-                              {savingField === "work_arrangement" ? "Saving..." : "Save"}
-                            </button>
-                          </div>
-                        )}
                       </div>
                     </div>
 

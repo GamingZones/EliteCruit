@@ -23,7 +23,7 @@ export const BSIT_BSCS_JOB_TITLES = [
 ] as const;
 
 export const CATEGORIZED_JOB_ROLES: Record<string, string[]> = {
-  "Software Development": [
+  "Software & Web Development": [
     "Frontend Developer",
     "Backend Developer",
     "Full-Stack Developer",
@@ -31,38 +31,153 @@ export const CATEGORIZED_JOB_ROLES: Record<string, string[]> = {
     "Mobile App Developer (iOS/Android)",
     "Web Developer",
     "DevOps Engineer",
+    "Game Developer",
+    "Embedded Systems Engineer",
   ],
-  "Data & Analytics": [
+  "Data, AI & Analytics": [
     "Data Analyst",
     "Data Scientist",
     "Database Administrator",
     "Business Intelligence (BI) Developer",
     "Data Engineer",
+    "Machine Learning Engineer",
+    "AI Prompt Engineer / Specialist",
   ],
-  "IT & Infrastructure": [
+  "IT, Systems & Cybersecurity": [
     "Network Engineer",
     "System Administrator",
     "Cloud Solutions Architect / Support",
     "Cybersecurity Analyst",
     "IT Support Specialist / Staff",
     "Helpdesk Technician",
+    "Information Security Officer",
+    "IT Systems Administrator",
   ],
-  "Quality Assurance": [
+  "Quality Assurance & Testing": [
     "Quality Assurance (QA) Tester",
     "Software QA Automation Engineer",
+    "Manual QA Tester",
+    "Quality Control Inspector",
   ],
-  "Product & Design": [
+  "Design, Creative & Multimedia": [
     "UI/UX Designer",
     "Product Designer",
-    "IT Project Coordinator",
-    "Business/Systems Analyst",
+    "Graphic Designer",
+    "Video Editor / Motion Graphics Artist",
+    "3D Artist / Animator",
+    "Content Creator / Digital Media Producer",
+    "Brand Identity Designer",
   ],
-  "Operations & Support": [
-    "Technical Support Associate",
-    "Customer Support Representative",
+  "Accounting, Finance & Banking": [
+    "Accountant / Certified Public Accountant (CPA)",
+    "Bookkeeper",
+    "Financial Analyst",
+    "Accounts Payable / Receivable Clerk",
+    "Auditor (Internal / External)",
+    "Payroll Specialist",
+    "Tax Associate",
+    "Billing Specialist",
+    "Loan Officer / Credit Analyst",
+    "Investment Analyst",
+  ],
+  "Human Resources & Recruitment": [
+    "HR Generalist",
+    "HR Manager",
+    "Talent Acquisition Specialist / Recruiter",
+    "Compensation & Benefits Specialist",
+    "Training & Development Specialist",
+    "HR Assistant / Coordinator",
+    "Employee Relations Officer",
+  ],
+  "Administrative & Office Support": [
     "Administrative Assistant",
+    "Executive Assistant",
+    "Office Manager",
+    "Data Entry Specialist / Clerk",
+    "Receptionist / Front Desk Officer",
+    "Virtual Assistant (VA)",
+    "Records / Document Controller",
+  ],
+  "Customer Service, Support & BPO": [
+    "Customer Service Representative (CSR)",
+    "Technical Support Representative (TSR)",
+    "Call Center Agent / Associate",
+    "Client Success Specialist",
+    "Help Desk Support Agent",
+    "Chat / Email Support Representative",
+    "Telemarketing Specialist",
+  ],
+  "Sales, Marketing & Public Relations": [
+    "Digital Marketing Specialist",
+    "Social Media Manager / Specialist",
+    "SEO / SEM Specialist",
+    "Content Writer / Copywriter",
+    "Sales Executive / Account Executive",
+    "Business Development Associate",
+    "Marketing Manager",
+    "Brand Ambassador",
+    "Public Relations (PR) Specialist",
+  ],
+  "Engineering & Architecture": [
+    "Civil Engineer",
+    "Mechanical Engineer",
+    "Electrical Engineer",
+    "Electronics & Communications Engineer (ECE)",
+    "Industrial Engineer",
+    "Architect / Architectural Designer",
+    "AutoCAD / Revit Specialist / Draftsman",
+    "Project Engineer",
+    "Site Engineer",
+  ],
+  "Healthcare & Medical Services": [
+    "Registered Nurse (RN)",
+    "Medical Doctor / General Physician",
+    "Pharmacist",
+    "Medical Technologist / Laboratory Analyst",
+    "Physical Therapist",
+    "Dental Hygienist / Assistant",
+    "Caregiver / Nursing Aide",
+    "Medical Biller / Medical Coder",
+  ],
+  "Hospitality, Tourism & Food Service": [
+    "Hotel Front Desk Associate",
+    "Chef / Line Cook",
+    "Restaurant Manager / Supervisor",
+    "Barista / Bartender",
+    "Food & Beverage (F&B) Server",
+    "Travel & Tour Consultant",
+    "Housekeeping Supervisor / Staff",
+    "Event Coordinator / Planner",
+  ],
+  "Logistics, Supply Chain & Procurement": [
+    "Supply Chain Coordinator",
+    "Procurement / Purchasing Officer",
+    "Logistics Coordinator / Specialist",
+    "Warehouse Supervisor / Staff",
+    "Inventory Controller",
+    "Delivery Driver / Courier",
+    "Freight Forwarding Specialist",
+  ],
+  "Education, Training & Academic": [
+    "Elementary / High School Teacher",
+    "College Instructor / Professor",
+    "ESL / English Tutor",
+    "Corporate Trainer",
+    "Academic Researcher",
+    "Special Education (SPED) Teacher",
+    "Guidance Counselor",
+  ],
+  "Legal, Compliance & Risk Management": [
+    "Legal Assistant / Paralegal",
+    "Compliance Officer",
+    "Contracts Administrator",
+    "Legal Researcher",
   ],
 };
+
+export const ALL_MULTI_INDUSTRY_JOB_ROLES: string[] = Array.from(
+  new Set(Object.values(CATEGORIZED_JOB_ROLES).flat())
+).sort((a, b) => a.localeCompare(b));
 
 export const CAVITE_CITIES = [
   "Alfonso",
