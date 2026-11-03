@@ -2898,9 +2898,11 @@ export default function ApplicantProfile() {
 
   const [isUpdatingParticipation, setIsUpdatingParticipation] = useState(false);
   const [isUnsavedExpWarningOpen, setIsUnsavedExpWarningOpen] = useState(false);
+  const [isUnsavedProfileWarningOpen, setIsUnsavedProfileWarningOpen] = useState(false);
   const [pendingTargetSection, setPendingTargetSection] = useState<"personal" | "preferences" | "competencies" | "experience" | null>(null);
   const [pendingEditMode, setPendingEditMode] = useState(false);
   const [pendingNavHref, setPendingNavHref] = useState<string | null>(null);
+  const [pendingCancelField, setPendingCancelField] = useState<keyof ApplicantProfileData | null>(null);
 
   const confirmToggleParticipation = async (newNearbyLoc: string | null) => {
     if (!userId) return;
@@ -3249,6 +3251,52 @@ export default function ApplicantProfile() {
     );
   };
 
+  const checkHasUnsavedSection1 = () => {
+    const isFirstNameDirty = (draft.first_name || "").trim() !== (profile.first_name || "").trim();
+    const isMiddleNameDirty = (draft.middle_name || "").trim() !== (profile.middle_name || "").trim();
+    const isLastNameDirty = (draft.last_name || "").trim() !== (profile.last_name || "").trim();
+    const isProvinceDirty = (draft.province || "Cavite") !== (profile.province || "Cavite");
+    const isCityDirty = (draft.city || "") !== (profile.city || "");
+    const isPhoneDirty = normalizePhoneNumber(draft.phone) !== normalizePhoneNumber(profile.phone);
+    const isEmailDirty = (draft.email || "").trim().toLowerCase() !== (profile.email || "").trim().toLowerCase();
+    const isSummaryDirty = (draft.summary || "").trim() !== (profile.summary || "").trim();
+    return Boolean(
+      isFirstNameDirty ||
+      isMiddleNameDirty ||
+      isLastNameDirty ||
+      isProvinceDirty ||
+      isCityDirty ||
+      isPhoneDirty ||
+      isEmailDirty ||
+      isSummaryDirty
+    );
+  };
+
+  const checkHasUnsavedSection2 = () => {
+    if (!isEditing) return false;
+    const isJobTitleDirty = (draft.desired_job_title || "") !== (profile.desired_job_title || "");
+    const isArrangementDirty = (draft.work_arrangement || "") !== (profile.work_arrangement || "");
+    const isMinSalaryDirty = String(draft.expected_salary_min || "") !== String(profile.expected_salary_min || "");
+    const isMaxSalaryDirty = String(draft.expected_salary_max || "") !== String(profile.expected_salary_max || "");
+    const isLocationsDirty = (draft.preferred_locations || "") !== (profile.preferred_locations || "");
+    return Boolean(
+      isJobTitleDirty ||
+      isArrangementDirty ||
+      isMinSalaryDirty ||
+      isMaxSalaryDirty ||
+      isLocationsDirty
+    );
+  };
+
+  const checkHasUnsavedProfile = () => {
+    return checkHasUnsavedSection1() || checkHasUnsavedSection2();
+  };
+
+  const handleInlineCancelClick = (fieldName: keyof ApplicantProfileData) => {
+    setPendingCancelField(fieldName);
+    setIsUnsavedProfileWarningOpen(true);
+  };
+
   const handleSectionNavClick = (targetSection: "personal" | "preferences" | "competencies" | "experience", shouldEdit: boolean = false) => {
     if (targetSection === activeSection) {
       if (shouldEdit && !isEditing) setIsEditing(true);
@@ -3258,15 +3306,21 @@ export default function ApplicantProfile() {
       setPendingTargetSection(targetSection);
       setPendingEditMode(shouldEdit);
       setIsUnsavedExpWarningOpen(true);
-    } else {
-      setActiveSection(targetSection);
-      if (shouldEdit && !isEditing) setIsEditing(true);
+      return;
     }
+    if (checkHasUnsavedProfile()) {
+      setPendingTargetSection(targetSection);
+      setPendingEditMode(shouldEdit);
+      setIsUnsavedProfileWarningOpen(true);
+      return;
+    }
+    setActiveSection(targetSection);
+    if (shouldEdit && !isEditing) setIsEditing(true);
   };
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (activeSection === "experience" && checkHasUnsavedExp()) {
+      if ((activeSection === "experience" && checkHasUnsavedExp()) || checkHasUnsavedProfile()) {
         e.preventDefault();
         e.returnValue = "";
       }
@@ -3287,7 +3341,9 @@ export default function ApplicantProfile() {
     expEndMonth,
     expEndYear,
     expEmploymentType,
-    profile.city,
+    profile,
+    draft,
+    isEditing,
   ]);
 
   const handleSaveWorkExperienceEntry = async () => {
@@ -3941,6 +3997,19 @@ export default function ApplicantProfile() {
             e.stopPropagation();
             setPendingNavHref(rawHref);
             setIsUnsavedExpWarningOpen(true);
+            return;
+          }
+          if (checkHasUnsavedProfile()) {
+            const anchor = (e.target as HTMLElement).closest("a");
+            if (!anchor) return;
+            const rawHref = anchor.getAttribute("href") || "";
+            const href = rawHref.toLowerCase();
+            if (!href || href === "/my-profile" || href === "/applicant-profile" || href.startsWith("#")) return;
+            e.preventDefault();
+            e.stopPropagation();
+            setPendingNavHref(rawHref);
+            setIsUnsavedProfileWarningOpen(true);
+            return;
           }
         }}
       >
@@ -4287,7 +4356,7 @@ export default function ApplicantProfile() {
                                 <button
                                   type="button"
                                   className="inline-field-btn inline-field-cancel-btn"
-                                  onClick={() => cancelField("first_name")}
+                                  onClick={() => handleInlineCancelClick("first_name")}
                                   disabled={savingField === "first_name"}
                                 >
                                   Cancel
@@ -4323,7 +4392,7 @@ export default function ApplicantProfile() {
                                 <button
                                   type="button"
                                   className="inline-field-btn inline-field-cancel-btn"
-                                  onClick={() => cancelField("middle_name")}
+                                  onClick={() => handleInlineCancelClick("middle_name")}
                                   disabled={savingField === "middle_name"}
                                 >
                                   Cancel
@@ -4359,7 +4428,7 @@ export default function ApplicantProfile() {
                                 <button
                                   type="button"
                                   className="inline-field-btn inline-field-cancel-btn"
-                                  onClick={() => cancelField("last_name")}
+                                  onClick={() => handleInlineCancelClick("last_name")}
                                   disabled={savingField === "last_name"}
                                 >
                                   Cancel
@@ -4411,7 +4480,7 @@ export default function ApplicantProfile() {
                                 <button
                                   type="button"
                                   className="inline-field-btn inline-field-cancel-btn"
-                                  onClick={() => cancelField("province")}
+                                  onClick={() => handleInlineCancelClick("province")}
                                   disabled={savingField === "province"}
                                 >
                                   Cancel
@@ -4453,7 +4522,7 @@ export default function ApplicantProfile() {
                                 <button
                                   type="button"
                                   className="inline-field-btn inline-field-cancel-btn"
-                                  onClick={() => cancelField("city")}
+                                  onClick={() => handleInlineCancelClick("city")}
                                   disabled={savingField === "city"}
                                 >
                                   Cancel
@@ -4499,7 +4568,7 @@ export default function ApplicantProfile() {
                                 <button
                                   type="button"
                                   className="inline-field-btn inline-field-cancel-btn"
-                                  onClick={() => cancelField("phone")}
+                                  onClick={() => handleInlineCancelClick("phone")}
                                   disabled={savingField === "phone"}
                                 >
                                   Cancel
@@ -4544,7 +4613,7 @@ export default function ApplicantProfile() {
                                 <button
                                   type="button"
                                   className="inline-field-btn inline-field-cancel-btn"
-                                  onClick={() => cancelField("email")}
+                                  onClick={() => handleInlineCancelClick("email")}
                                   disabled={savingField === "email"}
                                 >
                                   Cancel
@@ -4602,7 +4671,7 @@ export default function ApplicantProfile() {
                               <button
                                 type="button"
                                 className="inline-field-btn inline-field-cancel-btn"
-                                onClick={() => cancelField("summary")}
+                                onClick={() => handleInlineCancelClick("summary")}
                                 disabled={savingField === "summary"}
                               >
                                 Cancel
@@ -4790,7 +4859,19 @@ export default function ApplicantProfile() {
                     {isEditing ? (isSaving ? "Saving..." : "Save Preferences") : "Edit Preferences"}
                   </button>
                   {isEditing && (
-                    <button type="button" className="cancel-profile-button" onClick={() => { setDraft(profile); setSalaryError(""); setIsEditing(false); }}>
+                    <button
+                      type="button"
+                      className="cancel-profile-button"
+                      onClick={() => {
+                        if (checkHasUnsavedSection2()) {
+                          setIsUnsavedProfileWarningOpen(true);
+                        } else {
+                          setDraft(profile);
+                          setSalaryError("");
+                          setIsEditing(false);
+                        }
+                      }}
+                    >
                       Cancel
                     </button>
                   )}
@@ -6211,6 +6292,74 @@ export default function ApplicantProfile() {
                   setIsAddingExp(false);
                   resetExpForm();
                   setIsUnsavedExpWarningOpen(false);
+                  if (pendingTargetSection) {
+                    setActiveSection(pendingTargetSection);
+                    if (pendingEditMode && !isEditing) setIsEditing(true);
+                    setPendingTargetSection(null);
+                    setPendingEditMode(false);
+                  } else if (pendingNavHref) {
+                    const targetHref = pendingNavHref;
+                    setPendingNavHref(null);
+                    window.location.href = targetHref;
+                  }
+                }}
+              >
+                Discard Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* UNSAVED PROFILE WARNING MODAL (Rule 6 Compliant) */}
+      {isUnsavedProfileWarningOpen && (
+        <div
+          className="system-popup-overlay"
+          onClick={() => {
+            setIsUnsavedProfileWarningOpen(false);
+            setPendingTargetSection(null);
+            setPendingEditMode(false);
+            setPendingNavHref(null);
+            setPendingCancelField(null);
+          }}
+        >
+          <div className="system-popup-card" onClick={(e) => e.stopPropagation()}>
+            <div className="system-popup-icon-wrap warning">
+              <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#ca8a04" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </div>
+            <h3 className="system-popup-title">Warning</h3>
+            <p className="system-popup-message">You have unsaved changes in your profile draft. Discard changes?</p>
+            <div className="system-popup-actions">
+              <button
+                type="button"
+                className="system-popup-btn secondary"
+                onClick={() => {
+                  setIsUnsavedProfileWarningOpen(false);
+                  setPendingTargetSection(null);
+                  setPendingEditMode(false);
+                  setPendingNavHref(null);
+                  setPendingCancelField(null);
+                }}
+              >
+                Keep Editing
+              </button>
+              <button
+                type="button"
+                className="system-popup-btn primary"
+                onClick={() => {
+                  if (pendingCancelField) {
+                    cancelField(pendingCancelField);
+                    setPendingCancelField(null);
+                  } else {
+                    setDraft(profile);
+                    setSalaryError("");
+                    setIsEditing(false);
+                  }
+                  setIsUnsavedProfileWarningOpen(false);
                   if (pendingTargetSection) {
                     setActiveSection(pendingTargetSection);
                     if (pendingEditMode && !isEditing) setIsEditing(true);
