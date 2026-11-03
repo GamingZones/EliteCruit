@@ -2248,6 +2248,7 @@ export default function EmployerApplicantFinder() {
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
+    if (selectedJobId) count += 1;
     if (selectedRole !== "All roles") count += 1;
     if (filterLocations.length > 0) count += filterLocations.length;
     if (selectedArrangement !== "Any arrangement") count += 1;
@@ -2259,6 +2260,7 @@ export default function EmployerApplicantFinder() {
     count += filterCertifications.length;
     return count;
   }, [
+    selectedJobId,
     selectedRole,
     filterLocations,
     selectedArrangement,
@@ -2273,6 +2275,7 @@ export default function EmployerApplicantFinder() {
   const clearAllFilters = () => {
     setSearchInput("");
     setAppliedSearchQuery("");
+    setSelectedJobId("");
     setSelectedRole("All roles");
     setSelectedLocation("All locations");
     setFilterLocations([]);
@@ -3451,18 +3454,64 @@ export default function EmployerApplicantFinder() {
 
                   {/* Drawer Body (Scrollable) */}
                   <div className="filter-drawer-body">
+                    {/* Active Vacancy Match Evaluation */}
+                    {activeJobs.length > 0 && (
+                      <div className="filter-drawer-group">
+                        <label className="filter-group-label">Evaluate Active Vacancy</label>
+                        <select
+                          className="filter-drawer-select"
+                          value={selectedJobId || ""}
+                          onChange={(e) => {
+                            const val = e.target.value ? Number(e.target.value) : "";
+                            setSelectedJobId(val);
+                            if (val) {
+                              const job = activeJobs.find((j) => j.id === val);
+                              if (job) setSelectedRole(job.title);
+                            }
+                          }}
+                        >
+                          <option value="">General Candidate Pool</option>
+                          {activeJobs.map((j) => (
+                            <option key={j.id} value={j.id}>
+                              {j.title} ({j.city || "Cavite"})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
                     {/* Roles & Job Titles */}
                     <div className="filter-drawer-group">
                       <label className="filter-group-label">Roles & Job Titles</label>
                       <select
                         className="filter-drawer-select"
                         value={selectedRole}
-                        onChange={(e) => setSelectedRole(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSelectedRole(val);
+                          const matchedJob = activeJobs.find((j) => j.title.toLowerCase() === val.toLowerCase());
+                          if (matchedJob) {
+                            setSelectedJobId(matchedJob.id);
+                          } else if (val === "All roles") {
+                            setSelectedJobId("");
+                          }
+                        }}
                       >
-                        <option>All roles</option>
-                        {BSIT_BSCS_JOB_TITLES.map((role) => (
-                          <option key={role} value={role}>{role}</option>
-                        ))}
+                        <option value="All roles">All roles</option>
+                        {activeJobs.length > 0 && (
+                          <optgroup label="Your Active Vacancies">
+                            {activeJobs.map((j) => (
+                              <option key={`job-role-${j.id}`} value={j.title}>
+                                {j.title} ({j.city || "Cavite"})
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                        <optgroup label="Standard Roles">
+                          {BSIT_BSCS_JOB_TITLES.map((role) => (
+                            <option key={role} value={role}>{role}</option>
+                          ))}
+                        </optgroup>
                       </select>
                     </div>
 
@@ -3600,72 +3649,35 @@ export default function EmployerApplicantFinder() {
           {searchMode === "manual" && (
             <>
 
-                {/* ACTIVE JOB POST CONTEXT SELECTOR (Item 6.1) */}
-                <div
-                  className="finder-active-job-context-banner"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "12px 18px",
-                    background: "#f0fdf4",
-                    border: "1px solid #bbf7d0",
-                    borderRadius: "10px",
-                    marginBottom: "16px",
-                    flexWrap: "wrap",
-                    gap: "10px",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#dcfce7", display: "flex", alignItems: "center", justifyContent: "center", color: "#16a34a" }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                      </svg>
-                    </div>
-                    <div>
-                      <span style={{ fontSize: "0.72rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#15803d", display: "block" }}>
-                        Matching Candidates Against Active Vacancy
-                      </span>
-                      <strong style={{ fontSize: "1rem", color: "#0c2a47" }}>
-                        {activeJobs.find((j) => j.id === selectedJobId)?.title || "All Active Openings / General Match"}
-                      </strong>
-                    </div>
-                  </div>
-                  {activeJobs.length > 0 && (
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#374151" }}>Evaluate Role:</label>
-                      <select
-                        value={selectedJobId || ""}
-                        onChange={(e) => {
-                          const val = e.target.value ? Number(e.target.value) : "";
-                          setSelectedJobId(val);
-                        }}
-                        style={{
-                          padding: "6px 12px",
-                          borderRadius: "6px",
-                          border: "1px solid #cbd5e1",
-                          fontSize: "0.86rem",
-                          fontWeight: 600,
-                          color: "#0f172a",
-                          background: "#ffffff",
-                        }}
-                      >
-                        <option value="">General Candidate Pool</option>
-                        {activeJobs.map((j) => (
-                          <option key={j.id} value={j.id}>
-                            {j.title} ({j.city || "Cavite"})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
-
                 {/* RESULTS HEADER */}
                 <div className="finder-results-header">
-                  <h2>
-                    Showing {filteredCandidates.length === 0 ? 0 : `${(candidatePage - 1) * CANDIDATES_PER_PAGE + 1} - ${Math.min(candidatePage * CANDIDATES_PER_PAGE, filteredCandidates.length)}`} of {filteredCandidates.length} candidate{filteredCandidates.length === 1 ? "" : "s"}
-                  </h2>
+                  <div>
+                    <h2>
+                      Showing {filteredCandidates.length === 0 ? 0 : `${(candidatePage - 1) * CANDIDATES_PER_PAGE + 1} - ${Math.min(candidatePage * CANDIDATES_PER_PAGE, filteredCandidates.length)}`} of {filteredCandidates.length} candidate{filteredCandidates.length === 1 ? "" : "s"}
+                    </h2>
+                    {selectedJobId && (
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
+                        <span style={{ fontSize: "0.8rem", color: "#0284c7", fontWeight: 600 }}>
+                          🎯 Evaluating against vacancy: <strong>{activeJobs.find((j) => j.id === selectedJobId)?.title}</strong>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedJobId("")}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "#64748b",
+                            cursor: "pointer",
+                            fontSize: "0.82rem",
+                            padding: "0 4px",
+                          }}
+                          title="Reset to general pool"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <span className="finder-sort-hint">Sorted by: Best Match & Profile Completeness</span>
                 </div>
 
@@ -3705,7 +3717,7 @@ export default function EmployerApplicantFinder() {
                     const isInvited = invitedCandidateIds.includes(cand.user_id) || Number(cand.invited_count || 0) > 0;
                     const hasApplied = (cand.applied_count ?? 0) > 0;
 
-                    const currentActiveJob = (selectedJobId && activeJobs.find((j) => j.id === selectedJobId)) || activeJobs[0] || null;
+                    const currentActiveJob = selectedJobId ? activeJobs.find((j) => j.id === selectedJobId) || null : null;
                     const matchPercent = (() => {
                       if (currentActiveJob) {
                         return calculateCandidateMatch(
