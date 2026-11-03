@@ -150,6 +150,12 @@
   grid-template-columns: 1fr 1fr;
 }
 
+.form-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
 .form-grid label {
   display: grid;
   gap: 5px;

@@ -634,6 +634,100 @@ export default function EmployerCompanyProfile() {
     }
   };
 
+  // Unsaved Draft Detection & Navigation Interception (Rule 6 Compliant)
+  const [isUnsavedWarningOpen, setIsUnsavedWarningOpen] = useState(false);
+  const [pendingTargetSection, setPendingTargetSection] = useState<"branding" | "overview" | "branches" | null>(null);
+  const [pendingNavHref, setPendingNavHref] = useState<string | null>(null);
+
+  const checkHasUnsavedProfile = () => {
+    const isNameDirty = (draft.business_name || "").trim() !== (profile.business_name || "").trim();
+    const isIndustryDirty = (draft.industry || "") !== (profile.industry || "");
+    const isSizeDirty = (draft.company_size || "") !== (profile.company_size || "");
+    const isEmailDirty = (draft.business_email || "").trim().toLowerCase() !== (profile.business_email || "").trim().toLowerCase();
+    const isContactDirty = (draft.contact_number || "").trim() !== (profile.contact_number || "").trim();
+    const isProvinceDirty = (draft.province || "Cavite") !== (profile.province || "Cavite");
+    const isCityDirty = (draft.city || "") !== (profile.city || "");
+    const isDescDirty = (draft.company_description || "").trim() !== (profile.company_description || "").trim();
+
+    return (
+      isNameDirty ||
+      isIndustryDirty ||
+      isSizeDirty ||
+      isEmailDirty ||
+      isContactDirty ||
+      isProvinceDirty ||
+      isCityDirty ||
+      isDescDirty
+    );
+  };
+
+  const checkHasUnsavedBranch = () => {
+    if (isAddingBranch) {
+      return Boolean(
+        newBranch.branch_name.trim() ||
+        newBranch.address.trim() ||
+        newBranch.contact_number.trim() ||
+        newBranch.email.trim()
+      );
+    }
+    if (editingBranchId && editBranchData) {
+      const orig = profile.branches.find((b) => b.id === editingBranchId);
+      if (!orig) return true;
+      return (
+        editBranchData.branch_name.trim() !== orig.branch_name.trim() ||
+        editBranchData.province !== orig.province ||
+        editBranchData.city !== orig.city ||
+        editBranchData.address.trim() !== orig.address.trim() ||
+        editBranchData.contact_number.trim() !== orig.contact_number.trim() ||
+        editBranchData.email.trim() !== orig.email.trim()
+      );
+    }
+    return false;
+  };
+
+  const checkHasAnyUnsavedChanges = () => {
+    return checkHasUnsavedProfile() || checkHasUnsavedBranch();
+  };
+
+  const discardAllUnsavedChanges = () => {
+    setDraft(profile);
+    setIsEmailVerified(profile.is_email_verified !== false);
+    setVerifiedEmailAddress(profile.business_email?.trim().toLowerCase() || "");
+    setIsAddingBranch(false);
+    setEditingBranchId(null);
+    setEditBranchData(null);
+    setNewBranch({
+      branch_name: "",
+      province: "Cavite",
+      city: CAVITE_CITIES[0] || "Alfonso",
+      address: "",
+      contact_number: "",
+      email: "",
+      is_main: false,
+    });
+  };
+
+  const handleSectionNavClick = (targetSection: "branding" | "overview" | "branches") => {
+    if (targetSection === activeSection) return;
+    if (checkHasAnyUnsavedChanges()) {
+      setPendingTargetSection(targetSection);
+      setIsUnsavedWarningOpen(true);
+      return;
+    }
+    setActiveSection(targetSection);
+  };
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (checkHasAnyUnsavedChanges()) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [draft, profile, isAddingBranch, newBranch, editingBranchId, editBranchData]);
+
   const logoInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
@@ -903,16 +997,30 @@ export default function EmployerCompanyProfile() {
         className="appdash-sidebar"
         aria-label="Employer Navigation"
         onClickCapture={(e) => {
-          if (!isProfileSetupIncomplete) return;
-          const anchor = (e.target as HTMLElement).closest("a");
-          if (!anchor) return;
-          const href = (anchor.getAttribute("href") || "").toLowerCase();
-          if (!href || href === "/employer-company-profile" || href === "/employer/company-profile" || href.startsWith("#")) return;
-          e.preventDefault();
-          e.stopPropagation();
-          setWarningPopup(
-            `Please complete and save your required company profile information before leaving this page: ${missingMandatedFields.join(", ")}.`
-          );
+          if (isProfileSetupIncomplete) {
+            const anchor = (e.target as HTMLElement).closest("a");
+            if (!anchor) return;
+            const href = (anchor.getAttribute("href") || "").toLowerCase();
+            if (!href || href === "/employer-company-profile" || href === "/employer/company-profile" || href.startsWith("#")) return;
+            e.preventDefault();
+            e.stopPropagation();
+            setWarningPopup(
+              `Please complete and save your required company profile information before leaving this page: ${missingMandatedFields.join(", ")}.`
+            );
+            return;
+          }
+          if (checkHasAnyUnsavedChanges()) {
+            const anchor = (e.target as HTMLElement).closest("a");
+            if (!anchor) return;
+            const rawHref = anchor.getAttribute("href") || "";
+            const href = rawHref.toLowerCase();
+            if (!href || href === "/employer-company-profile" || href === "/employer/company-profile" || href.startsWith("#")) return;
+            e.preventDefault();
+            e.stopPropagation();
+            setPendingNavHref(rawHref);
+            setIsUnsavedWarningOpen(true);
+            return;
+          }
         }}
       >
         <a href="/" className="appdash-brand"><strong>EliteCruit</strong><span>Employer Workspace</span></a>
@@ -1017,7 +1125,7 @@ export default function EmployerCompanyProfile() {
                     <button
                       type="button"
                       className="completeness-jump-btn"
-                      onClick={() => setActiveSection(item.section)}
+                      onClick={() => handleSectionNavClick(item.section)}
                     >
                       Set in {item.sectionName} →
                     </button>
@@ -1033,7 +1141,7 @@ export default function EmployerCompanyProfile() {
           <button
             type="button"
             className={`section-nav-btn ${activeSection === "branding" ? "active" : ""}`}
-            onClick={() => setActiveSection("branding")}
+            onClick={() => handleSectionNavClick("branding")}
           >
             <span className="nav-num">1</span>
             <span>Company & Branding</span>
@@ -1041,7 +1149,7 @@ export default function EmployerCompanyProfile() {
           <button
             type="button"
             className={`section-nav-btn ${activeSection === "overview" ? "active" : ""}`}
-            onClick={() => setActiveSection("overview")}
+            onClick={() => handleSectionNavClick("overview")}
           >
             <span className="nav-num">2</span>
             <span>Overview & Contact</span>
@@ -1049,7 +1157,7 @@ export default function EmployerCompanyProfile() {
           <button
             type="button"
             className={`section-nav-btn ${activeSection === "branches" ? "active" : ""}`}
-            onClick={() => setActiveSection("branches")}
+            onClick={() => handleSectionNavClick("branches")}
           >
             <span className="nav-num">3</span>
             <span>Branch Locations</span>
@@ -1553,244 +1661,250 @@ export default function EmployerCompanyProfile() {
                     </div>
 
                     <div className="form-grid" style={{ display: "flex", flexDirection: "column", gap: "18px", marginTop: "16px" }}>
-                      {/* 1. Primary Business Email */}
-                      <div>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                          <label style={{ fontSize: "0.84rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>
-                            Primary Business Email
-                          </label>
-                          {fieldSuccess === "business_email" && (
-                            <span className="inline-field-saved-badge">✔ Saved</span>
-                          )}
-                        </div>
-                        <div className="inline-field-row">
-                          <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", alignItems: "center" }}>
-                            <input
-                              type="email"
-                              className="inline-field-control"
-                              value={draft.business_email || ""}
-                              onChange={(e) => updateDraft("business_email", e.target.value)}
-                              placeholder="contact@company.com"
-                              style={{ width: "100%", paddingRight: !isEmailDirty ? "95px" : "14px" }}
-                            />
-                            {!isEmailDirty && (
-                              <span
-                                style={{
-                                  position: "absolute",
-                                  right: "10px",
-                                  background: "#dcfce7",
-                                  color: "#15803d",
-                                  fontSize: "0.75rem",
-                                  fontWeight: 700,
-                                  padding: "3px 10px",
-                                  borderRadius: "9999px",
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "4px",
-                                  pointerEvents: "none",
-                                }}
-                              >
-                                ✔ Verified
-                              </span>
+                      {/* Row 1: Primary Business Email & Primary Contact Number */}
+                      <div className="form-grid-2col">
+                        {/* 1. Primary Business Email */}
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                            <label style={{ fontSize: "0.84rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>
+                              Primary Business Email
+                            </label>
+                            {fieldSuccess === "business_email" && (
+                              <span className="inline-field-saved-badge">✔ Saved</span>
                             )}
                           </div>
-                          {isEmailDirty && (
-                            <div className="inline-field-actions">
-                              <button
-                                type="button"
-                                className="inline-field-btn inline-field-cancel-btn"
-                                onClick={() => cancelField("business_email")}
-                                disabled={savingField === "business_email"}
-                              >
-                                Cancel
-                              </button>
-                              {!isEmailVerifiedForDraft ? (
-                                <>
-                                  <button
-                                    type="button"
-                                    className="inline-field-btn inline-field-verify-btn"
-                                    onClick={handleSendEmailOtp}
-                                    disabled={isSendingOtp || !draft.business_email?.trim() || !draft.business_email.includes("@")}
-                                  >
-                                    {isSendingOtp ? "Sending Code..." : "Verify Email"}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="inline-field-btn inline-field-save-btn"
-                                    disabled
-                                    title="Please click 'Verify Email' and enter OTP before saving."
-                                  >
-                                    Save
-                                  </button>
-                                </>
-                              ) : (
-                                <>
-                                  <span className="inline-field-saved-badge">✔ Verified</span>
-                                  <button
-                                    type="button"
-                                    className="inline-field-btn inline-field-save-btn"
-                                    onClick={() => saveSingleField("business_email", draft.business_email)}
-                                    disabled={savingField === "business_email"}
-                                  >
-                                    {savingField === "business_email" ? "Saving..." : "Save"}
-                                  </button>
-                                </>
+                          <div className="inline-field-row">
+                            <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", alignItems: "center" }}>
+                              <input
+                                type="email"
+                                className="inline-field-control"
+                                value={draft.business_email || ""}
+                                onChange={(e) => updateDraft("business_email", e.target.value)}
+                                placeholder="contact@company.com"
+                                style={{ width: "100%", paddingRight: !isEmailDirty ? "95px" : "14px" }}
+                              />
+                              {!isEmailDirty && (
+                                <span
+                                  style={{
+                                    position: "absolute",
+                                    right: "10px",
+                                    background: "#dcfce7",
+                                    color: "#15803d",
+                                    fontSize: "0.75rem",
+                                    fontWeight: 700,
+                                    padding: "3px 10px",
+                                    borderRadius: "9999px",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                    pointerEvents: "none",
+                                  }}
+                                >
+                                  ✔ Verified
+                                </span>
                               )}
                             </div>
-                          )}
+                            {isEmailDirty && (
+                              <div className="inline-field-actions">
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-cancel-btn"
+                                  onClick={() => cancelField("business_email")}
+                                  disabled={savingField === "business_email"}
+                                >
+                                  Cancel
+                                </button>
+                                {!isEmailVerifiedForDraft ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className="inline-field-btn inline-field-verify-btn"
+                                      onClick={handleSendEmailOtp}
+                                      disabled={isSendingOtp || !draft.business_email?.trim() || !draft.business_email.includes("@")}
+                                    >
+                                      {isSendingOtp ? "Sending Code..." : "Verify Email"}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="inline-field-btn inline-field-save-btn"
+                                      disabled
+                                      title="Please click 'Verify Email' and enter OTP before saving."
+                                    >
+                                      Save
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="inline-field-saved-badge">✔ Verified</span>
+                                    <button
+                                      type="button"
+                                      className="inline-field-btn inline-field-save-btn"
+                                      onClick={() => saveSingleField("business_email", draft.business_email)}
+                                      disabled={savingField === "business_email"}
+                                    >
+                                      {savingField === "business_email" ? "Saving..." : "Save"}
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <small style={{ display: "block", fontSize: "0.75rem", color: "#64748b", marginTop: "4px" }}>
+                            {isEmailDirty && !isEmailVerifiedForDraft
+                              ? "Changing your email requires verifying before saving."
+                              : "Official business email used for communications and login."}
+                          </small>
                         </div>
-                        <small style={{ display: "block", fontSize: "0.75rem", color: "#64748b", marginTop: "4px" }}>
-                          {isEmailDirty && !isEmailVerifiedForDraft
-                            ? "Changing your email requires verifying before saving."
-                            : "Official business email used for communications and login."}
-                        </small>
-                      </div>
 
-                      {/* 2. Primary Contact Number */}
-                      <div>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                          <label style={{ fontSize: "0.84rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>
-                            Primary Contact Number
-                          </label>
-                          {fieldSuccess === "contact_number" && (
-                            <span className="inline-field-saved-badge">✔ Saved</span>
-                          )}
-                        </div>
-                        <div className="inline-field-row">
-                          <input
-                            className="inline-field-control"
-                            value={draft.contact_number || ""}
-                            onChange={(e) => updateDraft("contact_number", e.target.value)}
-                            placeholder="e.g. +63 912 345 6789"
-                          />
-                          {isContactNumberDirty && (
-                            <div className="inline-field-actions">
-                              <button
-                                type="button"
-                                className="inline-field-btn inline-field-cancel-btn"
-                                onClick={() => cancelField("contact_number")}
-                                disabled={savingField === "contact_number"}
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                type="button"
-                                className="inline-field-btn inline-field-save-btn"
-                                onClick={() => saveSingleField("contact_number", draft.contact_number)}
-                                disabled={savingField === "contact_number"}
-                              >
-                                {savingField === "contact_number" ? "Saving..." : "Save"}
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* 3. Province */}
-                      <div>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                          <label style={{ fontSize: "0.84rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>
-                            Province
-                          </label>
-                          {fieldSuccess === "province" && (
-                            <span className="inline-field-saved-badge">✔ Saved</span>
-                          )}
-                        </div>
-                        <div className="inline-field-row">
-                          <select
-                            className="inline-field-control"
-                            value={draft.province || "Cavite"}
-                            onChange={(e) => {
-                              const prov = e.target.value;
-                              const cities = getCitiesByProvince(prov);
-                              const nextCity = cities[0] || "";
-                              setDraft((current) => ({
-                                ...current,
-                                province: prov,
-                                city: nextCity,
-                                company_address: nextCity,
-                              }));
-                            }}
-                          >
-                            {ALL_PHILIPPINES_PROVINCES.map((p) => (
-                              <option key={p} value={p}>
-                                {p}
-                              </option>
-                            ))}
-                          </select>
-                          {isProvinceDirty && (
-                            <div className="inline-field-actions">
-                              <button
-                                type="button"
-                                className="inline-field-btn inline-field-cancel-btn"
-                                onClick={() => cancelField("province")}
-                                disabled={savingField === "province"}
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                type="button"
-                                className="inline-field-btn inline-field-save-btn"
-                                onClick={() => saveSingleField("province", draft.province)}
-                                disabled={savingField === "province"}
-                              >
-                                {savingField === "province" ? "Saving..." : "Save"}
-                              </button>
-                            </div>
-                          )}
+                        {/* 2. Primary Contact Number */}
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                            <label style={{ fontSize: "0.84rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>
+                              Primary Contact Number
+                            </label>
+                            {fieldSuccess === "contact_number" && (
+                              <span className="inline-field-saved-badge">✔ Saved</span>
+                            )}
+                          </div>
+                          <div className="inline-field-row">
+                            <input
+                              className="inline-field-control"
+                              value={draft.contact_number || ""}
+                              onChange={(e) => updateDraft("contact_number", e.target.value)}
+                              placeholder="e.g. +63 912 345 6789"
+                            />
+                            {isContactNumberDirty && (
+                              <div className="inline-field-actions">
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-cancel-btn"
+                                  onClick={() => cancelField("contact_number")}
+                                  disabled={savingField === "contact_number"}
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-save-btn"
+                                  onClick={() => saveSingleField("contact_number", draft.contact_number)}
+                                  disabled={savingField === "contact_number"}
+                                >
+                                  {savingField === "contact_number" ? "Saving..." : "Save"}
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
 
-                      {/* 4. City / Municipality */}
-                      <div>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                          <label style={{ fontSize: "0.84rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>
-                            City / Municipality
-                          </label>
-                          {fieldSuccess === "city" && (
-                            <span className="inline-field-saved-badge">✔ Saved</span>
-                          )}
+                      {/* Row 2: Province & City / Municipality */}
+                      <div className="form-grid-2col">
+                        {/* 3. Province */}
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                            <label style={{ fontSize: "0.84rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>
+                              Province
+                            </label>
+                            {fieldSuccess === "province" && (
+                              <span className="inline-field-saved-badge">✔ Saved</span>
+                            )}
+                          </div>
+                          <div className="inline-field-row">
+                            <select
+                              className="inline-field-control"
+                              value={draft.province || "Cavite"}
+                              onChange={(e) => {
+                                const prov = e.target.value;
+                                const cities = getCitiesByProvince(prov);
+                                const nextCity = cities[0] || "";
+                                setDraft((current) => ({
+                                  ...current,
+                                  province: prov,
+                                  city: nextCity,
+                                  company_address: nextCity,
+                                }));
+                              }}
+                            >
+                              {ALL_PHILIPPINES_PROVINCES.map((p) => (
+                                <option key={p} value={p}>
+                                  {p}
+                                </option>
+                              ))}
+                            </select>
+                            {isProvinceDirty && (
+                              <div className="inline-field-actions">
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-cancel-btn"
+                                  onClick={() => cancelField("province")}
+                                  disabled={savingField === "province"}
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-save-btn"
+                                  onClick={() => saveSingleField("province", draft.province)}
+                                  disabled={savingField === "province"}
+                                >
+                                  {savingField === "province" ? "Saving..." : "Save"}
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="inline-field-row">
-                          <select
-                            className="inline-field-control"
-                            value={draft.city || draft.company_address || ""}
-                            onChange={(e) => {
-                              const newCity = e.target.value;
-                              setDraft((current) => ({
-                                ...current,
-                                city: newCity,
-                                company_address: newCity,
-                              }));
-                            }}
-                          >
-                            <option value="">Select primary city / municipality</option>
-                            {getCitiesByProvince(draft.province || "Cavite").map((city) => (
-                              <option key={city} value={city}>
-                                {city}
-                              </option>
-                            ))}
-                          </select>
-                          {isCityDirty && (
-                            <div className="inline-field-actions">
-                              <button
-                                type="button"
-                                className="inline-field-btn inline-field-cancel-btn"
-                                onClick={() => cancelField("city")}
-                                disabled={savingField === "city"}
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                type="button"
-                                className="inline-field-btn inline-field-save-btn"
-                                onClick={() => saveSingleField("city", draft.city)}
-                                disabled={savingField === "city"}
-                              >
-                                {savingField === "city" ? "Saving..." : "Save"}
-                              </button>
-                            </div>
-                          )}
+
+                        {/* 4. City / Municipality */}
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                            <label style={{ fontSize: "0.84rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>
+                              City / Municipality
+                            </label>
+                            {fieldSuccess === "city" && (
+                              <span className="inline-field-saved-badge">✔ Saved</span>
+                            )}
+                          </div>
+                          <div className="inline-field-row">
+                            <select
+                              className="inline-field-control"
+                              value={draft.city || draft.company_address || ""}
+                              onChange={(e) => {
+                                const newCity = e.target.value;
+                                setDraft((current) => ({
+                                  ...current,
+                                  city: newCity,
+                                  company_address: newCity,
+                                }));
+                              }}
+                            >
+                              <option value="">Select primary city / municipality</option>
+                              {getCitiesByProvince(draft.province || "Cavite").map((city) => (
+                                <option key={city} value={city}>
+                                  {city}
+                                </option>
+                              ))}
+                            </select>
+                            {isCityDirty && (
+                              <div className="inline-field-actions">
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-cancel-btn"
+                                  onClick={() => cancelField("city")}
+                                  disabled={savingField === "city"}
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  className="inline-field-btn inline-field-save-btn"
+                                  onClick={() => saveSingleField("city", draft.city)}
+                                  disabled={savingField === "city"}
+                                >
+                                  {savingField === "city" ? "Saving..." : "Save"}
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1857,7 +1971,17 @@ export default function EmployerCompanyProfile() {
               <button
                 type="button"
                 className="add-branch-trigger-btn"
-                onClick={() => setIsAddingBranch((prev) => !prev)}
+                onClick={() => {
+                  if (isAddingBranch) {
+                    if (checkHasUnsavedBranch()) {
+                      setIsUnsavedWarningOpen(true);
+                      return;
+                    }
+                    setIsAddingBranch(false);
+                  } else {
+                    setIsAddingBranch(true);
+                  }
+                }}
                 style={{ flexShrink: 0 }}
               >
                 {isAddingBranch ? "Cancel" : "+ Add Branch"}
@@ -2227,6 +2351,63 @@ export default function EmployerCompanyProfile() {
                 style={{ flex: 1, background: "#0284c7", borderColor: "#0284c7", color: "#ffffff" }}
               >
                 {isVerifyingOtp ? "Verifying..." : "Verify Code"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* UNSAVED COMPANY PROFILE WARNING MODAL (Rule 6 Compliant) */}
+      {isUnsavedWarningOpen && (
+        <div
+          className="system-popup-overlay"
+          onClick={() => {
+            setIsUnsavedWarningOpen(false);
+            setPendingTargetSection(null);
+            setPendingNavHref(null);
+          }}
+        >
+          <div className="system-popup-card" onClick={(e) => e.stopPropagation()}>
+            <div className="system-popup-icon-wrap warning">
+              <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#ca8a04" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </div>
+            <h3 className="system-popup-title">Warning</h3>
+            <p className="system-popup-message">
+              You have unsaved changes in your company profile draft. Discard changes?
+            </p>
+            <div className="system-popup-actions">
+              <button
+                type="button"
+                className="system-popup-btn secondary"
+                onClick={() => {
+                  setIsUnsavedWarningOpen(false);
+                  setPendingTargetSection(null);
+                  setPendingNavHref(null);
+                }}
+              >
+                Keep Editing
+              </button>
+              <button
+                type="button"
+                className="system-popup-btn primary"
+                onClick={() => {
+                  discardAllUnsavedChanges();
+                  setIsUnsavedWarningOpen(false);
+                  if (pendingTargetSection) {
+                    setActiveSection(pendingTargetSection);
+                    setPendingTargetSection(null);
+                  } else if (pendingNavHref) {
+                    const targetHref = pendingNavHref;
+                    setPendingNavHref(null);
+                    window.location.href = targetHref;
+                  }
+                }}
+              >
+                Discard Changes
               </button>
             </div>
           </div>
