@@ -15,6 +15,7 @@ import {
 } from "../../utils/filters";
 import { useUnreadNotificationsCount } from "../../hooks/useUnreadNotificationsCount";
 import { useUnreadMessagesCount } from "../../hooks/useUnreadMessagesCount";
+import { usePendingInvitationsCount } from "../../hooks/usePendingInvitationsCount";
 import { JobDetailsModal, EmployerDetailsModal, type JobModalData } from "../../components/modals";
 import "./Applicant-Dashboard.css";
 import { SideIcon, ChevronIcon, type SideNavItem } from "../../components/Icons";
@@ -593,6 +594,7 @@ const WORKSPACE_TABS = [
 export default function ApplicantDashboard() {
   const unreadNotifCount = useUnreadNotificationsCount();
   const unreadMessagesCount = useUnreadMessagesCount();
+  const pendingInvitesCount = usePendingInvitationsCount();
   const [isSidebarVisible, setIsSidebarVisible] = useState(() => {
     if (typeof window !== "undefined" && window.innerWidth <= 768) {
       return false;
@@ -961,6 +963,7 @@ export default function ApplicantDashboard() {
             })
             .catch(() => {});
         }
+        window.dispatchEvent(new Event("elitecruit_invitation_update"));
       }
     } catch (err) {
       console.error("Error responding to invitation:", err);
@@ -1283,6 +1286,11 @@ export default function ApplicantDashboard() {
                   <SideIcon name="overview" />
                 </span>
                 <span>Applicant Workspace</span>
+                {pendingInvitesCount > 0 && (
+                  <span className="item-badge" title={`${pendingInvitesCount} pending job invitation${pendingInvitesCount > 1 ? "s" : ""}`} style={{ marginLeft: "auto", marginRight: 8 }}>
+                    {pendingInvitesCount}
+                  </span>
+                )}
               </span>
               <span className="title-caret-btn" title="Toggle sub-menu">
                 <ChevronIcon direction={isWorkspaceOpen ? "down" : "up"} />
@@ -1307,6 +1315,7 @@ export default function ApplicantDashboard() {
                   <a href="/applicant-dashboard#section-invitations" onClick={(event) => handleSectionClick(event, "section-invitations")}>
                     <span className="item-icon"><SideIcon name="notifications" /></span>
                     <span>Job Invitations</span>
+                    {pendingInvitesCount > 0 && <span className="item-badge">{pendingInvitesCount}</span>}
                   </a>
                 </li>
               </ul>

@@ -15,7 +15,7 @@ export function usePendingInvitationsCount(): number {
       }
       try {
         const savedUser = JSON.parse(savedUserRaw);
-        if (!savedUser?.id) {
+        if (!savedUser?.id || savedUser.role !== "applicant") {
           if (isMounted) setPendingCount(0);
           return;
         }

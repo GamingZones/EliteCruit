@@ -3,6 +3,7 @@ import { ChevronIcon, SideIcon } from "../../components/Icons";
 import { useEmployerCompanyLabel } from "../../hooks/useEmployerCompanyLabel";
 import { useUnreadNotificationsCount } from "../../hooks/useUnreadNotificationsCount";
 import { useUnreadMessagesCount } from "../../hooks/useUnreadMessagesCount";
+import { usePendingInvitationsCount } from "../../hooks/usePendingInvitationsCount";
 import ApplicantChatbotDrawer from "../../components/ApplicantChatbotDrawer";
 import EmployerChatbotDrawer, { EmployerFAQItem as FAQItem } from "../../components/EmployerChatbotDrawer";
 import CalendarDrawer from "../../components/CalendarDrawer";
@@ -399,6 +400,7 @@ export default function Messages() {
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   const unreadNotifCount = useUnreadNotificationsCount();
   const unreadMessagesCount = useUnreadMessagesCount();
+  const pendingInvitesCount = usePendingInvitationsCount();
 
   const employerMessagesFaqs: FAQItem[] = [
     {
@@ -1629,6 +1631,11 @@ export default function Messages() {
                 <span className="title-main">
                   <span className="item-icon"><SideIcon name="overview" /></span>
                   <span>Applicant Workspace</span>
+                  {pendingInvitesCount > 0 && (
+                    <span className="item-badge" title={`${pendingInvitesCount} pending job invitation${pendingInvitesCount > 1 ? "s" : ""}`} style={{ marginLeft: "auto", marginRight: 8 }}>
+                      {pendingInvitesCount}
+                    </span>
+                  )}
                 </span>
                 <span className="title-caret-btn" title="Toggle sub-menu">
                   <ChevronIcon direction={isWorkspaceOpen ? "down" : "up"} />
@@ -1639,7 +1646,7 @@ export default function Messages() {
                 <ul className="appdash-menu-list">
                   <li><a href="/applicant-dashboard#section-smart-matches"><span className="item-icon"><SideIcon name="star" /></span><span>Smart Matches</span></a></li>
                   <li><a href="/applicant-dashboard#section-applications"><span className="item-icon"><SideIcon name="applications" /></span><span>My Applications</span></a></li>
-                  <li><a href="/applicant-dashboard#section-invitations"><span className="item-icon"><SideIcon name="notifications" /></span><span>Job Invitations</span></a></li>
+                  <li><a href="/applicant-dashboard#section-invitations"><span className="item-icon"><SideIcon name="notifications" /></span><span>Job Invitations</span>{pendingInvitesCount > 0 && <span className="item-badge">{pendingInvitesCount}</span>}</a></li>
                 </ul>
               )}
             </li>
