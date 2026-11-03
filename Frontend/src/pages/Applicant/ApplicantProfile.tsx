@@ -2596,6 +2596,14 @@ export default function ApplicantProfile() {
 
   const saveSingleField = async (fieldName: keyof ApplicantProfileData, value: any) => {
     if (!userId) return;
+    if (fieldName === "phone") {
+      const cleanPhone = normalizePhoneNumber(value);
+      if (cleanPhone.length !== 10) {
+        setProfileMessageType("error");
+        setProfileMessage("Phone number must have exactly 10 digits.");
+        return;
+      }
+    }
     setSavingField(fieldName);
     setProfileMessage("");
     try {
@@ -3516,6 +3524,14 @@ export default function ApplicantProfile() {
     if (!isEmailVerified) {
       setProfileMessageType("error");
       setProfileMessage("Please verify your email address before saving.");
+      return;
+    }
+
+    const cleanPhone = normalizePhoneNumber(draft.phone);
+    if (draft.phone && cleanPhone.length > 0 && cleanPhone.length !== 10) {
+      setProfileMessageType("error");
+      setProfileMessage("Phone number must have exactly 10 digits.");
+      setIsSaving(false);
       return;
     }
 
@@ -4577,13 +4593,18 @@ export default function ApplicantProfile() {
                                   type="button"
                                   className="inline-field-btn inline-field-save-btn"
                                   onClick={() => saveSingleField("phone", normalizePhoneNumber(draft.phone))}
-                                  disabled={savingField === "phone"}
+                                  disabled={savingField === "phone" || normalizePhoneNumber(draft.phone).length !== 10}
                                 >
                                   {savingField === "phone" ? "Saving..." : "Save"}
                                 </button>
                               </div>
                             )}
                           </div>
+                          <small className={`inline-field-subtext ${isPhoneDirty && normalizePhoneNumber(draft.phone).length !== 10 ? "error" : ""}`}>
+                            {isPhoneDirty && normalizePhoneNumber(draft.phone).length !== 10
+                              ? `Phone number must have exactly 10 digits (${normalizePhoneNumber(draft.phone).length}/10)`
+                              : "10-digit mobile number excluding country code."}
+                          </small>
                         </div>
 
                         {/* Email Address */}

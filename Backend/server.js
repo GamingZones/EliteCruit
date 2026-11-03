@@ -2648,6 +2648,20 @@ app.put("/api/applicants/:userId/profile", authenticateToken, requireUserOrAdmin
     return res.status(400).json({ message: "Invalid applicant ID." });
   }
 
+  if (req.body?.phone !== undefined && req.body.phone !== null && String(req.body.phone).trim() !== "") {
+    let phoneDigits = String(req.body.phone).replace(/\D/g, "");
+    while (phoneDigits.startsWith("63") && phoneDigits.length > 10) {
+      phoneDigits = phoneDigits.slice(2);
+    }
+    if (phoneDigits.startsWith("0")) {
+      phoneDigits = phoneDigits.slice(1);
+    }
+    phoneDigits = phoneDigits.slice(0, 10);
+    if (phoneDigits.length !== 10) {
+      return res.status(400).json({ message: "Phone number must have exactly 10 digits." });
+    }
+  }
+
   const currentProf = await get(`SELECT p.*, u.email FROM applicant_profiles p INNER JOIN users u ON u.id = p.user_id WHERE p.user_id = ?`, [userId]);
 
   const fields = ["first_name", "middle_name", "last_name", "phone", "province", "city", "address", "summary", "languages", "desired_job_title", "expected_salary", "work_arrangement", "years_of_experience"];
