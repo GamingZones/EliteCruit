@@ -2637,6 +2637,7 @@ export default function EmployerApplicantManagement() {
       user_id: candUserId,
       id: reviewModalApp.id || candUserId,
       applicant_name: reviewModalApp.applicant_name || p.full_name || p.applicant_name,
+      gender: reviewModalApp.gender || p.gender,
       email: reviewModalApp.email || p.email,
       phone: reviewModalApp.phone || p.phone || p.contact_number,
       city: reviewModalApp.city || reviewModalApp.address || p.city || p.province || p.address || "Cavite",

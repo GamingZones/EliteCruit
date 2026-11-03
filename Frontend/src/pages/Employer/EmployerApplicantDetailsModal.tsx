@@ -223,6 +223,7 @@ export type CandidateModalData = {
   name?: string;
   first_name?: string;
   last_name?: string;
+  gender?: string;
   email?: string;
   phone?: string;
   city?: string;
@@ -1155,6 +1156,18 @@ export default function EmployerApplicantDetailsModal({
                     </svg>
                     {locationStr}
                   </span>
+                  {candidate.gender && (
+                    <>
+                      <span style={{ color: "#cbd5e1" }}>•</span>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="8" r="4" />
+                          <path d="M6 21v-2a6 6 0 0 1 12 0v2" />
+                        </svg>
+                        {candidate.gender}
+                      </span>
+                    </>
+                  )}
                   {candidate.email && (
                     <>
                       <span style={{ color: "#cbd5e1" }}>•</span>
@@ -1265,6 +1278,42 @@ export default function EmployerApplicantDetailsModal({
               {/* TAB 1: PERSONAL & CONTACT */}
               {candDetailTab === "personal" && (
                 <div className="cand-tab-content">
+                  <div className="cand-details-card">
+                    <h4 className="cand-details-card-title">
+                      Personal Details
+                    </h4>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
+                      <div className="company-info-card">
+                        <small className="company-info-card-label">Gender</small>
+                        <span className="company-info-card-val" style={{ fontWeight: 600 }}>
+                          {candidate.gender || "Prefer not to say"}
+                        </span>
+                      </div>
+                      <div className="company-info-card">
+                        <small className="company-info-card-label">Location</small>
+                        <span className="company-info-card-val">
+                          {locationStr}
+                        </span>
+                      </div>
+                      {candidate.phone && (
+                        <div className="company-info-card">
+                          <small className="company-info-card-label">Phone Number</small>
+                          <span className="company-info-card-val">
+                            {candidate.phone}
+                          </span>
+                        </div>
+                      )}
+                      {candidate.email && (
+                        <div className="company-info-card">
+                          <small className="company-info-card-label">Email Address</small>
+                          <span className="company-info-card-val">
+                            {candidate.email}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="cand-details-card">
                     <h4 className="cand-details-card-title">
                       Professional Summary
