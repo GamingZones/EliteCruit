@@ -3298,52 +3298,10 @@ export function calculateJobMatchDetails(
   }
 
   // 1. Skills (3-Tier: Skill presence checked first, then duration. Skills & years count as distinct requirements)
-  const rawJobSkills = (job.skillTags || []).map((s) => s.trim()).filter(Boolean);
-  const profileSkills = (profile.skills || []).map((s) => s.trim()).filter(Boolean);
-  const profileCerts = (profile.certifications || []).map((c) => c.trim()).filter(Boolean);
-  const profileQuals = (profile.qualifications || []).map((q) => q.trim()).filter(Boolean);
-
-  // If applicant has zero competencies listed in their profile, they have an incomplete profile
-  const hasProfileCompetencies =
-    profileSkills.length > 0 || profileQuals.length > 0 || profileCerts.length > 0;
-
-  if (!hasProfileCompetencies) {
-    const hasTargetRole = Boolean(profile.desiredJobTitle && profile.desiredJobTitle.trim());
-    const isTitleMatch = hasTargetRole && isSkillMatch(job.title, profile.desiredJobTitle!);
-    const score = isTitleMatch ? 15 : 0;
-    const breakdown = isTitleMatch
-      ? `Preliminary Role Match: 15%\n• Job title matches target role (${profile.desiredJobTitle}).\n• Set up your skills and qualifications in your Profile to calculate full competency compatibility.`
-      : `Profile Incomplete: 0%\n• Set up your profile skills and qualifications to calculate your personalized job match score.`;
-
-    return {
-      score,
-      breakdown,
-      skillsPts: 0,
-      qualPts: 0,
-      certPts: 0,
-      maxSkillsPts: 50,
-      maxQualPts: 30,
-      maxCertPts: 20,
-      matchedSkills: [],
-      partialSkills: [],
-      missingSkills: rawJobSkills,
-      matchedQuals: [],
-      missingQuals: (job.qualTags || []).map((q) => q.trim()).filter(Boolean),
-      matchedCerts: [],
-      missingCerts: (job.certTags || []).map((c) => c.trim()).filter(Boolean),
-      setupPts: 0,
-      salaryPts: 0,
-      locationPts: 0,
-      titleBonus: isTitleMatch ? 15 : 0,
-      setupSummary: job.setup || "Standard",
-      salarySummary: "Set up profile to compare salary",
-      locationSummary: formatLocationWithCavite(job.location),
-      recommendations: [
-        "Your profile does not have any competencies (skills, qualifications, or certifications) listed yet.",
-        "Add your technical skills and qualifications in your Profile to unlock personalized job match evaluations.",
-      ],
-    };
-  }
+  const rawJobSkills = job.skillTags || [];
+  const profileSkills = profile.skills || [];
+  const profileCerts = profile.certifications || [];
+  const profileQuals = profile.qualifications || [];
 
   const matchedSkills: string[] = [];
   const partialSkills: string[] = [];
@@ -3369,7 +3327,7 @@ export function calculateJobMatchDetails(
   });
 
   // 2. Qualifications
-  const rawJobQuals = (job.qualTags || []).map((q) => q.trim()).filter(Boolean);
+  const rawJobQuals = job.qualTags || [];
   const matchedQuals: string[] = [];
   const missingQuals: string[] = [];
 
@@ -3385,7 +3343,7 @@ export function calculateJobMatchDetails(
   });
 
   // 3. Certifications
-  const rawJobCerts = (job.certTags || []).map((c) => c.trim()).filter(Boolean);
+  const rawJobCerts = job.certTags || [];
   const matchedCerts: string[] = [];
   const missingCerts: string[] = [];
 
@@ -3420,13 +3378,7 @@ export function calculateJobMatchDetails(
   let score = 0;
 
   if (totalBase === 0) {
-    // If employer did not specify any skills, qualifications, or certifications:
-    // Check if role title or any profile skill matches the job title
-    const hasTargetRole = Boolean(profile.desiredJobTitle && profile.desiredJobTitle.trim());
-    const isTitleMatch = hasTargetRole && isSkillMatch(job.title, profile.desiredJobTitle!);
-    const hasSkillInTitle = profileSkills.some((s) => isSkillMatch(job.title, s));
-
-    score = isTitleMatch ? 40 : hasSkillInTitle ? 25 : 0;
+    score = 100;
   } else {
     maxSkillsPts = hasSkills ? Math.round((baseSkills / totalBase) * 100) : 0;
     maxQualsPts = hasQuals ? Math.round((baseQuals / totalBase) * 100) : 0;
@@ -3456,19 +3408,10 @@ export function calculateJobMatchDetails(
   if (hasQuals) breakdownParts.push(`• Qualifications: ${qualPts}/${maxQualsPts}%`);
   if (hasCerts) breakdownParts.push(`• Certifications: ${certPts}/${maxCertPts}%`);
 
-  let breakdown = "";
-  if (breakdownParts.length > 0) {
-    breakdown = `Match Score: ${score}%\n` + breakdownParts.join("\n");
-    if (score === 100) {
-      breakdown += "\n• 100% Match: All required competency criteria satisfied!";
-    }
-  } else if (totalBase === 0) {
-    breakdown = score > 0
-      ? `Preliminary Role Match: ${score}%\n• Matched target role or skills in job title.\n• Note: Employer did not specify specific skill requirements for this posting.`
-      : `Match Score: 0%\n• Employer did not specify required skills or qualifications for this posting.`;
-  } else {
-    breakdown = `Match Score: ${score}%\n• No required competency criteria were matched.`;
-  }
+  const breakdown =
+    breakdownParts.length > 0
+      ? `Match Score: ${score}%\n` + breakdownParts.join("\n")
+      : `100% Match on all criteria!`;
 
   const recommendations: string[] = [];
   if (missingSkills.length > 0) {
