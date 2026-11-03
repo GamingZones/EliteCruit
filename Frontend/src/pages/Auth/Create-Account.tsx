@@ -3,6 +3,8 @@ import { ALL_PHILIPPINES_PROVINCES, getCitiesByProvince } from "../../utils/filt
 import { TERMS_OF_SERVICE, PRIVACY_POLICY } from "../../data/legalContent";
 import "./Create-Account.css";
 
+const GENDER_OPTIONS = ["Male", "Female", "Other", "Prefer not to say"];
+
 export default function CreateAccount() {
   const [role, setRole] = useState("applicant");
   const [showPassword, setShowPassword] = useState(false);
@@ -40,6 +42,7 @@ export default function CreateAccount() {
     firstName: "",
     middleName: "",
     lastName: "",
+    gender: "",
     province: "Cavite",
     city: "Alfonso",
     phone: "",
@@ -110,6 +113,7 @@ export default function CreateAccount() {
       firstName: "",
       middleName: "",
       lastName: "",
+      gender: "",
       businessName: "",
       password: "",
       confirmPassword: "",
@@ -237,6 +241,10 @@ export default function CreateAccount() {
         setSubmitError("First name and last name are required.");
         return;
       }
+      if (!formData.gender.trim()) {
+        setSubmitError("Please select your gender.");
+        return;
+      }
     } else if (!formData.businessName.trim()) {
       setSubmitError("Company Name is required.");
       return;
@@ -257,6 +265,7 @@ export default function CreateAccount() {
           firstName: formData.firstName,
           middleName: formData.middleName,
           lastName: formData.lastName,
+          gender: isApplicant ? formData.gender : undefined,
           province: formData.province,
           city: formData.city,
           phone: formData.phone,
@@ -277,6 +286,7 @@ export default function CreateAccount() {
         firstName: "",
         middleName: "",
         lastName: "",
+        gender: "",
         province: "Cavite",
         city: "Alfonso",
         phone: "",
@@ -431,6 +441,41 @@ export default function CreateAccount() {
 
               <div className="form-row two-col">
                 <div className="form-field">
+                  <label htmlFor="gender">Gender</label>
+                  <select
+                    id="gender"
+                    required
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleChange}
+                  >
+                    <option value="" disabled>Select Gender</option>
+                    {GENDER_OPTIONS.map((g) => (
+                      <option key={g} value={g}>
+                        {g}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-field">
+                  <label htmlFor="phone">Phone Number</label>
+                  <div className="input-prefix-box">
+                    <span className="prefix-tag">+63</span>
+                    <input
+                      id="phone"
+                      type="tel"
+                      name="phone"
+                      placeholder="09682944632"
+                      value={formData.phone}
+                      onChange={handlePhoneChange}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-row two-col">
+                <div className="form-field">
                   <label htmlFor="province">Province</label>
                   <select
                     id="province"
@@ -463,22 +508,7 @@ export default function CreateAccount() {
                 </div>
               </div>
 
-              <div className="form-row two-col">
-                <div className="form-field">
-                  <label htmlFor="phone">Phone Number</label>
-                  <div className="input-prefix-box">
-                    <span className="prefix-tag">+63</span>
-                    <input
-                      id="phone"
-                      type="tel"
-                      name="phone"
-                      placeholder="09682944632"
-                      value={formData.phone}
-                      onChange={handlePhoneChange}
-                    />
-                  </div>
-                </div>
-
+              <div className="form-row one-col">
                 <div className="form-field">
                   <label htmlFor="email">Email Address</label>
                   <div className="email-input-wrapper">
