@@ -476,6 +476,33 @@
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cancel-profile-button:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+[data-theme="dark"] .cancel-profile-button {
+  background: #1e2433 !important;
+  color: #cbd5e1 !important;
+  border-color: #334155 !important;
+}
+
+[data-theme="dark"] .cancel-profile-button:hover:not(:disabled) {
+  background: #283042 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .edit-profile-button {
+  background: #103f65 !important;
+  color: #ffffff !important;
+  border-color: #1e476d !important;
+}
+
+[data-theme="dark"] .edit-profile-button:hover:not(:disabled) {
+  background: #0c314e !important;
 }
 
 .input-prefix-wrap {
@@ -848,8 +875,40 @@
   padding: 8px 10px;
   box-shadow: 0 1px 4px rgba(12, 42, 71, 0.06);
   position: sticky;
-  top: 0;
-  z-index: 10;
+  top: 56px;
+  z-index: 15;
+}
+
+[data-theme="dark"] .profile-section-nav {
+  background: #1c1e27 !important;
+  border-color: #2e3244 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .section-nav-btn {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .section-nav-btn:hover {
+  background: #252836 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .section-nav-btn.active {
+  background: #0f2744 !important;
+  color: #ffffff !important;
+  border-color: #1e3a5f !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35) !important;
+}
+
+[data-theme="dark"] .section-nav-btn .nav-num {
+  background: #252836 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .section-nav-btn.active .nav-num {
+  background: #f6be45 !important;
+  color: #0c2a47 !important;
 }
 
 .section-nav-btn {
@@ -3745,33 +3804,35 @@
    ========================================================================== */
 .inline-field-row {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
   width: 100%;
 }
 
 .inline-field-control {
-  flex: 1;
-  min-width: 0;
+  width: 100% !important;
   box-sizing: border-box;
 }
 
 .inline-field-actions {
   display: inline-flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 6px;
   flex-shrink: 0;
+  margin-top: 2px;
   animation: inlineActionFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes inlineActionFadeIn {
   from {
     opacity: 0;
-    transform: translateX(8px);
+    transform: translateY(-4px);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateY(0);
   }
 }
 
@@ -3780,10 +3841,10 @@
   align-items: center;
   justify-content: center;
   gap: 5px;
-  height: 40px;
-  padding: 0 16px;
-  border-radius: 8px;
-  font-size: 0.84rem;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 6px;
+  font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
@@ -3805,14 +3866,14 @@
 }
 
 .inline-field-save-btn {
-  background: #0284c7;
-  border: 1.5px solid #0284c7;
+  background: #00385e;
+  border: 1.5px solid #00385e;
   color: #ffffff;
 }
 
 .inline-field-save-btn:hover:not(:disabled) {
-  background: #0369a1;
-  border-color: #0369a1;
+  background: #002742;
+  border-color: #002742;
 }
 
 .inline-field-save-btn:disabled {
@@ -3846,11 +3907,11 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 700;
   color: #16a34a;
   background: #dcfce7;
-  padding: 3px 10px;
+  padding: 2px 8px;
   border-radius: 9999px;
   border: 1px solid #86efac;
   animation: inlineActionFadeIn 0.2s ease-out;
@@ -3870,14 +3931,14 @@
 }
 
 [data-theme="dark"] .inline-field-save-btn {
-  background: #38bdf8 !important;
-  border-color: #38bdf8 !important;
-  color: #0f172a !important;
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .inline-field-save-btn:hover:not(:disabled) {
-  background: #0ea5e9 !important;
-  border-color: #0ea5e9 !important;
+  background: #0369a1 !important;
+  border-color: #0369a1 !important;
 }
 
 [data-theme="dark"] .inline-field-verify-btn {

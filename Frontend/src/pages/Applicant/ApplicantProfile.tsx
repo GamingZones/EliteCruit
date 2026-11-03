@@ -4136,125 +4136,169 @@ export default function ApplicantProfile() {
           {/* =================================================================
               SECTION 1: PERSONAL & CONTACT INFORMATION
               ================================================================= */}
-          {activeSection === "personal" && (
-            <section className="profile-section-block">
-              <article className="profile-card personal-card">
-                <div className="person-heading">
-                  <div className="person-heading-left">
-                    <span
-                      className="person-avatar"
-                      title={fullName ? `${fullName} (Click to change photo)` : "Click to change photo"}
-                      onClick={() => profilePhotoInputRef.current?.click()}
-                      style={{ overflow: "hidden", position: "relative", cursor: "pointer" }}
-                    >
-                      {profile.profile_picture_path && (
-                        <img
-                          src={profile.profile_picture_path}
-                          alt={fullName}
-                          className="person-avatar-img"
-                          onError={(e) => {
-                            (e.currentTarget as HTMLElement).style.display = "none";
-                            if (e.currentTarget.nextElementSibling) {
-                              (e.currentTarget.nextElementSibling as HTMLElement).style.display = "inline-flex";
-                            }
-                          }}
-                        />
-                      )}
-                      <svg
-                        width="22"
-                        height="22"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        style={{ display: profile.profile_picture_path ? "none" : "inline-flex" }}
+          {activeSection === "personal" && (() => {
+            const isFirstNameDirty = (draft.first_name || "").trim() !== (profile.first_name || "").trim();
+            const isMiddleNameDirty = (draft.middle_name || "").trim() !== (profile.middle_name || "").trim();
+            const isLastNameDirty = (draft.last_name || "").trim() !== (profile.last_name || "").trim();
+            const isProvinceDirty = (draft.province || "Cavite") !== (profile.province || "Cavite");
+            const isCityDirty = (draft.city || "") !== (profile.city || "");
+            const isPhoneDirty = (draft.phone || "").trim() !== (profile.phone || "").trim();
+            const isEmailDirty = (draft.email || "").trim().toLowerCase() !== (profile.email || "").trim().toLowerCase();
+            const isEmailVerifiedForDraft = isEmailDirty
+              ? verifiedEmailAddress.trim().toLowerCase() === (draft.email || "").trim().toLowerCase()
+              : Boolean(profile.is_email_verified);
+            const isSummaryDirty = (draft.summary || "").trim() !== (profile.summary || "").trim();
+            const isAnySection1Dirty = Boolean(
+              isFirstNameDirty ||
+              isMiddleNameDirty ||
+              isLastNameDirty ||
+              isProvinceDirty ||
+              isCityDirty ||
+              isPhoneDirty ||
+              isEmailDirty ||
+              isSummaryDirty
+            );
+
+            return (
+              <section className="profile-section-block">
+                <article className="profile-card personal-card">
+                  <div className="person-heading">
+                    <div className="person-heading-left">
+                      <span
+                        className="person-avatar"
+                        title={fullName ? `${fullName} (Click to change photo)` : "Click to change photo"}
+                        onClick={() => profilePhotoInputRef.current?.click()}
+                        style={{ overflow: "hidden", position: "relative", cursor: "pointer" }}
                       >
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                        <circle cx="12" cy="7" r="4" />
-                      </svg>
-                    </span>
-                    <div>
-                      <strong>{fullName}</strong>
-                      <small>Applicant profile</small>
+                        {profile.profile_picture_path && (
+                          <img
+                            src={profile.profile_picture_path}
+                            alt={fullName}
+                            className="person-avatar-img"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLElement).style.display = "none";
+                              if (e.currentTarget.nextElementSibling) {
+                                (e.currentTarget.nextElementSibling as HTMLElement).style.display = "inline-flex";
+                              }
+                            }}
+                          />
+                        )}
+                        <svg
+                          width="22"
+                          height="22"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          style={{ display: profile.profile_picture_path ? "none" : "inline-flex" }}
+                        >
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                          <circle cx="12" cy="7" r="4" />
+                        </svg>
+                      </span>
+                      <div>
+                        <strong>{fullName}</strong>
+                        <small>Applicant profile</small>
+                      </div>
+                    </div>
+
+                    {/* Middle Center: ATS Form & Attachments */}
+                    <div className="person-heading-center">
+                      <button
+                        type="button"
+                        className="profile-action-btn ats-form-btn"
+                        onClick={() => setIsAtsModalOpen(true)}
+                        title="Open ATS Document Form"
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                          <polyline points="14 2 14 8 20 8"></polyline>
+                          <line x1="16" y1="13" x2="8" y2="13"></line>
+                          <line x1="16" y1="17" x2="8" y2="17"></line>
+                          <line x1="10" y1="9" x2="8" y2="9"></line>
+                        </svg>
+                        <span>ATS Form</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="profile-action-btn documents-btn"
+                        onClick={() => setIsDocumentsModalOpen(true)}
+                        title="Manage Resume & Document Attachments"
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                        </svg>
+                        <span>Attachments</span>
+                      </button>
+                    </div>
+
+                    {/* Right Edge: Profile Photo & Edit Profile */}
+                    <div className="person-heading-right">
+                      <input
+                        type="file"
+                        ref={profilePhotoInputRef}
+                        accept="image/*"
+                        style={{ display: "none" }}
+                        onChange={handleProfilePhotoSelect}
+                      />
+
+                      <button
+                        type="button"
+                        className="profile-action-btn photo-btn"
+                        onClick={() => profilePhotoInputRef.current?.click()}
+                        disabled={isUploadingPhoto || isApplyingPhotoAdjustment}
+                        title="Upload or change your profile photo"
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                          <circle cx="12" cy="13" r="4"></circle>
+                        </svg>
+                        <span>{isUploadingPhoto || isApplyingPhotoAdjustment ? "Saving..." : "Profile Photo"}</span>
+                      </button>
+
+                      {isAnySection1Dirty && (
+                        <button
+                          type="button"
+                          className="cancel-profile-button"
+                          onClick={() => {
+                            setDraft((prev) => ({
+                              ...prev,
+                              first_name: profile.first_name || "",
+                              middle_name: profile.middle_name || "",
+                              last_name: profile.last_name || "",
+                              province: profile.province || "Cavite",
+                              city: profile.city || "",
+                              phone: profile.phone || "",
+                              email: profile.email || "",
+                              summary: profile.summary || "",
+                            }));
+                          }}
+                          disabled={isSaving}
+                        >
+                          Discard Changes
+                        </button>
+                      )}
+
+                      {isAnySection1Dirty && (
+                        <button
+                          type="button"
+                          className="edit-profile-button"
+                          onClick={saveProfile}
+                          disabled={isSaving || (isEmailDirty && !isEmailVerifiedForDraft)}
+                          title={isEmailDirty && !isEmailVerifiedForDraft ? "Please verify your email before saving" : ""}
+                        >
+                          {isSaving ? "Saving..." : "Save Changes"}
+                        </button>
+                      )}
                     </div>
                   </div>
 
-                  {/* Middle Center: ATS Form & Attachments */}
-                  <div className="person-heading-center">
-                    <button
-                      type="button"
-                      className="profile-action-btn ats-form-btn"
-                      onClick={() => setIsAtsModalOpen(true)}
-                      title="Open ATS Document Form"
-                    >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                        <line x1="10" y1="9" x2="8" y2="9"></line>
-                      </svg>
-                      <span>ATS Form</span>
-                    </button>
+                  <div className="profile-divider" />
 
-                    <button
-                      type="button"
-                      className="profile-action-btn documents-btn"
-                      onClick={() => setIsDocumentsModalOpen(true)}
-                      title="Manage Resume & Document Attachments"
-                    >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
-                      </svg>
-                      <span>Attachments</span>
-                    </button>
-                  </div>
-
-                  {/* Right Edge: Profile Photo & Edit Profile */}
-                  <div className="person-heading-right">
-                    <input
-                      type="file"
-                      ref={profilePhotoInputRef}
-                      accept="image/*"
-                      style={{ display: "none" }}
-                      onChange={handleProfilePhotoSelect}
-                    />
-
-                    <button
-                      type="button"
-                      className="profile-action-btn photo-btn"
-                      onClick={() => profilePhotoInputRef.current?.click()}
-                      disabled={isUploadingPhoto || isApplyingPhotoAdjustment}
-                      title="Upload or change your profile photo"
-                    >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                        <circle cx="12" cy="13" r="4"></circle>
-                      </svg>
-                      <span>{isUploadingPhoto || isApplyingPhotoAdjustment ? "Saving..." : "Profile Photo"}</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="profile-divider" />
-
-                {(() => {
-                  const isFirstNameDirty = (draft.first_name || "").trim() !== (profile.first_name || "").trim();
-                  const isMiddleNameDirty = (draft.middle_name || "").trim() !== (profile.middle_name || "").trim();
-                  const isLastNameDirty = (draft.last_name || "").trim() !== (profile.last_name || "").trim();
-                  const isProvinceDirty = (draft.province || "Cavite") !== (profile.province || "Cavite");
-                  const isCityDirty = (draft.city || "") !== (profile.city || "");
-                  const isPhoneDirty = (draft.phone || "").trim() !== (profile.phone || "").trim();
-                  const isEmailDirty = (draft.email || "").trim().toLowerCase() !== (profile.email || "").trim().toLowerCase();
-                  const isEmailVerifiedForDraft = isEmailDirty
-                    ? verifiedEmailAddress.trim().toLowerCase() === (draft.email || "").trim().toLowerCase()
-                    : Boolean(profile.is_email_verified);
-                  const isSummaryDirty = (draft.summary || "").trim() !== (profile.summary || "").trim();
-
-                  return (
-                    <div className="fields-grid" style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+                  <div className="fields-grid" style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
                       {/* 1ST LINE: First Name, Middle Name, Last Name */}
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px", width: "100%" }}>
                         {/* First Name */}
@@ -4469,13 +4513,13 @@ export default function ApplicantProfile() {
                             {fieldSuccess === "phone" && <span className="inline-field-saved-badge">✔ Saved</span>}
                           </div>
                           <div className="inline-field-row">
-                            <div style={{ display: "flex", alignItems: "center", flex: 1, minWidth: 0, position: "relative" }}>
+                            <div style={{ display: "flex", alignItems: "center", width: "100%", position: "relative" }}>
                               <span style={{ position: "absolute", left: "10px", fontWeight: 700, color: "#64748b", fontSize: "0.88rem", pointerEvents: "none" }}>
                                 +63
                               </span>
                               <input
                                 className="inline-field-control"
-                                style={{ paddingLeft: "42px" }}
+                                style={{ paddingLeft: "42px", width: "100%" }}
                                 value={draft.phone || ""}
                                 maxLength={10}
                                 inputMode="numeric"
@@ -4513,7 +4557,7 @@ export default function ApplicantProfile() {
                             {fieldSuccess === "email" && <span className="inline-field-saved-badge">✔ Saved</span>}
                           </div>
                           <div className="inline-field-row">
-                            <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", alignItems: "center" }}>
+                            <div style={{ position: "relative", width: "100%", display: "flex", alignItems: "center" }}>
                               <input
                                 type="email"
                                 className="inline-field-control"
@@ -4634,20 +4678,19 @@ export default function ApplicantProfile() {
                         </div>
                       </div>
                     </div>
-                  );
-                })()}
 
-                  {/* 5TH LINE: Spoken Languages inside the SAME personal-card container */}
-                  <div className="languages-row wide">
-                    <LanguagesEditor
-                      rawString={profile.languages}
-                      onSave={(items) => saveTagList("languages", items)}
-                      disabled={isSavingTags}
-                    />
-                  </div>
-              </article>
-            </section>
-          )}
+                    {/* 5TH LINE: Spoken Languages inside the SAME personal-card container */}
+                    <div className="languages-row wide">
+                      <LanguagesEditor
+                        rawString={profile.languages}
+                        onSave={(items) => saveTagList("languages", items)}
+                        disabled={isSavingTags}
+                      />
+                    </div>
+                </article>
+              </section>
+            );
+          })()}
 
           {/* =================================================================
               SECTION 2: CAREER TARGETS & JOB PREFERENCES
