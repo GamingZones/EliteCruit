@@ -4161,16 +4161,6 @@ export default function ApplicantProfile() {
               ? verifiedEmailAddress.trim().toLowerCase() === (draft.email || "").trim().toLowerCase()
               : Boolean(profile.is_email_verified);
             const isSummaryDirty = (draft.summary || "").trim() !== (profile.summary || "").trim();
-            const isAnySection1Dirty = Boolean(
-              isFirstNameDirty ||
-              isMiddleNameDirty ||
-              isLastNameDirty ||
-              isProvinceDirty ||
-              isCityDirty ||
-              isPhoneDirty ||
-              isEmailDirty ||
-              isSummaryDirty
-            );
 
             return (
               <section className="profile-section-block">
@@ -4271,41 +4261,6 @@ export default function ApplicantProfile() {
                         </svg>
                         <span>{isUploadingPhoto || isApplyingPhotoAdjustment ? "Saving..." : "Profile Photo"}</span>
                       </button>
-
-                      {isAnySection1Dirty && (
-                        <button
-                          type="button"
-                          className="cancel-profile-button"
-                          onClick={() => {
-                            setDraft((prev) => ({
-                              ...prev,
-                              first_name: profile.first_name || "",
-                              middle_name: profile.middle_name || "",
-                              last_name: profile.last_name || "",
-                              province: profile.province || "Cavite",
-                              city: profile.city || "",
-                              phone: normalizePhoneNumber(profile.phone),
-                              email: profile.email || "",
-                              summary: profile.summary || "",
-                            }));
-                          }}
-                          disabled={isSaving}
-                        >
-                          Discard Changes
-                        </button>
-                      )}
-
-                      {isAnySection1Dirty && (
-                        <button
-                          type="button"
-                          className="edit-profile-button"
-                          onClick={saveProfile}
-                          disabled={isSaving || (isEmailDirty && !isEmailVerifiedForDraft)}
-                          title={isEmailDirty && !isEmailVerifiedForDraft ? "Please verify your email before saving" : ""}
-                        >
-                          {isSaving ? "Saving..." : "Save Changes"}
-                        </button>
-                      )}
                     </div>
                   </div>
 
@@ -4595,24 +4550,14 @@ export default function ApplicantProfile() {
                                   Cancel
                                 </button>
                                 {!isEmailVerifiedForDraft ? (
-                                  <>
-                                    <button
-                                      type="button"
-                                      className="inline-field-btn inline-field-verify-btn"
-                                      onClick={handleSendEmailOtp}
-                                      disabled={isSendingOtp || !draft.email?.trim() || !draft.email.includes("@")}
-                                    >
-                                      {isSendingOtp ? "Sending Code..." : "Verify Email"}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="inline-field-btn inline-field-save-btn"
-                                      disabled
-                                      title="Please click 'Verify Email' and enter OTP before saving."
-                                    >
-                                      Save
-                                    </button>
-                                  </>
+                                  <button
+                                    type="button"
+                                    className="inline-field-btn inline-field-verify-btn"
+                                    onClick={handleSendEmailOtp}
+                                    disabled={isSendingOtp || !draft.email?.trim() || !draft.email.includes("@")}
+                                  >
+                                    {isSendingOtp ? "Sending..." : "Verify"}
+                                  </button>
                                 ) : (
                                   <>
                                     <span className="inline-field-saved-badge">✔ Verified</span>

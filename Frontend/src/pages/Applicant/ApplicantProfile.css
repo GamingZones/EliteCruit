@@ -3819,7 +3819,7 @@
 .inline-field-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
 }
 
@@ -3840,14 +3840,14 @@
   flex: 1;
   min-width: 0;
   width: 100%;
-  height: 42px;
-  padding: 8px 14px;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 8px;
+  height: 38px;
+  padding: 6px 11px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
   background-color: #ffffff;
   color: #0f172a;
   font-family: inherit;
-  font-size: 0.88rem;
+  font-size: 0.84rem;
   font-weight: 500;
   line-height: 1.4;
   box-sizing: border-box;
@@ -3873,50 +3873,50 @@
 
 select.inline-field-control {
   cursor: pointer;
-  padding-right: 36px !important;
+  padding-right: 32px !important;
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2347637c' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 14px center;
-  background-size: 14px;
+  background-position: right 10px center;
+  background-size: 13px;
 }
 
 textarea.inline-field-control {
-  min-height: 105px;
+  min-height: 90px;
   height: auto;
-  padding: 10px 14px;
+  padding: 8px 11px;
   line-height: 1.5;
   resize: vertical;
 }
 
 .inline-field-phone-prefix {
   position: absolute;
-  left: 14px;
+  left: 10px;
   font-weight: 700;
   color: #64748b;
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   pointer-events: none;
   z-index: 1;
   user-select: none;
 }
 
 .inline-field-phone-input {
-  padding-left: 50px !important;
+  padding-left: 42px !important;
 }
 
 .inline-field-email-verified-pill {
   position: absolute;
-  right: 10px;
+  right: 8px;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   background: #dcfce7;
   color: #15803d;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  padding: 3px 10px;
+  padding: 2px 7px;
   border-radius: 9999px;
   border: 1px solid #86efac;
   pointer-events: none;
@@ -3925,7 +3925,7 @@ textarea.inline-field-control {
 .inline-field-actions {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   flex-shrink: 0;
   animation: inlineActionFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -3933,7 +3933,7 @@ textarea.inline-field-control {
 .inline-field-actions-textarea {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   flex-shrink: 0;
   padding-top: 2px;
 }
@@ -3941,7 +3941,7 @@ textarea.inline-field-control {
 @keyframes inlineActionFadeIn {
   from {
     opacity: 0;
-    transform: translateX(6px);
+    transform: translateX(4px);
   }
   to {
     opacity: 1;
@@ -3953,11 +3953,11 @@ textarea.inline-field-control {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  height: 38px;
-  padding: 0 14px;
-  border-radius: 6px;
-  font-size: 0.8rem;
+  gap: 3px;
+  height: 28px;
+  padding: 0 9px;
+  border-radius: 5px;
+  font-size: 0.72rem;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
