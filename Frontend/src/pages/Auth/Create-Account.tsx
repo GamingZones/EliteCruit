@@ -88,7 +88,11 @@ export default function CreateAccount() {
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+    let digits = e.target.value.replace(/\D/g, "");
+    if (digits.startsWith("0")) {
+      digits = digits.slice(1);
+    }
+    digits = digits.slice(0, 10);
     setFormData((prev) => ({
       ...prev,
       phone: digits,
@@ -466,7 +470,7 @@ export default function CreateAccount() {
                       id="phone"
                       type="tel"
                       name="phone"
-                      placeholder="09682944632"
+                      placeholder="9123456789"
                       value={formData.phone}
                       onChange={handlePhoneChange}
                     />
@@ -552,7 +556,7 @@ export default function CreateAccount() {
                     id="businessName"
                     required
                     name="businessName"
-                    placeholder="e.g. CEBUANA"
+                    placeholder="e.g. ABC Corporation"
                     value={formData.businessName}
                     onChange={handleChange}
                   />
@@ -568,7 +572,7 @@ export default function CreateAccount() {
                       id="employerPhone"
                       type="tel"
                       name="phone"
-                      placeholder="09682944632"
+                      placeholder="9123456789"
                       value={formData.phone}
                       onChange={handlePhoneChange}
                     />
