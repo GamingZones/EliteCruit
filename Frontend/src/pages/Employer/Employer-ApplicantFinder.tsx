@@ -2294,6 +2294,8 @@ export default function EmployerApplicantFinder() {
   };
 
   const filteredCandidates = useMemo(() => {
+    const targetJob = selectedJobId ? activeJobs.find((j) => j.id === selectedJobId) || null : null;
+
     const list = candidates.filter((cand) => {
       // Exclude candidates already approved or recruited by this employer
       const candStatus = (cand.application_status || cand.latest_application_status || (cand as any).status || "").toLowerCase();
@@ -2307,6 +2309,45 @@ export default function EmployerApplicantFinder() {
           cand.nearby_location && cand.nearby_location.trim().length > 0
         );
         if (!isNearbyDiscoveryActive) {
+          return false;
+        }
+      }
+
+      // Active Vacancy Evaluation Filter
+      if (targetJob) {
+        const targetTitle = (targetJob.title || "").toLowerCase();
+        const candRole = (cand.desired_job_title || "").toLowerCase();
+        const candSummary = (cand.summary || "").toLowerCase();
+        const candWorkExp = (cand.work_experience_json || "").toLowerCase();
+        const candSkills = (cand.skills || "").toLowerCase();
+
+        const roleMatches =
+          (candRole && (candRole.includes(targetTitle) || targetTitle.includes(candRole))) ||
+          candSummary.includes(targetTitle) ||
+          candWorkExp.includes(targetTitle);
+
+        const jobSkills = parseItemList(targetJob.required_skills || targetJob.skills || "", []);
+        const candSkillsList = parseItemList(cand.skills, []);
+        const skillsOverlap = jobSkills.length > 0 && jobSkills.some((js) => {
+          const jsLower = js.toLowerCase();
+          return candSkills.includes(jsLower) || candSkillsList.some((cs) => isSkillMatch(cs, js));
+        });
+
+        const candMatchScore = calculateCandidateMatch(
+          {
+            desired_job_title: cand.desired_job_title || "",
+            work_arrangement: cand.work_arrangement || "",
+            expected_salary: cand.expected_salary || 0,
+            skills: cand.skills || "",
+            qualifications: cand.qualifications || "",
+            certifications: cand.certifications || "",
+            city: cand.city || cand.address || "",
+            preferred_locations: cand.preferred_locations || "",
+          },
+          targetJob
+        );
+
+        if (!roleMatches && !skillsOverlap && candMatchScore < 40) {
           return false;
         }
       }
@@ -2460,6 +2501,36 @@ export default function EmployerApplicantFinder() {
     }
     if (sortBy === "Best Match" && searchMode === "manual") {
       return [...list].sort((a, b) => {
+        if (targetJob) {
+          const matchA = calculateCandidateMatch(
+            {
+              desired_job_title: a.desired_job_title || "",
+              work_arrangement: a.work_arrangement || "",
+              expected_salary: a.expected_salary || 0,
+              skills: a.skills || "",
+              qualifications: a.qualifications || "",
+              certifications: a.certifications || "",
+              city: a.city || a.address || "",
+              preferred_locations: a.preferred_locations || "",
+            },
+            targetJob
+          );
+          const matchB = calculateCandidateMatch(
+            {
+              desired_job_title: b.desired_job_title || "",
+              work_arrangement: b.work_arrangement || "",
+              expected_salary: b.expected_salary || 0,
+              skills: b.skills || "",
+              qualifications: b.qualifications || "",
+              certifications: b.certifications || "",
+              city: b.city || b.address || "",
+              preferred_locations: b.preferred_locations || "",
+            },
+            targetJob
+          );
+          if (matchB !== matchA) return matchB - matchA;
+        }
+
         let scoreA = Number(a.rating || 0) * 10;
         let scoreB = Number(b.rating || 0) * 10;
         if (a.profile_picture_path) scoreA += 5;
@@ -2487,6 +2558,8 @@ export default function EmployerApplicantFinder() {
     selectedGeoProvince,
     selectedGeoCity,
     selectedGeoScope,
+    selectedJobId,
+    activeJobs,
     selectedRole,
     selectedLocation,
     selectedArrangement,
@@ -2515,6 +2588,7 @@ export default function EmployerApplicantFinder() {
     selectedGeoProvince,
     selectedGeoCity,
     selectedGeoScope,
+    selectedJobId,
     selectedRole,
     selectedLocation,
     selectedArrangement,
@@ -3625,10 +3699,38 @@ export default function EmployerApplicantFinder() {
 
                 {/* RESULTS HEADER */}
                 <div className="finder-results-header">
-                  <h2>
-                    Showing {filteredCandidates.length === 0 ? 0 : `${(candidatePage - 1) * CANDIDATES_PER_PAGE + 1} - ${Math.min(candidatePage * CANDIDATES_PER_PAGE, filteredCandidates.length)}`} of {filteredCandidates.length} candidate{filteredCandidates.length === 1 ? "" : "s"}
-                  </h2>
-                  <span className="finder-sort-hint">Sorted by: Best Match & Profile Completeness</span>
+                  <div>
+                    <h2>
+                      Showing {filteredCandidates.length === 0 ? 0 : `${(candidatePage - 1) * CANDIDATES_PER_PAGE + 1} - ${Math.min(candidatePage * CANDIDATES_PER_PAGE, filteredCandidates.length)}`} of {filteredCandidates.length} candidate{filteredCandidates.length === 1 ? "" : "s"}
+                    </h2>
+                    {selectedJobId && (
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
+                        <span style={{ fontSize: "0.8rem", color: "#0284c7", fontWeight: 600 }}>
+                          Evaluating against vacancy: <strong>{activeJobs.find((j) => j.id === selectedJobId)?.title}</strong>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedJobId("")}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "#64748b",
+                            cursor: "pointer",
+                            fontSize: "0.82rem",
+                            padding: "0 4px",
+                          }}
+                          title="Reset to general pool"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <span className="finder-sort-hint">
+                    {selectedJobId
+                      ? `Sorted by: Best Match for ${activeJobs.find((j) => j.id === selectedJobId)?.title || "vacancy"}`
+                      : "Sorted by: Best Match & Profile Completeness"}
+                  </span>
                 </div>
 
                 {/* CANDIDATES LIST */}
@@ -3721,6 +3823,11 @@ export default function EmployerApplicantFinder() {
                                   <span className="finder-star-pill">
                                     <span className="star-icon">★</span> {cand.rating ? Number(cand.rating).toFixed(1) : "0.0"}
                                   </span>
+                                  {currentActiveJob && (
+                                    <span className={`finder-match-pill ${matchClass}`}>
+                                      {matchPercent}% Match
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="finder-candidate-meta-inline">
                                   <span className="finder-meta-inline-item">
