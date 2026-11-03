@@ -3,6 +3,7 @@ import { ChevronIcon, SideIcon } from "../../components/Icons";
 import { useEmployerCompanyLabel } from "../../hooks/useEmployerCompanyLabel";
 import { useUnreadMessagesCount } from "../../hooks/useUnreadMessagesCount";
 import { usePendingInvitationsCount } from "../../hooks/usePendingInvitationsCount";
+import { authFetch } from "../../utils/auth";
 import ApplicantChatbotDrawer from "../../components/ApplicantChatbotDrawer";
 import EmployerChatbotDrawer, { EmployerFAQItem as FAQItem } from "../../components/EmployerChatbotDrawer";
 import CalendarDrawer from "../../components/CalendarDrawer";
@@ -231,7 +232,13 @@ export default function Notifications() {
   const fetchUserNotifications = async (userId: number) => {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/users/${userId}/notifications`);
+      const res = await authFetch(`/api/users/${userId}/notifications?_t=${Date.now()}`, {
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+        },
+      });
       if (res.ok) {
         const data = await res.json();
         const dbList: NotificationItem[] = Array.isArray(data?.notifications) ? data.notifications : [];
@@ -306,11 +313,26 @@ export default function Notifications() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!currentUserId) return;
+    const handleSync = () => {
+      fetchUserNotifications(currentUserId);
+    };
+    window.addEventListener("focus", handleSync);
+    window.addEventListener("pageshow", handleSync);
+    window.addEventListener("elitecruit_notif_update", handleSync);
+    return () => {
+      window.removeEventListener("focus", handleSync);
+      window.removeEventListener("pageshow", handleSync);
+      window.removeEventListener("elitecruit_notif_update", handleSync);
+    };
+  }, [currentUserId]);
+
   const handleMarkAsRead = async (id: number) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: 1 } : n)));
     window.dispatchEvent(new Event("elitecruit_notif_update"));
     try {
-      await fetch(`/api/notifications/${id}/read`, { method: "PUT" });
+      await authFetch(`/api/notifications/${id}/read`, { method: "PUT" });
     } catch {}
   };
 
@@ -331,11 +353,15 @@ export default function Notifications() {
         window.dispatchEvent(new Event("elitecruit_notif_update"));
       },
     });
-    for (const n of unread) {
-      try {
-        await fetch(`/api/notifications/${n.id}/read`, { method: "PUT" });
-      } catch {}
-    }
+    try {
+      if (currentUserId) {
+        await authFetch(`/api/users/${currentUserId}/notifications/read-all`, { method: "PUT" });
+      } else {
+        for (const n of unread) {
+          await authFetch(`/api/notifications/${n.id}/read`, { method: "PUT" });
+        }
+      }
+    } catch {}
   };
 
   const handleClearHistory = () => {
@@ -351,7 +377,7 @@ export default function Notifications() {
     window.dispatchEvent(new Event("elitecruit_notif_update"));
 
     try {
-      await fetch(`/api/users/${currentUserId}/notifications`, { method: "DELETE" });
+      await authFetch(`/api/users/${currentUserId}/notifications`, { method: "DELETE" });
     } catch (err) {
       console.error("Error clearing notification history:", err);
     }
@@ -362,7 +388,7 @@ export default function Notifications() {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
     window.dispatchEvent(new Event("elitecruit_notif_update"));
     try {
-      await fetch(`/api/notifications/${id}`, { method: "DELETE" });
+      await authFetch(`/api/notifications/${id}`, { method: "DELETE" });
     } catch (err) {
       console.error("Error deleting notification:", err);
     }

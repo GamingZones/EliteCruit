@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { authFetch } from "../utils/auth";
 
 export function useUnreadNotificationsCount(): number {
   const [unreadCount, setUnreadCount] = useState<number>(0);
@@ -19,7 +20,13 @@ export function useUnreadNotificationsCount(): number {
           return;
         }
 
-        const res = await fetch(`/api/users/${savedUser.id}/notifications`);
+        const res = await authFetch(`/api/users/${savedUser.id}/notifications?_t=${Date.now()}`, {
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+          },
+        });
         if (res.ok) {
           const data = await res.json();
           if (isMounted) {
@@ -39,6 +46,8 @@ export function useUnreadNotificationsCount(): number {
 
     const handleSync = () => fetchCount();
     window.addEventListener("focus", handleSync);
+    window.addEventListener("pageshow", handleSync);
+    window.addEventListener("storage", handleSync);
     window.addEventListener("elitecruit_notif_update", handleSync);
 
     // Periodic check every 15 seconds
@@ -47,6 +56,8 @@ export function useUnreadNotificationsCount(): number {
     return () => {
       isMounted = false;
       window.removeEventListener("focus", handleSync);
+      window.removeEventListener("pageshow", handleSync);
+      window.removeEventListener("storage", handleSync);
       window.removeEventListener("elitecruit_notif_update", handleSync);
       clearInterval(interval);
     };

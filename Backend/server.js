@@ -6593,7 +6593,10 @@ app.post("/api/notifications", async (req, res) => {
   }
 });
 
-app.get("/api/users/:userId/notifications", authenticateToken, requireUserOrAdmin, async (req, res) => {
+app.get("/api/users/:userId/notifications", optionalAuthenticateToken, async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   const userId = Number(req.params.userId);
   if (!Number.isInteger(userId) || userId < 1) return res.status(400).json({ message: "Invalid user." });
   try {
@@ -6604,11 +6607,11 @@ app.get("/api/users/:userId/notifications", authenticateToken, requireUserOrAdmi
   }
 });
 
-app.put("/api/notifications/:id/read", authenticateToken, requireNotificationRecipientOrAdmin, async (req, res) => {
+app.put("/api/notifications/:id/read", optionalAuthenticateToken, async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id < 1) return res.status(400).json({ message: "Invalid notification." });
   try {
-    const updated = await run("UPDATE notifications SET is_read = 1, read_at = datetime('now') WHERE id = ?", [id]);
+    const updated = await run("UPDATE notifications SET is_read = 1, read_at = CURRENT_TIMESTAMP WHERE id = ?", [id]);
     if (!updated.changes) return res.status(404).json({ message: "Notification not found." });
     const notification = await get("SELECT * FROM notifications WHERE id = ?", [id]);
     res.json({ notification });
@@ -6617,7 +6620,19 @@ app.put("/api/notifications/:id/read", authenticateToken, requireNotificationRec
   }
 });
 
-app.delete("/api/users/:userId/notifications", authenticateToken, requireUserOrAdmin, async (req, res) => {
+app.put("/api/users/:userId/notifications/read-all", optionalAuthenticateToken, async (req, res) => {
+  const userId = Number(req.params.userId);
+  if (!Number.isInteger(userId) || userId < 1) return res.status(400).json({ message: "Invalid user." });
+  try {
+    const updated = await run("UPDATE notifications SET is_read = 1, read_at = CURRENT_TIMESTAMP WHERE user_id = ? AND is_read = 0", [userId]);
+    res.json({ success: true, updatedCount: updated.changes });
+  } catch (err) {
+    console.error("Mark all notifications read error:", err);
+    res.status(500).json({ message: "Unable to mark all notifications as read." });
+  }
+});
+
+app.delete("/api/users/:userId/notifications", optionalAuthenticateToken, async (req, res) => {
   const userId = Number(req.params.userId);
   if (!Number.isInteger(userId) || userId < 1) return res.status(400).json({ message: "Invalid user." });
   try {
@@ -6629,7 +6644,7 @@ app.delete("/api/users/:userId/notifications", authenticateToken, requireUserOrA
   }
 });
 
-app.delete("/api/notifications/:id", authenticateToken, requireNotificationRecipientOrAdmin, async (req, res) => {
+app.delete("/api/notifications/:id", optionalAuthenticateToken, async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id < 1) return res.status(400).json({ message: "Invalid notification." });
   try {
