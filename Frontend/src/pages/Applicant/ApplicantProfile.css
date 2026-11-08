@@ -3812,45 +3812,18 @@
 }
 
 .role-pref-salary-inputs-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: flex-end;
   gap: 10px;
   width: 100%;
 }
 
 .role-pref-salary-field {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-}
-
-.role-pref-salary-field .inline-field-input-wrap {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  height: 42px;
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-}
-
-.role-pref-salary-field .inline-field-currency-prefix {
-  color: #d97706;
-  font-weight: 700;
-  font-size: 0.88rem;
-  padding: 0 6px 0 12px;
-}
-
-.role-pref-salary-field .inline-field-currency-input {
-  color: #0f172a;
-  font-weight: 600;
-  font-size: 0.94rem;
-  background: transparent;
-  border: none;
-  outline: none;
+  gap: 5px;
   width: 100%;
-  padding: 0 10px 0 0;
 }
 
 .role-pref-salary-field-tag {
@@ -3861,12 +3834,58 @@
   letter-spacing: 0.05em;
 }
 
+.role-pref-currency-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  height: 42px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease;
+}
+
+.role-pref-currency-wrap:focus-within {
+  border-color: #0284c7;
+}
+
+.role-pref-currency-prefix {
+  color: #d97706;
+  font-weight: 700;
+  font-size: 0.88rem;
+  user-select: none;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.role-pref-currency-input {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  color: #0f172a;
+  font-weight: 600;
+  font-size: 0.94rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0 !important;
+  margin: 0 !important;
+  line-height: 1.2;
+}
+
 .role-pref-salary-sep {
   color: #64748b;
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   font-weight: bold;
-  line-height: 1;
-  margin: 0 2px 12px 2px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  margin: 0;
+  padding: 0;
 }
 
 @media (max-width: 920px) {
@@ -4009,26 +4028,26 @@
   letter-spacing: 0.05em !important;
 }
 
-[data-theme="dark"] .role-pref-salary-field .inline-field-input-wrap {
+[data-theme="dark"] .role-pref-currency-wrap {
   background: #0d1017 !important;
   border: 1px solid #23283c !important;
-  border-radius: 8px !important;
-  height: 42px !important;
 }
 
-[data-theme="dark"] .role-pref-salary-field .inline-field-currency-prefix {
+[data-theme="dark"] .role-pref-currency-wrap:focus-within {
+  border-color: #0284c7 !important;
+}
+
+[data-theme="dark"] .role-pref-currency-prefix {
   color: #f59e0b !important;
-  font-weight: 700 !important;
-  font-size: 0.88rem !important;
 }
 
-[data-theme="dark"] .role-pref-salary-field .inline-field-currency-input {
+[data-theme="dark"] .role-pref-currency-input {
   color: #ffffff !important;
-  font-weight: 600 !important;
-  font-size: 0.94rem !important;
 }
 
 [data-theme="dark"] .role-pref-salary-sep {
+  color: #64748b !important;
+}
   color: #64748b !important;
 }
 

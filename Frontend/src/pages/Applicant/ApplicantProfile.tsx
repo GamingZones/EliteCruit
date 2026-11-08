@@ -5367,10 +5367,10 @@ export default function ApplicantProfile() {
                                   <div className="role-pref-salary-inputs-row">
                                     <div className="role-pref-salary-field">
                                       <span className="role-pref-salary-field-tag">MINIMUM</span>
-                                      <div className="inline-field-input-wrap">
-                                        <span className="inline-field-currency-prefix">PHP</span>
+                                      <div className="role-pref-currency-wrap">
+                                        <span className="role-pref-currency-prefix">PHP</span>
                                         <input
-                                          className="inline-field-control inline-field-currency-input"
+                                          className="role-pref-currency-input"
                                           value={roleItem.salary_min ? formatCurrencyInput(roleItem.salary_min) : ""}
                                           placeholder="45,000.00"
                                           inputMode="decimal"
@@ -5386,10 +5386,10 @@ export default function ApplicantProfile() {
 
                                     <div className="role-pref-salary-field">
                                       <span className="role-pref-salary-field-tag">MAXIMUM</span>
-                                      <div className="inline-field-input-wrap">
-                                        <span className="inline-field-currency-prefix">PHP</span>
+                                      <div className="role-pref-currency-wrap">
+                                        <span className="role-pref-currency-prefix">PHP</span>
                                         <input
-                                          className="inline-field-control inline-field-currency-input"
+                                          className="role-pref-currency-input"
                                           value={roleItem.salary_max ? formatCurrencyInput(roleItem.salary_max) : ""}
                                           placeholder="65,000.00"
                                           inputMode="decimal"
