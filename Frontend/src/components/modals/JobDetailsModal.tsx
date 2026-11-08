@@ -85,6 +85,7 @@ export type JobDetailsModalProps = {
   onFaqOpenChange?: (open: boolean) => void;
   zIndex?: number;
   hideEmployerHeader?: boolean;
+  initialOpenMessage?: boolean;
 };
 
 type BreakdownCourseSkillItem = {
@@ -332,6 +333,7 @@ export default function JobDetailsModal({
   onFaqOpenChange,
   zIndex,
   hideEmployerHeader = false,
+  initialOpenMessage = false,
 }: JobDetailsModalProps) {
   const [internalFaqOpen, setInternalFaqOpen] = useState(false);
   const isFaqOpen = isFaqOpenProp !== undefined ? isFaqOpenProp : internalFaqOpen;
@@ -394,6 +396,19 @@ export default function JobDetailsModal({
       scrollMsgChatToBottom(true);
     }
   }, [isMsgPanelOpen, panelMessages]);
+
+  useEffect(() => {
+    if (isOpen && initialOpenMessage) {
+      setIsBreakdownOpen(false);
+      setIsBreakdownClosing(false);
+      setIsMsgPanelClosing(false);
+      setIsMsgPanelOpen(true);
+      const empId = job?.employerUserId || job?.employer_user_id;
+      if (empId) {
+        fetchThreadMessages(Number(empId));
+      }
+    }
+  }, [isOpen, initialOpenMessage, job?.employerUserId, job?.employer_user_id]);
 
   useEffect(() => {
     if (!isOpen) {

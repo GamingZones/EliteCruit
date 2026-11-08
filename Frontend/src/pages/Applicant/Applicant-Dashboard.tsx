@@ -626,6 +626,7 @@ export default function ApplicantDashboard() {
   const [bookmarkedIds, setBookmarkedIds] = useState<number[]>([]);
   const [applyingJobId, setApplyingJobId] = useState<number | null>(null);
   const [detailsJob, setDetailsJob] = useState<JobCard | null>(null);
+  const [isDetailsMessageOpen, setIsDetailsMessageOpen] = useState(false);
   const [reviewingInv, setReviewingInv] = useState<JobInvitationItem | null>(null);
   const [applicantMatchProfile, setApplicantMatchProfile] = useState<ApplicantMatchProfile | null>(null);
   const [selectedEmployerDetails, setSelectedEmployerDetails] = useState<any>(null);
@@ -1137,6 +1138,7 @@ export default function ApplicantDashboard() {
       companyCoverPath: (inv as any).company_cover_path || null,
       rating: (inv as any).rating ? String((inv as any).rating) : "0.0",
     };
+    setIsDetailsMessageOpen(false);
     setDetailsJob(jobObj);
   };
 
@@ -1265,44 +1267,50 @@ export default function ApplicantDashboard() {
     });
   };
 
-  const handleReviewApplication = (app: any) => {
+  const handleReviewApplication = (app: any, openMessagePanel = false) => {
     const existingJob = jobs.find((j) => j.id === Number(app.job_post_id));
-    if (existingJob) {
-      setDetailsJob(existingJob);
-      return;
-    }
+    const empUserId = Number(app.employer_user_id || app.employerUserId || existingJob?.employerUserId || (existingJob as any)?.employer_user_id) || undefined;
 
-    const jobObj: JobCard = {
-      id: Number(app.job_post_id),
-      title: app.job_title || app.title || "Applied Role",
-      company: app.company_name || "Employer",
-      location: app.location || app.city || "Cavite",
-      summary: app.description || "No job description provided yet.",
-      salary: formatSalaryRange(app.salary_min ?? null, app.salary_max ?? null, app.hide_salary),
-      salaryMin: Number.isFinite(Number(app.salary_min)) ? Number(app.salary_min) : 0,
-      setup: app.work_arrangement || "Flexible",
-      status: app.status === "closed" ? "closed" : "open",
-      closeDate: app.close_date || "-",
-      applicationLimit: Number.isFinite(Number(app.application_limit)) ? Number(app.application_limit) : 0,
-      applicantCount: Number.isFinite(Number(app.applicant_count)) ? Number(app.applicant_count) : 0,
-      qualifications: app.qualifications || "Not provided",
-      certifications: app.certifications || "Not provided",
-      responsibilities: app.responsibilities || "Not provided",
-      skillTags: parseCompetencyDisplayTags(app.required_skills),
-      qualTags: parseCompetencyDisplayTags(app.qualifications),
-      certTags: parseCompetencyDisplayTags(app.certifications),
-      jobType: app.work_arrangement === "Remote" ? "Remote" : "Full-time",
-      functionGroup: "General",
-      distance: "Cavite",
-      badges: parseCompetencyDisplayTags(app.required_skills),
-      urgent: Boolean(Number(app.is_urgent || 0)),
-      createdAt: typeof app.created_at === "string" ? app.created_at : null,
-      createdRank: 0,
-      employerUserId: Number(app.employer_user_id) || undefined,
-      companyLogoPath: app.company_logo_path || null,
-      companyCoverPath: app.company_cover_path || null,
-      rating: app.rating ? String(app.rating) : "0.0",
-    };
+    let jobObj: JobCard;
+    if (existingJob) {
+      jobObj = {
+        ...existingJob,
+        employerUserId: empUserId || existingJob.employerUserId,
+      };
+    } else {
+      jobObj = {
+        id: Number(app.job_post_id),
+        title: app.job_title || app.title || "Applied Role",
+        company: app.company_name || "Employer",
+        location: app.location || app.city || "Cavite",
+        summary: app.description || "No job description provided yet.",
+        salary: formatSalaryRange(app.salary_min ?? null, app.salary_max ?? null, app.hide_salary),
+        salaryMin: Number.isFinite(Number(app.salary_min)) ? Number(app.salary_min) : 0,
+        setup: app.work_arrangement || "Flexible",
+        status: app.status === "closed" ? "closed" : "open",
+        closeDate: app.close_date || "-",
+        applicationLimit: Number.isFinite(Number(app.application_limit)) ? Number(app.application_limit) : 0,
+        applicantCount: Number.isFinite(Number(app.applicant_count)) ? Number(app.applicant_count) : 0,
+        qualifications: app.qualifications || "Not provided",
+        certifications: app.certifications || "Not provided",
+        responsibilities: app.responsibilities || "Not provided",
+        skillTags: parseCompetencyDisplayTags(app.required_skills),
+        qualTags: parseCompetencyDisplayTags(app.qualifications),
+        certTags: parseCompetencyDisplayTags(app.certifications),
+        jobType: app.work_arrangement === "Remote" ? "Remote" : "Full-time",
+        functionGroup: "General",
+        distance: "Cavite",
+        badges: parseCompetencyDisplayTags(app.required_skills),
+        urgent: Boolean(Number(app.is_urgent || 0)),
+        createdAt: typeof app.created_at === "string" ? app.created_at : null,
+        createdRank: 0,
+        employerUserId: empUserId,
+        companyLogoPath: app.company_logo_path || null,
+        companyCoverPath: app.company_cover_path || null,
+        rating: app.rating ? String(app.rating) : "0.0",
+      };
+    }
+    setIsDetailsMessageOpen(openMessagePanel);
     setDetailsJob(jobObj);
   };
 
@@ -1626,7 +1634,7 @@ export default function ApplicantDashboard() {
                         );
                       })()}
                     </div>
-                    <button type="button" className="details-btn" onClick={() => setDetailsJob(job)}>Details</button>
+                    <button type="button" className="details-btn" onClick={() => { setIsDetailsMessageOpen(false); setDetailsJob(job); }}>Details</button>
                     <div className="card-bottom-actions">
                       <button
                         type="button"
@@ -1818,7 +1826,7 @@ export default function ApplicantDashboard() {
                   <button type="button" className="solid-btn review-app-btn" onClick={() => handleReviewApplication(app)}>
                     Review
                   </button>
-                  <button type="button" className="ghost-btn message-app-btn" onClick={() => { window.location.href = "/messages"; }}>Message</button>
+                  <button type="button" className="ghost-btn message-app-btn" onClick={() => handleReviewApplication(app, true)}>Message</button>
                 </div>
               </article>
             ))
@@ -1965,84 +1973,6 @@ export default function ApplicantDashboard() {
         </section>
         )}
       </main>
-
-      {/* ── JOB DETAILS MODAL ── */}
-      {(() => {
-        const activeReviewingInv = reviewingInv
-          ? invitationsList.find((i) => i.id === reviewingInv.id) || reviewingInv
-          : null;
-
-        return (
-          <JobDetailsModal
-            isOpen={Boolean(detailsJob)}
-            job={jobModalData}
-            zIndex={11000}
-            onClose={() => {
-              setDetailsJob(null);
-              setReviewingInv(null);
-              setIsFaqDrawerOpen(false);
-            }}
-            currentUserId={applicantUserId || undefined}
-            applicantProfile={applicantMatchProfile}
-            customFooterActions={
-              activeReviewingInv ? (
-                <div className="jd-inv-footer-actions">
-                  {(activeReviewingInv.status || "pending").toLowerCase() === "pending" ? (
-                    <>
-                      <button
-                        type="button"
-                        className="jd-inv-btn jd-inv-decline-btn"
-                        onClick={() => {
-                          setDecisionModalTarget({ inv: activeReviewingInv, action: "decline" });
-                        }}
-                      >
-                        Decline
-                      </button>
-                      <button
-                        type="button"
-                        className="jd-inv-btn jd-inv-accept-btn"
-                        onClick={() => {
-                          setDecisionModalTarget({ inv: activeReviewingInv, action: "accept" });
-                        }}
-                      >
-                        Accept
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      type="button"
-                      className={`jd-inv-btn jd-inv-status-btn ${(activeReviewingInv.status || "").toLowerCase() === "accepted" ? "accepted" : "declined"}`}
-                      disabled
-                    >
-                      {(activeReviewingInv.status || "").toLowerCase() === "accepted" ? "Accepted" : "Declined"}
-                    </button>
-                  )}
-                </div>
-              ) : undefined
-            }
-            onApply={() => {
-              if (detailsJob) {
-                setApplyJobTarget({ jobId: detailsJob.id, title: detailsJob.title });
-              }
-            }}
-            isApplied={detailsJob ? appliedJobIds.includes(detailsJob.id) : false}
-            isApplying={detailsJob ? applyingJobId === detailsJob.id : false}
-            appliedLabel="Applied"
-            onEmployerClick={(empId) => {
-              if (empId) handleOpenEmployerDetails(empId);
-            }}
-            zIndex={10000}
-          />
-        );
-      })()}
-
-      {/* ── EMPLOYER DETAILS MODAL ── */}
-      <EmployerDetailsModal
-        isOpen={Boolean(selectedEmployerDetails)}
-        onClose={() => setSelectedEmployerDetails(null)}
-        employer={selectedEmployerDetails}
-        zIndex={10250}
-      />
 
       {isSidebarVisible && (
         <button
@@ -2413,7 +2343,7 @@ export default function ApplicantDashboard() {
                           <button
                             type="button"
                             className="ghost-btn message-app-btn"
-                            onClick={() => { window.location.href = "/messages"; }}
+                            onClick={() => handleReviewApplication(app, true)}
                           >
                             Message
                           </button>
@@ -2437,6 +2367,85 @@ export default function ApplicantDashboard() {
           </div>
         </div>
       )}
+
+      {/* ── JOB DETAILS MODAL (STACKED ON TOP AT Z-INDEX 25000) ── */}
+      {(() => {
+        const activeReviewingInv = reviewingInv
+          ? invitationsList.find((i) => i.id === reviewingInv.id) || reviewingInv
+          : null;
+
+        return (
+          <JobDetailsModal
+            isOpen={Boolean(detailsJob)}
+            job={jobModalData}
+            zIndex={25000}
+            initialOpenMessage={isDetailsMessageOpen}
+            onClose={() => {
+              setDetailsJob(null);
+              setReviewingInv(null);
+              setIsFaqDrawerOpen(false);
+              setIsDetailsMessageOpen(false);
+            }}
+            currentUserId={applicantUserId || undefined}
+            applicantProfile={applicantMatchProfile}
+            customFooterActions={
+              activeReviewingInv ? (
+                <div className="jd-inv-footer-actions">
+                  {(activeReviewingInv.status || "pending").toLowerCase() === "pending" ? (
+                    <>
+                      <button
+                        type="button"
+                        className="jd-inv-btn jd-inv-decline-btn"
+                        onClick={() => {
+                          setDecisionModalTarget({ inv: activeReviewingInv, action: "decline" });
+                        }}
+                      >
+                        Decline
+                      </button>
+                      <button
+                        type="button"
+                        className="jd-inv-btn jd-inv-accept-btn"
+                        onClick={() => {
+                          setDecisionModalTarget({ inv: activeReviewingInv, action: "accept" });
+                        }}
+                      >
+                        Accept
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className={`jd-inv-btn jd-inv-status-btn ${(activeReviewingInv.status || "").toLowerCase() === "accepted" ? "accepted" : "declined"}`}
+                      disabled
+                    >
+                      {(activeReviewingInv.status || "").toLowerCase() === "accepted" ? "Accepted" : "Declined"}
+                    </button>
+                  )}
+                </div>
+              ) : undefined
+            }
+            onApply={() => {
+              if (detailsJob) {
+                setApplyJobTarget({ jobId: detailsJob.id, title: detailsJob.title });
+              }
+            }}
+            isApplied={detailsJob ? appliedJobIds.includes(detailsJob.id) : false}
+            isApplying={detailsJob ? applyingJobId === detailsJob.id : false}
+            appliedLabel="Applied"
+            onEmployerClick={(empId) => {
+              if (empId) handleOpenEmployerDetails(empId);
+            }}
+          />
+        );
+      })()}
+
+      {/* ── EMPLOYER DETAILS MODAL ── */}
+      <EmployerDetailsModal
+        isOpen={Boolean(selectedEmployerDetails)}
+        onClose={() => setSelectedEmployerDetails(null)}
+        employer={selectedEmployerDetails}
+        zIndex={30000}
+      />
 
       {/* DOUBLE VERIFICATION: APPLY TO JOB MODAL */}
       <ConfirmationModal
