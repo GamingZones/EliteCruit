@@ -725,9 +725,43 @@ export default function ApplicantDashboard() {
   } | null>(null);
   const [applyJobTarget, setApplyJobTarget] = useState<{ jobId: number; title: string } | null>(null);
   const [timelineModalApp, setTimelineModalApp] = useState<any | null>(null);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState<"all" | "approved" | "denied">("all");
   const [withdrawTargetApp, setWithdrawTargetApp] = useState<any | null>(null);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [withdrawMessage, setWithdrawMessage] = useState<string | null>(null);
+
+  const previousApplications = useMemo(() => {
+    return myApplicationsList.filter((app: any) => {
+      const st = (app?.status || "").toLowerCase();
+      return ["approved", "accepted", "recruited", "denied", "rejected", "withdrawn"].includes(st);
+    });
+  }, [myApplicationsList]);
+
+  const approvedHistoryCount = useMemo(() => {
+    return myApplicationsList.filter((app: any) => {
+      const st = (app?.status || "").toLowerCase();
+      return ["approved", "accepted", "recruited"].includes(st);
+    }).length;
+  }, [myApplicationsList]);
+
+  const deniedHistoryCount = useMemo(() => {
+    return myApplicationsList.filter((app: any) => {
+      const st = (app?.status || "").toLowerCase();
+      return ["denied", "rejected", "withdrawn"].includes(st);
+    }).length;
+  }, [myApplicationsList]);
+
+  const filteredHistoryApplications = useMemo(() => {
+    return myApplicationsList.filter((app: any) => {
+      const st = (app?.status || "").toLowerCase();
+      const isApproved = ["approved", "accepted", "recruited"].includes(st);
+      const isDenied = ["denied", "rejected", "withdrawn"].includes(st);
+      if (historyFilter === "approved") return isApproved;
+      if (historyFilter === "denied") return isDenied;
+      return true;
+    });
+  }, [myApplicationsList, historyFilter]);
 
   const handleConfirmWithdraw = async () => {
     if (!withdrawTargetApp) return;
@@ -1571,10 +1605,23 @@ export default function ApplicantDashboard() {
               <h2>My Applications</h2>
               <p>Positions you have applied for and their real-time application status.</p>
             </div>
-            <a href="/job-search" className="matches-head-action-btn">
-              <span>Find More Jobs</span>
-              <span className="action-arrow">→</span>
-            </a>
+            <div className="matches-head-actions-group">
+              <button
+                type="button"
+                className="app-history-btn"
+                onClick={() => setIsHistoryModalOpen(true)}
+                title="View previous applications history"
+              >
+                <span>History</span>
+                {previousApplications.length > 0 && (
+                  <span className="app-history-badge">{previousApplications.length}</span>
+                )}
+              </button>
+              <a href="/job-search" className="matches-head-action-btn">
+                <span>Find More Jobs</span>
+                <span className="action-arrow">→</span>
+              </a>
+            </div>
           </div>
 
           {myApplicationsList.length === 0 ? (
@@ -2113,6 +2160,152 @@ export default function ApplicantDashboard() {
                 onClick={() => setTimelineModalApp(null)}
               >
                 Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── APPLICATION HISTORY POPUP MODAL ── */}
+      {isHistoryModalOpen && (
+        <div className="app-history-modal-backdrop" onClick={() => setIsHistoryModalOpen(false)}>
+          <div className="app-history-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="app-history-modal-header">
+              <div>
+                <span className="app-history-modal-eyebrow">APPLICATION TRACKER</span>
+                <h3 className="app-history-modal-title">Application History</h3>
+                <p className="app-history-modal-subtitle">
+                  Review previous application records, interview dates, and decision outcomes.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="app-history-close-btn"
+                onClick={() => setIsHistoryModalOpen(false)}
+                aria-label="Close history modal"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="app-history-filter-bar">
+              <button
+                type="button"
+                className={`app-history-filter-pill ${historyFilter === "all" ? "active" : ""}`}
+                onClick={() => setHistoryFilter("all")}
+              >
+                All ({myApplicationsList.length})
+              </button>
+              <button
+                type="button"
+                className={`app-history-filter-pill ${historyFilter === "approved" ? "active" : ""}`}
+                onClick={() => setHistoryFilter("approved")}
+              >
+                Approved ({approvedHistoryCount})
+              </button>
+              <button
+                type="button"
+                className={`app-history-filter-pill ${historyFilter === "denied" ? "active" : ""}`}
+                onClick={() => setHistoryFilter("denied")}
+              >
+                Denied ({deniedHistoryCount})
+              </button>
+            </div>
+
+            <div className="app-history-modal-body">
+              {filteredHistoryApplications.length === 0 ? (
+                <div className="app-history-empty-state">
+                  <h4>No {historyFilter !== "all" ? historyFilter : ""} applications found</h4>
+                  <p>There are no applications matching the selected history filter.</p>
+                </div>
+              ) : (
+                <div className="app-history-list">
+                  {filteredHistoryApplications.map((app: any) => {
+                    const statusLower = (app?.status || "").toLowerCase();
+                    const isApproved = ["approved", "accepted", "recruited"].includes(statusLower);
+                    const isDenied = ["denied", "rejected", "withdrawn"].includes(statusLower);
+
+                    let interview = app?.scheduled_interview;
+                    if (!interview) {
+                      try {
+                        const rawInt = localStorage.getItem("elitecruit_scheduled_interviews");
+                        if (rawInt) {
+                          const list = JSON.parse(rawInt);
+                          if (Array.isArray(list)) {
+                            interview = list.find((it: any) =>
+                              (app.job_post_id && it.job_post_id && String(it.job_post_id) === String(app.job_post_id)) ||
+                              (app.job_title && it.job_title && it.job_title.toLowerCase() === app.job_title.toLowerCase())
+                            );
+                          }
+                        }
+                      } catch {}
+                    }
+
+                    return (
+                      <div key={app.id || app.job_post_id} className="app-history-card">
+                        <div className="app-history-card-top">
+                          <div>
+                            <h4 className="app-history-role">{app.job_title || app.title || "Applied Role"}</h4>
+                            <div className="app-history-meta-line">
+                              <span className="app-history-company">{app.company_name || "Employer"}</span>
+                              <span className="app-history-sep">•</span>
+                              <span className="app-history-location">{app.location || app.city || "Location not set"}</span>
+                            </div>
+                          </div>
+                          <span className={`status-badge-chip ${statusChipBadgeClass(app.status)}`}>
+                            {formatStatusLabel(app.status)}
+                          </span>
+                        </div>
+
+                        <div className="app-history-dates-grid">
+                          <div className="app-history-date-item">
+                            <span className="app-history-date-label">Date of Application</span>
+                            <span className="app-history-date-val">
+                              {app.submitted_at ? formatDate(app.submitted_at) : "Submitted"}
+                            </span>
+                          </div>
+
+                          <div className="app-history-date-item">
+                            <span className="app-history-date-label">Date of Interview</span>
+                            <span className="app-history-date-val">
+                              {interview?.interview_date
+                                ? `${formatDate(interview.interview_date)}${interview.start_time ? ` at ${interview.start_time}` : ""}${interview.interview_stage ? ` (${interview.interview_stage})` : ""}`
+                                : app.had_interview && (app.interview_date || app.decided_at)
+                                ? formatDate(app.interview_date || app.decided_at)
+                                : "No interview conducted"}
+                            </span>
+                          </div>
+
+                          <div className="app-history-date-item">
+                            <span className="app-history-date-label">
+                              {isApproved ? "Date Approved" : isDenied ? (statusLower === "withdrawn" ? "Date Withdrawn" : "Date Rejected") : "Date of Decision"}
+                            </span>
+                            <span className="app-history-date-val">
+                              {app.decided_at ? formatDate(app.decided_at) : (app.responded_at ? formatDate(app.responded_at) : "In Progress")}
+                            </span>
+                          </div>
+                        </div>
+
+                        {app.decision_message && (
+                          <div className="app-history-feedback-box">
+                            <span className="app-history-feedback-title">Feedback / Remarks:</span>
+                            <p className="app-history-feedback-text">{app.decision_message}</p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="app-history-modal-footer">
+              <button
+                type="button"
+                className="solid-btn app-history-done-btn"
+                onClick={() => setIsHistoryModalOpen(false)}
+              >
+                Close
               </button>
             </div>
           </div>
