@@ -5341,67 +5341,61 @@ export default function ApplicantProfile() {
                                 </div>
                               </div>
 
-                              {/* Right Column: Expected Salary */}
+                              {/* Right Column: Salary Range (PHP) */}
                               <div className="role-pref-col role-pref-col-salary">
-                                <div className="role-pref-salary-header">
-                                  <label className="role-pref-sublabel">EXPECTED SALARY (MONTHLY)</label>
-                                  <label className="role-pref-hide-salary-toggle">
-                                    <input
-                                      type="checkbox"
-                                      checked={Boolean(roleItem.hide_salary)}
-                                      onChange={() => handleToggleRoleHideSalary(roleItem.id)}
-                                    />
-                                    <span>Hide salary (Mark as Negotiable)</span>
-                                  </label>
-                                </div>
-
-                                {roleItem.hide_salary ? (
-                                  <div className="role-pref-negotiable-badge">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                                      <line x1="1" y1="1" x2="23" y2="23"></line>
+                                <label className="role-pref-sublabel">
+                                  Salary Range (PHP) {roleItem.hide_salary ? <span className="salary-confidential-tag">(Negotiable)</span> : "*"}
+                                </label>
+                                <div className="salary-controls-row">
+                                  <button
+                                    type="button"
+                                    className={`hide-salary-btn ${roleItem.hide_salary ? "active" : ""}`}
+                                    aria-label="Hide salary range"
+                                    onClick={() => handleToggleRoleHideSalary(roleItem.id)}
+                                    title={roleItem.hide_salary ? "Salary is hidden (Negotiable). Click to show." : "Click to hide salary (Negotiable)"}
+                                  >
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, flexShrink: 0 }}>
+                                      {roleItem.hide_salary ? (
+                                        <>
+                                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                                          <line x1="1" y1="1" x2="23" y2="23" />
+                                        </>
+                                      ) : (
+                                        <>
+                                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                          <circle cx="12" cy="12" r="3" />
+                                        </>
+                                      )}
                                     </svg>
-                                    <span>Salary hidden from employers • Marked as &quot;Negotiable&quot;</span>
-                                  </div>
-                                ) : (
-                                  <div className="role-pref-salary-inputs-row">
-                                    <div className="role-pref-salary-field">
-                                      <span className="role-pref-salary-field-tag">MINIMUM</span>
-                                      <div className="inline-field-input-wrap">
-                                        <span className="inline-field-currency-prefix">PHP</span>
-                                        <input
-                                          className="inline-field-control inline-field-currency-input"
-                                          value={roleItem.salary_min ? formatCurrencyInput(roleItem.salary_min) : ""}
-                                          placeholder="25,000.00"
-                                          inputMode="decimal"
-                                          onChange={(e) => {
-                                            const raw = e.target.value.replace(/[^0-9.]/g, "");
-                                            handleUpdateRoleSalary(roleItem.id, "salary_min", raw);
-                                          }}
-                                        />
-                                      </div>
+                                    <span>{roleItem.hide_salary ? "Salary Hidden" : "Hide Salary"}</span>
+                                  </button>
+
+                                  <div className="salary-inputs-subrow">
+                                    <div className="salary-input-wrap">
+                                      <input
+                                        placeholder="Min Salary"
+                                        value={roleItem.salary_min ? formatCurrencyInput(roleItem.salary_min) : ""}
+                                        onChange={(e) => {
+                                          const raw = e.target.value.replace(/[^0-9.]/g, "");
+                                          handleUpdateRoleSalary(roleItem.id, "salary_min", raw);
+                                        }}
+                                        aria-label="Minimum Salary (PHP)"
+                                      />
                                     </div>
-
-                                    <span className="role-pref-salary-sep">–</span>
-
-                                    <div className="role-pref-salary-field">
-                                      <span className="role-pref-salary-field-tag">MAXIMUM</span>
-                                      <div className="inline-field-input-wrap">
-                                        <span className="inline-field-currency-prefix">PHP</span>
-                                        <input
-                                          className="inline-field-control inline-field-currency-input"
-                                          value={roleItem.salary_max ? formatCurrencyInput(roleItem.salary_max) : ""}
-                                          placeholder="35,000.00"
-                                          inputMode="decimal"
-                                          onChange={(e) => {
-                                            const raw = e.target.value.replace(/[^0-9.]/g, "");
-                                            handleUpdateRoleSalary(roleItem.id, "salary_max", raw);
-                                          }}
-                                        />
-                                      </div>
+                                    <div className="salary-input-wrap">
+                                      <input
+                                        placeholder="Max Salary"
+                                        value={roleItem.salary_max ? formatCurrencyInput(roleItem.salary_max) : ""}
+                                        onChange={(e) => {
+                                          const raw = e.target.value.replace(/[^0-9.]/g, "");
+                                          handleUpdateRoleSalary(roleItem.id, "salary_max", raw);
+                                        }}
+                                        aria-label="Maximum Salary (PHP)"
+                                      />
                                     </div>
                                   </div>
-                                )}
+                                </div>
+                                {roleItem.hide_salary && <small className="info-text" style={{ marginTop: 4, display: "block" }}>Salary is hidden from employers and marked as &quot;Negotiable&quot;.</small>}
                               </div>
                             </div>
                           </div>

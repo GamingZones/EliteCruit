@@ -3761,86 +3761,88 @@
   display: block;
 }
 
-.role-pref-salary-header {
+.salary-controls-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 4px;
+  width: 100%;
 }
 
-.role-pref-salary-header .role-pref-sublabel {
-  margin-bottom: 0;
-}
-
-.role-pref-hide-salary-toggle {
+button.hide-salary-btn {
+  height: 38px;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 6px;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  color: #4338ca;
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #0284c7;
-  cursor: pointer;
-  user-select: none;
-}
-
-.role-pref-hide-salary-toggle input[type="checkbox"] {
-  accent-color: #0284c7;
-  width: 15px;
-  height: 15px;
-  cursor: pointer;
-  margin: 0;
-}
-
-.role-pref-negotiable-badge {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 13px;
-  background: #f0fdf4;
-  border: 1px dashed #86efac;
-  border-radius: 6px;
-  color: #166534;
-  font-size: 0.84rem;
-  font-weight: 500;
-  margin-top: 4px;
-}
-
-.role-pref-salary-inputs-row {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: flex-end;
-  gap: 10px;
-  width: 100%;
-}
-
-.role-pref-salary-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  width: 100%;
-}
-
-.role-pref-salary-field-tag {
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.role-pref-salary-sep {
-  color: #64748b;
-  font-size: 1.15rem;
-  font-weight: bold;
-  height: 38px;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  user-select: none;
-  margin: 0;
-  padding: 0;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+
+button.hide-salary-btn:hover {
+  background: #e0e7ff;
+  border-color: #818cf8;
+}
+
+button.hide-salary-btn.active {
+  background: #00385e;
+  border-color: #00385e;
+  color: #ffffff;
+}
+
+.salary-inputs-subrow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.salary-input-wrap {
+  width: 100%;
+}
+
+.salary-input-wrap input {
+  width: 100%;
+  margin-top: 0 !important;
+  height: 38px;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #0f172a;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.salary-input-wrap input::placeholder {
+  color: #94a3b8;
+}
+
+.salary-input-wrap input:focus {
+  border-color: #00385e;
+  box-shadow: 0 0 0 3px rgba(0, 56, 94, 0.12);
+}
+
+.salary-confidential-tag {
+  color: #0284c7;
+  font-size: 0.74rem;
+  font-weight: 600;
+  margin-left: 6px;
 }
 
 @media (max-width: 920px) {
@@ -3941,26 +3943,48 @@
   letter-spacing: 0.05em !important;
 }
 
-[data-theme="dark"] .role-pref-hide-salary-toggle {
+[data-theme="dark"] button.hide-salary-btn {
+  background: #242735 !important;
+  border: 1px solid #2e3244 !important;
   color: #38bdf8 !important;
-  font-weight: 600 !important;
 }
 
-[data-theme="dark"] .role-pref-negotiable-badge {
-  background: #0f283d !important;
+[data-theme="dark"] button.hide-salary-btn:hover {
+  background: #2b2f40 !important;
+  border-color: #38bdf8 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] button.hide-salary-btn.active {
+  background: rgba(2, 132, 199, 0.25) !important;
   border-color: #0284c7 !important;
-  color: #7dd3fc !important;
+  color: #38bdf8 !important;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.2) !important;
 }
 
-[data-theme="dark"] .role-pref-salary-field-tag {
-  color: #94a3b8 !important;
-  font-size: 0.68rem !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.05em !important;
+[data-theme="dark"] button.hide-salary-btn.active:hover {
+  background: rgba(2, 132, 199, 0.35) !important;
+  border-color: #38bdf8 !important;
+  color: #ffffff !important;
 }
 
-[data-theme="dark"] .role-pref-salary-sep {
+[data-theme="dark"] .salary-input-wrap input {
+  background: #14151b !important;
+  border: 1px solid #2e3244 !important;
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .salary-input-wrap input::placeholder {
   color: #64748b !important;
+}
+
+[data-theme="dark"] .salary-input-wrap input:focus {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15) !important;
+}
+
+[data-theme="dark"] .salary-confidential-tag {
+  color: #38bdf8 !important;
 }
 
 [data-theme="dark"] .empty-category-notice {
