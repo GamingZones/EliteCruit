@@ -5380,7 +5380,7 @@ export default function ApplicantProfile() {
                               {/* Right Column: Salary Range (PHP) */}
                               <div className="role-pref-col role-pref-col-salary">
                                 <label className="role-pref-sublabel">
-                                  Salary Range (PHP) {roleItem.hide_salary ? <span className="salary-confidential-tag">(Negotiable)</span> : "*"}
+                                  SALARY RANGE (PHP) *
                                 </label>
                                 <div className="salary-controls-row">
                                   <button
@@ -5449,7 +5449,6 @@ export default function ApplicantProfile() {
                                     </div>
                                   </div>
                                 </div>
-                                {roleItem.hide_salary && <small className="info-text" style={{ marginTop: 4, display: "block" }}>Salary is hidden from employers and marked as &quot;Negotiable&quot;.</small>}
                               </div>
                             </div>
                           </div>
