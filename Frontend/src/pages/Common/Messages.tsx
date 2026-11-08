@@ -21,6 +21,7 @@ import {
   parseCompetencyDisplayTags,
   parseExpectedSalary,
   parsePreferredLocationTags,
+  formatApplicationStatusLabel,
 } from "../../utils/filters";
 import "../Applicant/Applicant-Dashboard.css";
 import "../Employer/Employer-Dashboard.css";
@@ -2092,16 +2093,8 @@ export default function Messages() {
                                   </div>
 
                                   <div className="chat-info-tag-row">
-                                    <span className={`cjm-status-chip ${status === "reviewed" ? "under-review" : status}`}>
-                                      {status === "approved"
-                                        ? "Approved"
-                                        : status === "denied"
-                                        ? "Denied"
-                                        : status === "shortlisted"
-                                        ? "Shortlisted"
-                                        : status === "reviewed" || status === "under_review"
-                                        ? "Under Review"
-                                        : "Submitted"}
+                                    <span className={`cjm-status-chip ${status === "reviewed" ? "under-review" : status === "declined" ? "denied" : status}`}>
+                                      {formatApplicationStatusLabel(status)}
                                     </span>
                                     <span className="chat-info-setup-badge">{job.work_arrangement || "On-Site"}</span>
                                   </div>
@@ -2144,16 +2137,8 @@ export default function Messages() {
                               <div key={`side-applied-${job.id}`} className="chat-info-job-item applicant-applied">
                                 <div className="chat-info-job-head">
                                   <span className="chat-info-job-title">{job.title}</span>
-                                  <span className={`cjm-status-chip ${status === "reviewed" ? "under-review" : status}`}>
-                                    {status === "approved"
-                                      ? "Approved"
-                                      : status === "denied"
-                                      ? "Denied"
-                                      : status === "shortlisted"
-                                      ? "Shortlisted"
-                                      : status === "reviewed" || status === "under_review"
-                                      ? "Under Review"
-                                      : "Submitted"}
+                                  <span className={`cjm-status-chip ${status === "reviewed" ? "under-review" : status === "declined" ? "denied" : status}`}>
+                                    {formatApplicationStatusLabel(status)}
                                   </span>
                                 </div>
 

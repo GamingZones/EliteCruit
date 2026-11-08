@@ -29,6 +29,7 @@ import {
   parseItemList,
   parseExpectedSalary,
   parsePreferredLocationTags,
+  formatApplicationStatusLabel,
 } from "../../utils/filters";
 import "../Applicant/Applicant-Dashboard.css";
 import "./Employer-Dashboard.css";
@@ -691,19 +692,12 @@ function statusChipClass(status: string) {
   if (s === "interviewing" || s === "interview") return "status-chip interviewing";
   if (s === "shortlisted") return "status-chip shortlisted";
   if (s === "approved" || s === "accepted" || s === "recruited") return "status-chip approved";
-  if (s === "denied" || s === "rejected" || s === "withdrawn") return "status-chip denied";
+  if (s === "denied" || s === "declined" || s === "rejected" || s === "withdrawn") return "status-chip denied declined";
   return "status-chip pending";
 }
 
 function formatStatusLabel(status: string) {
-  const s = (status || "").toLowerCase();
-  if (s === "interviewing" || s === "interview") return "interviewing";
-  if (s === "recruited") return "recruited";
-  if (s === "shortlisted") return "shortlisted";
-  if (s === "approved" || s === "accepted") return "approved";
-  if (s === "withdrawn") return "withdrawn";
-  if (s === "denied" || s === "rejected") return "denied";
-  return "pending";
+  return formatApplicationStatusLabel(status);
 }
 
 function isApprovedStatus(status: string) {
@@ -713,7 +707,7 @@ function isApprovedStatus(status: string) {
 
 function isDeniedStatus(status: string) {
   const s = (status || "").toLowerCase();
-  return s === "denied" || s === "rejected";
+  return s === "denied" || s === "declined" || s === "rejected";
 }
 
 function isFinalizedStatus(status: string) {
@@ -2191,8 +2185,7 @@ export default function EmployerApplicantManagement() {
   };
 
   const triggerLockedDecisionWarning = (app: Application) => {
-    const s = (app.status || "").toLowerCase();
-    const finalLabel = s === "recruited" ? "Recruited" : isApprovedStatus(app.status) ? "Accepted" : "Denied";
+    const finalLabel = formatApplicationStatusLabel(app.status);
     setWarningPopup(
       `This application for ${app.applicant_name} has already been finalized as "${finalLabel}". Application decisions can only be set once and cannot be modified.`
     );
@@ -2579,7 +2572,7 @@ export default function EmployerApplicantManagement() {
     const s = (newStatus || "").toLowerCase();
     if (s === "approved" || s === "accepted" || s === "rejected" || s === "denied") {
       setWarningPopup(
-        "Application decisions (Acceptance or Denial) are permanent and require choosing an Automated or Manual message for each candidate. Please review and decide candidates individually."
+        "Application decisions (Approval or Decline) are permanent and require choosing an Automated or Manual message for each candidate. Please review and decide candidates individually."
       );
       return;
     }
@@ -2743,11 +2736,11 @@ export default function EmployerApplicantManagement() {
         <div style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
           <button
             type="button"
-            className={`modal-fused-status-btn ${isApproved ? "approved" : "denied"}`}
-            title={`Application decision finalized as ${isApproved ? "Approved" : "Denied"} (cannot be modified)`}
+            className={`modal-fused-status-btn ${isApproved ? "approved" : "denied declined"}`}
+            title={`Application decision finalized as ${isApproved ? "Approved" : "Declined"} (cannot be modified)`}
             onClick={() => triggerLockedDecisionWarning(reviewModalApp)}
           >
-            {isApproved ? "Approved" : "Denied"}
+            {isApproved ? "Approved" : "Declined"}
           </button>
           {hasResponseLetter && (
             <button
@@ -2992,10 +2985,10 @@ export default function EmployerApplicantManagement() {
               className="bulk-reject-btn"
               disabled={selectedIds.size === 0}
               onClick={() => handleBulkStatusChange("rejected")}
-              title={selectedIds.size > 0 ? `Reject ${selectedIds.size} selected` : "Select applicants to reject"}
+              title={selectedIds.size > 0 ? `Decline ${selectedIds.size} selected` : "Select applicants to decline"}
               style={{ flexShrink: 0, width: "auto", minWidth: "120px", padding: "8px 12px", fontSize: "0.8rem", whiteSpace: "nowrap" }}
             >
-              Reject Selected {selectedIds.size > 0 ? `(${selectedIds.size})` : ""}
+              Decline Selected {selectedIds.size > 0 ? `(${selectedIds.size})` : ""}
             </button>
           </div>
 
@@ -3529,13 +3522,13 @@ export default function EmployerApplicantManagement() {
                                         const isFinalized = isFinalizedStatus(app.status);
 
                                         if (isFinalized) {
-                                          const finalizedText = (app.status || "").toLowerCase() === "recruited" ? "Recruited" : isApproved ? "Approved" : "Denied";
+                                          const finalizedText = (app.status || "").toLowerCase() === "recruited" ? "Recruited" : isApproved ? "Approved" : "Declined";
                                           const hasResponseLetter = Boolean(app.response_letter);
                                           return (
                                             <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
                                               <button
                                                 type="button"
-                                                className={`merged-status-btn ${isApproved ? "approved" : "denied"}`}
+                                                className={`merged-status-btn ${isApproved ? "approved" : "denied declined"}`}
                                                 title={`Application decision finalized as ${finalizedText} (cannot be modified)`}
                                                 onClick={() => triggerLockedDecisionWarning(app)}
                                               >
@@ -3709,7 +3702,7 @@ export default function EmployerApplicantManagement() {
                             className={`ticket ${selectedAppId === a.id ? "active-ticket" : ""} ${draggedAppId === a.id ? "dragging" : ""}`}
                             onClick={() => setSelectedAppId(a.id)}
                             style={{ cursor: "grab" }}
-                            title="Drag to move between Shortlist, Approved, or Denied"
+                            title="Drag to move between Shortlist, Approved, or Declined"
                           >
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                               <strong>{a.applicant_name}</strong>
@@ -3802,13 +3795,13 @@ export default function EmployerApplicantManagement() {
                     onDrop={(e) => handleDrop(e, "denied")}
                   >
                     <header>
-                      <b>Denied</b>
+                      <b>Declined</b>
                       {stagedDeniedApps.length > 0 ? (
                         <button
                           type="button"
                           className="stage-header-confirm-btn confirm-denied"
                           onClick={() => handleInitiateMultiStatusChange(stagedDeniedApps, "denied")}
-                          title={`Confirm Denial for ${stagedDeniedApps.length} candidate${stagedDeniedApps.length > 1 ? "s" : ""}`}
+                          title={`Confirm Decline for ${stagedDeniedApps.length} candidate${stagedDeniedApps.length > 1 ? "s" : ""}`}
                         >
                           <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
                             <line x1="18" y1="6" x2="6" y2="18" />
@@ -3838,7 +3831,7 @@ export default function EmployerApplicantManagement() {
                             onClick={() => setSelectedAppId(a.id)}
                             onDoubleClick={() => isFinalized && triggerLockedDecisionWarning(a)}
                             style={{ cursor: isStaged ? "grab" : "pointer" }}
-                            title={isFinalized ? "Denied candidate - Finalized decision (cannot be moved)" : "Staged for Denial — Click Confirm in header to finalize decision"}
+                            title={isFinalized ? "Declined candidate - Finalized decision (cannot be moved)" : "Staged for Decline — Click Confirm in header to finalize decision"}
                           >
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                               <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
@@ -3879,7 +3872,7 @@ export default function EmployerApplicantManagement() {
                         </svg>
                       </div>
                       <h3>No Candidate Selected</h3>
-                      <p style={{ margin: 0 }}>Select or click any candidate ticket from Shortlist, Approved, or Denied to view their details.</p>
+                      <p style={{ margin: 0 }}>Select or click any candidate ticket from Shortlist, Approved, or Declined to view their details.</p>
                     </div>
                   </aside>
                 );
@@ -4042,11 +4035,11 @@ export default function EmployerApplicantManagement() {
                           <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
                             <button
                               type="button"
-                              className={`merged-status-btn preview-fused-status-btn ${isApproved ? "approved" : "denied"}`}
-                              title={`Application decision finalized as ${isApproved ? "Approved" : "Denied"} (cannot be modified)`}
+                              className={`merged-status-btn preview-fused-status-btn ${isApproved ? "approved" : "denied declined"}`}
+                              title={`Application decision finalized as ${isApproved ? "Approved" : "Declined"} (cannot be modified)`}
                               onClick={() => triggerLockedDecisionWarning(currentApp)}
                             >
-                              {isApproved ? "Approved" : "Denied"}
+                              {isApproved ? "Approved" : "Declined"}
                             </button>
                             {hasResponseLetter && (
                               <button
@@ -4106,8 +4099,8 @@ export default function EmployerApplicantManagement() {
                           <button
                             type="button"
                             className="action-btn preview-action-btn reject-action-btn reject-btn-icon"
-                            title="Deny candidate"
-                            aria-label="Deny candidate"
+                            title="Decline candidate"
+                            aria-label="Decline candidate"
                             onClick={() => {
                               handleInitiateStatusChange(currentApp, "denied");
                             }}
@@ -4476,7 +4469,7 @@ export default function EmployerApplicantManagement() {
                                           border: `1px solid ${status === "accepted" ? "#a7f3d0" : status === "declined" ? "#fecaca" : "#fde68a"}`,
                                         }}
                                       >
-                                        {status === "accepted" ? "Recruited" : status === "declined" ? "Denied" : "Pending Response"}
+                                        {status === "accepted" ? "Recruited" : status === "declined" || status === "denied" ? "Declined" : "Pending Response"}
                                       </span>
                                     </div>
 

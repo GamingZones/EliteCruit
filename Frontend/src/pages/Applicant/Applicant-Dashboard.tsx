@@ -250,7 +250,7 @@ function statusChipBadgeClass(status: string) {
   if (s === "recruited") return "chip-recruited";
   if (s === "approved" || s === "accepted") return "chip-approved";
   if (s === "shortlisted") return "chip-shortlisted";
-  if (s === "denied" || s === "rejected" || s === "withdrawn") return "chip-denied";
+  if (s === "denied" || s === "declined" || s === "rejected" || s === "withdrawn") return "chip-denied chip-declined";
   return "chip-pending";
 }
 
@@ -259,7 +259,7 @@ function statusChipClass(status: string) {
   if (s === "interviewing" || s === "interview") return "match-chip chip-amber";
   if (s === "recruited" || s === "approved" || s === "accepted") return "match-chip chip-green";
   if (s === "shortlisted") return "match-chip chip-amber";
-  if (s === "denied" || s === "rejected" || s === "withdrawn") return "match-chip chip-amber";
+  if (s === "denied" || s === "declined" || s === "rejected" || s === "withdrawn") return "match-chip chip-amber";
   return "match-chip chip-green";
 }
 
@@ -270,7 +270,7 @@ function formatStatusLabel(status: string) {
   if (s === "approved" || s === "accepted") return "Approved";
   if (s === "shortlisted") return "Shortlisted";
   if (s === "withdrawn") return "Withdrawn";
-  if (s === "denied" || s === "rejected") return "Declined";
+  if (s === "denied" || s === "declined" || s === "rejected") return "Declined";
   return "Pending";
 }
 
@@ -2208,7 +2208,7 @@ export default function ApplicantDashboard() {
                 className={`app-history-filter-pill ${historyFilter === "denied" ? "active" : ""}`}
                 onClick={() => setHistoryFilter("denied")}
               >
-                Denied ({deniedHistoryCount})
+                Declined ({deniedHistoryCount})
               </button>
             </div>
 
@@ -2278,7 +2278,7 @@ export default function ApplicantDashboard() {
 
                           <div className="app-history-date-item">
                             <span className="app-history-date-label">
-                              {isApproved ? "Date Approved" : isDenied ? (statusLower === "withdrawn" ? "Date Withdrawn" : "Date Rejected") : "Date of Decision"}
+                              {isApproved ? "Date Approved" : isDenied ? (statusLower === "withdrawn" ? "Date Withdrawn" : "Date Declined") : "Date of Decision"}
                             </span>
                             <span className="app-history-date-val">
                               {app.decided_at ? formatDate(app.decided_at) : (app.responded_at ? formatDate(app.responded_at) : "In Progress")}

@@ -452,7 +452,7 @@ export default function EmployerDashboard() {
             <div className="status-line"><span>Approved</span><b className="status-count green">{summary.stats.approved ?? 0}</b></div>
             <div className="status-line"><span>Recruited</span><b className="status-count teal">{summary.stats.recruited ?? 0}</b></div>
             <div className="status-line"><span>Hired</span><b className="status-count green">{summary.stats.hired ?? 0}</b></div>
-            <div className="status-line"><span>Rejected</span><b className="status-count red">{summary.stats.rejected ?? 0}</b></div>
+            <div className="status-line"><span>Declined</span><b className="status-count red">{summary.stats.rejected ?? 0}</b></div>
           </article>
 
           <article className="employer-block quick-actions-block">

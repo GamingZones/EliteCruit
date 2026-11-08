@@ -1303,7 +1303,7 @@ export default function JobSearch() {
               const jobId = Number(inv?.job_post_id);
               if (jobId > 0 && !next[jobId]) {
                 const invStatus = (inv?.status || "pending").toLowerCase();
-                next[jobId] = invStatus === "accepted" ? "recruited" : invStatus === "declined" ? "denied" : "invited";
+                next[jobId] = invStatus === "accepted" ? "recruited" : invStatus === "declined" ? "declined" : "invited";
               }
             });
             return next;
@@ -2084,7 +2084,7 @@ export default function JobSearch() {
   };
 
   const getJobApplicationStatus = (jobId: number): {
-    label: "Applied" | "Recruited" | "Approved" | "Denied" | "Invitation Received";
+    label: "Applied" | "Recruited" | "Approved" | "Declined" | "Invitation Received";
     statusClass: "applied" | "recruited" | "approved" | "denied" | "invited";
   } | null => {
     const rawStatus = applicationStatusByJobId[jobId];
@@ -2093,8 +2093,8 @@ export default function JobSearch() {
       if (s === "approved" || s === "accepted" || s === "hired") {
         return { label: "Approved", statusClass: "approved" };
       }
-      if (s === "denied" || s === "rejected") {
-        return { label: "Denied", statusClass: "denied" };
+      if (s === "denied" || s === "rejected" || s === "declined") {
+        return { label: "Declined", statusClass: "denied" };
       }
       if (s === "recruited") {
         return { label: "Recruited", statusClass: "recruited" };

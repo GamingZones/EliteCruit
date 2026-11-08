@@ -369,6 +369,7 @@
 }
 
 .status-chip.denied,
+.status-chip.declined,
 .status-chip.rejected {
   color: #b91c1c !important;
   background: #fee2e2 !important;
@@ -565,7 +566,8 @@
   border-color: #4ade80;
 }
 
-.merged-status-btn.denied {
+.merged-status-btn.denied,
+.merged-status-btn.declined {
   background: #fee2e2;
   border-color: #fca5a5;
   color: #b91c1c;
@@ -2739,13 +2741,15 @@
   border-color: #4ade80 !important;
 }
 
-.modal-fused-status-btn.denied {
+.modal-fused-status-btn.denied,
+.modal-fused-status-btn.declined {
   background: #fee2e2 !important;
   border-color: #fca5a5 !important;
   color: #b91c1c !important;
 }
 
-.modal-fused-status-btn.denied:hover {
+.modal-fused-status-btn.denied:hover,
+.modal-fused-status-btn.declined:hover {
   background: #fecaca !important;
   border-color: #f87171 !important;
 }

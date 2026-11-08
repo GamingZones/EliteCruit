@@ -1089,6 +1089,7 @@
   border: 1px solid #a7f3d0;
 }
 
+.status-badge-chip.chip-declined,
 .status-badge-chip.chip-denied {
   background: #fef2f2;
   color: #b91c1c;
@@ -3455,7 +3456,8 @@
   border-color: rgba(59, 130, 246, 0.35);
 }
 
-[data-theme="dark"] .status-badge-chip.chip-denied {
+[data-theme="dark"] .status-badge-chip.chip-declined,
+.status-badge-chip.chip-denied {
   background: rgba(239, 68, 68, 0.16);
   color: #f87171;
   border-color: rgba(239, 68, 68, 0.35);
