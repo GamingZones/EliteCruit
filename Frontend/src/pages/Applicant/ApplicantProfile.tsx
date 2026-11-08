@@ -2686,6 +2686,11 @@ export default function ApplicantProfile() {
   const [isMaxSalaryFocused, setIsMaxSalaryFocused] = useState(false);
   const [targetRoleInput, setTargetRoleInput] = useState("");
   const [targetRoles, setTargetRoles] = useState<TargetRolePreferenceItem[]>([]);
+  const [activeRoleSalaryInput, setActiveRoleSalaryInput] = useState<{
+    id: string;
+    field: "salary_min" | "salary_max";
+    value: string;
+  } | null>(null);
 
   const saveSingleField = async (fieldName: keyof ApplicantProfileData, value: any) => {
     if (!userId) return;
@@ -3819,13 +3824,44 @@ export default function ApplicantProfile() {
     await syncAndSaveTargetRoles(updated);
   };
 
-  const handleUpdateRoleSalary = async (roleId: string, field: "salary_min" | "salary_max", rawValue: string) => {
+  const handleFocusRoleSalary = (roleId: string, field: "salary_min" | "salary_max") => {
+    const role = targetRoles.find((r) => r.id === roleId);
+    const currentVal = role && role[field] != null ? String(role[field]).replace(/,/g, "").trim() : "";
+    const cleanVal = currentVal.endsWith(".00") ? currentVal.slice(0, -3) : currentVal;
+    setActiveRoleSalaryInput({ id: roleId, field, value: cleanVal });
+  };
+
+  const handleChangeRoleSalary = (roleId: string, field: "salary_min" | "salary_max", rawInput: string) => {
+    const sanitized = rawInput.replace(/[^0-9.]/g, "");
+    const parts = sanitized.split(".");
+    const value = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join("")}` : sanitized;
+    setActiveRoleSalaryInput({ id: roleId, field, value });
+    setTargetRoles((prev) =>
+      prev.map((r) => (r.id === roleId ? { ...r, [field]: value } : r))
+    );
+  };
+
+  const handleBlurRoleSalary = async (roleId: string, field: "salary_min" | "salary_max") => {
+    const currentVal = activeRoleSalaryInput?.value != null ? activeRoleSalaryInput.value.trim() : "";
+    setActiveRoleSalaryInput(null);
+
+    let formatted = "";
+    if (currentVal) {
+      const num = Number(currentVal);
+      if (Number.isFinite(num) && num >= 0) {
+        formatted = num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      } else {
+        formatted = currentVal;
+      }
+    }
+
     const updated = targetRoles.map((r) => {
       if (r.id === roleId) {
-        return { ...r, [field]: rawValue };
+        return { ...r, [field]: formatted };
       }
       return r;
     });
+    setTargetRoles(updated);
     await syncAndSaveTargetRoles(updated);
   };
 
@@ -5372,26 +5408,44 @@ export default function ApplicantProfile() {
 
                                   <div className="salary-inputs-subrow">
                                     <div className="salary-input-wrap">
-                                      <input
-                                        placeholder="Min Salary"
-                                        value={roleItem.salary_min ? formatCurrencyInput(roleItem.salary_min) : ""}
-                                        onChange={(e) => {
-                                          const raw = e.target.value.replace(/[^0-9.]/g, "");
-                                          handleUpdateRoleSalary(roleItem.id, "salary_min", raw);
-                                        }}
-                                        aria-label="Minimum Salary (PHP)"
-                                      />
+                                      {(() => {
+                                        const isEditing = activeRoleSalaryInput?.id === roleItem.id && activeRoleSalaryInput?.field === "salary_min";
+                                        const displayVal = isEditing
+                                          ? activeRoleSalaryInput.value
+                                          : roleItem.salary_min
+                                          ? formatCurrencyInput(roleItem.salary_min)
+                                          : "";
+                                        return (
+                                          <input
+                                            placeholder="Min Salary"
+                                            value={displayVal}
+                                            onFocus={() => handleFocusRoleSalary(roleItem.id, "salary_min")}
+                                            onChange={(e) => handleChangeRoleSalary(roleItem.id, "salary_min", e.target.value)}
+                                            onBlur={() => handleBlurRoleSalary(roleItem.id, "salary_min")}
+                                            aria-label="Minimum Salary (PHP)"
+                                          />
+                                        );
+                                      })()}
                                     </div>
                                     <div className="salary-input-wrap">
-                                      <input
-                                        placeholder="Max Salary"
-                                        value={roleItem.salary_max ? formatCurrencyInput(roleItem.salary_max) : ""}
-                                        onChange={(e) => {
-                                          const raw = e.target.value.replace(/[^0-9.]/g, "");
-                                          handleUpdateRoleSalary(roleItem.id, "salary_max", raw);
-                                        }}
-                                        aria-label="Maximum Salary (PHP)"
-                                      />
+                                      {(() => {
+                                        const isEditing = activeRoleSalaryInput?.id === roleItem.id && activeRoleSalaryInput?.field === "salary_max";
+                                        const displayVal = isEditing
+                                          ? activeRoleSalaryInput.value
+                                          : roleItem.salary_max
+                                          ? formatCurrencyInput(roleItem.salary_max)
+                                          : "";
+                                        return (
+                                          <input
+                                            placeholder="Max Salary"
+                                            value={displayVal}
+                                            onFocus={() => handleFocusRoleSalary(roleItem.id, "salary_max")}
+                                            onChange={(e) => handleChangeRoleSalary(roleItem.id, "salary_max", e.target.value)}
+                                            onBlur={() => handleBlurRoleSalary(roleItem.id, "salary_max")}
+                                            aria-label="Maximum Salary (PHP)"
+                                          />
+                                        );
+                                      })()}
                                     </div>
                                   </div>
                                 </div>
