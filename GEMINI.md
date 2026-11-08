@@ -29,8 +29,9 @@
   - **Persistence**: Popup messages must NOT auto-dismiss after a few seconds; they MUST remain open until the user manually clicks "OK" or closes the modal.
   - **Scope**: Applies strictly to popup modals; standard inline page top messages/banners remain separate.
 
-## 7. Command Execution Control
-- DO NOT run build commands (e.g. `cmd /c npm run build`), `git status`, or terminal verification commands automatically after edits unless explicitly requested by the user.
+## 7. Automated Commit & Push on Completion
+- Always commit and push changes (`git add`, `git commit`, and `git push origin main`) automatically after completing requested tasks so that Render and production deploy the updates immediately without waiting for the user to prompt for a push.
+- Do NOT run slow local build commands (e.g. `cmd /c npm run build`) automatically after edits unless explicitly requested by the user.
 
 ## 8. File Content & Change Inspection
 - When checking file contents or inspecting file modifications, use 1 command prompt instead of fragmenting it across multiple commands/prompts to check the contents of the file changes.

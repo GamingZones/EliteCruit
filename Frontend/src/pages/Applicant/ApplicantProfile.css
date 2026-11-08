@@ -3685,8 +3685,8 @@
 .target-role-preference-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 16px 18px;
+  border-radius: 10px;
+  padding: 20px 24px;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
   display: flex;
   flex-direction: column;
@@ -3704,40 +3704,17 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #edf2f7;
-}
-
-.role-pref-title-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.role-pref-index-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 9px;
-  background: #e0f2fe;
-  color: #0369a1;
-  font-size: 0.74rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  border-radius: 6px;
-}
-
-.role-pref-index-badge.primary {
-  background: #00385e;
-  color: #ffffff;
+  margin-bottom: 2px;
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 .role-pref-title {
   margin: 0;
-  font-size: 1.02rem;
-  font-weight: 600;
+  font-size: 1.15rem;
+  font-weight: 700;
   color: #0f172a;
+  letter-spacing: -0.01em;
 }
 
 .role-pref-remove-btn {
@@ -3745,70 +3722,47 @@
   align-items: center;
   gap: 5px;
   background: transparent;
-  border: 1px solid transparent;
+  border: none;
   color: #ef4444;
-  padding: 5px 10px;
-  border-radius: 6px;
-  font-size: 0.8rem;
+  padding: 0;
+  font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 
 .role-pref-remove-btn:hover {
-  background: #fee2e2;
-  border-color: #fca5a5;
-  color: #b91c1c;
+  opacity: 0.8;
 }
 
 .role-pref-card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(360px, 1.45fr);
+  gap: 32px;
+  align-items: start;
 }
 
-.role-pref-subgroup {
+.role-pref-col {
   display: flex;
   flex-direction: column;
+}
+
+.role-pref-col-arrangement {
   gap: 8px;
+}
+
+.role-pref-col-salary {
+  gap: 6px;
 }
 
 .role-pref-sublabel {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  color: #475569;
+  color: #64748b;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin: 0;
-}
-
-.role-pref-arrangements-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.role-pref-arrange-pill {
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 0.84rem;
-  font-weight: 600;
-  cursor: pointer;
-  background: #f1f5f9;
-  border: 1px solid #cbd5e1;
-  color: #334155;
-  transition: all 0.15s ease;
-}
-
-.role-pref-arrange-pill:hover {
-  background: #e2e8f0;
-  color: #0f172a;
-}
-
-.role-pref-arrange-pill.active {
-  background: #00385e;
-  border-color: #00385e;
-  color: #ffffff;
+  letter-spacing: 0.05em;
+  margin: 0 0 6px 0;
+  display: block;
 }
 
 .role-pref-salary-header {
@@ -3817,6 +3771,11 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 10px;
+  margin-bottom: 4px;
+}
+
+.role-pref-salary-header .role-pref-sublabel {
+  margin-bottom: 0;
 }
 
 .role-pref-hide-salary-toggle {
@@ -3824,8 +3783,8 @@
   align-items: center;
   gap: 7px;
   font-size: 0.82rem;
-  font-weight: 500;
-  color: #0369a1;
+  font-weight: 600;
+  color: #0284c7;
   cursor: pointer;
   user-select: none;
 }
@@ -3835,6 +3794,7 @@
   width: 15px;
   height: 15px;
   cursor: pointer;
+  margin: 0;
 }
 
 .role-pref-negotiable-badge {
@@ -3848,12 +3808,13 @@
   color: #166534;
   font-size: 0.84rem;
   font-weight: 500;
+  margin-top: 4px;
 }
 
 .role-pref-salary-inputs-row {
   display: flex;
   align-items: flex-end;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
 }
 
@@ -3864,18 +3825,55 @@
   gap: 4px;
 }
 
-.role-pref-salary-field-tag {
-  font-size: 0.74rem;
+.role-pref-salary-field .inline-field-input-wrap {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.role-pref-salary-field .inline-field-currency-prefix {
+  color: #d97706;
+  font-weight: 700;
+  font-size: 0.88rem;
+  padding: 0 6px 0 12px;
+}
+
+.role-pref-salary-field .inline-field-currency-input {
+  color: #0f172a;
   font-weight: 600;
+  font-size: 0.94rem;
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 100%;
+  padding: 0 10px 0 0;
+}
+
+.role-pref-salary-field-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
   color: #64748b;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .role-pref-salary-sep {
-  color: #94a3b8;
+  color: #64748b;
   font-size: 1.2rem;
   font-weight: bold;
-  padding-bottom: 8px;
+  line-height: 1;
+  margin: 0 2px 12px 2px;
+}
+
+@media (max-width: 920px) {
+  .role-pref-card-body {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
 }
 
 @media (max-width: 640px) {
@@ -3925,66 +3923,77 @@
 }
 
 [data-theme="dark"] .target-role-preference-card {
-  background: #1a1e2b !important;
-  border-color: #2e354b !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) !important;
+  background: #141724 !important;
+  border: 1px solid #23283c !important;
+  border-radius: 10px !important;
+  padding: 20px 24px !important;
+  box-shadow: none !important;
 }
 
 [data-theme="dark"] .target-role-preference-card:hover {
-  border-color: #3b425b !important;
+  border-color: #2e354b !important;
 }
 
 [data-theme="dark"] .role-pref-card-header {
-  border-bottom-color: #2a2f42 !important;
-}
-
-[data-theme="dark"] .role-pref-index-badge {
-  background: #0c2b45 !important;
-  color: #38bdf8 !important;
-}
-
-[data-theme="dark"] .role-pref-index-badge.primary {
-  background: #0284c7 !important;
-  color: #ffffff !important;
+  border-bottom: none !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 2px !important;
 }
 
 [data-theme="dark"] .role-pref-title {
-  color: #f1f5f9 !important;
+  color: #ffffff !important;
+  font-size: 1.15rem !important;
+  font-weight: 700 !important;
 }
 
 [data-theme="dark"] .role-pref-remove-btn {
   color: #f87171 !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  font-size: 0.88rem !important;
+  font-weight: 600 !important;
 }
 
 [data-theme="dark"] .role-pref-remove-btn:hover {
-  background: #3c1a24 !important;
-  border-color: #7f1d1d !important;
+  opacity: 0.8 !important;
+  background: transparent !important;
+  border: none !important;
   color: #fca5a5 !important;
 }
 
 [data-theme="dark"] .role-pref-sublabel {
   color: #94a3b8 !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
 }
 
-[data-theme="dark"] .role-pref-arrange-pill {
-  background: #242838 !important;
-  border-color: #363d55 !important;
+[data-theme="dark"] .role-pref-col-arrangement .arr-toggle-pill {
+  background: #171b26 !important;
+  border: 1px solid #282e42 !important;
   color: #cbd5e1 !important;
+  border-radius: 20px !important;
+  padding: 6px 16px !important;
+  font-size: 0.86rem !important;
+  font-weight: 600 !important;
 }
 
-[data-theme="dark"] .role-pref-arrange-pill:hover {
-  background: #2f3448 !important;
+[data-theme="dark"] .role-pref-col-arrangement .arr-toggle-pill:hover:not(:disabled) {
+  background: #23283c !important;
   color: #ffffff !important;
 }
 
-[data-theme="dark"] .role-pref-arrange-pill.active {
+[data-theme="dark"] .role-pref-col-arrangement .arr-toggle-pill.selected {
   background: #0284c7 !important;
   border-color: #0284c7 !important;
   color: #ffffff !important;
+  box-shadow: 0 1px 4px rgba(2, 132, 199, 0.3) !important;
 }
 
 [data-theme="dark"] .role-pref-hide-salary-toggle {
   color: #38bdf8 !important;
+  font-weight: 600 !important;
 }
 
 [data-theme="dark"] .role-pref-negotiable-badge {
@@ -3995,6 +4004,28 @@
 
 [data-theme="dark"] .role-pref-salary-field-tag {
   color: #94a3b8 !important;
+  font-size: 0.68rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+}
+
+[data-theme="dark"] .role-pref-salary-field .inline-field-input-wrap {
+  background: #0d1017 !important;
+  border: 1px solid #23283c !important;
+  border-radius: 8px !important;
+  height: 42px !important;
+}
+
+[data-theme="dark"] .role-pref-salary-field .inline-field-currency-prefix {
+  color: #f59e0b !important;
+  font-weight: 700 !important;
+  font-size: 0.88rem !important;
+}
+
+[data-theme="dark"] .role-pref-salary-field .inline-field-currency-input {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 0.94rem !important;
 }
 
 [data-theme="dark"] .role-pref-salary-sep {

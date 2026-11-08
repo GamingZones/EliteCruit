@@ -5287,7 +5287,7 @@ export default function ApplicantProfile() {
                         className="inline-field-btn inline-field-save-btn"
                         onClick={() => handleAddTargetRole()}
                         disabled={savingField === "desired_job_title" || !targetRoleInput.trim()}
-                        style={{ height: "38px", padding: "0 18px", fontSize: "0.85rem", whiteSpace: "nowrap" }}
+                        style={{ height: "42px", padding: "0 20px", fontSize: "0.88rem", fontWeight: 600, borderRadius: "8px", whiteSpace: "nowrap" }}
                       >
                         + Add Role
                       </button>
@@ -5301,24 +5301,18 @@ export default function ApplicantProfile() {
                         No target roles configured yet. Search and add a role above to set its individual work arrangement and salary expectations.
                       </div>
                     ) : (
-                      targetRoles.map((roleItem, index) => {
-                        const isPrimary = index === 0;
+                      targetRoles.map((roleItem) => {
                         return (
                           <div className="target-role-preference-card" key={roleItem.id}>
                             <div className="role-pref-card-header">
-                              <div className="role-pref-title-group">
-                                <span className={`role-pref-index-badge ${isPrimary ? "primary" : ""}`}>
-                                  {isPrimary ? "#1 Primary Role" : `#${index + 1} Target Role`}
-                                </span>
-                                <h4 className="role-pref-title">{roleItem.title}</h4>
-                              </div>
+                              <h4 className="role-pref-title">{roleItem.title}</h4>
                               <button
                                 type="button"
                                 className="role-pref-remove-btn"
                                 onClick={() => handleRemoveTargetRole(roleItem.id)}
                                 title={`Remove ${roleItem.title}`}
                               >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                                   <line x1="18" y1="6" x2="6" y2="18"></line>
                                   <line x1="6" y1="6" x2="18" y2="18"></line>
                                 </svg>
@@ -5327,9 +5321,9 @@ export default function ApplicantProfile() {
                             </div>
 
                             <div className="role-pref-card-body">
-                              {/* Work Arrangement for this role */}
-                              <div className="role-pref-subgroup">
-                                <label className="role-pref-sublabel">Work Arrangement Preference</label>
+                              {/* Left Column: Work Arrangement */}
+                              <div className="role-pref-col role-pref-col-arrangement">
+                                <label className="role-pref-sublabel">WORK ARRANGEMENT PREFERENCE</label>
                                 <div className="work-arrangement-pill-group" style={{ margin: 0 }}>
                                   {["Remote", "On-Site", "Hybrid"].map((arr) => {
                                     const isSelected = (roleItem.work_arrangements || []).includes(arr);
@@ -5347,10 +5341,10 @@ export default function ApplicantProfile() {
                                 </div>
                               </div>
 
-                              {/* Salary Preferences for this role */}
-                              <div className="role-pref-subgroup">
+                              {/* Right Column: Expected Salary */}
+                              <div className="role-pref-col role-pref-col-salary">
                                 <div className="role-pref-salary-header">
-                                  <label className="role-pref-sublabel">Expected Salary (Monthly)</label>
+                                  <label className="role-pref-sublabel">EXPECTED SALARY (MONTHLY)</label>
                                   <label className="role-pref-hide-salary-toggle">
                                     <input
                                       type="checkbox"
@@ -5372,13 +5366,13 @@ export default function ApplicantProfile() {
                                 ) : (
                                   <div className="role-pref-salary-inputs-row">
                                     <div className="role-pref-salary-field">
-                                      <span className="role-pref-salary-field-tag">Minimum</span>
+                                      <span className="role-pref-salary-field-tag">MINIMUM</span>
                                       <div className="inline-field-input-wrap">
                                         <span className="inline-field-currency-prefix">PHP</span>
                                         <input
                                           className="inline-field-control inline-field-currency-input"
                                           value={roleItem.salary_min ? formatCurrencyInput(roleItem.salary_min) : ""}
-                                          placeholder="25,000.00"
+                                          placeholder="45,000.00"
                                           inputMode="decimal"
                                           onChange={(e) => {
                                             const raw = e.target.value.replace(/[^0-9.]/g, "");
@@ -5391,13 +5385,13 @@ export default function ApplicantProfile() {
                                     <span className="role-pref-salary-sep">–</span>
 
                                     <div className="role-pref-salary-field">
-                                      <span className="role-pref-salary-field-tag">Maximum</span>
+                                      <span className="role-pref-salary-field-tag">MAXIMUM</span>
                                       <div className="inline-field-input-wrap">
                                         <span className="inline-field-currency-prefix">PHP</span>
                                         <input
                                           className="inline-field-control inline-field-currency-input"
                                           value={roleItem.salary_max ? formatCurrencyInput(roleItem.salary_max) : ""}
-                                          placeholder="45,000.00"
+                                          placeholder="65,000.00"
                                           inputMode="decimal"
                                           onChange={(e) => {
                                             const raw = e.target.value.replace(/[^0-9.]/g, "");
