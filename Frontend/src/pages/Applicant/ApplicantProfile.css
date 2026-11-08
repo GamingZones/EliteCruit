@@ -3885,6 +3885,29 @@
   color: #0f172a;
 }
 
+.role-pref-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #0284c7;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.role-pref-edit-btn:hover {
+  background: #e0f2fe;
+  border-color: #0284c7;
+  color: #0369a1;
+}
+
 .role-pref-remove-btn {
   display: inline-flex;
   align-items: center;
@@ -4147,6 +4170,23 @@ button.hide-salary-btn.active {
   color: #ffffff !important;
   font-size: 1.08rem !important;
   font-weight: 700 !important;
+}
+
+[data-theme="dark"] .role-pref-edit-btn {
+  color: #38bdf8 !important;
+  background: rgba(2, 132, 199, 0.12) !important;
+  border: 1px solid rgba(2, 132, 199, 0.35) !important;
+  border-radius: 6px !important;
+  height: 32px !important;
+  padding: 0 14px !important;
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="dark"] .role-pref-edit-btn:hover {
+  background: rgba(2, 132, 199, 0.22) !important;
+  border-color: #38bdf8 !important;
+  color: #7dd3fc !important;
 }
 
 [data-theme="dark"] .role-pref-remove-btn {

@@ -2693,6 +2693,7 @@ export default function ApplicantProfile() {
   const [roleSavedId, setRoleSavedId] = useState<string | null>(null);
   const roleSalarySavedId = roleSavedId;
   const setRoleSalarySavedId = setRoleSavedId;
+  const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
   const [isAddingRole, setIsAddingRole] = useState(false);
   const [newRoleTitle, setNewRoleTitle] = useState("");
   const [newRoleArrangements, setNewRoleArrangements] = useState<string[]>(["Hybrid"]);
@@ -3464,6 +3465,9 @@ export default function ApplicantProfile() {
     const saved = savedTargetRoles.find((r) => r.id === roleId);
     if (!current || !saved) return false;
 
+    // Check title
+    const isTitleDirty = (current.title || "").trim() !== (saved.title || "").trim();
+
     // Check work arrangements
     const curArr = [...(current.work_arrangements || [])].sort();
     const savedArr = [...(saved.work_arrangements || [])].sort();
@@ -3491,6 +3495,7 @@ export default function ApplicantProfile() {
     const savedHide = Boolean(saved.hide_salary);
 
     return (
+      isTitleDirty ||
       isArrDirty ||
       currentMin !== savedMin ||
       currentMax !== savedMax ||
@@ -4026,6 +4031,7 @@ export default function ApplicantProfile() {
         r.id === roleId
           ? {
               ...r,
+              title: saved.title,
               work_arrangements: saved.work_arrangements ? [...saved.work_arrangements] : ["On-Site"],
               salary_min: saved.salary_min,
               salary_max: saved.salary_max,
@@ -4034,6 +4040,7 @@ export default function ApplicantProfile() {
           : r
       )
     );
+    setEditingRoleId(null);
     setProfileMessage("");
   };
   const handleCancelRoleSalary = handleCancelRole;
@@ -4041,6 +4048,19 @@ export default function ApplicantProfile() {
   const handleSaveRole = async (roleId: string) => {
     const role = targetRoles.find((r) => r.id === roleId);
     if (!role) return;
+
+    const title = (role.title || "").trim();
+    if (!title) {
+      setProfileMessageType("error");
+      setProfileMessage("Target job role cannot be empty.");
+      return;
+    }
+
+    if (targetRoles.some((r) => r.id !== roleId && r.title.toLowerCase() === title.toLowerCase())) {
+      setProfileMessageType("error");
+      setProfileMessage(`Target role "${title}" is already configured.`);
+      return;
+    }
 
     let rawMin = role.salary_min != null ? String(role.salary_min).replace(/[^0-9.]/g, "").trim() : "";
     let rawMax = role.salary_max != null ? String(role.salary_max).replace(/[^0-9.]/g, "").trim() : "";
@@ -4076,7 +4096,7 @@ export default function ApplicantProfile() {
     const formattedMax = formatSal(rawMax);
 
     const updated = targetRoles.map((r) =>
-      r.id === roleId ? { ...r, salary_min: formattedMin, salary_max: formattedMax } : r
+      r.id === roleId ? { ...r, title, salary_min: formattedMin, salary_max: formattedMax } : r
     );
 
     setActiveRoleSalaryInput(null);
@@ -4085,6 +4105,7 @@ export default function ApplicantProfile() {
     try {
       await syncAndSaveTargetRoles(updated);
       setRoleSavedId(roleId);
+      setEditingRoleId(null);
       setTimeout(() => setRoleSavedId((cur) => (cur === roleId ? null : cur)), 3000);
     } finally {
       setSavingField(null);
@@ -5571,14 +5592,24 @@ export default function ApplicantProfile() {
                                 <h4 className="role-pref-title" style={{ color: "#0284c7" }}>Add New Target Role</h4>
                               </div>
                               <div className="role-pref-header-right">
-                                <button
-                                  type="button"
-                                  className="role-pref-remove-btn"
-                                  onClick={handleCancelAddRole}
-                                  title="Cancel adding role"
-                                >
-                                  Cancel
-                                </button>
+                                <div className="inline-field-actions role-card-actions">
+                                  <button
+                                    type="button"
+                                    className="inline-field-btn inline-field-cancel-btn"
+                                    onClick={handleCancelAddRole}
+                                    disabled={isSavingNewRole}
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="inline-field-btn inline-field-save-btn"
+                                    onClick={handleSaveNewRole}
+                                    disabled={isSavingNewRole || !newRoleTitle.trim()}
+                                  >
+                                    {isSavingNewRole ? "Saving..." : "Save"}
+                                  </button>
+                                </div>
                               </div>
                             </div>
 
@@ -5696,25 +5727,6 @@ export default function ApplicantProfile() {
                                         />
                                       </div>
                                     </div>
-
-                                    <div className="inline-field-actions salary-inline-actions">
-                                      <button
-                                        type="button"
-                                        className="inline-field-btn inline-field-cancel-btn"
-                                        onClick={handleCancelAddRole}
-                                        disabled={isSavingNewRole}
-                                      >
-                                        Cancel
-                                      </button>
-                                      <button
-                                        type="button"
-                                        className="inline-field-btn inline-field-save-btn"
-                                        onClick={handleSaveNewRole}
-                                        disabled={isSavingNewRole || !newRoleTitle.trim()}
-                                      >
-                                        {isSavingNewRole ? "Saving..." : "Save"}
-                                      </button>
-                                    </div>
                                   </div>
                                 </div>
                               </div>
@@ -5731,6 +5743,7 @@ export default function ApplicantProfile() {
                             const isExpanded = expandedRoleIds.includes(roleItem.id);
                             const isDirty = isRoleDirty(roleItem.id);
                             const isSavingThisRole = savingField === `role_${roleItem.id}`;
+                            const isEditingOrDirty = editingRoleId === roleItem.id || isDirty;
 
                             return (
                               <div className={`target-role-preference-card ${isExpanded ? "expanded" : "collapsed"}`} key={roleItem.id}>
@@ -5775,7 +5788,7 @@ export default function ApplicantProfile() {
                                   </div>
 
                                   <div className="role-pref-header-right" onClick={(e) => e.stopPropagation()}>
-                                    {isDirty && (
+                                    {isEditingOrDirty ? (
                                       <div className="inline-field-actions role-card-actions">
                                         <button
                                           type="button"
@@ -5796,6 +5809,20 @@ export default function ApplicantProfile() {
                                           {isSavingThisRole ? "Saving..." : "Save"}
                                         </button>
                                       </div>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        className="role-pref-edit-btn"
+                                        onClick={() => {
+                                          setEditingRoleId(roleItem.id);
+                                          if (!isExpanded) {
+                                            toggleRoleExpanded(roleItem.id);
+                                          }
+                                        }}
+                                        title={`Edit ${roleItem.title}`}
+                                      >
+                                        Edit
+                                      </button>
                                     )}
                                     {roleSavedId === roleItem.id && (
                                       <span className="inline-field-saved-badge">✔ Saved</span>
@@ -5813,6 +5840,27 @@ export default function ApplicantProfile() {
 
                                 {isExpanded && (
                                   <div className="role-pref-card-body">
+                                    {isEditingOrDirty && (
+                                      <div className="profile-field" style={{ gridColumn: "1 / -1", width: "100%", marginBottom: "6px" }}>
+                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                                          <label className="role-pref-sublabel">TARGET JOB ROLE *</label>
+                                          <small style={{ color: "#64748b", fontSize: "0.8rem" }}>Select from standard industry roles or type a custom role</small>
+                                        </div>
+                                        <SearchableSelect
+                                          options={ALL_MULTI_INDUSTRY_JOB_ROLES.filter(
+                                            (opt) => opt.toLowerCase() === roleItem.title.toLowerCase() || !targetRoles.some((r) => r.id !== roleItem.id && r.title.toLowerCase() === opt.toLowerCase())
+                                          )}
+                                          groupedOptions={CATEGORIZED_JOB_ROLES}
+                                          value={roleItem.title}
+                                          onChange={(newTitle) => {
+                                            setTargetRoles((prev) =>
+                                              prev.map((r) => (r.id === roleItem.id ? { ...r, title: newTitle } : r))
+                                            );
+                                          }}
+                                          placeholder="Select or type target job role..."
+                                        />
+                                      </div>
+                                    )}
                                     {/* Left Column: Work Arrangement */}
                                     <div className="role-pref-col role-pref-col-arrangement">
                                       <label className="role-pref-sublabel">WORK ARRANGEMENT PREFERENCE</label>
