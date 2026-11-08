@@ -4056,20 +4056,8 @@
   gap: 14px;
 }
 
-.app-history-job-card {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: stretch !important;
-  gap: 12px !important;
+.app-history-list .job-card {
   margin-bottom: 0 !important;
-}
-
-.app-history-card-main-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  width: 100%;
 }
 
 .app-history-card {
@@ -4259,8 +4247,7 @@
   color: #94a3b8;
 }
 
-[data-theme="dark"] .app-history-card,
-[data-theme="dark"] .app-history-job-card {
+[data-theme="dark"] .app-history-card {
   background: #20232e;
   border-color: #2e3244;
   box-shadow: none;
