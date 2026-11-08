@@ -731,37 +731,94 @@ export default function ApplicantDashboard() {
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [withdrawMessage, setWithdrawMessage] = useState<string | null>(null);
 
-  const previousApplications = useMemo(() => {
-    return myApplicationsList.filter((app: any) => {
-      const st = (app?.status || "").toLowerCase();
-      return ["approved", "accepted", "recruited", "denied", "rejected", "withdrawn"].includes(st);
+  const [archivedAppIds, setArchivedAppIds] = useState<number[]>(() => {
+    try {
+      const savedUserRaw = localStorage.getItem("elitecruit-user");
+      const savedUser = savedUserRaw ? JSON.parse(savedUserRaw) : null;
+      const uid = savedUser?.id;
+      const key = uid ? `elitecruit_archived_applications_${uid}` : "elitecruit_archived_applications";
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed.map(Number);
+      }
+    } catch {}
+    return [];
+  });
+
+  useEffect(() => {
+    if (!applicantUserId) return;
+    try {
+      const key = `elitecruit_archived_applications_${applicantUserId}`;
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          setArchivedAppIds(parsed.map(Number));
+        }
+      }
+    } catch {}
+  }, [applicantUserId]);
+
+  const handleArchiveApplication = (appId: number) => {
+    setArchivedAppIds((prev) => {
+      const numericId = Number(appId);
+      if (prev.includes(numericId)) return prev;
+      const next = [...prev, numericId];
+      try {
+        const uid = applicantUserId || JSON.parse(localStorage.getItem("elitecruit-user") || "{}")?.id;
+        const key = uid ? `elitecruit_archived_applications_${uid}` : "elitecruit_archived_applications";
+        localStorage.setItem(key, JSON.stringify(next));
+      } catch {}
+      return next;
     });
-  }, [myApplicationsList]);
+  };
+
+  const handleUnarchiveApplication = (appId: number) => {
+    setArchivedAppIds((prev) => {
+      const numericId = Number(appId);
+      const next = prev.filter((id) => id !== numericId);
+      try {
+        const uid = applicantUserId || JSON.parse(localStorage.getItem("elitecruit-user") || "{}")?.id;
+        const key = uid ? `elitecruit_archived_applications_${uid}` : "elitecruit_archived_applications";
+        localStorage.setItem(key, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const activeFrontApplications = useMemo(() => {
+    return myApplicationsList.filter((app: any) => !archivedAppIds.includes(Number(app.id)));
+  }, [myApplicationsList, archivedAppIds]);
+
+  const archivedApplications = useMemo(() => {
+    return myApplicationsList.filter((app: any) => archivedAppIds.includes(Number(app.id)));
+  }, [myApplicationsList, archivedAppIds]);
 
   const approvedHistoryCount = useMemo(() => {
-    return myApplicationsList.filter((app: any) => {
+    return archivedApplications.filter((app: any) => {
       const st = (app?.status || "").toLowerCase();
       return ["approved", "accepted", "recruited"].includes(st);
     }).length;
-  }, [myApplicationsList]);
+  }, [archivedApplications]);
 
   const deniedHistoryCount = useMemo(() => {
-    return myApplicationsList.filter((app: any) => {
+    return archivedApplications.filter((app: any) => {
       const st = (app?.status || "").toLowerCase();
-      return ["denied", "rejected", "withdrawn"].includes(st);
+      return ["denied", "rejected", "withdrawn", "declined"].includes(st);
     }).length;
-  }, [myApplicationsList]);
+  }, [archivedApplications]);
 
   const filteredHistoryApplications = useMemo(() => {
-    return myApplicationsList.filter((app: any) => {
+    return archivedApplications.filter((app: any) => {
       const st = (app?.status || "").toLowerCase();
       const isApproved = ["approved", "accepted", "recruited"].includes(st);
-      const isDenied = ["denied", "rejected", "withdrawn"].includes(st);
+      const isDenied = ["denied", "rejected", "withdrawn", "declined"].includes(st);
       if (historyFilter === "approved") return isApproved;
       if (historyFilter === "denied") return isDenied;
       return true;
     });
-  }, [myApplicationsList, historyFilter]);
+  }, [archivedApplications, historyFilter]);
 
   const handleConfirmWithdraw = async () => {
     if (!withdrawTargetApp) return;
@@ -1613,8 +1670,8 @@ export default function ApplicantDashboard() {
                 title="View previous applications history"
               >
                 <span>History</span>
-                {previousApplications.length > 0 && (
-                  <span className="app-history-badge">{previousApplications.length}</span>
+                {archivedApplications.length > 0 && (
+                  <span className="app-history-badge">{archivedApplications.length}</span>
                 )}
               </button>
               <a href="/job-search" className="matches-head-action-btn">
@@ -1624,18 +1681,26 @@ export default function ApplicantDashboard() {
             </div>
           </div>
 
-          {myApplicationsList.length === 0 ? (
+          {activeFrontApplications.length === 0 ? (
             <article className="job-card job-empty-card">
               <div>
-                <h3>No applications submitted yet.</h3>
-                <p>Browse open job listings on the Job Search page and submit applications.</p>
+                <h3>{myApplicationsList.length > 0 ? "All applications have been archived to History." : "No applications submitted yet."}</h3>
+                <p>
+                  {myApplicationsList.length > 0
+                    ? "You can view all your archived application records by clicking the History button above."
+                    : "Browse open job listings on the Job Search page and submit applications."}
+                </p>
               </div>
               <div className="job-actions">
-                <button type="button" className="solid-btn" onClick={() => { window.location.href = "/job-search"; }}>Browse Jobs</button>
+                {myApplicationsList.length > 0 ? (
+                  <button type="button" className="solid-btn" onClick={() => setIsHistoryModalOpen(true)}>View History</button>
+                ) : (
+                  <button type="button" className="solid-btn" onClick={() => { window.location.href = "/job-search"; }}>Browse Jobs</button>
+                )}
               </div>
             </article>
           ) : (
-            myApplicationsList.map((app: any) => (
+            activeFrontApplications.map((app: any) => (
               <article key={app.id || app.job_post_id} className="job-card">
                 <div className="job-card-left">
                   <h3>{app.job_title || app.title || "Applied Role"}</h3>
@@ -1667,7 +1732,7 @@ export default function ApplicantDashboard() {
                   {(() => {
                     const statusLower = (app.status || "").toLowerCase();
                     const isApproved = ["approved", "accepted", "recruited"].includes(statusLower);
-                    const isConcluded = ["denied", "rejected", "withdrawn"].includes(statusLower);
+                    const isConcluded = ["approved", "accepted", "recruited", "denied", "rejected", "withdrawn", "declined"].includes(statusLower);
                     const hasFormalOffer = Boolean(
                       app.offer_letter ||
                       app.decision_message_type === "formal_offer" ||
@@ -1731,6 +1796,23 @@ export default function ApplicantDashboard() {
                     }
 
                     return null;
+                  })()}
+
+                  {/* Archive button for concluded applications so the applicant can file it away after seeing the outcome */}
+                  {(() => {
+                    const statusLower = (app.status || "").toLowerCase();
+                    const isConcluded = ["approved", "accepted", "recruited", "denied", "rejected", "withdrawn", "declined"].includes(statusLower);
+                    if (!isConcluded) return null;
+                    return (
+                      <button
+                        type="button"
+                        className="ghost-btn archive-app-btn"
+                        onClick={() => handleArchiveApplication(app.id)}
+                        title="Archive this concluded application to History"
+                      >
+                        Archive
+                      </button>
+                    );
                   })()}
 
                   <button type="button" className="solid-btn review-app-btn" onClick={() => handleReviewApplication(app)}>
@@ -2195,7 +2277,7 @@ export default function ApplicantDashboard() {
                 className={`app-history-filter-pill ${historyFilter === "all" ? "active" : ""}`}
                 onClick={() => setHistoryFilter("all")}
               >
-                All ({myApplicationsList.length})
+                All ({archivedApplications.length})
               </button>
               <button
                 type="button"
@@ -2217,14 +2299,18 @@ export default function ApplicantDashboard() {
               {filteredHistoryApplications.length === 0 ? (
                 <div className="app-history-empty-state">
                   <h4>No {historyFilter !== "all" ? historyFilter : ""} applications found</h4>
-                  <p>There are no applications matching the selected history filter.</p>
+                  <p>
+                    {archivedApplications.length === 0
+                      ? "You haven't archived any applications yet. Concluded applications you archive from My Applications will appear here."
+                      : "There are no archived applications matching the selected filter."}
+                  </p>
                 </div>
               ) : (
                 <div className="app-history-list">
                   {filteredHistoryApplications.map((app: any) => {
                     const statusLower = (app?.status || "").toLowerCase();
                     const isApproved = ["approved", "accepted", "recruited"].includes(statusLower);
-                    const isConcluded = ["denied", "rejected", "withdrawn"].includes(statusLower);
+                    const isConcluded = ["approved", "accepted", "recruited", "denied", "rejected", "withdrawn", "declined"].includes(statusLower);
                     const hasFormalOffer = Boolean(
                       app.offer_letter ||
                       app.decision_message_type === "formal_offer" ||
@@ -2263,7 +2349,7 @@ export default function ApplicantDashboard() {
                         </div>
 
                         <div className="app-card-actions">
-                          {/* Top Action Button: Offer Letter / View Letter if approved, or Withdraw if still active */}
+                          {/* Top Action Button: Offer Letter / View Letter if approved */}
                           {(() => {
                             if (isApproved || hasResponseLetter || hasFormalOffer) {
                               if (hasResponseLetter) {
@@ -2304,21 +2390,18 @@ export default function ApplicantDashboard() {
                               );
                             }
 
-                            if (!isConcluded) {
-                              return (
-                                <button
-                                  type="button"
-                                  className="ghost-btn withdraw-app-btn"
-                                  onClick={() => setWithdrawTargetApp(app)}
-                                  title="Withdraw application"
-                                >
-                                  Withdraw
-                                </button>
-                              );
-                            }
-
                             return null;
                           })()}
+
+                          {/* Restore button to move application back to front */}
+                          <button
+                            type="button"
+                            className="ghost-btn unarchive-app-btn"
+                            onClick={() => handleUnarchiveApplication(app.id)}
+                            title="Restore this application back to My Applications"
+                          >
+                            Restore
+                          </button>
 
                           <button
                             type="button"
