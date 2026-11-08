@@ -2691,6 +2691,13 @@ export default function ApplicantProfile() {
   const [isRoleEmploymentOpen, setIsRoleEmploymentOpen] = useState(true);
   const [expandedRoleIds, setExpandedRoleIds] = useState<string[]>([]);
   const [roleSalarySavedId, setRoleSalarySavedId] = useState<string | null>(null);
+  const [isAddingRole, setIsAddingRole] = useState(false);
+  const [newRoleTitle, setNewRoleTitle] = useState("");
+  const [newRoleArrangements, setNewRoleArrangements] = useState<string[]>(["Hybrid"]);
+  const [newRoleSalaryMin, setNewRoleSalaryMin] = useState("");
+  const [newRoleSalaryMax, setNewRoleSalaryMax] = useState("");
+  const [newRoleHideSalary, setNewRoleHideSalary] = useState(false);
+  const [isSavingNewRole, setIsSavingNewRole] = useState(false);
   const [activeRoleSalaryInput, setActiveRoleSalaryInput] = useState<{
     id: string;
     field: "salary_min" | "salary_max";
@@ -3469,6 +3476,7 @@ export default function ApplicantProfile() {
     const isMinSalaryDirty = parseSalaryInteger(draft.expected_salary_min) !== parseSalaryInteger(profile.expected_salary_min);
     const isMaxSalaryDirty = parseSalaryInteger(draft.expected_salary_max) !== parseSalaryInteger(profile.expected_salary_max);
     const isTargetRoleInputDirty = Boolean(targetRoleInput.trim());
+    const isNewRoleDraftDirty = isAddingRole && Boolean(newRoleTitle.trim());
     const hasUnsavedRoleSalaries = targetRoles.some((r) => isRoleSalaryDirty(r.id));
     return Boolean(
       isJobTitleDirty ||
@@ -3476,6 +3484,7 @@ export default function ApplicantProfile() {
       isMinSalaryDirty ||
       isMaxSalaryDirty ||
       isTargetRoleInputDirty ||
+      isNewRoleDraftDirty ||
       hasUnsavedRoleSalaries
     );
   };
@@ -3813,6 +3822,79 @@ export default function ApplicantProfile() {
     setExpandedRoleIds((prev) =>
       prev.includes(roleId) ? prev.filter((id) => id !== roleId) : [...prev, roleId]
     );
+  };
+
+  const resetNewRoleForm = () => {
+    setNewRoleTitle("");
+    setNewRoleArrangements(["Hybrid"]);
+    setNewRoleSalaryMin("");
+    setNewRoleSalaryMax("");
+    setNewRoleHideSalary(false);
+    setIsAddingRole(false);
+    setIsSavingNewRole(false);
+  };
+
+  const handleCancelAddRole = () => {
+    resetNewRoleForm();
+  };
+
+  const handleSaveNewRole = async () => {
+    const title = newRoleTitle.trim();
+    if (!title) {
+      setProfileMessageType("error");
+      setProfileMessage("Please select or type a target job role.");
+      return;
+    }
+
+    if (targetRoles.some((r) => r.title.toLowerCase() === title.toLowerCase())) {
+      setProfileMessageType("error");
+      setProfileMessage(`Target role "${title}" is already configured.`);
+      return;
+    }
+
+    const rawMin = newRoleSalaryMin.replace(/[^0-9.]/g, "").trim();
+    const rawMax = newRoleSalaryMax.replace(/[^0-9.]/g, "").trim();
+    if (rawMin && rawMax) {
+      const numMin = Number(rawMin);
+      const numMax = Number(rawMax);
+      if (Number.isFinite(numMin) && Number.isFinite(numMax) && numMax < numMin) {
+        setProfileMessageType("error");
+        setProfileMessage("Maximum salary cannot be lower than minimum salary.");
+        return;
+      }
+    }
+
+    const formatSal = (val: string) => {
+      if (!val) return "";
+      const num = Number(val);
+      if (Number.isFinite(num) && num >= 0) {
+        return num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+      return val;
+    };
+
+    const formattedMin = formatSal(rawMin);
+    const formattedMax = formatSal(rawMax);
+
+    const newItem: TargetRolePreferenceItem = {
+      id: `role-${Date.now()}`,
+      title,
+      work_arrangements: newRoleArrangements.length > 0 ? newRoleArrangements : ["On-Site"],
+      salary_min: formattedMin,
+      salary_max: formattedMax,
+      hide_salary: newRoleHideSalary,
+    };
+
+    setIsSavingNewRole(true);
+    try {
+      setExpandedRoleIds((prev) => [...prev, newItem.id]);
+      await syncAndSaveTargetRoles([...targetRoles, newItem]);
+      resetNewRoleForm();
+      setRoleSalarySavedId(newItem.id);
+      setTimeout(() => setRoleSalarySavedId((cur) => (cur === newItem.id ? null : cur)), 3000);
+    } finally {
+      setIsSavingNewRole(false);
+    }
   };
 
   const handleAddTargetRole = async (roleToAdd?: string) => {
@@ -5411,11 +5493,22 @@ export default function ApplicantProfile() {
                     <small>Configure each target role with individual work arrangement and salary preferences</small>
                   </div>
 
-                  <div className="role-employment-heading-right">
+                  <div className="role-employment-heading-right" onClick={(e) => e.stopPropagation()}>
                     {fieldSuccess === "desired_job_title" && <span className="inline-field-saved-badge">✔ Saved</span>}
+                    <button
+                      type="button"
+                      className="role-add-header-btn"
+                      onClick={() => {
+                        setIsRoleEmploymentOpen(true);
+                        setIsAddingRole(true);
+                      }}
+                    >
+                      + Add Role
+                    </button>
                     <span
                       className={`role-employment-chevron ${isRoleEmploymentOpen ? "open" : ""}`}
                       aria-hidden="true"
+                      onClick={() => setIsRoleEmploymentOpen((prev) => !prev)}
                       title={isRoleEmploymentOpen ? "Collapse section" : "Expand section"}
                     >
                       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
@@ -5430,44 +5523,179 @@ export default function ApplicantProfile() {
                     <div className="profile-divider" />
 
                     <div className="fields-grid" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                      {/* Search & Add Target Role Row */}
-                      <div className="profile-field" style={{ gridColumn: "1 / -1" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                          <label className="inline-field-label">Add Target Job Role</label>
-                          <small style={{ color: "#64748b", fontSize: "0.8rem" }}>Select from standard industry roles or type a custom role</small>
-                        </div>
-
-                        <div className="inline-field-row" style={{ gap: "8px" }}>
-                          <div style={{ flex: 1, minWidth: "260px" }}>
-                            <SearchableSelect
-                              options={ALL_MULTI_INDUSTRY_JOB_ROLES.filter(
-                                (opt) => !targetRoles.some((r) => r.title.toLowerCase() === opt.toLowerCase())
-                              )}
-                              groupedOptions={CATEGORIZED_JOB_ROLES}
-                              value={targetRoleInput}
-                              onChange={setTargetRoleInput}
-                              onEnterAdd={() => handleAddTargetRole()}
-                              placeholder="Select or type target job role (e.g. Full Stack Developer, UI/UX Designer)..."
-                              disabled={savingField === "desired_job_title"}
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            className="inline-field-btn inline-field-save-btn"
-                            onClick={() => handleAddTargetRole()}
-                            disabled={savingField === "desired_job_title" || !targetRoleInput.trim()}
-                            style={{ height: "42px", padding: "0 20px", fontSize: "0.88rem", fontWeight: 600, borderRadius: "8px", whiteSpace: "nowrap" }}
-                          >
-                            + Add Role
-                          </button>
-                        </div>
-                      </div>
-
                       {/* List of Configured Target Roles */}
                       <div className="target-roles-list-container">
-                        {targetRoles.length === 0 ? (
+                        {/* Expandable Add Role Card (shown when '+ Add Role' clicked above) */}
+                        {isAddingRole && (
+                          <div className="target-role-preference-card add-role-card">
+                            <div className="role-pref-card-header">
+                              <div className="role-pref-header-left">
+                                <span className="role-item-chevron open" aria-hidden="true">
+                                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="6 9 12 15 18 9" />
+                                  </svg>
+                                </span>
+                                <h4 className="role-pref-title" style={{ color: "#0284c7" }}>Add New Target Role</h4>
+                              </div>
+                              <div className="role-pref-header-right">
+                                <button
+                                  type="button"
+                                  className="role-pref-remove-btn"
+                                  onClick={handleCancelAddRole}
+                                  title="Cancel adding role"
+                                >
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                  </svg>
+                                  <span>Cancel</span>
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="role-add-form-body">
+                              {/* Selection Box for Target Job Role */}
+                              <div className="profile-field" style={{ width: "100%" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                                  <label className="role-pref-sublabel">TARGET JOB ROLE *</label>
+                                  <small style={{ color: "#64748b", fontSize: "0.8rem" }}>Select from standard industry roles or type a custom role</small>
+                                </div>
+                                <SearchableSelect
+                                  options={ALL_MULTI_INDUSTRY_JOB_ROLES.filter(
+                                    (opt) => !targetRoles.some((r) => r.title.toLowerCase() === opt.toLowerCase())
+                                  )}
+                                  groupedOptions={CATEGORIZED_JOB_ROLES}
+                                  value={newRoleTitle}
+                                  onChange={setNewRoleTitle}
+                                  onEnterAdd={handleSaveNewRole}
+                                  placeholder="Select or type target job role (e.g. Full Stack Developer, UI/UX Designer)..."
+                                  disabled={isSavingNewRole}
+                                />
+                              </div>
+
+                              {/* Work Arrangement & Salary Range Row */}
+                              <div className="role-pref-card-body">
+                                {/* Left Column: Work Arrangement */}
+                                <div className="role-pref-col role-pref-col-arrangement">
+                                  <label className="role-pref-sublabel">WORK ARRANGEMENT PREFERENCE</label>
+                                  <div className="work-arrangement-pill-group" style={{ margin: 0 }}>
+                                    {["Remote", "On-Site", "Hybrid"].map((arr) => {
+                                      const isSelected = newRoleArrangements.includes(arr);
+                                      return (
+                                        <button
+                                          key={arr}
+                                          type="button"
+                                          className={`arr-toggle-pill ${isSelected ? "selected" : ""}`}
+                                          onClick={() => {
+                                            setNewRoleArrangements((prev) =>
+                                              prev.includes(arr)
+                                                ? prev.filter((a) => a !== arr)
+                                                : [...prev, arr]
+                                            );
+                                          }}
+                                        >
+                                          {isSelected ? "✓ " : "+ "}{arr}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+
+                                {/* Right Column: Salary Range */}
+                                <div className="role-pref-col role-pref-col-salary">
+                                  <label className="role-pref-sublabel">SALARY RANGE (PHP) *</label>
+                                  <div className="salary-controls-row">
+                                    <button
+                                      type="button"
+                                      className={`hide-salary-btn ${newRoleHideSalary ? "active" : ""}`}
+                                      aria-label={newRoleHideSalary ? "Salary is hidden (Negotiable). Click to show." : "Click to hide salary (Negotiable)"}
+                                      onClick={() => setNewRoleHideSalary((prev) => !prev)}
+                                      title={newRoleHideSalary ? "Salary is hidden (Negotiable). Click to show." : "Click to hide salary (Negotiable)"}
+                                    >
+                                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                                        {newRoleHideSalary ? (
+                                          <>
+                                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                                            <line x1="1" y1="1" x2="23" y2="23" />
+                                          </>
+                                        ) : (
+                                          <>
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                            <circle cx="12" cy="12" r="3" />
+                                          </>
+                                        )}
+                                      </svg>
+                                    </button>
+
+                                    <div className="salary-inputs-subrow">
+                                      <div className="salary-input-wrap">
+                                        <input
+                                          placeholder="Min Salary"
+                                          value={newRoleSalaryMin}
+                                          onChange={(e) => {
+                                            const sanitized = e.target.value.replace(/[^0-9.]/g, "");
+                                            setNewRoleSalaryMin(sanitized);
+                                          }}
+                                          onBlur={() => {
+                                            if (newRoleSalaryMin) {
+                                              const num = Number(newRoleSalaryMin.replace(/,/g, ""));
+                                              if (Number.isFinite(num) && num >= 0) {
+                                                setNewRoleSalaryMin(num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                                              }
+                                            }
+                                          }}
+                                          aria-label="Minimum Salary (PHP)"
+                                        />
+                                      </div>
+                                      <div className="salary-input-wrap">
+                                        <input
+                                          placeholder="Max Salary"
+                                          value={newRoleSalaryMax}
+                                          onChange={(e) => {
+                                            const sanitized = e.target.value.replace(/[^0-9.]/g, "");
+                                            setNewRoleSalaryMax(sanitized);
+                                          }}
+                                          onBlur={() => {
+                                            if (newRoleSalaryMax) {
+                                              const num = Number(newRoleSalaryMax.replace(/,/g, ""));
+                                              if (Number.isFinite(num) && num >= 0) {
+                                                setNewRoleSalaryMax(num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                                              }
+                                            }
+                                          }}
+                                          aria-label="Maximum Salary (PHP)"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <div className="inline-field-actions salary-inline-actions">
+                                      <button
+                                        type="button"
+                                        className="inline-field-btn inline-field-cancel-btn"
+                                        onClick={handleCancelAddRole}
+                                        disabled={isSavingNewRole}
+                                      >
+                                        Cancel
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="inline-field-btn inline-field-save-btn"
+                                        onClick={handleSaveNewRole}
+                                        disabled={isSavingNewRole || !newRoleTitle.trim()}
+                                      >
+                                        {isSavingNewRole ? "Saving..." : "Save"}
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {targetRoles.length === 0 && !isAddingRole ? (
                           <div className="empty-category-notice" style={{ padding: "16px", width: "100%", textAlign: "center" }}>
-                            No target roles configured yet. Search and add a role above to set its individual work arrangement and salary expectations.
+                            No target roles configured yet. Click &quot;+ Add Role&quot; above to set your target roles, work arrangements, and salary expectations.
                           </div>
                         ) : (
                           targetRoles.map((roleItem) => {

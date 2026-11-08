@@ -3727,6 +3727,43 @@
   flex-shrink: 0;
 }
 
+.role-add-header-btn {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 6px;
+  background: #00385e;
+  border: 1px solid #00385e;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+
+.role-add-header-btn:hover {
+  background: #002742;
+  border-color: #002742;
+}
+
+.add-role-card {
+  border: 1.5px dashed #0284c7;
+  background: #f8fafc;
+  animation: inlineActionFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.role-add-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 12px;
+}
+
 .role-count-pill {
   display: inline-flex;
   align-items: center;
@@ -4188,6 +4225,22 @@ button.hide-salary-btn.active {
 
 [data-theme="dark"] .role-dropdown-trigger:hover .role-pref-title {
   color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .role-add-header-btn {
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .role-add-header-btn:hover {
+  background: #0369a1 !important;
+  border-color: #0369a1 !important;
+}
+
+[data-theme="dark"] .add-role-card {
+  border-color: #38bdf8 !important;
+  background: #181b24 !important;
 }
 
 .system-popup-overlay {
