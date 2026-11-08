@@ -3712,7 +3712,7 @@
 
 /* Role & Employment Section Accordion */
 .role-employment-heading {
-  cursor: pointer;
+  cursor: default;
   user-select: none;
   display: flex;
   align-items: center;

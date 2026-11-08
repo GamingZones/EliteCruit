@@ -5599,19 +5599,7 @@ export default function ApplicantProfile() {
               </div>
 
               <article className="profile-card preferences-card role-employment-accordion-card">
-                <div
-                  className="person-heading role-employment-heading"
-                  onClick={() => setIsRoleEmploymentOpen((prev) => !prev)}
-                  role="button"
-                  tabIndex={0}
-                  aria-expanded={isRoleEmploymentOpen}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      setIsRoleEmploymentOpen((prev) => !prev);
-                    }
-                  }}
-                >
+                <div className="person-heading role-employment-heading">
                   <div className="role-employment-heading-left">
                     <div className="role-employment-title-row">
                       <strong>Role & Employment Targeting</strong>
@@ -5622,7 +5610,7 @@ export default function ApplicantProfile() {
                     <small>Configure each target role with individual work arrangement and salary preferences</small>
                   </div>
 
-                  <div className="role-employment-heading-right" onClick={(e) => e.stopPropagation()}>
+                  <div className="role-employment-heading-right">
                     {fieldSuccess === "desired_job_title" && <span className="inline-field-saved-badge">✔ Saved</span>}
                     <button
                       type="button"
@@ -5634,16 +5622,6 @@ export default function ApplicantProfile() {
                     >
                       + Add Role
                     </button>
-                    <span
-                      className={`role-employment-chevron ${isRoleEmploymentOpen ? "open" : ""}`}
-                      aria-hidden="true"
-                      onClick={() => setIsRoleEmploymentOpen((prev) => !prev)}
-                      title={isRoleEmploymentOpen ? "Collapse section" : "Expand section"}
-                    >
-                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="6 9 12 15 18 9" />
-                      </svg>
-                    </span>
                   </div>
                 </div>
 
@@ -5659,11 +5637,6 @@ export default function ApplicantProfile() {
                           <div className="target-role-preference-card add-role-card">
                             <div className="role-pref-card-header">
                               <div className="role-pref-header-left">
-                                <span className="role-item-chevron open" aria-hidden="true">
-                                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="6 9 12 15 18 9" />
-                                  </svg>
-                                </span>
                                 <h4 className="role-pref-title" style={{ color: "#0284c7" }}>Add New Target Role</h4>
                               </div>
                               {(() => {
@@ -5923,11 +5896,6 @@ export default function ApplicantProfile() {
                               <div className="target-role-preference-card editing-role-card" key={roleItem.id}>
                                 <div className="role-pref-card-header">
                                   <div className="role-pref-header-left">
-                                    <span className="role-item-chevron open" aria-hidden="true">
-                                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                        <polyline points="6 9 12 15 18 9" />
-                                      </svg>
-                                    </span>
                                     <h4 className="role-pref-title">{roleItem.title}</h4>
                                     <div className="role-pref-summary-pills">
                                       {(roleItem.work_arrangements && roleItem.work_arrangements.length > 0) && (
