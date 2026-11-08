@@ -4069,6 +4069,26 @@ button.hide-salary-btn.active {
   box-shadow: 0 0 0 3px rgba(0, 56, 94, 0.12);
 }
 
+.salary-input-wrap input.has-error {
+  border-color: #ef4444 !important;
+}
+
+.salary-input-wrap input.has-error:focus {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+}
+
+.salary-range-warning {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  color: #dc2626;
+  margin-top: 6px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
 .salary-confidential-tag {
   color: #0284c7;
   font-size: 0.74rem;
@@ -4251,6 +4271,19 @@ button.hide-salary-btn.active {
 [data-theme="dark"] .salary-input-wrap input:focus {
   border-color: #38bdf8 !important;
   box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15) !important;
+}
+
+[data-theme="dark"] .salary-input-wrap input.has-error {
+  border-color: #f87171 !important;
+}
+
+[data-theme="dark"] .salary-input-wrap input.has-error:focus {
+  border-color: #f87171 !important;
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.22) !important;
+}
+
+[data-theme="dark"] .salary-range-warning {
+  color: #f87171 !important;
 }
 
 [data-theme="dark"] .salary-confidential-tag {

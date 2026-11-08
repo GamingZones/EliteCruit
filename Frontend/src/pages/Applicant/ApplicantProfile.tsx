@@ -252,6 +252,27 @@ function computeNextArrangements(current: string[] = [], clickedArr: string): st
   return next;
 }
 
+function getSalaryRangeError(
+  minVal?: string | number | null,
+  maxVal?: string | number | null,
+  lastField: "min" | "max" = "max"
+): string {
+  if (minVal == null || maxVal == null) return "";
+  const rawMin = String(minVal).replace(/[^0-9.]/g, "").trim();
+  const rawMax = String(maxVal).replace(/[^0-9.]/g, "").trim();
+  if (!rawMin || !rawMax) return "";
+  const numMin = Number(rawMin);
+  const numMax = Number(rawMax);
+  if (!Number.isFinite(numMin) || !Number.isFinite(numMax)) return "";
+  if (numMax < numMin) {
+    if (lastField === "min") {
+      return "Minimum salary cannot be greater than maximum salary.";
+    }
+    return "Maximum salary cannot be less than minimum salary.";
+  }
+  return "";
+}
+
 function normalizePhoneNumber(raw?: string | null): string {
   if (!raw) return "";
   let digits = String(raw).replace(/\D/g, "");
@@ -2730,6 +2751,8 @@ export default function ApplicantProfile() {
     field: "salary_min" | "salary_max";
     value: string;
   } | null>(null);
+  const [newRoleSalaryLastField, setNewRoleSalaryLastField] = useState<"min" | "max">("max");
+  const [roleSalaryLastField, setRoleSalaryLastField] = useState<Record<string, "min" | "max">>({});
 
   const saveSingleField = async (fieldName: keyof ApplicantProfileData, value: any) => {
     if (!userId) return;
@@ -3888,6 +3911,7 @@ export default function ApplicantProfile() {
     setNewRoleSalaryMin("");
     setNewRoleSalaryMax("");
     setNewRoleHideSalary(false);
+    setNewRoleSalaryLastField("max");
     setIsAddingRole(false);
     setIsSavingNewRole(false);
   };
@@ -3928,7 +3952,7 @@ export default function ApplicantProfile() {
       const numMax = Number(rawMax);
       if (Number.isFinite(numMin) && Number.isFinite(numMax) && numMax < numMin) {
         setProfileMessageType("error");
-        setProfileMessage("Maximum salary cannot be lower than minimum salary.");
+        setProfileMessage(newRoleSalaryLastField === "min" ? "Minimum salary cannot be greater than maximum salary." : "Maximum salary cannot be less than minimum salary.");
         return;
       }
     }
@@ -4122,7 +4146,8 @@ export default function ApplicantProfile() {
       const numMax = Number(rawMax);
       if (Number.isFinite(numMin) && Number.isFinite(numMax) && numMax < numMin) {
         setProfileMessageType("error");
-        setProfileMessage("Maximum salary cannot be lower than minimum salary.");
+        const lastF = roleSalaryLastField[roleId] || "max";
+        setProfileMessage(lastF === "min" ? "Minimum salary cannot be greater than maximum salary." : "Maximum salary cannot be less than minimum salary.");
         return;
       }
     }
@@ -5715,73 +5740,97 @@ export default function ApplicantProfile() {
                                 </div>
 
                                 {/* Right Column: Salary Range */}
-                                <div className="role-pref-col role-pref-col-salary">
-                                  <label className="role-pref-sublabel">SALARY RANGE (PHP) *</label>
-                                  <div className="salary-controls-row">
-                                    <button
-                                      type="button"
-                                      className={`hide-salary-btn ${newRoleHideSalary ? "active" : ""}`}
-                                      aria-label={newRoleHideSalary ? "Salary is hidden (Negotiable). Click to show." : "Click to hide salary (Negotiable)"}
-                                      onClick={() => setNewRoleHideSalary((prev) => !prev)}
-                                      title={newRoleHideSalary ? "Salary is hidden (Negotiable). Click to show." : "Click to hide salary (Negotiable)"}
-                                    >
-                                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                                        {newRoleHideSalary ? (
-                                          <>
-                                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                                            <line x1="1" y1="1" x2="23" y2="23" />
-                                          </>
-                                        ) : (
-                                          <>
-                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                                            <circle cx="12" cy="12" r="3" />
-                                          </>
-                                        )}
-                                      </svg>
-                                    </button>
+                                {(() => {
+                                  const newRoleSalaryError = !newRoleHideSalary
+                                    ? getSalaryRangeError(newRoleSalaryMin, newRoleSalaryMax, newRoleSalaryLastField)
+                                    : "";
 
-                                    <div className="salary-inputs-subrow">
-                                      <div className="salary-input-wrap">
-                                        <input
-                                          placeholder="Min Salary"
-                                          value={newRoleSalaryMin}
-                                          onChange={(e) => {
-                                            const sanitized = e.target.value.replace(/[^0-9.]/g, "");
-                                            setNewRoleSalaryMin(sanitized);
-                                          }}
-                                          onBlur={() => {
-                                            if (newRoleSalaryMin) {
-                                              const num = Number(newRoleSalaryMin.replace(/,/g, ""));
-                                              if (Number.isFinite(num) && num >= 0) {
-                                                setNewRoleSalaryMin(num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-                                              }
-                                            }
-                                          }}
-                                          aria-label="Minimum Salary (PHP)"
-                                        />
+                                  return (
+                                    <div className="role-pref-col role-pref-col-salary">
+                                      <label className="role-pref-sublabel">SALARY RANGE (PHP) *</label>
+                                      <div className="salary-controls-row">
+                                        <button
+                                          type="button"
+                                          className={`hide-salary-btn ${newRoleHideSalary ? "active" : ""}`}
+                                          aria-label={newRoleHideSalary ? "Salary is hidden (Negotiable). Click to show." : "Click to hide salary (Negotiable)"}
+                                          onClick={() => setNewRoleHideSalary((prev) => !prev)}
+                                          title={newRoleHideSalary ? "Salary is hidden (Negotiable). Click to show." : "Click to hide salary (Negotiable)"}
+                                        >
+                                          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                                            {newRoleHideSalary ? (
+                                              <>
+                                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                                                <line x1="1" y1="1" x2="23" y2="23" />
+                                              </>
+                                            ) : (
+                                              <>
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                                <circle cx="12" cy="12" r="3" />
+                                              </>
+                                            )}
+                                          </svg>
+                                        </button>
+
+                                        <div className="salary-inputs-subrow">
+                                          <div className="salary-input-wrap">
+                                            <input
+                                              className={newRoleSalaryError ? "has-error" : ""}
+                                              placeholder="Min Salary"
+                                              value={newRoleSalaryMin}
+                                              onFocus={() => setNewRoleSalaryLastField("min")}
+                                              onChange={(e) => {
+                                                setNewRoleSalaryLastField("min");
+                                                const sanitized = e.target.value.replace(/[^0-9.]/g, "");
+                                                setNewRoleSalaryMin(sanitized);
+                                              }}
+                                              onBlur={() => {
+                                                if (newRoleSalaryMin) {
+                                                  const num = Number(newRoleSalaryMin.replace(/,/g, ""));
+                                                  if (Number.isFinite(num) && num >= 0) {
+                                                    setNewRoleSalaryMin(num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                                                  }
+                                                }
+                                              }}
+                                              aria-label="Minimum Salary (PHP)"
+                                            />
+                                          </div>
+                                          <div className="salary-input-wrap">
+                                            <input
+                                              className={newRoleSalaryError ? "has-error" : ""}
+                                              placeholder="Max Salary"
+                                              value={newRoleSalaryMax}
+                                              onFocus={() => setNewRoleSalaryLastField("max")}
+                                              onChange={(e) => {
+                                                setNewRoleSalaryLastField("max");
+                                                const sanitized = e.target.value.replace(/[^0-9.]/g, "");
+                                                setNewRoleSalaryMax(sanitized);
+                                              }}
+                                              onBlur={() => {
+                                                if (newRoleSalaryMax) {
+                                                  const num = Number(newRoleSalaryMax.replace(/,/g, ""));
+                                                  if (Number.isFinite(num) && num >= 0) {
+                                                    setNewRoleSalaryMax(num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                                                  }
+                                                }
+                                              }}
+                                              aria-label="Maximum Salary (PHP)"
+                                            />
+                                          </div>
+                                        </div>
                                       </div>
-                                      <div className="salary-input-wrap">
-                                        <input
-                                          placeholder="Max Salary"
-                                          value={newRoleSalaryMax}
-                                          onChange={(e) => {
-                                            const sanitized = e.target.value.replace(/[^0-9.]/g, "");
-                                            setNewRoleSalaryMax(sanitized);
-                                          }}
-                                          onBlur={() => {
-                                            if (newRoleSalaryMax) {
-                                              const num = Number(newRoleSalaryMax.replace(/,/g, ""));
-                                              if (Number.isFinite(num) && num >= 0) {
-                                                setNewRoleSalaryMax(num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-                                              }
-                                            }
-                                          }}
-                                          aria-label="Maximum Salary (PHP)"
-                                        />
-                                      </div>
+                                      {newRoleSalaryError && (
+                                        <small className="salary-range-warning" role="alert">
+                                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                                            <line x1="12" y1="9" x2="12" y2="13" />
+                                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                                          </svg>
+                                          <span>{newRoleSalaryError}</span>
+                                        </small>
+                                      )}
                                     </div>
-                                  </div>
-                                </div>
+                                  );
+                                })()}
                               </div>
                             </div>
                           </div>
@@ -5809,6 +5858,8 @@ export default function ApplicantProfile() {
                             const isRoleSalaryValid = !curMin || !curMax || Number(curMax) >= Number(curMin);
                             const isRoleSalarySet = Boolean(roleItem.hide_salary) || (Boolean(curMin) && Boolean(curMax) && isRoleSalaryValid);
                             const canSaveThisRole = !isSavingThisRole && isRoleTitleSet && isWorkArrangementSet && isRoleSalarySet;
+                            const lastRoleField = roleSalaryLastField[roleItem.id] || (activeRoleSalaryInput?.id === roleItem.id && activeRoleSalaryInput.field === "salary_min" ? "min" : "max");
+                            const roleSalaryError = !roleItem.hide_salary ? getSalaryRangeError(curMin, curMax, lastRoleField) : "";
 
                             return (
                               <div className={`target-role-preference-card ${isExpanded ? "expanded" : "collapsed"}`} key={roleItem.id}>
@@ -5986,10 +6037,17 @@ export default function ApplicantProfile() {
                                                 : "";
                                               return (
                                                 <input
+                                                  className={roleSalaryError ? "has-error" : ""}
                                                   placeholder="Min Salary"
                                                   value={displayVal}
-                                                  onFocus={() => handleFocusRoleSalary(roleItem.id, "salary_min")}
-                                                  onChange={(e) => handleChangeRoleSalary(roleItem.id, "salary_min", e.target.value)}
+                                                  onFocus={() => {
+                                                    setRoleSalaryLastField((prev) => ({ ...prev, [roleItem.id]: "min" }));
+                                                    handleFocusRoleSalary(roleItem.id, "salary_min");
+                                                  }}
+                                                  onChange={(e) => {
+                                                    setRoleSalaryLastField((prev) => ({ ...prev, [roleItem.id]: "min" }));
+                                                    handleChangeRoleSalary(roleItem.id, "salary_min", e.target.value);
+                                                  }}
                                                   onBlur={() => handleBlurRoleSalary(roleItem.id, "salary_min")}
                                                   disabled={isSavingThisRole}
                                                   aria-label="Minimum Salary (PHP)"
@@ -6007,10 +6065,17 @@ export default function ApplicantProfile() {
                                                 : "";
                                               return (
                                                 <input
+                                                  className={roleSalaryError ? "has-error" : ""}
                                                   placeholder="Max Salary"
                                                   value={displayVal}
-                                                  onFocus={() => handleFocusRoleSalary(roleItem.id, "salary_max")}
-                                                  onChange={(e) => handleChangeRoleSalary(roleItem.id, "salary_max", e.target.value)}
+                                                  onFocus={() => {
+                                                    setRoleSalaryLastField((prev) => ({ ...prev, [roleItem.id]: "max" }));
+                                                    handleFocusRoleSalary(roleItem.id, "salary_max");
+                                                  }}
+                                                  onChange={(e) => {
+                                                    setRoleSalaryLastField((prev) => ({ ...prev, [roleItem.id]: "max" }));
+                                                    handleChangeRoleSalary(roleItem.id, "salary_max", e.target.value);
+                                                  }}
                                                   onBlur={() => handleBlurRoleSalary(roleItem.id, "salary_max")}
                                                   disabled={isSavingThisRole}
                                                   aria-label="Maximum Salary (PHP)"
@@ -6020,6 +6085,16 @@ export default function ApplicantProfile() {
                                           </div>
                                         </div>
                                       </div>
+                                      {roleSalaryError && (
+                                        <small className="salary-range-warning" role="alert">
+                                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                                            <line x1="12" y1="9" x2="12" y2="13" />
+                                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                                          </svg>
+                                          <span>{roleSalaryError}</span>
+                                        </small>
+                                      )}
                                     </div>
                                   </div>
                                 )}
