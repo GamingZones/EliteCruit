@@ -2690,7 +2690,9 @@ export default function ApplicantProfile() {
   const [savedTargetRoles, setSavedTargetRoles] = useState<TargetRolePreferenceItem[]>([]);
   const [isRoleEmploymentOpen, setIsRoleEmploymentOpen] = useState(true);
   const [expandedRoleIds, setExpandedRoleIds] = useState<string[]>([]);
-  const [roleSalarySavedId, setRoleSalarySavedId] = useState<string | null>(null);
+  const [roleSavedId, setRoleSavedId] = useState<string | null>(null);
+  const roleSalarySavedId = roleSavedId;
+  const setRoleSalarySavedId = setRoleSavedId;
   const [isAddingRole, setIsAddingRole] = useState(false);
   const [newRoleTitle, setNewRoleTitle] = useState("");
   const [newRoleArrangements, setNewRoleArrangements] = useState<string[]>(["Hybrid"]);
@@ -3457,18 +3459,45 @@ export default function ApplicantProfile() {
     );
   };
 
-  const isRoleSalaryDirty = (roleId: string) => {
+  const isRoleDirty = (roleId: string) => {
     const current = targetRoles.find((r) => r.id === roleId);
     const saved = savedTargetRoles.find((r) => r.id === roleId);
     if (!current || !saved) return false;
-    const currentMin = parseSalaryInteger(current.salary_min);
+
+    // Check work arrangements
+    const curArr = [...(current.work_arrangements || [])].sort();
+    const savedArr = [...(saved.work_arrangements || [])].sort();
+    const isArrDirty =
+      curArr.length !== savedArr.length ||
+      curArr.some((val, idx) => val !== savedArr[idx]);
+
+    // Check salaries
+    let rawCurrentMin = current.salary_min != null ? String(current.salary_min) : "";
+    let rawCurrentMax = current.salary_max != null ? String(current.salary_max) : "";
+    if (activeRoleSalaryInput && activeRoleSalaryInput.id === roleId) {
+      if (activeRoleSalaryInput.field === "salary_min") {
+        rawCurrentMin = activeRoleSalaryInput.value;
+      } else if (activeRoleSalaryInput.field === "salary_max") {
+        rawCurrentMax = activeRoleSalaryInput.value;
+      }
+    }
+    const currentMin = parseSalaryInteger(rawCurrentMin);
     const savedMin = parseSalaryInteger(saved.salary_min);
-    const currentMax = parseSalaryInteger(current.salary_max);
+    const currentMax = parseSalaryInteger(rawCurrentMax);
     const savedMax = parseSalaryInteger(saved.salary_max);
+
+    // Check hide salary
     const currentHide = Boolean(current.hide_salary);
     const savedHide = Boolean(saved.hide_salary);
-    return currentMin !== savedMin || currentMax !== savedMax || currentHide !== savedHide;
+
+    return (
+      isArrDirty ||
+      currentMin !== savedMin ||
+      currentMax !== savedMax ||
+      currentHide !== savedHide
+    );
   };
+  const isRoleSalaryDirty = isRoleDirty;
 
   const checkHasUnsavedSection2 = () => {
     const isJobTitleDirty = (draft.desired_job_title || "").trim() !== (profile.desired_job_title || "").trim();
@@ -3477,7 +3506,7 @@ export default function ApplicantProfile() {
     const isMaxSalaryDirty = parseSalaryInteger(draft.expected_salary_max) !== parseSalaryInteger(profile.expected_salary_max);
     const isTargetRoleInputDirty = Boolean(targetRoleInput.trim());
     const isNewRoleDraftDirty = isAddingRole && Boolean(newRoleTitle.trim());
-    const hasUnsavedRoleSalaries = targetRoles.some((r) => isRoleSalaryDirty(r.id));
+    const hasUnsavedRoles = targetRoles.some((r) => isRoleDirty(r.id));
     return Boolean(
       isJobTitleDirty ||
       isArrangementDirty ||
@@ -3485,7 +3514,7 @@ export default function ApplicantProfile() {
       isMaxSalaryDirty ||
       isTargetRoleInputDirty ||
       isNewRoleDraftDirty ||
-      hasUnsavedRoleSalaries
+      hasUnsavedRoles
     );
   };
 
@@ -3923,18 +3952,19 @@ export default function ApplicantProfile() {
     await syncAndSaveTargetRoles(updated);
   };
 
-  const handleToggleRoleArrangement = async (roleId: string, arrangement: string) => {
-    const updated = targetRoles.map((r) => {
-      if (r.id === roleId) {
-        const cur = r.work_arrangements || [];
-        const nextArr = cur.includes(arrangement)
-          ? cur.filter((a) => a !== arrangement)
-          : [...cur, arrangement];
-        return { ...r, work_arrangements: nextArr.length > 0 ? nextArr : ["On-Site"] };
-      }
-      return r;
-    });
-    await syncAndSaveTargetRoles(updated);
+  const handleToggleRoleArrangement = (roleId: string, arrangement: string) => {
+    setTargetRoles((prev) =>
+      prev.map((r) => {
+        if (r.id === roleId) {
+          const cur = r.work_arrangements || [];
+          const nextArr = cur.includes(arrangement)
+            ? cur.filter((a) => a !== arrangement)
+            : [...cur, arrangement];
+          return { ...r, work_arrangements: nextArr.length > 0 ? nextArr : ["On-Site"] };
+        }
+        return r;
+      })
+    );
   };
 
   const handleFocusRoleSalary = (roleId: string, field: "salary_min" | "salary_max") => {
@@ -3987,7 +4017,7 @@ export default function ApplicantProfile() {
     setTargetRoles(updated);
   };
 
-  const handleCancelRoleSalary = (roleId: string) => {
+  const handleCancelRole = (roleId: string) => {
     const saved = savedTargetRoles.find((r) => r.id === roleId);
     if (!saved) return;
     setActiveRoleSalaryInput(null);
@@ -3996,6 +4026,7 @@ export default function ApplicantProfile() {
         r.id === roleId
           ? {
               ...r,
+              work_arrangements: saved.work_arrangements ? [...saved.work_arrangements] : ["On-Site"],
               salary_min: saved.salary_min,
               salary_max: saved.salary_max,
               hide_salary: saved.hide_salary,
@@ -4005,8 +4036,9 @@ export default function ApplicantProfile() {
     );
     setProfileMessage("");
   };
+  const handleCancelRoleSalary = handleCancelRole;
 
-  const handleSaveRoleSalary = async (roleId: string) => {
+  const handleSaveRole = async (roleId: string) => {
     const role = targetRoles.find((r) => r.id === roleId);
     if (!role) return;
 
@@ -4049,15 +4081,16 @@ export default function ApplicantProfile() {
 
     setActiveRoleSalaryInput(null);
     setTargetRoles(updated);
-    setSavingField(`role_salary_${roleId}`);
+    setSavingField(`role_${roleId}`);
     try {
       await syncAndSaveTargetRoles(updated);
-      setRoleSalarySavedId(roleId);
-      setTimeout(() => setRoleSalarySavedId((cur) => (cur === roleId ? null : cur)), 3000);
+      setRoleSavedId(roleId);
+      setTimeout(() => setRoleSavedId((cur) => (cur === roleId ? null : cur)), 3000);
     } finally {
       setSavingField(null);
     }
   };
+  const handleSaveRoleSalary = handleSaveRole;
 
   const saveProfile = async () => {
     if (!userId) return;
@@ -5544,11 +5577,7 @@ export default function ApplicantProfile() {
                                   onClick={handleCancelAddRole}
                                   title="Cancel adding role"
                                 >
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                                  </svg>
-                                  <span>Cancel</span>
+                                  Cancel
                                 </button>
                               </div>
                             </div>
@@ -5700,8 +5729,8 @@ export default function ApplicantProfile() {
                         ) : (
                           targetRoles.map((roleItem) => {
                             const isExpanded = expandedRoleIds.includes(roleItem.id);
-                            const isDirty = isRoleSalaryDirty(roleItem.id);
-                            const isSavingThisSalary = savingField === `role_salary_${roleItem.id}`;
+                            const isDirty = isRoleDirty(roleItem.id);
+                            const isSavingThisRole = savingField === `role_${roleItem.id}`;
 
                             return (
                               <div className={`target-role-preference-card ${isExpanded ? "expanded" : "collapsed"}`} key={roleItem.id}>
@@ -5746,17 +5775,38 @@ export default function ApplicantProfile() {
                                   </div>
 
                                   <div className="role-pref-header-right" onClick={(e) => e.stopPropagation()}>
+                                    {isDirty && (
+                                      <div className="inline-field-actions role-card-actions">
+                                        <button
+                                          type="button"
+                                          className="inline-field-btn inline-field-cancel-btn"
+                                          onMouseDown={(e) => e.preventDefault()}
+                                          onClick={() => handleCancelRole(roleItem.id)}
+                                          disabled={isSavingThisRole}
+                                        >
+                                          Cancel
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="inline-field-btn inline-field-save-btn"
+                                          onMouseDown={(e) => e.preventDefault()}
+                                          onClick={() => handleSaveRole(roleItem.id)}
+                                          disabled={isSavingThisRole}
+                                        >
+                                          {isSavingThisRole ? "Saving..." : "Save"}
+                                        </button>
+                                      </div>
+                                    )}
+                                    {roleSavedId === roleItem.id && (
+                                      <span className="inline-field-saved-badge">✔ Saved</span>
+                                    )}
                                     <button
                                       type="button"
                                       className="role-pref-remove-btn"
                                       onClick={() => handleRemoveTargetRole(roleItem.id)}
                                       title={`Remove ${roleItem.title}`}
                                     >
-                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                                      </svg>
-                                      <span>Remove</span>
+                                      Remove
                                     </button>
                                   </div>
                                 </div>
@@ -5785,14 +5835,9 @@ export default function ApplicantProfile() {
 
                                     {/* Right Column: Salary Range (PHP) */}
                                     <div className="role-pref-col role-pref-col-salary">
-                                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                        <label className="role-pref-sublabel">
-                                          SALARY RANGE (PHP) *
-                                        </label>
-                                        {roleSalarySavedId === roleItem.id && (
-                                          <span className="inline-field-saved-badge">✔ Saved</span>
-                                        )}
-                                      </div>
+                                      <label className="role-pref-sublabel">
+                                        SALARY RANGE (PHP) *
+                                      </label>
                                       <div className="salary-controls-row">
                                         <button
                                           type="button"
@@ -5832,7 +5877,7 @@ export default function ApplicantProfile() {
                                                   onFocus={() => handleFocusRoleSalary(roleItem.id, "salary_min")}
                                                   onChange={(e) => handleChangeRoleSalary(roleItem.id, "salary_min", e.target.value)}
                                                   onBlur={() => handleBlurRoleSalary(roleItem.id, "salary_min")}
-                                                  disabled={isSavingThisSalary}
+                                                  disabled={isSavingThisRole}
                                                   aria-label="Minimum Salary (PHP)"
                                                 />
                                               );
@@ -5853,36 +5898,13 @@ export default function ApplicantProfile() {
                                                   onFocus={() => handleFocusRoleSalary(roleItem.id, "salary_max")}
                                                   onChange={(e) => handleChangeRoleSalary(roleItem.id, "salary_max", e.target.value)}
                                                   onBlur={() => handleBlurRoleSalary(roleItem.id, "salary_max")}
-                                                  disabled={isSavingThisSalary}
+                                                  disabled={isSavingThisRole}
                                                   aria-label="Maximum Salary (PHP)"
                                                 />
                                               );
                                             })()}
                                           </div>
                                         </div>
-
-                                        {isDirty && (
-                                          <div className="inline-field-actions salary-inline-actions">
-                                            <button
-                                              type="button"
-                                              className="inline-field-btn inline-field-cancel-btn"
-                                              onMouseDown={(e) => e.preventDefault()}
-                                              onClick={() => handleCancelRoleSalary(roleItem.id)}
-                                              disabled={isSavingThisSalary}
-                                            >
-                                              Cancel
-                                            </button>
-                                            <button
-                                              type="button"
-                                              className="inline-field-btn inline-field-save-btn"
-                                              onMouseDown={(e) => e.preventDefault()}
-                                              onClick={() => handleSaveRoleSalary(roleItem.id)}
-                                              disabled={isSavingThisSalary}
-                                            >
-                                              {isSavingThisSalary ? "Saving..." : "Save"}
-                                            </button>
-                                          </div>
-                                        )}
                                       </div>
                                     </div>
                                   </div>

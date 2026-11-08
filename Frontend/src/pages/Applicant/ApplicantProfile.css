@@ -3857,6 +3857,27 @@
   padding-bottom: 0;
 }
 
+.role-pref-header-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.role-card-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.role-card-actions .inline-field-btn {
+  height: 32px !important;
+  padding: 0 14px !important;
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+}
+
 .role-pref-title {
   margin: 0;
   font-size: 1.08rem;
@@ -3867,19 +3888,24 @@
 .role-pref-remove-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  background: transparent;
-  border: none;
-  color: #ef4444;
-  padding: 0;
-  font-size: 0.86rem;
+  justify-content: center;
+  height: 32px;
+  padding: 0 14px;
+  font-size: 0.82rem;
   font-weight: 600;
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
   cursor: pointer;
-  transition: opacity 0.15s ease;
+  transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .role-pref-remove-btn:hover {
-  opacity: 0.8;
+  background: #fee2e2;
+  border-color: #f87171;
+  color: #b91c1c;
 }
 
 .role-pref-card-body {
@@ -4125,15 +4151,18 @@ button.hide-salary-btn.active {
 
 [data-theme="dark"] .role-pref-remove-btn {
   color: #f87171 !important;
-  background: transparent !important;
-  border: none !important;
-  padding: 0 !important;
-  font-size: 0.86rem !important;
+  background: rgba(239, 68, 68, 0.12) !important;
+  border: 1px solid rgba(239, 68, 68, 0.32) !important;
+  border-radius: 6px !important;
+  height: 32px !important;
+  padding: 0 14px !important;
+  font-size: 0.82rem !important;
   font-weight: 600 !important;
 }
 
 [data-theme="dark"] .role-pref-remove-btn:hover {
-  opacity: 0.8 !important;
+  background: rgba(239, 68, 68, 0.22) !important;
+  border-color: #f87171 !important;
   color: #fca5a5 !important;
 }
 
