@@ -5849,10 +5849,8 @@ export default function ApplicantProfile() {
                           </div>
                         ) : (
                           targetRoles.map((roleItem) => {
-                            const isExpanded = expandedRoleIds.includes(roleItem.id);
-                            const isDirty = isRoleDirty(roleItem.id);
+                            const isEditingThisRole = editingRoleId === roleItem.id;
                             const isSavingThisRole = savingField === `role_${roleItem.id}`;
-                            const isEditingOrDirty = editingRoleId === roleItem.id || isDirty;
 
                             const isRoleTitleSet = Boolean((roleItem.title || "").trim());
                             const isWorkArrangementSet = Boolean(roleItem.work_arrangements && roleItem.work_arrangements.length > 0);
@@ -5869,23 +5867,63 @@ export default function ApplicantProfile() {
                             const lastRoleField = roleSalaryLastField[roleItem.id] || (activeRoleSalaryInput?.id === roleItem.id && activeRoleSalaryInput.field === "salary_min" ? "min" : "max");
                             const roleSalaryError = getSalaryRangeError(curMin, curMax, lastRoleField);
 
+                            if (!isEditingThisRole) {
+                              return (
+                                <div className="target-role-preference-card target-role-singular-line" key={roleItem.id}>
+                                  <div className="role-pref-card-header">
+                                    <div className="role-pref-header-left">
+                                      <h4 className="role-pref-title">{roleItem.title}</h4>
+                                      <div className="role-pref-summary-pills">
+                                        {(roleItem.work_arrangements && roleItem.work_arrangements.length > 0) && (
+                                          <span className="role-summary-pill-arr">
+                                            {roleItem.work_arrangements.join(", ")}
+                                          </span>
+                                        )}
+                                        <span className="role-summary-pill-sal">
+                                          {roleItem.hide_salary
+                                            ? "Salary Hidden"
+                                            : roleItem.salary_min && roleItem.salary_max
+                                            ? `PHP ${roleItem.salary_min} - ${roleItem.salary_max}`
+                                            : roleItem.salary_min
+                                            ? `From PHP ${roleItem.salary_min}`
+                                            : roleItem.salary_max
+                                            ? `Up to PHP ${roleItem.salary_max}`
+                                            : "No salary set"}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    <div className="role-pref-header-right">
+                                      {roleSavedId === roleItem.id && (
+                                        <span className="inline-field-saved-badge">✔ Saved</span>
+                                      )}
+                                      <button
+                                        type="button"
+                                        className="role-pref-edit-btn"
+                                        onClick={() => setEditingRoleId(roleItem.id)}
+                                        title={`Edit ${roleItem.title}`}
+                                      >
+                                        Edit
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="role-pref-remove-btn"
+                                        onClick={() => handleRemoveTargetRole(roleItem.id)}
+                                        title={`Remove ${roleItem.title}`}
+                                      >
+                                        Remove
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            }
+
                             return (
-                              <div className={`target-role-preference-card ${isExpanded ? "expanded" : "collapsed"}`} key={roleItem.id}>
-                                <div
-                                  className="role-pref-card-header role-dropdown-trigger"
-                                  onClick={() => toggleRoleExpanded(roleItem.id)}
-                                  role="button"
-                                  tabIndex={0}
-                                  aria-expanded={isExpanded}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter" || e.key === " ") {
-                                      e.preventDefault();
-                                      toggleRoleExpanded(roleItem.id);
-                                    }
-                                  }}
-                                >
+                              <div className="target-role-preference-card editing-role-card" key={roleItem.id}>
+                                <div className="role-pref-card-header">
                                   <div className="role-pref-header-left">
-                                    <span className={`role-item-chevron ${isExpanded ? "open" : ""}`} aria-hidden="true">
+                                    <span className="role-item-chevron open" aria-hidden="true">
                                       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                         <polyline points="6 9 12 15 18 9" />
                                       </svg>
@@ -5911,47 +5949,26 @@ export default function ApplicantProfile() {
                                     </div>
                                   </div>
 
-                                  <div className="role-pref-header-right" onClick={(e) => e.stopPropagation()}>
-                                    {isEditingOrDirty ? (
-                                      <div className="inline-field-actions role-card-actions">
-                                        <button
-                                          type="button"
-                                          className="inline-field-btn inline-field-cancel-btn"
-                                          onMouseDown={(e) => e.preventDefault()}
-                                          onClick={() => handleCancelRole(roleItem.id)}
-                                          disabled={isSavingThisRole}
-                                        >
-                                          Cancel
-                                        </button>
-                                        <button
-                                          type="button"
-                                          className="inline-field-btn inline-field-save-btn"
-                                          onMouseDown={(e) => e.preventDefault()}
-                                          onClick={() => handleSaveRole(roleItem.id)}
-                                          disabled={!canSaveThisRole}
-                                          title={!canSaveThisRole ? "Job role, work arrangement, and salary must be set before saving" : "Save role"}
-                                        >
-                                          {isSavingThisRole ? "Saving..." : "Save"}
-                                        </button>
-                                      </div>
-                                    ) : (
+                                  <div className="role-pref-header-right">
+                                    <div className="inline-field-actions role-card-actions">
                                       <button
                                         type="button"
-                                        className="role-pref-edit-btn"
-                                        onClick={() => {
-                                          setEditingRoleId(roleItem.id);
-                                          if (!isExpanded) {
-                                            toggleRoleExpanded(roleItem.id);
-                                          }
-                                        }}
-                                        title={`Edit ${roleItem.title}`}
+                                        className="inline-field-btn inline-field-cancel-btn"
+                                        onClick={() => handleCancelRole(roleItem.id)}
+                                        disabled={isSavingThisRole}
                                       >
-                                        Edit
+                                        Cancel
                                       </button>
-                                    )}
-                                    {roleSavedId === roleItem.id && (
-                                      <span className="inline-field-saved-badge">✔ Saved</span>
-                                    )}
+                                      <button
+                                        type="button"
+                                        className="inline-field-btn inline-field-save-btn"
+                                        onClick={() => handleSaveRole(roleItem.id)}
+                                        disabled={!canSaveThisRole}
+                                        title={!canSaveThisRole ? "Job role, work arrangement, and salary must be set before saving" : "Save role"}
+                                      >
+                                        {isSavingThisRole ? "Saving..." : "Save"}
+                                      </button>
+                                    </div>
                                     <button
                                       type="button"
                                       className="role-pref-remove-btn"
@@ -5963,149 +5980,146 @@ export default function ApplicantProfile() {
                                   </div>
                                 </div>
 
-                                {isExpanded && (
-                                  <div className="role-pref-card-body">
-                                    {isEditingOrDirty && (
-                                      <div className="profile-field" style={{ gridColumn: "1 / -1", width: "100%", marginBottom: "6px" }}>
-                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                                          <label className="role-pref-sublabel">TARGET JOB ROLE *</label>
-                                          <small style={{ color: "#64748b", fontSize: "0.8rem" }}>Select from standard industry roles or type a custom role</small>
-                                        </div>
-                                        <SearchableSelect
-                                          options={ALL_MULTI_INDUSTRY_JOB_ROLES.filter(
-                                            (opt) => opt.toLowerCase() === roleItem.title.toLowerCase() || !targetRoles.some((r) => r.id !== roleItem.id && r.title.toLowerCase() === opt.toLowerCase())
-                                          )}
-                                          groupedOptions={CATEGORIZED_JOB_ROLES}
-                                          value={roleItem.title}
-                                          onChange={(newTitle) => {
-                                            setTargetRoles((prev) =>
-                                              prev.map((r) => (r.id === roleItem.id ? { ...r, title: newTitle } : r))
-                                            );
-                                          }}
-                                          placeholder="Select or type target job role..."
-                                        />
-                                      </div>
-                                    )}
-                                    {/* Left Column: Work Arrangement */}
-                                    <div className="role-pref-col role-pref-col-arrangement">
-                                      <label className="role-pref-sublabel">WORK ARRANGEMENT PREFERENCE</label>
-                                      <div className="work-arrangement-pill-group" style={{ margin: 0 }}>
-                                        {["Remote", "On-Site", "Hybrid"].map((arr) => {
-                                          const isSelected = (roleItem.work_arrangements || []).includes(arr);
-                                          return (
-                                            <button
-                                              key={arr}
-                                              type="button"
-                                              className={`arr-toggle-pill ${isSelected ? "selected" : ""}`}
-                                              onClick={() => handleToggleRoleArrangement(roleItem.id, arr)}
-                                            >
-                                              {isSelected ? "✓ " : "+ "}{arr}
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
+                                <div className="role-pref-card-body">
+                                  <div className="profile-field" style={{ gridColumn: "1 / -1", width: "100%", marginBottom: "6px" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                                      <label className="role-pref-sublabel">TARGET JOB ROLE *</label>
+                                      <small style={{ color: "#64748b", fontSize: "0.8rem" }}>Select from standard industry roles or type a custom role</small>
                                     </div>
-
-                                    {/* Right Column: Salary Range (PHP) */}
-                                    <div className="role-pref-col role-pref-col-salary">
-                                      <label className="role-pref-sublabel">
-                                        SALARY RANGE (PHP) *
-                                      </label>
-                                      <div className="salary-controls-row">
-                                        <button
-                                          type="button"
-                                          className={`hide-salary-btn ${roleItem.hide_salary ? "active" : ""}`}
-                                          aria-label={roleItem.hide_salary ? "Salary is hidden (Negotiable). Click to show." : "Click to hide salary (Negotiable)"}
-                                          onClick={() => handleToggleRoleHideSalary(roleItem.id)}
-                                          title={roleItem.hide_salary ? "Salary is hidden (Negotiable). Click to show." : "Click to hide salary (Negotiable)"}
-                                        >
-                                          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                                            {roleItem.hide_salary ? (
-                                              <>
-                                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                                                <line x1="1" y1="1" x2="23" y2="23" />
-                                              </>
-                                            ) : (
-                                              <>
-                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                                                <circle cx="12" cy="12" r="3" />
-                                              </>
-                                            )}
-                                          </svg>
-                                        </button>
-
-                                        <div className="salary-inputs-subrow">
-                                          <div className="salary-input-wrap">
-                                            {(() => {
-                                              const isEditing = activeRoleSalaryInput?.id === roleItem.id && activeRoleSalaryInput?.field === "salary_min";
-                                              const displayVal = isEditing
-                                                ? activeRoleSalaryInput.value
-                                                : roleItem.salary_min
-                                                ? formatCurrencyInput(roleItem.salary_min)
-                                                : "";
-                                              return (
-                                                <input
-                                                  className={roleSalaryError ? "has-error" : ""}
-                                                  placeholder="Min Salary"
-                                                  value={displayVal}
-                                                  onFocus={() => {
-                                                    setRoleSalaryLastField((prev) => ({ ...prev, [roleItem.id]: "min" }));
-                                                    handleFocusRoleSalary(roleItem.id, "salary_min");
-                                                  }}
-                                                  onChange={(e) => {
-                                                    setRoleSalaryLastField((prev) => ({ ...prev, [roleItem.id]: "min" }));
-                                                    handleChangeRoleSalary(roleItem.id, "salary_min", e.target.value);
-                                                  }}
-                                                  onBlur={() => handleBlurRoleSalary(roleItem.id, "salary_min")}
-                                                  disabled={isSavingThisRole}
-                                                  aria-label="Minimum Salary (PHP)"
-                                                />
-                                              );
-                                            })()}
-                                          </div>
-                                          <div className="salary-input-wrap">
-                                            {(() => {
-                                              const isEditing = activeRoleSalaryInput?.id === roleItem.id && activeRoleSalaryInput?.field === "salary_max";
-                                              const displayVal = isEditing
-                                                ? activeRoleSalaryInput.value
-                                                : roleItem.salary_max
-                                                ? formatCurrencyInput(roleItem.salary_max)
-                                                : "";
-                                              return (
-                                                <input
-                                                  className={roleSalaryError ? "has-error" : ""}
-                                                  placeholder="Max Salary"
-                                                  value={displayVal}
-                                                  onFocus={() => {
-                                                    setRoleSalaryLastField((prev) => ({ ...prev, [roleItem.id]: "max" }));
-                                                    handleFocusRoleSalary(roleItem.id, "salary_max");
-                                                  }}
-                                                  onChange={(e) => {
-                                                    setRoleSalaryLastField((prev) => ({ ...prev, [roleItem.id]: "max" }));
-                                                    handleChangeRoleSalary(roleItem.id, "salary_max", e.target.value);
-                                                  }}
-                                                  onBlur={() => handleBlurRoleSalary(roleItem.id, "salary_max")}
-                                                  disabled={isSavingThisRole}
-                                                  aria-label="Maximum Salary (PHP)"
-                                                />
-                                              );
-                                            })()}
-                                          </div>
-                                        </div>
-                                      </div>
-                                      {roleSalaryError && (
-                                        <small className="salary-range-warning" role="alert">
-                                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                                            <line x1="12" y1="9" x2="12" y2="13" />
-                                            <line x1="12" y1="17" x2="12.01" y2="17" />
-                                          </svg>
-                                          <span>{roleSalaryError}</span>
-                                        </small>
+                                    <SearchableSelect
+                                      options={ALL_MULTI_INDUSTRY_JOB_ROLES.filter(
+                                        (opt) => opt.toLowerCase() === roleItem.title.toLowerCase() || !targetRoles.some((r) => r.id !== roleItem.id && r.title.toLowerCase() === opt.toLowerCase())
                                       )}
+                                      groupedOptions={CATEGORIZED_JOB_ROLES}
+                                      value={roleItem.title}
+                                      onChange={(newTitle) => {
+                                        setTargetRoles((prev) =>
+                                          prev.map((r) => (r.id === roleItem.id ? { ...r, title: newTitle } : r))
+                                        );
+                                      }}
+                                      placeholder="Select or type target job role..."
+                                    />
+                                  </div>
+
+                                  {/* Left Column: Work Arrangement */}
+                                  <div className="role-pref-col role-pref-col-arrangement">
+                                    <label className="role-pref-sublabel">WORK ARRANGEMENT PREFERENCE</label>
+                                    <div className="work-arrangement-pill-group" style={{ margin: 0 }}>
+                                      {["Remote", "On-Site", "Hybrid"].map((arr) => {
+                                        const isSelected = (roleItem.work_arrangements || []).includes(arr);
+                                        return (
+                                          <button
+                                            key={arr}
+                                            type="button"
+                                            className={`arr-toggle-pill ${isSelected ? "selected" : ""}`}
+                                            onClick={() => handleToggleRoleArrangement(roleItem.id, arr)}
+                                          >
+                                            {isSelected ? "✓ " : "+ "}{arr}
+                                          </button>
+                                        );
+                                      })}
                                     </div>
                                   </div>
-                                )}
+
+                                  {/* Right Column: Salary Range (PHP) */}
+                                  <div className="role-pref-col role-pref-col-salary">
+                                    <label className="role-pref-sublabel">
+                                      SALARY RANGE (PHP) *
+                                    </label>
+                                    <div className="salary-controls-row">
+                                      <button
+                                        type="button"
+                                        className={`hide-salary-btn ${roleItem.hide_salary ? "active" : ""}`}
+                                        aria-label={roleItem.hide_salary ? "Salary is hidden (Negotiable). Click to show." : "Click to hide salary (Negotiable)"}
+                                        onClick={() => handleToggleRoleHideSalary(roleItem.id)}
+                                        title={roleItem.hide_salary ? "Salary is hidden (Negotiable). Click to show." : "Click to hide salary (Negotiable)"}
+                                      >
+                                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                                          {roleItem.hide_salary ? (
+                                            <>
+                                              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                                              <line x1="1" y1="1" x2="23" y2="23" />
+                                            </>
+                                          ) : (
+                                            <>
+                                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                              <circle cx="12" cy="12" r="3" />
+                                            </>
+                                          )}
+                                        </svg>
+                                      </button>
+
+                                      <div className="salary-inputs-subrow">
+                                        <div className="salary-input-wrap">
+                                          {(() => {
+                                            const isEditing = activeRoleSalaryInput?.id === roleItem.id && activeRoleSalaryInput?.field === "salary_min";
+                                            const displayVal = isEditing
+                                              ? activeRoleSalaryInput.value
+                                              : roleItem.salary_min
+                                              ? formatCurrencyInput(roleItem.salary_min)
+                                              : "";
+                                            return (
+                                              <input
+                                                className={roleSalaryError ? "has-error" : ""}
+                                                placeholder="Min Salary"
+                                                value={displayVal}
+                                                onFocus={() => {
+                                                  setRoleSalaryLastField((prev) => ({ ...prev, [roleItem.id]: "min" }));
+                                                  handleFocusRoleSalary(roleItem.id, "salary_min");
+                                                }}
+                                                onChange={(e) => {
+                                                  setRoleSalaryLastField((prev) => ({ ...prev, [roleItem.id]: "min" }));
+                                                  handleChangeRoleSalary(roleItem.id, "salary_min", e.target.value);
+                                                }}
+                                                onBlur={() => handleBlurRoleSalary(roleItem.id, "salary_min")}
+                                                disabled={isSavingThisRole}
+                                                aria-label="Minimum Salary (PHP)"
+                                              />
+                                            );
+                                          })()}
+                                        </div>
+                                        <div className="salary-input-wrap">
+                                          {(() => {
+                                            const isEditing = activeRoleSalaryInput?.id === roleItem.id && activeRoleSalaryInput?.field === "salary_max";
+                                            const displayVal = isEditing
+                                              ? activeRoleSalaryInput.value
+                                              : roleItem.salary_max
+                                              ? formatCurrencyInput(roleItem.salary_max)
+                                              : "";
+                                            return (
+                                              <input
+                                                className={roleSalaryError ? "has-error" : ""}
+                                                placeholder="Max Salary"
+                                                value={displayVal}
+                                                onFocus={() => {
+                                                  setRoleSalaryLastField((prev) => ({ ...prev, [roleItem.id]: "max" }));
+                                                  handleFocusRoleSalary(roleItem.id, "salary_max");
+                                                }}
+                                                onChange={(e) => {
+                                                  setRoleSalaryLastField((prev) => ({ ...prev, [roleItem.id]: "max" }));
+                                                  handleChangeRoleSalary(roleItem.id, "salary_max", e.target.value);
+                                                }}
+                                                onBlur={() => handleBlurRoleSalary(roleItem.id, "salary_max")}
+                                                disabled={isSavingThisRole}
+                                                aria-label="Maximum Salary (PHP)"
+                                              />
+                                            );
+                                          })()}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    {roleSalaryError && (
+                                      <small className="salary-range-warning" role="alert">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                                          <line x1="12" y1="9" x2="12" y2="13" />
+                                          <line x1="12" y1="17" x2="12.01" y2="17" />
+                                        </svg>
+                                        <span>{roleSalaryError}</span>
+                                      </small>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
                             );
                           })

@@ -3696,6 +3696,20 @@
   border-color: #94a3b8;
 }
 
+.target-role-preference-card.target-role-singular-line {
+  padding: 12px 20px;
+  gap: 0;
+}
+
+.target-role-preference-card.target-role-singular-line .role-pref-card-header {
+  margin-bottom: 0;
+  cursor: default;
+}
+
+.target-role-preference-card.editing-role-card {
+  border-color: #0284c7;
+}
+
 /* Role & Employment Section Accordion */
 .role-employment-heading {
   cursor: pointer;
@@ -4178,6 +4192,20 @@ button.hide-salary-btn.active {
 
 [data-theme="dark"] .target-role-preference-card:hover {
   border-color: #3e4459 !important;
+}
+
+[data-theme="dark"] .target-role-preference-card.target-role-singular-line {
+  padding: 12px 20px !important;
+  background: #181b24 !important;
+  border: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .target-role-preference-card.target-role-singular-line:hover {
+  border-color: #3e4459 !important;
+}
+
+[data-theme="dark"] .target-role-preference-card.editing-role-card {
+  border-color: #0284c7 !important;
 }
 
 [data-theme="dark"] .role-pref-card-header {
