@@ -4644,11 +4644,12 @@ textarea.inline-field-control {
 }
 
 .inline-field-save-btn:disabled {
-  background: #94a3b8 !important;
-  border-color: #94a3b8 !important;
-  color: #f1f5f9 !important;
+  background: #cbd5e1 !important;
+  border-color: #cbd5e1 !important;
+  color: #64748b !important;
   cursor: not-allowed !important;
-  opacity: 0.65;
+  opacity: 0.65 !important;
+  box-shadow: none !important;
 }
 
 .inline-field-verify-btn {
@@ -4761,6 +4762,15 @@ textarea.inline-field-control {
 [data-theme="dark"] .inline-field-save-btn:hover:not(:disabled) {
   background: #0369a1 !important;
   border-color: #0369a1 !important;
+}
+
+[data-theme="dark"] .inline-field-save-btn:disabled {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #64748b !important;
+  cursor: not-allowed !important;
+  opacity: 0.55 !important;
+  box-shadow: none !important;
 }
 
 [data-theme="dark"] .inline-field-verify-btn {

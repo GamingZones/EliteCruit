@@ -228,6 +228,30 @@ function parseSalaryInteger(value: string | number | null | undefined): string {
   return "";
 }
 
+function computeNextArrangements(current: string[] = [], clickedArr: string): string[] {
+  if (clickedArr === "Hybrid") {
+    if (current.includes("Hybrid")) {
+      return current.filter((a) => a !== "Hybrid");
+    } else {
+      // when hybrid is clicked it will immediately highlight the other two
+      return ["Remote", "On-Site", "Hybrid"];
+    }
+  }
+
+  // Clicked Remote or On-Site
+  const isSelected = current.includes(clickedArr);
+  let next = isSelected
+    ? current.filter((a) => a !== clickedArr)
+    : [...current, clickedArr];
+
+  // and when one of them is not selected the hybrid will be removed
+  if (!next.includes("Remote") || !next.includes("On-Site")) {
+    next = next.filter((a) => a !== "Hybrid");
+  }
+
+  return next;
+}
+
 function normalizePhoneNumber(raw?: string | null): string {
   if (!raw) return "";
   let digits = String(raw).replace(/\D/g, "");
@@ -2696,7 +2720,7 @@ export default function ApplicantProfile() {
   const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
   const [isAddingRole, setIsAddingRole] = useState(false);
   const [newRoleTitle, setNewRoleTitle] = useState("");
-  const [newRoleArrangements, setNewRoleArrangements] = useState<string[]>(["Hybrid"]);
+  const [newRoleArrangements, setNewRoleArrangements] = useState<string[]>([]);
   const [newRoleSalaryMin, setNewRoleSalaryMin] = useState("");
   const [newRoleSalaryMax, setNewRoleSalaryMax] = useState("");
   const [newRoleHideSalary, setNewRoleHideSalary] = useState(false);
@@ -3860,7 +3884,7 @@ export default function ApplicantProfile() {
 
   const resetNewRoleForm = () => {
     setNewRoleTitle("");
-    setNewRoleArrangements(["Hybrid"]);
+    setNewRoleArrangements([]);
     setNewRoleSalaryMin("");
     setNewRoleSalaryMax("");
     setNewRoleHideSalary(false);
@@ -3886,9 +3910,20 @@ export default function ApplicantProfile() {
       return;
     }
 
+    if (newRoleArrangements.length === 0) {
+      setProfileMessageType("error");
+      setProfileMessage("Please select at least one work arrangement preference.");
+      return;
+    }
+
     const rawMin = newRoleSalaryMin.replace(/[^0-9.]/g, "").trim();
     const rawMax = newRoleSalaryMax.replace(/[^0-9.]/g, "").trim();
-    if (rawMin && rawMax) {
+    if (!newRoleHideSalary) {
+      if (!rawMin || !rawMax) {
+        setProfileMessageType("error");
+        setProfileMessage("Please provide both minimum and maximum salary, or mark salary as hidden.");
+        return;
+      }
       const numMin = Number(rawMin);
       const numMax = Number(rawMax);
       if (Number.isFinite(numMin) && Number.isFinite(numMax) && numMax < numMin) {
@@ -3962,10 +3997,8 @@ export default function ApplicantProfile() {
       prev.map((r) => {
         if (r.id === roleId) {
           const cur = r.work_arrangements || [];
-          const nextArr = cur.includes(arrangement)
-            ? cur.filter((a) => a !== arrangement)
-            : [...cur, arrangement];
-          return { ...r, work_arrangements: nextArr.length > 0 ? nextArr : ["On-Site"] };
+          const nextArr = computeNextArrangements(cur, arrangement);
+          return { ...r, work_arrangements: nextArr };
         }
         return r;
       })
@@ -4062,6 +4095,12 @@ export default function ApplicantProfile() {
       return;
     }
 
+    if (!role.work_arrangements || role.work_arrangements.length === 0) {
+      setProfileMessageType("error");
+      setProfileMessage("Please select at least one work arrangement preference.");
+      return;
+    }
+
     let rawMin = role.salary_min != null ? String(role.salary_min).replace(/[^0-9.]/g, "").trim() : "";
     let rawMax = role.salary_max != null ? String(role.salary_max).replace(/[^0-9.]/g, "").trim() : "";
 
@@ -4073,7 +4112,12 @@ export default function ApplicantProfile() {
       }
     }
 
-    if (rawMin && rawMax) {
+    if (!role.hide_salary) {
+      if (!rawMin || !rawMax) {
+        setProfileMessageType("error");
+        setProfileMessage("Please provide both minimum and maximum salary, or mark salary as hidden.");
+        return;
+      }
       const numMin = Number(rawMin);
       const numMax = Number(rawMax);
       if (Number.isFinite(numMin) && Number.isFinite(numMax) && numMax < numMin) {
@@ -5591,26 +5635,39 @@ export default function ApplicantProfile() {
                                 </span>
                                 <h4 className="role-pref-title" style={{ color: "#0284c7" }}>Add New Target Role</h4>
                               </div>
-                              <div className="role-pref-header-right">
-                                <div className="inline-field-actions role-card-actions">
-                                  <button
-                                    type="button"
-                                    className="inline-field-btn inline-field-cancel-btn"
-                                    onClick={handleCancelAddRole}
-                                    disabled={isSavingNewRole}
-                                  >
-                                    Cancel
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="inline-field-btn inline-field-save-btn"
-                                    onClick={handleSaveNewRole}
-                                    disabled={isSavingNewRole || !newRoleTitle.trim()}
-                                  >
-                                    {isSavingNewRole ? "Saving..." : "Save"}
-                                  </button>
-                                </div>
-                              </div>
+                              {(() => {
+                                const isRoleTitleSet = Boolean(newRoleTitle.trim());
+                                const isWorkArrangementSet = Boolean(newRoleArrangements && newRoleArrangements.length > 0);
+                                const rawMin = newRoleSalaryMin.replace(/[^0-9.]/g, "").trim();
+                                const rawMax = newRoleSalaryMax.replace(/[^0-9.]/g, "").trim();
+                                const isSalaryValid = !rawMin || !rawMax || Number(rawMax) >= Number(rawMin);
+                                const isSalarySet = Boolean(newRoleHideSalary) || (Boolean(rawMin) && Boolean(rawMax) && isSalaryValid);
+                                const canSave = !isSavingNewRole && isRoleTitleSet && isWorkArrangementSet && isSalarySet;
+
+                                return (
+                                  <div className="role-pref-header-right">
+                                    <div className="inline-field-actions role-card-actions">
+                                      <button
+                                        type="button"
+                                        className="inline-field-btn inline-field-cancel-btn"
+                                        onClick={handleCancelAddRole}
+                                        disabled={isSavingNewRole}
+                                      >
+                                        Cancel
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="inline-field-btn inline-field-save-btn"
+                                        onClick={handleSaveNewRole}
+                                        disabled={!canSave}
+                                        title={!canSave ? "Job role, work arrangement, and salary must be set before saving" : "Save role"}
+                                      >
+                                        {isSavingNewRole ? "Saving..." : "Save"}
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </div>
 
                             <div className="role-add-form-body">
@@ -5647,11 +5704,7 @@ export default function ApplicantProfile() {
                                           type="button"
                                           className={`arr-toggle-pill ${isSelected ? "selected" : ""}`}
                                           onClick={() => {
-                                            setNewRoleArrangements((prev) =>
-                                              prev.includes(arr)
-                                                ? prev.filter((a) => a !== arr)
-                                                : [...prev, arr]
-                                            );
+                                            setNewRoleArrangements((prev) => computeNextArrangements(prev, arr));
                                           }}
                                         >
                                           {isSelected ? "✓ " : "+ "}{arr}
@@ -5745,6 +5798,18 @@ export default function ApplicantProfile() {
                             const isSavingThisRole = savingField === `role_${roleItem.id}`;
                             const isEditingOrDirty = editingRoleId === roleItem.id || isDirty;
 
+                            const isRoleTitleSet = Boolean((roleItem.title || "").trim());
+                            const isWorkArrangementSet = Boolean(roleItem.work_arrangements && roleItem.work_arrangements.length > 0);
+                            let curMin = roleItem.salary_min != null ? String(roleItem.salary_min).replace(/[^0-9.]/g, "").trim() : "";
+                            let curMax = roleItem.salary_max != null ? String(roleItem.salary_max).replace(/[^0-9.]/g, "").trim() : "";
+                            if (activeRoleSalaryInput && activeRoleSalaryInput.id === roleItem.id) {
+                              if (activeRoleSalaryInput.field === "salary_min") curMin = activeRoleSalaryInput.value.replace(/[^0-9.]/g, "").trim();
+                              if (activeRoleSalaryInput.field === "salary_max") curMax = activeRoleSalaryInput.value.replace(/[^0-9.]/g, "").trim();
+                            }
+                            const isRoleSalaryValid = !curMin || !curMax || Number(curMax) >= Number(curMin);
+                            const isRoleSalarySet = Boolean(roleItem.hide_salary) || (Boolean(curMin) && Boolean(curMax) && isRoleSalaryValid);
+                            const canSaveThisRole = !isSavingThisRole && isRoleTitleSet && isWorkArrangementSet && isRoleSalarySet;
+
                             return (
                               <div className={`target-role-preference-card ${isExpanded ? "expanded" : "collapsed"}`} key={roleItem.id}>
                                 <div
@@ -5804,7 +5869,8 @@ export default function ApplicantProfile() {
                                           className="inline-field-btn inline-field-save-btn"
                                           onMouseDown={(e) => e.preventDefault()}
                                           onClick={() => handleSaveRole(roleItem.id)}
-                                          disabled={isSavingThisRole}
+                                          disabled={!canSaveThisRole}
+                                          title={!canSaveThisRole ? "Job role, work arrangement, and salary must be set before saving" : "Save role"}
                                         >
                                           {isSavingThisRole ? "Saving..." : "Save"}
                                         </button>
