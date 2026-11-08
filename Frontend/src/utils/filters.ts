@@ -3422,7 +3422,6 @@ export function calculateJobMatchDetails(
   });
 
   // 2. Qualifications
-  const rawJobQuals = job.qualTags || [];
   const matchedQuals: string[] = [];
   const missingQuals: string[] = [];
 
@@ -3438,7 +3437,6 @@ export function calculateJobMatchDetails(
   });
 
   // 3. Certifications
-  const rawJobCerts = job.certTags || [];
   const matchedCerts: string[] = [];
   const missingCerts: string[] = [];
 
