@@ -3696,6 +3696,120 @@
   border-color: #94a3b8;
 }
 
+/* Role & Employment Section Accordion */
+.role-employment-heading {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 12px;
+}
+
+.role-employment-heading-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.role-employment-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.role-employment-heading-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.role-count-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.role-employment-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  color: #64748b;
+  transition: transform 0.25s ease, color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.role-employment-chevron.open {
+  transform: rotate(180deg);
+  color: #0284c7;
+}
+
+/* Role Item Dropdown Styles */
+.role-dropdown-trigger {
+  cursor: pointer;
+  user-select: none;
+}
+
+.role-dropdown-trigger:hover .role-pref-title {
+  color: #0284c7;
+}
+
+.role-pref-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.role-item-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  color: #64748b;
+  transition: transform 0.22s ease, color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.role-item-chevron.open {
+  transform: rotate(180deg);
+  color: #0284c7;
+}
+
+.role-pref-summary-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.role-summary-pill-arr,
+.role-summary-pill-sal {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
 .role-pref-card-header {
   display: flex;
   align-items: center;
@@ -3874,6 +3988,25 @@ button.hide-salary-btn.active {
   margin-left: 6px;
 }
 
+.salary-inline-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: 38px;
+  margin-left: 2px;
+}
+
+.salary-inline-actions .inline-field-btn {
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 16px !important;
+  font-size: 0.84rem !important;
+  font-weight: 600 !important;
+  border-radius: 6px !important;
+  cursor: pointer;
+}
+
 @media (max-width: 920px) {
   .role-pref-card-body {
     grid-template-columns: 1fr;
@@ -4020,6 +4153,39 @@ button.hide-salary-btn.active {
   background: #181b24 !important;
   border-color: #2e3244 !important;
   color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .role-count-pill {
+  background: rgba(2, 132, 199, 0.2) !important;
+  color: #38bdf8 !important;
+  border-color: rgba(56, 189, 248, 0.3) !important;
+}
+
+[data-theme="dark"] .role-employment-chevron {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .role-employment-chevron.open {
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .role-item-chevron {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .role-item-chevron.open {
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .role-summary-pill-arr,
+[data-theme="dark"] .role-summary-pill-sal {
+  background: #1e2230 !important;
+  color: #cbd5e1 !important;
+  border-color: #2e3446 !important;
+}
+
+[data-theme="dark"] .role-dropdown-trigger:hover .role-pref-title {
+  color: #38bdf8 !important;
 }
 
 .system-popup-overlay {
