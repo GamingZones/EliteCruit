@@ -365,6 +365,8 @@ async function ensureApplicantProfileColumns() {
   await run(`ALTER TABLE applicant_profiles ADD COLUMN IF NOT EXISTS preferred_locations TEXT`);
   await run(`ALTER TABLE applicant_profiles ADD COLUMN IF NOT EXISTS expected_salary_min NUMERIC`);
   await run(`ALTER TABLE applicant_profiles ADD COLUMN IF NOT EXISTS expected_salary_max NUMERIC`);
+  await run(`ALTER TABLE applicant_profiles ADD COLUMN IF NOT EXISTS target_roles_json TEXT`);
+  await run(`ALTER TABLE applicant_profiles ADD COLUMN IF NOT EXISTS hide_salary INTEGER DEFAULT 0`);
   await run(`ALTER TABLE applicant_profiles ADD COLUMN IF NOT EXISTS gender TEXT DEFAULT 'Prefer not to say'`);
   await run(`UPDATE applicant_profiles SET gender = 'Prefer not to say' WHERE gender IS NULL OR gender = ''`);
 }
@@ -2798,11 +2800,21 @@ app.put("/api/applicants/:userId/profile", authenticateToken, requireUserOrAdmin
     : typeof req.body?.preferred_locations === "string"
     ? req.body.preferred_locations.trim()
     : null;
+  const targetRolesJson = typeof req.body?.target_roles_json === "string"
+    ? req.body.target_roles_json
+    : req.body?.target_roles
+    ? JSON.stringify(req.body.target_roles)
+    : (currentProf?.target_roles_json || null);
+  const hideSalary = req.body?.hide_salary !== undefined
+    ? (Boolean(req.body.hide_salary) ? 1 : 0)
+    : (currentProf?.hide_salary ? 1 : 0);
 
   try {
     try {
       await run("ALTER TABLE applicant_profiles ADD COLUMN IF NOT EXISTS expected_salary_min NUMERIC");
       await run("ALTER TABLE applicant_profiles ADD COLUMN IF NOT EXISTS expected_salary_max NUMERIC");
+      await run("ALTER TABLE applicant_profiles ADD COLUMN IF NOT EXISTS target_roles_json TEXT");
+      await run("ALTER TABLE applicant_profiles ADD COLUMN IF NOT EXISTS hide_salary INTEGER DEFAULT 0");
     } catch {}
 
     await run("BEGIN TRANSACTION");
@@ -2832,9 +2844,11 @@ app.put("/api/applicants/:userId/profile", authenticateToken, requireUserOrAdmin
        SET first_name=?, middle_name=?, last_name=?, phone=?, province=?, city=?, address=?, summary=?, languages=?, desired_job_title=?, expected_salary=?, work_arrangement=?, years_of_experience=?, gender=?,
            expected_salary_min = ?, expected_salary_max = ?,
            shs_strand=?, shs_school=?, shs_grad_year=?, college_grad_year=?, vocational_grad_year=?, preferred_cities_json=?, is_non_graduate_cert_holder=?,
-           preferred_locations = COALESCE(?, preferred_locations)
+           preferred_locations = COALESCE(?, preferred_locations),
+           target_roles_json = COALESCE(?, target_roles_json),
+           hide_salary = ?
        WHERE user_id=?`,
-      [...values, salMin, salMax, shsStrand, shsSchool, shsGradYear, collegeGradYear, vocationalGradYear, prefCitiesJson, isNonGradCert, prefLocStr, userId]
+      [...values, salMin, salMax, shsStrand, shsSchool, shsGradYear, collegeGradYear, vocationalGradYear, prefCitiesJson, isNonGradCert, prefLocStr, targetRolesJson, hideSalary, userId]
     );
     if (!updated.changes) throw new Error("PROFILE_NOT_FOUND");
     await run("COMMIT");
