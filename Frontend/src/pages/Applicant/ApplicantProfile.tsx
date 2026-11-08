@@ -3874,9 +3874,9 @@ export default function ApplicantProfile() {
       target_roles_json: jsonStr,
     }));
 
-    setSavingField("desired_job_title");
+    setSavingField((cur) => cur || "desired_job_title");
     try {
-      await fetch(`/api/applicants/${userId}/profile`, {
+      const res = await fetch(`/api/applicants/${userId}/profile`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -3890,10 +3890,16 @@ export default function ApplicantProfile() {
           target_roles_json: jsonStr,
         }),
       });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to save profile.");
+      }
       setFieldSuccess("desired_job_title");
       setTimeout(() => setFieldSuccess(null), 2500);
     } catch (err) {
       console.error("Failed to sync target roles:", err);
+      setProfileMessageType("error");
+      setProfileMessage(err instanceof Error ? err.message : "Failed to save target roles.");
     } finally {
       setSavingField(null);
     }
@@ -3943,14 +3949,14 @@ export default function ApplicantProfile() {
     const rawMin = newRoleSalaryMin.replace(/[^0-9.]/g, "").trim();
     const rawMax = newRoleSalaryMax.replace(/[^0-9.]/g, "").trim();
     if (!newRoleHideSalary) {
-      if (!rawMin || !rawMax) {
+      if (!rawMin && !rawMax) {
         setProfileMessageType("error");
-        setProfileMessage("Please provide both minimum and maximum salary, or mark salary as hidden.");
+        setProfileMessage("Please enter your expected salary, or mark salary as hidden.");
         return;
       }
-      const numMin = Number(rawMin);
-      const numMax = Number(rawMax);
-      if (Number.isFinite(numMin) && Number.isFinite(numMax) && numMax < numMin) {
+      const numMin = rawMin ? Number(rawMin) : null;
+      const numMax = rawMax ? Number(rawMax) : null;
+      if (numMin !== null && numMax !== null && Number.isFinite(numMin) && Number.isFinite(numMax) && numMax < numMin) {
         setProfileMessageType("error");
         setProfileMessage(newRoleSalaryLastField === "min" ? "Minimum salary cannot be greater than maximum salary." : "Maximum salary cannot be less than minimum salary.");
         return;
@@ -4042,7 +4048,7 @@ export default function ApplicantProfile() {
     const value = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join("")}` : sanitized;
     setActiveRoleSalaryInput({ id: roleId, field, value });
     setTargetRoles((prev) =>
-      prev.map((r) => (r.id === roleId ? { ...r, [field]: value } : r))
+      prev.map((r) => (r.id === roleId ? { ...r, [field]: value, hide_salary: false } : r))
     );
   };
 
@@ -4137,14 +4143,14 @@ export default function ApplicantProfile() {
     }
 
     if (!role.hide_salary) {
-      if (!rawMin || !rawMax) {
+      if (!rawMin && !rawMax) {
         setProfileMessageType("error");
-        setProfileMessage("Please provide both minimum and maximum salary, or mark salary as hidden.");
+        setProfileMessage("Please enter your expected salary, or mark salary as hidden.");
         return;
       }
-      const numMin = Number(rawMin);
-      const numMax = Number(rawMax);
-      if (Number.isFinite(numMin) && Number.isFinite(numMax) && numMax < numMin) {
+      const numMin = rawMin ? Number(rawMin) : null;
+      const numMax = rawMax ? Number(rawMax) : null;
+      if (numMin !== null && numMax !== null && Number.isFinite(numMin) && Number.isFinite(numMax) && numMax < numMin) {
         setProfileMessageType("error");
         const lastF = roleSalaryLastField[roleId] || "max";
         setProfileMessage(lastF === "min" ? "Minimum salary cannot be greater than maximum salary." : "Maximum salary cannot be less than minimum salary.");
@@ -5666,7 +5672,8 @@ export default function ApplicantProfile() {
                                 const rawMin = newRoleSalaryMin.replace(/[^0-9.]/g, "").trim();
                                 const rawMax = newRoleSalaryMax.replace(/[^0-9.]/g, "").trim();
                                 const isSalaryValid = !rawMin || !rawMax || Number(rawMax) >= Number(rawMin);
-                                const isSalarySet = Boolean(newRoleHideSalary) || (Boolean(rawMin) && Boolean(rawMax) && isSalaryValid);
+                                const isSalaryProvided = Boolean(rawMin) || Boolean(rawMax);
+                                const isSalarySet = Boolean(newRoleHideSalary) || (isSalaryProvided && isSalaryValid);
                                 const canSave = !isSavingNewRole && isRoleTitleSet && isWorkArrangementSet && isSalarySet;
 
                                 return (
@@ -5741,9 +5748,7 @@ export default function ApplicantProfile() {
 
                                 {/* Right Column: Salary Range */}
                                 {(() => {
-                                  const newRoleSalaryError = !newRoleHideSalary
-                                    ? getSalaryRangeError(newRoleSalaryMin, newRoleSalaryMax, newRoleSalaryLastField)
-                                    : "";
+                                  const newRoleSalaryError = getSalaryRangeError(newRoleSalaryMin, newRoleSalaryMax, newRoleSalaryLastField);
 
                                   return (
                                     <div className="role-pref-col role-pref-col-salary">
@@ -5780,6 +5785,7 @@ export default function ApplicantProfile() {
                                               onFocus={() => setNewRoleSalaryLastField("min")}
                                               onChange={(e) => {
                                                 setNewRoleSalaryLastField("min");
+                                                if (newRoleHideSalary) setNewRoleHideSalary(false);
                                                 const sanitized = e.target.value.replace(/[^0-9.]/g, "");
                                                 setNewRoleSalaryMin(sanitized);
                                               }}
@@ -5802,6 +5808,7 @@ export default function ApplicantProfile() {
                                               onFocus={() => setNewRoleSalaryLastField("max")}
                                               onChange={(e) => {
                                                 setNewRoleSalaryLastField("max");
+                                                if (newRoleHideSalary) setNewRoleHideSalary(false);
                                                 const sanitized = e.target.value.replace(/[^0-9.]/g, "");
                                                 setNewRoleSalaryMax(sanitized);
                                               }}
@@ -5856,10 +5863,11 @@ export default function ApplicantProfile() {
                               if (activeRoleSalaryInput.field === "salary_max") curMax = activeRoleSalaryInput.value.replace(/[^0-9.]/g, "").trim();
                             }
                             const isRoleSalaryValid = !curMin || !curMax || Number(curMax) >= Number(curMin);
-                            const isRoleSalarySet = Boolean(roleItem.hide_salary) || (Boolean(curMin) && Boolean(curMax) && isRoleSalaryValid);
+                            const isRoleSalaryProvided = Boolean(curMin) || Boolean(curMax);
+                            const isRoleSalarySet = Boolean(roleItem.hide_salary) || (isRoleSalaryProvided && isRoleSalaryValid);
                             const canSaveThisRole = !isSavingThisRole && isRoleTitleSet && isWorkArrangementSet && isRoleSalarySet;
                             const lastRoleField = roleSalaryLastField[roleItem.id] || (activeRoleSalaryInput?.id === roleItem.id && activeRoleSalaryInput.field === "salary_min" ? "min" : "max");
-                            const roleSalaryError = !roleItem.hide_salary ? getSalaryRangeError(curMin, curMax, lastRoleField) : "";
+                            const roleSalaryError = getSalaryRangeError(curMin, curMax, lastRoleField);
 
                             return (
                               <div className={`target-role-preference-card ${isExpanded ? "expanded" : "collapsed"}`} key={roleItem.id}>

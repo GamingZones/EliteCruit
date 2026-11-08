@@ -2774,13 +2774,24 @@ app.put("/api/applicants/:userId/profile", authenticateToken, requireUserOrAdmin
   if (!values[0] || !values[2]) return res.status(400).json({ message: "First name and last name are required." });
 
   if (values[11]) {
-    const matchArr = Array.from(WORK_ARRANGEMENTS).find(
-      (wa) => wa.toLowerCase() === values[11].toLowerCase().replace("-", "").replace(/\s+/g, "") || wa.toLowerCase() === values[11].toLowerCase()
-    );
-    if (matchArr) {
-      values[11] = matchArr;
+    const rawArr = String(values[11]);
+    const splitArr = rawArr.split(",").map((s) => s.trim()).filter(Boolean);
+    const validSplit = splitArr.map((part) => {
+      return Array.from(WORK_ARRANGEMENTS).find(
+        (wa) => wa.toLowerCase() === part.toLowerCase().replace("-", "").replace(/\s+/g, "") || wa.toLowerCase() === part.toLowerCase()
+      );
+    });
+    if (validSplit.length > 0 && validSplit.every(Boolean)) {
+      values[11] = validSplit.join(", ");
     } else {
-      return res.status(400).json({ message: "Invalid work arrangement." });
+      const matchArr = Array.from(WORK_ARRANGEMENTS).find(
+        (wa) => wa.toLowerCase() === rawArr.toLowerCase().replace("-", "").replace(/\s+/g, "") || wa.toLowerCase() === rawArr.toLowerCase()
+      );
+      if (matchArr) {
+        values[11] = matchArr;
+      } else {
+        return res.status(400).json({ message: "Invalid work arrangement." });
+      }
     }
   }
 
