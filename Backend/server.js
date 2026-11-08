@@ -5099,7 +5099,6 @@ app.put("/api/applications/:id/status", authenticateToken, requireApplicationDec
       }
 
       const wasShortlisted = Boolean(existing.was_shortlisted) || ["shortlisted", "interviewing", "interview"].includes(currentStatus);
-      const hadInterview = Boolean(existing.had_interview) || ["interviewing", "interview"].includes(currentStatus);
 
       await run(
         `UPDATE applications
