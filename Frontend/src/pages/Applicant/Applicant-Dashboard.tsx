@@ -1894,6 +1894,7 @@ export default function ApplicantDashboard() {
           <JobDetailsModal
             isOpen={Boolean(detailsJob)}
             job={jobModalData}
+            zIndex={11000}
             onClose={() => {
               setDetailsJob(null);
               setReviewingInv(null);
@@ -2223,66 +2224,117 @@ export default function ApplicantDashboard() {
                   {filteredHistoryApplications.map((app: any) => {
                     const statusLower = (app?.status || "").toLowerCase();
                     const isApproved = ["approved", "accepted", "recruited"].includes(statusLower);
-                    const isDenied = ["denied", "rejected", "withdrawn"].includes(statusLower);
-
-                    let interview = app?.scheduled_interview;
-                    if (!interview) {
-                      try {
-                        const rawInt = localStorage.getItem("elitecruit_scheduled_interviews");
-                        if (rawInt) {
-                          const list = JSON.parse(rawInt);
-                          if (Array.isArray(list)) {
-                            interview = list.find((it: any) =>
-                              (app.job_post_id && it.job_post_id && String(it.job_post_id) === String(app.job_post_id)) ||
-                              (app.job_title && it.job_title && it.job_title.toLowerCase() === app.job_title.toLowerCase())
-                            );
-                          }
-                        }
-                      } catch {}
-                    }
+                    const isConcluded = ["denied", "rejected", "withdrawn"].includes(statusLower);
+                    const hasFormalOffer = Boolean(
+                      app.offer_letter ||
+                      app.decision_message_type === "formal_offer" ||
+                      ["offered", "offer_extended"].includes(statusLower) ||
+                      isApproved
+                    );
+                    const hasResponseLetter = Boolean(app.response_letter);
 
                     return (
-                      <div key={app.id || app.job_post_id} className="app-history-card">
-                        <div className="app-history-card-top">
-                          <div>
-                            <h4 className="app-history-role">{app.job_title || app.title || "Applied Role"}</h4>
-                            <div className="app-history-meta-line">
-                              <span className="app-history-company">{app.company_name || "Employer"}</span>
-                              <span className="app-history-sep">•</span>
-                              <span className="app-history-location">{app.location || app.city || "Location not set"}</span>
-                            </div>
-                          </div>
-                          <span className={`status-badge-chip ${statusChipBadgeClass(app.status)}`}>
-                            {formatStatusLabel(app.status)}
-                          </span>
-                        </div>
-
-                        <div className="app-history-dates-grid">
-                          <div className="app-history-date-item">
-                            <span className="app-history-date-label">Date of Application</span>
-                            <span className="app-history-date-val">
-                              {app.submitted_at ? formatDate(app.submitted_at) : "Submitted"}
-                            </span>
-                          </div>
-
-                          <div className="app-history-date-item">
-                            <span className="app-history-date-label">Date of Interview</span>
-                            <span className="app-history-date-val">
-                              {interview?.interview_date
-                                ? `${formatDate(interview.interview_date)}${interview.start_time ? ` at ${interview.start_time}` : ""}${interview.interview_stage ? ` (${interview.interview_stage})` : ""}`
-                                : app.had_interview && (app.interview_date || app.decided_at)
-                                ? formatDate(app.interview_date || app.decided_at)
-                                : "No interview conducted"}
-                            </span>
+                      <article key={app.id || app.job_post_id} className="job-card app-history-job-card">
+                        <div className="app-history-card-main-row">
+                          <div className="job-card-left">
+                            <h3>{app.job_title || app.title || "Applied Role"}</h3>
+                            <p className="app-company-loc-line">
+                              {app.company_name ? (
+                                <span className="company-meta-with-rating">
+                                  <strong>{app.company_name}</strong>
+                                  <span className="company-inline-rating-pill" title="Company rating">
+                                    <span className="star-icon">★</span>
+                                    <span>{app.rating ? Number(app.rating).toFixed(1) : "0.0"}</span>
+                                  </span>
+                                </span>
+                              ) : null}
+                              <span className="meta-divider">•</span>
+                              <span>{app.location || app.city || "Location not set"}</span>
+                            </p>
+                            <p className="app-submitted-date">
+                              <span>Submitted on: {formatDate(app.submitted_at)}</span>
+                            </p>
                           </div>
 
-                          <div className="app-history-date-item">
-                            <span className="app-history-date-label">
-                              {isApproved ? "Date Approved" : isDenied ? (statusLower === "withdrawn" ? "Date Withdrawn" : "Date Declined") : "Date of Decision"}
-                            </span>
-                            <span className="app-history-date-val">
-                              {app.decided_at ? formatDate(app.decided_at) : (app.responded_at ? formatDate(app.responded_at) : "In Progress")}
-                            </span>
+                          <div className="job-card-middle">
+                            <ApplicationCardTimeline
+                              app={app}
+                              onOpenTimeline={() => setTimelineModalApp(app)}
+                            />
+                          </div>
+
+                          <div className="app-card-actions">
+                            {/* Top Action Button: Offer Letter / View Letter if approved, or Withdraw if still active */}
+                            {(() => {
+                              if (isApproved || hasResponseLetter || hasFormalOffer) {
+                                if (hasResponseLetter) {
+                                  return (
+                                    <button
+                                      type="button"
+                                      className="solid-btn offer-letter-action-btn"
+                                      onClick={() => {
+                                        setViewLetterModalTarget({
+                                          title: app.job_title || app.title || "Applied Role",
+                                          company: app.company_name || "Employer",
+                                          letterText: app.response_letter,
+                                          startDate: app.start_date,
+                                          respondedAt: app.responded_at,
+                                          decision: app.response_decision || (app.status === "declined" ? "declined" : "accepted"),
+                                        });
+                                      }}
+                                    >
+                                      <span>View Letter</span>
+                                    </button>
+                                  );
+                                }
+
+                                return (
+                                  <button
+                                    type="button"
+                                    className="solid-btn offer-letter-action-btn"
+                                    title="Review formal offer letter and respond"
+                                    onClick={() => {
+                                      setAppDecisionModalTarget({
+                                        app,
+                                        action: "accept",
+                                      });
+                                    }}
+                                  >
+                                    <span>Offer Letter</span>
+                                  </button>
+                                );
+                              }
+
+                              if (!isConcluded) {
+                                return (
+                                  <button
+                                    type="button"
+                                    className="ghost-btn withdraw-app-btn"
+                                    onClick={() => setWithdrawTargetApp(app)}
+                                    title="Withdraw application"
+                                  >
+                                    Withdraw
+                                  </button>
+                                );
+                              }
+
+                              return null;
+                            })()}
+
+                            <button
+                              type="button"
+                              className="solid-btn review-app-btn"
+                              onClick={() => handleReviewApplication(app)}
+                            >
+                              Review
+                            </button>
+                            <button
+                              type="button"
+                              className="ghost-btn message-app-btn"
+                              onClick={() => { window.location.href = "/messages"; }}
+                            >
+                              Message
+                            </button>
                           </div>
                         </div>
 
@@ -2292,7 +2344,7 @@ export default function ApplicantDashboard() {
                             <p className="app-history-feedback-text">{app.decision_message}</p>
                           </div>
                         )}
-                      </div>
+                      </article>
                     );
                   })}
                 </div>
