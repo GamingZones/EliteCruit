@@ -716,6 +716,7 @@ async function ensureJobPostColumns() {
   await run("ALTER TABLE applications ADD COLUMN IF NOT EXISTS was_shortlisted BOOLEAN NOT NULL DEFAULT FALSE");
   await run("ALTER TABLE applications ADD COLUMN IF NOT EXISTS had_interview BOOLEAN NOT NULL DEFAULT FALSE");
   await run("ALTER TABLE applications ADD COLUMN IF NOT EXISTS previous_status TEXT");
+  await run("UPDATE applications SET status = 'recruited' WHERE response_decision = 'accept' OR lower(status) = 'accepted'").catch(() => {});
   await run("ALTER TABLE job_invitations ADD COLUMN IF NOT EXISTS response_letter TEXT");
   await run("ALTER TABLE job_invitations ADD COLUMN IF NOT EXISTS responded_at TIMESTAMPTZ");
   await run("ALTER TABLE job_invitations ADD COLUMN IF NOT EXISTS start_date TEXT");
@@ -4464,9 +4465,14 @@ app.get("/api/applicants/:userId/applications", authenticateToken, requireUserOr
 
     const applications = rows.map((row) => {
       const isJobClosed = row.job_status === "closed" || (row.close_date && new Date(row.close_date).getTime() < Date.now());
-      const effectiveStatus = (isJobClosed && ["pending", "submitted", "under_review"].includes(String(row.status || "").toLowerCase()))
+      let effectiveStatus = (isJobClosed && ["pending", "submitted", "under_review"].includes(String(row.status || "").toLowerCase()))
         ? "closed"
         : row.status;
+
+      // If the candidate accepted the formal offer or invitation, effective status is ALWAYS recruited
+      if (row.response_decision === "accept" || String(row.status || "").toLowerCase() === "accepted" || String(row.status || "").toLowerCase() === "recruited") {
+        effectiveStatus = "recruited";
+      }
 
       const hasInterview = Boolean(row.scheduled_interview) || Boolean(row.had_interview);
       const wasShortlisted = Boolean(row.was_shortlisted) ||
@@ -4487,7 +4493,7 @@ app.get("/api/applicants/:userId/applications", authenticateToken, requireUserOr
       `SELECT
          COUNT(*) AS total_count,
          SUM(CASE WHEN lower(status) IN ('reviewed', 'under_review') THEN 1 ELSE 0 END) AS under_review_count,
-         SUM(CASE WHEN lower(status) = 'shortlisted' THEN 1 ELSE 0 END) AS shortlisted_count
+         SUM(CASE WHEN lower(status) = 'shortlisted' AND lower(COALESCE(status, '')) NOT IN ('recruited', 'accepted') AND COALESCE(response_decision, '') != 'accept' THEN 1 ELSE 0 END) AS shortlisted_count
        FROM applications
        WHERE applicant_user_id = ?`,
       [userId]
@@ -4830,7 +4836,7 @@ app.get("/api/employers/:userId/applications", authenticateToken, requireUserOrA
       } else if (s === "approved") {
         whereClause += " AND lower(a.status) IN ('approved', 'reviewed', 'accepted', 'recruited')";
       } else if (s === "recruited") {
-        whereClause += " AND lower(a.status) = 'recruited'";
+        whereClause += " AND (lower(a.status) = 'recruited' OR lower(a.status) = 'accepted' OR a.response_decision = 'accept')";
       } else if (s === "denied") {
         whereClause += " AND lower(a.status) IN ('denied', 'rejected')";
       } else {
@@ -4895,6 +4901,23 @@ app.get("/api/employers/:userId/applications", authenticateToken, requireUserOrA
           a.responded_at,
           a.start_date,
           (
+            SELECT COUNT(si.id)
+            FROM scheduled_interviews si
+            WHERE si.employer_user_id = jp.employer_user_id
+              AND si.applicant_user_id = a.applicant_user_id
+              AND si.job_post_id = a.job_post_id
+              AND si.status NOT IN ('cancelled', 'declined')
+          ) AS interview_count,
+          (
+            SELECT si.status
+            FROM scheduled_interviews si
+            WHERE si.employer_user_id = jp.employer_user_id
+              AND si.applicant_user_id = a.applicant_user_id
+              AND si.job_post_id = a.job_post_id
+            ORDER BY si.created_at DESC
+            LIMIT 1
+          ) AS latest_interview_status,
+          (
             SELECT CASE
               WHEN COUNT(*) > 0 THEN ROUND(((SUM(cr.rating)::numeric + 12.0) / (COUNT(*) + 3.0)), 1)
               ELSE NULL
@@ -4915,7 +4938,7 @@ app.get("/api/employers/:userId/applications", authenticateToken, requireUserOrA
       `SELECT
           COUNT(*) AS total,
           SUM(CASE WHEN lower(a.status) IN ('submitted', 'pending') THEN 1 ELSE 0 END) AS pending,
-          SUM(CASE WHEN lower(a.status) = 'shortlisted' THEN 1 ELSE 0 END) AS shortlisted,
+          SUM(CASE WHEN lower(a.status) = 'shortlisted' AND lower(COALESCE(a.status, '')) NOT IN ('recruited', 'accepted') AND COALESCE(a.response_decision, '') != 'accept' THEN 1 ELSE 0 END) AS shortlisted,
           SUM(CASE WHEN lower(a.status) IN ('interviewing', 'interview') THEN 1 ELSE 0 END) AS interviewing
        FROM applications a
        INNER JOIN job_posts jp ON jp.id = a.job_post_id
@@ -5059,6 +5082,21 @@ app.put("/api/applications/:id/status", authenticateToken, requireApplicationDec
       }
 
       const msgType = isApproved ? "formal_offer" : (message_type === "manual" ? "manual" : "automated");
+
+      const hadInterview = Boolean(existing.had_interview) || ["interviewing", "interview"].includes(currentStatus);
+      const scheduledInterview = await get(
+        `SELECT id FROM scheduled_interviews
+         WHERE employer_user_id = ? AND applicant_user_id = ? AND job_post_id = ? AND status NOT IN ('cancelled', 'declined')
+         LIMIT 1`,
+        [appDetails.employer_user_id, appDetails.applicant_user_id, appDetails.job_post_id]
+      );
+
+      if (isApproved && !hadInterview && !scheduledInterview && !req.body.is_immediate_scheduling) {
+        return res.status(400).json({
+          message: "Candidate must have a scheduled or conducted interview stage before extending a formal offer.",
+          requiresInterview: true,
+        });
+      }
 
       const wasShortlisted = Boolean(existing.was_shortlisted) || ["shortlisted", "interviewing", "interview"].includes(currentStatus);
       const hadInterview = Boolean(existing.had_interview) || ["interviewing", "interview"].includes(currentStatus);
@@ -5334,12 +5372,20 @@ app.get("/api/employers/:userId/talent-pool", async (req, res) => {
             SELECT COALESCE(json_agg(json_build_object('job_post_id', ji.job_post_id, 'status', ji.status)), '[]'::json)
             FROM job_invitations ji
             WHERE ji.applicant_user_id = u.id AND ji.employer_user_id = ?
-          ) AS invited_jobs
+          ) AS invited_jobs,
+          (
+            SELECT 1
+            FROM applications a
+            JOIN job_posts jp ON jp.id = a.job_post_id
+            WHERE a.applicant_user_id = u.id AND jp.employer_user_id = ?
+              AND (lower(a.status) IN ('recruited', 'accepted', 'approved') OR a.response_decision = 'accept')
+            LIMIT 1
+          ) AS is_recruited
        FROM users u
        LEFT JOIN applicant_profiles ap ON ap.user_id = u.id
        WHERE u.role = 'applicant'
        ORDER BY u.created_at DESC`,
-      [userId, userId, userId, userId, userId]
+      [userId, userId, userId, userId, userId, userId]
     );
 
     res.json({ candidates });
@@ -5652,7 +5698,7 @@ app.post("/api/applicants/:userId/applications/:id/offer-response", authenticate
     const applicantName = [applicant?.first_name, applicant?.last_name].filter(Boolean).join(" ") || applicant?.email || "Candidate";
     const jobTitle = appRecord.job_title || "Job Position";
 
-    const newStatus = decision === "accept" ? "accepted" : "declined";
+    const newStatus = decision === "accept" ? "recruited" : "declined";
 
     await run(
       `UPDATE applications
@@ -7772,6 +7818,49 @@ app.patch("/api/interviews/:id/status", async (req, res) => {
       } catch (emailErr) {
         console.error("Interview notification email error:", emailErr?.message || emailErr);
       }
+
+      // Dispatch in-app chat thread system message
+      try {
+        const empId = existing.employer_user_id;
+        const candId = isApplicantUpdating ? updaterId : rUid;
+        if (empId && candId) {
+          const thread = await get(
+            `SELECT t.id
+             FROM message_threads t
+             JOIN message_participants p1 ON p1.thread_id = t.id AND p1.user_id = ?
+             JOIN message_participants p2 ON p2.thread_id = t.id AND p2.user_id = ?
+             LIMIT 1`,
+            [empId, candId]
+          );
+          let threadId = thread?.id;
+          if (!threadId) {
+            const created = await run(
+              `INSERT INTO message_threads (created_by_user_id, title) VALUES (?, ?)`,
+              [updaterId || empId, `Interview: ${existing.interview_title || "Schedule"}`]
+            );
+            threadId = created.lastID;
+            await run(`INSERT INTO message_participants (thread_id, user_id) VALUES (?, ?)`, [threadId, empId]).catch(() => {});
+            await run(`INSERT INTO message_participants (thread_id, user_id) VALUES (?, ?)`, [threadId, candId]).catch(() => {});
+          }
+
+          if (targetStatus === "cancelled" || targetStatus === "rescheduled") {
+            const chatText = targetStatus === "cancelled"
+              ? `[System Notice]: The interview scheduled for ${existing.interview_date} at ${existing.start_time} was cancelled.${cancellation_reason ? ` Reason: "${cancellation_reason}".` : ""}`
+              : `[System Notice]: The interview has been rescheduled to ${finalNewDate || existing.interview_date} at ${finalNewStartTime || existing.start_time}.`;
+
+            await run(
+              `INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`,
+              [threadId, updaterId || empId, chatText]
+            );
+            await run(
+              `UPDATE message_threads SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+              [threadId]
+            ).catch(() => {});
+          }
+        }
+      } catch (msgErr) {
+        console.error("Interview thread message error:", msgErr?.message || msgErr);
+      }
     }
 
     return res.json({ success: true, status: targetStatus });
@@ -8504,13 +8593,13 @@ async function ensureMeetingsForZakiAccounts() {
           job_post_id, applicant_user_id, status, submitted_at, decided_at,
           decision_message, decision_message_type, start_date, response_decision, response_letter, responded_at,
           was_shortlisted, had_interview, previous_status, updated_at
-        ) VALUES (?, ?, 'accepted', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'formal_offer', '2026-12-01', 'accept', ?, CURRENT_TIMESTAMP, FALSE, FALSE, 'submitted', CURRENT_TIMESTAMP)`,
+        ) VALUES (?, ?, 'recruited', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'formal_offer', '2026-12-01', 'accept', ?, CURRENT_TIMESTAMP, FALSE, FALSE, 'submitted', CURRENT_TIMESTAMP)`,
         [jobD.id, applicant.id, offerLetterTextD, acceptLetterTextD]
       );
     } else {
       await run(
         `UPDATE applications SET
-          status = 'accepted',
+          status = 'recruited',
           decision_message = ?,
           decision_message_type = 'formal_offer',
           start_date = '2026-12-01',
@@ -8711,9 +8800,9 @@ async function ensureMeetingsForZakiAccounts() {
           applicantAction: "Log in as applicant and click 'Formal Offer Letter' -> Submit Response"
         },
         {
-          scenario: "4. Accepted with response letter (Test employer clicking 'View Response Letter')",
+          scenario: "4. Recruited with response letter (Test employer clicking 'View Response Letter' & applicant Recruited badge)",
           job: jobD.title,
-          status: "accepted",
+          status: "recruited",
           responseDecision: "accept",
           employerAction: "Log in as employer -> Shortlisted / Hired -> Click 'View Response Letter'"
         },

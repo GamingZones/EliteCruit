@@ -2303,12 +2303,6 @@ export default function EmployerApplicantFinder() {
     const targetJob = selectedJobId ? activeJobs.find((j) => j.id === selectedJobId) || null : null;
 
     const list = candidates.filter((cand) => {
-      // Exclude candidates already approved or recruited by this employer
-      const candStatus = (cand.application_status || cand.latest_application_status || (cand as any).status || "").toLowerCase();
-      if (candStatus === "approved" || candStatus === "recruited" || candStatus === "hired") {
-        return false;
-      }
-
       // In Nearby Finder mode, only show applicants who have Nearby Employer Discovery ACTIVE
       if (searchMode === "nearby") {
         const isNearbyDiscoveryActive = Boolean(
@@ -3834,6 +3828,10 @@ export default function EmployerApplicantFinder() {
                                     </span>
                                   )}
                                 </div>
+                                <div className="finder-card-job-badge" title="Active vacancy context">
+                                  <span className="job-badge-label">Evaluating for:</span>{" "}
+                                  <strong>{currentActiveJob ? currentActiveJob.title : (activeJobs[0]?.title || "All Vacancies")}</strong>
+                                </div>
                                 <div className="finder-candidate-meta-inline">
                                   <span className="finder-meta-inline-item">
                                     <FinderIcon name="location" />
@@ -3901,13 +3899,37 @@ export default function EmployerApplicantFinder() {
                                 Details
                               </button>
 
-                              <button
-                                type="button"
-                                className="finder-card-btn btn-invite"
-                                onClick={() => openCandidateRecruit(cand)}
-                              >
-                                Invite
-                              </button>
+                              {(() => {
+                                const isCandidateRecruited = Boolean(
+                                  cand.is_recruited ||
+                                  (cand.latest_application_status || "").toLowerCase() === "recruited" ||
+                                  (cand.latest_application_status || "").toLowerCase() === "accepted" ||
+                                  (cand.invited_jobs && Array.isArray(cand.invited_jobs) && cand.invited_jobs.some((ij: any) => (ij.status || "").toLowerCase() === "recruited"))
+                                );
+
+                                if (isCandidateRecruited) {
+                                  return (
+                                    <button
+                                      type="button"
+                                      className="finder-card-btn btn-invite status-recruited"
+                                      disabled
+                                      title="Candidate has already been recruited"
+                                    >
+                                      Recruited
+                                    </button>
+                                  );
+                                }
+
+                                return (
+                                  <button
+                                    type="button"
+                                    className="finder-card-btn btn-invite"
+                                    onClick={() => openCandidateRecruit(cand)}
+                                  >
+                                    Invite
+                                  </button>
+                                );
+                              })()}
                             </div>
                           </div>
                         </div>
@@ -4198,6 +4220,10 @@ export default function EmployerApplicantFinder() {
                                   </span>
                                 )}
                               </div>
+                              <div className="finder-card-job-badge" title="Active vacancy context">
+                                <span className="job-badge-label">Evaluating for:</span>{" "}
+                                <strong>{currentActiveJob ? currentActiveJob.title : (activeJobs[0]?.title || "All Vacancies")}</strong>
+                              </div>
                               <div className="finder-candidate-meta-inline">
                                 <span className="finder-meta-inline-item">
                                   <FinderIcon name="location" />
@@ -4264,13 +4290,37 @@ export default function EmployerApplicantFinder() {
                               Details
                             </button>
 
-                            <button
-                              type="button"
-                              className="finder-card-btn btn-invite"
-                              onClick={() => openCandidateRecruit(cand)}
-                            >
-                              Invite
-                            </button>
+                            {(() => {
+                              const isCandidateRecruited = Boolean(
+                                cand.is_recruited ||
+                                (cand.latest_application_status || "").toLowerCase() === "recruited" ||
+                                (cand.latest_application_status || "").toLowerCase() === "accepted" ||
+                                (cand.invited_jobs && Array.isArray(cand.invited_jobs) && cand.invited_jobs.some((ij: any) => (ij.status || "").toLowerCase() === "recruited"))
+                              );
+
+                              if (isCandidateRecruited) {
+                                return (
+                                  <button
+                                    type="button"
+                                    className="finder-card-btn btn-invite status-recruited"
+                                    disabled
+                                    title="Candidate has already been recruited"
+                                  >
+                                    Recruited
+                                  </button>
+                                );
+                              }
+
+                              return (
+                                <button
+                                  type="button"
+                                  className="finder-card-btn btn-invite"
+                                  onClick={() => openCandidateRecruit(cand)}
+                                >
+                                  Invite
+                                </button>
+                              );
+                            })()}
                           </div>
                         </div>
                       </div>

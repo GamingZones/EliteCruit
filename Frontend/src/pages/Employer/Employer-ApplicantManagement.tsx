@@ -1328,6 +1328,7 @@ export default function EmployerApplicantManagement() {
   const [manualMessageText, setManualMessageText] = useState("");
   const [isDecisionSubmitting, setIsDecisionSubmitting] = useState(false);
   const [warningPopup, setWarningPopup] = useState<string>("");
+  const [interviewRequiredApp, setInterviewRequiredApp] = useState<Application | null>(null);
   const [customDecisionTemplates, setCustomDecisionTemplates] = useState<{
     acceptance_template?: string;
     rejection_template?: string;
@@ -2198,6 +2199,29 @@ export default function EmployerApplicantManagement() {
       return;
     }
 
+    if (action === "approved") {
+      const candidatesNeedingInterview = unfinalized.filter((a) => {
+        const hadInt = Boolean(
+          (a as any).had_interview ||
+          (a as any).interview_count > 0 ||
+          (a.status || "").toLowerCase() === "interviewing" ||
+          (a.status || "").toLowerCase() === "interview"
+        );
+        return !hadInt;
+      });
+
+      if (candidatesNeedingInterview.length > 0) {
+        if (candidatesNeedingInterview.length === 1) {
+          setInterviewRequiredApp(candidatesNeedingInterview[0]);
+        } else {
+          setWarningPopup(
+            `Selected candidates must have a scheduled or conducted interview stage before extending formal offers. Please schedule interviews first.`
+          );
+        }
+        return;
+      }
+    }
+
     const firstApp = unfinalized[0];
     setIsSchedulingImmediate(false);
     setSchedTitle("");
@@ -2732,15 +2756,17 @@ export default function EmployerApplicantManagement() {
 
     if (isFinalized) {
       const hasResponseLetter = Boolean(reviewModalApp.response_letter);
+      const isRecruited = (reviewModalApp.status || "").toLowerCase() === "recruited" || (reviewModalApp.status || "").toLowerCase() === "accepted" || reviewModalApp.response_decision === "accept";
+      const finalizedWord = isRecruited ? "Recruited" : isApproved ? "Approved" : "Declined";
       return (
         <div style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
           <button
             type="button"
             className={`modal-fused-status-btn ${isApproved ? "approved" : "denied declined"}`}
-            title={`Application decision finalized as ${isApproved ? "Approved" : "Declined"} (cannot be modified)`}
+            title={`Application decision finalized as ${finalizedWord} (cannot be modified)`}
             onClick={() => triggerLockedDecisionWarning(reviewModalApp)}
           >
-            {isApproved ? "Approved" : "Declined"}
+            {finalizedWord}
           </button>
           {hasResponseLetter && (
             <button
@@ -3522,7 +3548,8 @@ export default function EmployerApplicantManagement() {
                                         const isFinalized = isFinalizedStatus(app.status);
 
                                         if (isFinalized) {
-                                          const finalizedText = (app.status || "").toLowerCase() === "recruited" ? "Recruited" : isApproved ? "Approved" : "Declined";
+                                          const isRecruited = (app.status || "").toLowerCase() === "recruited" || (app.status || "").toLowerCase() === "accepted" || app.response_decision === "accept";
+                                          const finalizedText = isRecruited ? "Recruited" : isApproved ? "Approved" : "Declined";
                                           const hasResponseLetter = Boolean(app.response_letter);
                                           return (
                                             <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
@@ -4368,7 +4395,7 @@ export default function EmployerApplicantManagement() {
                                 const status = (inv.status || "pending").toLowerCase();
                                 const synthApp: Application = {
                                   id: inv.id,
-                                  status: status === "accepted" ? "approved" : status,
+                                  status: status === "accepted" ? "recruited" : status,
                                   submitted_at: inv.created_at,
                                   job_post_id: inv.job_post_id,
                                   job_title: inv.job_title,
@@ -5279,6 +5306,46 @@ export default function EmployerApplicantManagement() {
           hideCancel={true}
           onConfirm={() => setScheduleSuccessPopup(null)}
         />
+
+        {/* ── RULE 6 COMPLIANT INTERVIEW STAGE REQUIRED POPUP MODAL ── */}
+        {interviewRequiredApp && (
+          <div className="system-popup-overlay" onClick={() => setInterviewRequiredApp(null)}>
+            <div className="system-popup-card" onClick={(e) => e.stopPropagation()}>
+              <div className="system-popup-icon-wrap warning">
+                <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#ca8a04" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </div>
+              <h3 className="system-popup-title">Interview Stage Required</h3>
+              <p className="system-popup-message">
+                <strong>{interviewRequiredApp.applicant_name}</strong> must have a scheduled or conducted interview stage before extending a formal offer. Would you like to schedule an interview now?
+              </p>
+              <div className="system-popup-actions" style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+                <button
+                  type="button"
+                  className="system-popup-btn"
+                  onClick={() => {
+                    const target = interviewRequiredApp;
+                    setInterviewRequiredApp(null);
+                    handleOpenDirectScheduleModal(target);
+                  }}
+                >
+                  Schedule Interview First
+                </button>
+                <button
+                  type="button"
+                  className="system-popup-btn"
+                  style={{ background: "#64748b" }}
+                  onClick={() => setInterviewRequiredApp(null)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── RULE 6 COMPLIANT WARNING POPUP MODAL ── */}
         {warningPopup && (

@@ -112,6 +112,52 @@
   display: block;
 }
 
+/* ── Offer Letter Preview Box ── */
+.adm-offer-preview-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #f0f9ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.adm-offer-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.adm-offer-start-pill {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #0369a1;
+  background: #e0f2fe;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid #bae6fd;
+}
+
+.adm-offer-letter-box {
+  max-height: 160px;
+  overflow-y: auto;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #1e293b;
+  white-space: pre-wrap;
+  background: #ffffff;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.adm-offer-letter-box p:last-child {
+  margin-bottom: 0 !important;
+}
+
 /* ── Response Type Selector ── */
 .adm-type-selector {
   display: flex;
@@ -344,6 +390,23 @@
 
 [data-theme="dark"] .adm-card-body {
   background: #14151B !important;
+}
+
+[data-theme="dark"] .adm-offer-preview-section {
+  background: rgba(2, 132, 199, 0.1) !important;
+  border: 1px solid rgba(56, 189, 248, 0.25) !important;
+}
+
+[data-theme="dark"] .adm-offer-start-pill {
+  color: #38bdf8 !important;
+  background: rgba(2, 132, 199, 0.25) !important;
+  border-color: rgba(56, 189, 248, 0.4) !important;
+}
+
+[data-theme="dark"] .adm-offer-letter-box {
+  background: #181a24 !important;
+  border-color: #2e3244 !important;
+  color: #f1f5f9 !important;
 }
 
 [data-theme="dark"] .adm-field-label {

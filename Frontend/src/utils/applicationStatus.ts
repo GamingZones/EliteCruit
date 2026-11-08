@@ -28,9 +28,9 @@ export function formatApplicationStatusLabel(status: string | null | undefined):
   switch (s) {
     case "recruited":
     case "hired":
+    case "accepted":
       return "Recruited";
     case "approved":
-    case "accepted":
       return "Approved";
     case "interviewing":
     case "interview":
@@ -64,9 +64,9 @@ export function getApplicationStatusBadgeClass(status: string | null | undefined
   switch (s) {
     case "recruited":
     case "hired":
+    case "accepted":
       return "status-badge-chip chip-recruited status-chip recruited approved";
     case "approved":
-    case "accepted":
       return "status-badge-chip chip-approved status-chip approved";
     case "interviewing":
     case "interview":

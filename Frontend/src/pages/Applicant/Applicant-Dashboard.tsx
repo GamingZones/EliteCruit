@@ -244,30 +244,31 @@ function parseExpectedSalary(raw: string | null | undefined) {
 }
 
 
-function statusChipBadgeClass(status: string) {
+function statusChipBadgeClass(status: string, app?: any) {
   const s = (status || "").toLowerCase();
   if (s === "interviewing" || s === "interview") return "chip-interviewing";
-  if (s === "recruited") return "chip-recruited";
-  if (s === "approved" || s === "accepted") return "chip-approved";
+  if (s === "recruited" || s === "hired" || s === "accepted" || app?.response_decision === "accept") return "chip-recruited";
+  if (s === "approved") return "chip-approved";
   if (s === "shortlisted") return "chip-shortlisted";
   if (s === "denied" || s === "declined" || s === "rejected" || s === "withdrawn") return "chip-denied chip-declined";
   return "chip-pending";
 }
 
-function statusChipClass(status: string) {
+function statusChipClass(status: string, app?: any) {
   const s = (status || "").toLowerCase();
   if (s === "interviewing" || s === "interview") return "match-chip chip-amber";
-  if (s === "recruited" || s === "approved" || s === "accepted") return "match-chip chip-green";
+  if (s === "recruited" || s === "hired" || s === "accepted" || app?.response_decision === "accept") return "match-chip chip-green";
+  if (s === "approved") return "match-chip chip-green";
   if (s === "shortlisted") return "match-chip chip-amber";
   if (s === "denied" || s === "declined" || s === "rejected" || s === "withdrawn") return "match-chip chip-amber";
   return "match-chip chip-green";
 }
 
-function formatStatusLabel(status: string) {
+function formatStatusLabel(status: string, app?: any) {
   const s = (status || "").toLowerCase();
   if (s === "interviewing" || s === "interview") return "Interviewing";
-  if (s === "recruited") return "Recruited";
-  if (s === "approved" || s === "accepted") return "Approved";
+  if (s === "recruited" || s === "hired" || s === "accepted" || app?.response_decision === "accept") return "Recruited";
+  if (s === "approved") return "Approved";
   if (s === "shortlisted") return "Shortlisted";
   if (s === "withdrawn") return "Withdrawn";
   if (s === "denied" || s === "declined" || s === "rejected") return "Declined";
@@ -275,7 +276,9 @@ function formatStatusLabel(status: string) {
 }
 
 function getApplicationTimelineSteps(app: any) {
-  const status = (app?.status || "submitted").toLowerCase();
+  const rawStatus = (app?.status || "submitted").toLowerCase();
+  const isRecruited = rawStatus === "recruited" || rawStatus === "hired" || rawStatus === "accepted" || app?.response_decision === "accept";
+  const status = isRecruited ? "recruited" : rawStatus;
   const submittedDate = app?.submitted_at ? formatDate(app.submitted_at) : "Submitted";
   const decidedDate = app?.decided_at ? formatDate(app.decided_at) : (app?.responded_at ? formatDate(app.responded_at) : null);
 
@@ -296,9 +299,9 @@ function getApplicationTimelineSteps(app: any) {
     } catch {}
   }
 
-  const isFinalDecision = ["approved", "accepted", "recruited", "denied", "rejected", "withdrawn"].includes(status);
-  const isApproved = ["approved", "accepted", "recruited"].includes(status);
-  const isDenied = ["denied", "rejected", "withdrawn"].includes(status);
+  const isFinalDecision = ["approved", "accepted", "recruited", "hired", "denied", "rejected", "declined", "withdrawn"].includes(status) || Boolean(app?.response_decision);
+  const isApproved = ["approved", "accepted", "recruited", "hired"].includes(status);
+  const isDenied = ["denied", "rejected", "declined", "withdrawn"].includes(status);
   const isDirectRecruited = status === "recruited" || Boolean(app?.is_direct_invitation) || String(app?.origin || "").toLowerCase() === "invitation";
 
   // Check if candidate actually passed through shortlisted / interview stages
@@ -368,6 +371,8 @@ function getApplicationTimelineSteps(app: any) {
         ? "Technical & competency interview conducted with hiring manager."
         : isInterviewStage
         ? "Candidate advanced to active interview evaluation stage."
+        : isFinalDecision
+        ? "Stage completed or waived for final decision."
         : wasShortlisted
         ? "Candidate shortlisted. Awaiting interview schedule or hiring update."
         : "Awaiting interview invitation from hiring team.",
@@ -391,9 +396,9 @@ function getApplicationTimelineSteps(app: any) {
     {
       title: status === "withdrawn"
         ? "Application Withdrawn"
-        : status === "denied" || status === "rejected"
+        : status === "denied" || status === "rejected" || status === "declined"
         ? "Application Declined"
-        : status === "recruited"
+        : status === "recruited" || isRecruited
         ? "Candidate Recruited"
         : status === "accepted"
         ? (Boolean(app?.offer_letter || app?.decision_message_type === "formal_offer" || app?.response_letter) ? "Formal Offer Accepted" : "Application Accepted")
@@ -404,11 +409,11 @@ function getApplicationTimelineSteps(app: any) {
         : "Final Hiring Decision",
       description: status === "withdrawn"
         ? "You have withdrawn your application for this position."
-        : status === "denied" || status === "rejected"
+        : status === "denied" || status === "rejected" || status === "declined"
         ? (app?.decision_message
           ? "Application declined. Hiring team reviewed your application and chose to proceed with other candidates."
           : "Employer decided to pursue other applicants for this role.")
-        : status === "recruited"
+        : status === "recruited" || isRecruited
         ? "Congratulations! You have been successfully recruited for this role."
         : status === "accepted"
         ? "Offer accepted! Onboarding details will be communicated shortly."
@@ -442,7 +447,9 @@ function ApplicationCardTimeline({
 }) {
   const steps = getApplicationTimelineSteps(app);
   const [hoveredStepIndex, setHoveredStepIndex] = useState<number | null>(null);
-  const status = (app?.status || "submitted").toLowerCase();
+  const rawStatus = (app?.status || "submitted").toLowerCase();
+  const isRecruited = rawStatus === "recruited" || rawStatus === "hired" || rawStatus === "accepted" || app?.response_decision === "accept";
+  const status = isRecruited ? "recruited" : rawStatus;
 
   // Compute progress line width (3 intervals between 4 steps: 0%, 33.33%, 66.66%, 100%)
   const lastCompletedIndex = steps.reduce(
@@ -450,8 +457,8 @@ function ApplicationCardTimeline({
     -1
   );
   const activeIndex = steps.findIndex((s) => s.state === "active");
-  const isFinalDecision = ["approved", "accepted", "recruited", "denied", "rejected", "withdrawn"].includes(status);
-  const isDenied = ["denied", "rejected", "withdrawn"].includes(status);
+  const isFinalDecision = ["approved", "accepted", "recruited", "hired", "denied", "rejected", "declined", "withdrawn"].includes(status) || Boolean(app?.response_decision);
+  const isDenied = ["denied", "rejected", "declined", "withdrawn"].includes(status);
 
   let progressPct = 0;
   if (isFinalDecision || lastCompletedIndex === 3) {
@@ -469,8 +476,8 @@ function ApplicationCardTimeline({
   return (
     <div className="card-timeline-wrapper">
       <div className="card-timeline-badge-row">
-        <span className={`status-badge-chip ${statusChipBadgeClass(app.status)}`}>
-          {formatStatusLabel(app.status)}
+        <span className={`status-badge-chip ${statusChipBadgeClass(app.status, app)}`}>
+          {formatStatusLabel(app.status, app)}
         </span>
       </div>
 
@@ -1090,7 +1097,7 @@ export default function ApplicantDashboard() {
           a.id === applicationId
             ? {
                 ...a,
-                status: action === "accept" ? "accepted" : "declined",
+                status: action === "accept" ? "recruited" : "declined",
                 response_letter: letter_text,
                 response_decision: action,
                 start_date: start_date || a.start_date,
@@ -1761,6 +1768,7 @@ export default function ApplicantDashboard() {
                                 title: app.job_title || app.title || "Applied Role",
                                 company: app.company_name || "Employer",
                                 letterText: app.response_letter,
+                                offerLetter: app.offer_letter || app.decision_message,
                                 startDate: app.start_date,
                                 respondedAt: app.responded_at,
                                 decision: app.response_decision || (app.status === "declined" ? "declined" : "accepted"),
@@ -1784,7 +1792,7 @@ export default function ApplicantDashboard() {
                             });
                           }}
                         >
-                          <span>Offer Letter</span>
+                          <span>Formal Offer Letter</span>
                         </button>
                       );
                     }
@@ -2037,13 +2045,15 @@ export default function ApplicantDashboard() {
         isOpen={!!appDecisionModalTarget}
         action={appDecisionModalTarget?.action || "accept"}
         title="Respond to Formal Employment Offer"
-        jobTitle={appDecisionModalTarget?.app.job_title || appDecisionModalTarget?.app.title}
-        companyName={appDecisionModalTarget?.app.company_name}
+        jobTitle={appDecisionModalTarget?.app?.job_title || appDecisionModalTarget?.app?.title}
+        companyName={appDecisionModalTarget?.app?.company_name}
         candidateName={applicantLabel}
         currentUserId={applicantUserId || undefined}
+        offerLetter={appDecisionModalTarget?.app?.offer_letter || appDecisionModalTarget?.app?.decision_message}
+        startDate={appDecisionModalTarget?.app?.start_date}
         onClose={() => setAppDecisionModalTarget(null)}
         onConfirm={async ({ action, letter_text, letter_type, start_date }) => {
-          if (!appDecisionModalTarget) return;
+          if (!appDecisionModalTarget?.app) return;
           await handleRespondApplication(
             appDecisionModalTarget.app.id,
             action,
@@ -2090,7 +2100,21 @@ export default function ApplicantDashboard() {
               )}
             </div>
 
+            {viewLetterModalTarget.offerLetter && (
+              <div className="view-letter-offer-box" style={{ margin: "14px 20px 0", padding: "12px 14px", borderRadius: "8px", background: "rgba(2, 132, 199, 0.08)", border: "1px solid rgba(2, 132, 199, 0.25)" }}>
+                <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "#0284c7", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: "6px" }}>
+                  OFFER LETTER FROM {viewLetterModalTarget.company?.toUpperCase() || "EMPLOYER"}
+                </span>
+                <pre className="view-letter-pre-text" style={{ margin: 0, whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: "0.85rem", lineHeight: 1.55 }}>
+                  {viewLetterModalTarget.offerLetter}
+                </pre>
+              </div>
+            )}
+
             <div className="view-letter-body-box">
+              <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: "6px" }}>
+                YOUR FORMAL RESPONSE LETTER
+              </span>
               <pre className="view-letter-pre-text">{viewLetterModalTarget.letterText}</pre>
             </div>
 
@@ -2118,8 +2142,8 @@ export default function ApplicantDashboard() {
                 <div className="timeline-modal-meta">
                   <span className="timeline-modal-company">{timelineModalApp.company_name || "Employer"}</span>
                   <span className="meta-sep">•</span>
-                  <span className={`status-badge-chip ${statusChipBadgeClass(timelineModalApp.status)}`}>
-                    {formatStatusLabel(timelineModalApp.status)}
+                  <span className={`status-badge-chip ${statusChipBadgeClass(timelineModalApp.status, timelineModalApp)}`}>
+                    {formatStatusLabel(timelineModalApp.status, timelineModalApp)}
                   </span>
                 </div>
               </div>
@@ -2292,6 +2316,7 @@ export default function ApplicantDashboard() {
                                         title: app.job_title || app.title || "Applied Role",
                                         company: app.company_name || "Employer",
                                         letterText: app.response_letter,
+                                        offerLetter: app.offer_letter || app.decision_message,
                                         startDate: app.start_date,
                                         respondedAt: app.responded_at,
                                         decision: app.response_decision || (app.status === "declined" ? "declined" : "accepted"),
@@ -2315,7 +2340,7 @@ export default function ApplicantDashboard() {
                                     });
                                   }}
                                 >
-                                  <span>Offer Letter</span>
+                                  <span>Formal Offer Letter</span>
                                 </button>
                               );
                             }

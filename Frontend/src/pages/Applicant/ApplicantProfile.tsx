@@ -336,6 +336,7 @@ function Field({
 
 interface SearchableSelectProps {
   options: string[];
+  groupedOptions?: Record<string, string[]>;
   placeholder?: string;
   value: string;
   onChange: (value: string) => void;
@@ -346,6 +347,7 @@ interface SearchableSelectProps {
 
 function SearchableSelect({
   options,
+  groupedOptions,
   placeholder = "Type or select option...",
   value,
   onChange,
@@ -378,6 +380,39 @@ function SearchableSelect({
     const q = value.trim().toLowerCase();
     return options.filter((opt) => opt.toLowerCase().includes(q));
   }, [options, value, isUserTyping]);
+
+  const groupedSections = useMemo(() => {
+    if (!groupedOptions) return null;
+    const sections: { category: string; items: { opt: string; originalIndex: number }[] }[] = [];
+    const assigned = new Set<string>();
+
+    for (const [category, items] of Object.entries(groupedOptions)) {
+      const matchingItems: { opt: string; originalIndex: number }[] = [];
+      items.forEach((item) => {
+        const itemLower = item.toLowerCase();
+        const foundIdx = filteredOptions.findIndex((fo) => fo.toLowerCase() === itemLower);
+        if (foundIdx !== -1) {
+          matchingItems.push({ opt: filteredOptions[foundIdx], originalIndex: foundIdx });
+          assigned.add(itemLower);
+        }
+      });
+      if (matchingItems.length > 0) {
+        sections.push({ category, items: matchingItems });
+      }
+    }
+
+    const leftovers: { opt: string; originalIndex: number }[] = [];
+    filteredOptions.forEach((opt, idx) => {
+      if (!assigned.has(opt.toLowerCase())) {
+        leftovers.push({ opt, originalIndex: idx });
+      }
+    });
+    if (leftovers.length > 0) {
+      sections.push({ category: "Other Specializations", items: leftovers });
+    }
+
+    return sections;
+  }, [groupedOptions, filteredOptions]);
 
   const exactMatch = useMemo(() => {
     return options.some((opt) => opt.toLowerCase() === value.trim().toLowerCase());
@@ -488,7 +523,41 @@ function SearchableSelect({
 
       {isOpen && !disabled && (
         <ul className={`combobox-dropdown-menu ${openUp ? "open-top" : ""}`} role="listbox">
-          {filteredOptions.length > 0 ? (
+          {groupedSections ? (
+            groupedSections.length > 0 ? (
+              groupedSections.map((sec) => (
+                <React.Fragment key={sec.category}>
+                  <li className="combobox-group-header" role="presentation">
+                    {sec.category}
+                  </li>
+                  {sec.items.map(({ opt, originalIndex }) => {
+                    const isHighlighted = originalIndex === highlightedIndex;
+                    const isSelected = opt.toLowerCase() === value.trim().toLowerCase();
+                    return (
+                      <li
+                        key={opt}
+                        role="option"
+                        aria-selected={isSelected}
+                        className={`combobox-option ${isHighlighted ? "highlighted" : ""} ${isSelected ? "selected" : ""}`}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleSelect(opt);
+                        }}
+                        onMouseEnter={() => setHighlightedIndex(originalIndex)}
+                      >
+                        <span className="option-text">{opt}</span>
+                        {isSelected && <span className="option-check">✓</span>}
+                      </li>
+                    );
+                  })}
+                </React.Fragment>
+              ))
+            ) : (
+              <li className="combobox-no-matches">
+                No matching standard options found.
+              </li>
+            )
+          ) : filteredOptions.length > 0 ? (
             filteredOptions.map((opt, index) => {
               const isHighlighted = index === highlightedIndex;
               const isSelected = opt.toLowerCase() === value.trim().toLowerCase();
@@ -5097,6 +5166,7 @@ export default function ApplicantProfile() {
                               (opt) => !currentRoles.some((r) => r.toLowerCase() === opt.toLowerCase())
                             );
                           })()}
+                          groupedOptions={CATEGORIZED_JOB_ROLES}
                           value={targetRoleInput}
                           onChange={setTargetRoleInput}
                           onEnterAdd={() => handleAddTargetRole()}

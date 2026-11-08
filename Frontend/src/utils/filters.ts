@@ -3349,9 +3349,54 @@ export function calculateJobMatchDetails(
 
   // 1. Skills (3-Tier: Skill presence checked first, then duration. Skills & years count as distinct requirements)
   const rawJobSkills = job.skillTags || [];
-  const profileSkills = profile.skills || [];
-  const profileCerts = profile.certifications || [];
-  const profileQuals = profile.qualifications || [];
+  const rawJobQuals = job.qualTags || [];
+  const rawJobCerts = job.certTags || [];
+  const profileSkills = (profile.skills || []).filter((s) => s && s.trim());
+  const profileCerts = (profile.certifications || []).filter((c) => c && c.trim());
+  const profileQuals = (profile.qualifications || []).filter((q) => q && q.trim());
+  const hasDesiredRole = Boolean(
+    profile.desiredJobTitle &&
+      profile.desiredJobTitle.trim() &&
+      profile.desiredJobTitle !== "Not specified" &&
+      profile.desiredJobTitle !== "None"
+  );
+
+  // If applicant has an empty profile (no skills, certs, quals, or desired job title), default score to 0%
+  const isProfileEmpty =
+    profileSkills.length === 0 &&
+    profileCerts.length === 0 &&
+    profileQuals.length === 0 &&
+    !hasDesiredRole;
+
+  if (isProfileEmpty) {
+    return {
+      score: 0,
+      breakdown: "Complete your profile setup to generate a match score.",
+      skillsPts: 0,
+      qualPts: 0,
+      certPts: 0,
+      maxSkillsPts: 50,
+      maxQualPts: 30,
+      maxCertPts: 20,
+      matchedSkills: [],
+      partialSkills: [],
+      missingSkills: rawJobSkills,
+      matchedQuals: [],
+      missingQuals: rawJobQuals,
+      matchedCerts: [],
+      missingCerts: rawJobCerts,
+      setupPts: 0,
+      salaryPts: 0,
+      locationPts: 0,
+      titleBonus: 0,
+      setupSummary: job.setup || "Standard",
+      salarySummary: "Set your expected salary in profile",
+      locationSummary: formatLocationWithCavite(job.location),
+      recommendations: [
+        "Complete your profile skills, education, and target job titles to view your personalized match score.",
+      ],
+    };
+  }
 
   const matchedSkills: string[] = [];
   const partialSkills: string[] = [];
@@ -3428,7 +3473,7 @@ export function calculateJobMatchDetails(
   let score = 0;
 
   if (totalBase === 0) {
-    score = 100;
+    score = 0;
   } else {
     maxSkillsPts = hasSkills ? Math.round((baseSkills / totalBase) * 100) : 0;
     maxQualsPts = hasQuals ? Math.round((baseQuals / totalBase) * 100) : 0;
@@ -3461,7 +3506,11 @@ export function calculateJobMatchDetails(
   const breakdown =
     breakdownParts.length > 0
       ? `Match Score: ${score}%\n` + breakdownParts.join("\n")
-      : `100% Match on all criteria!`;
+      : totalBase === 0
+      ? "No specific competency requirements listed for this position."
+      : score === 100
+      ? "100% Match on all criteria!"
+      : `Match Score: ${score}%`;
 
   const recommendations: string[] = [];
   if (missingSkills.length > 0) {

@@ -578,6 +578,45 @@
   border: 1px solid rgba(248, 113, 113, 0.3);
 }
 
+.finder-card-job-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.74rem;
+  color: #0369a1;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 4px;
+  padding: 2px 7px;
+  margin-top: 3px;
+  margin-bottom: 2px;
+  width: fit-content;
+}
+
+.finder-card-job-badge .job-badge-label {
+  color: #0284c7;
+  font-weight: 500;
+}
+
+.finder-card-job-badge strong {
+  color: #0c4a6e;
+  font-weight: 700;
+}
+
+[data-theme="dark"] .finder-card-job-badge {
+  color: #38bdf8;
+  background: rgba(14, 165, 233, 0.12);
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+[data-theme="dark"] .finder-card-job-badge .job-badge-label {
+  color: #7dd3fc;
+}
+
+[data-theme="dark"] .finder-card-job-badge strong {
+  color: #e0f2fe;
+}
+
 .finder-candidate-meta-inline {
   display: flex;
   align-items: center;

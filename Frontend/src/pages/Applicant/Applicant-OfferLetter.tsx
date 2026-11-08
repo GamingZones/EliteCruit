@@ -133,7 +133,7 @@ export default function ApplicantOfferLetter() {
             a.offer_letter ||
             (a.decision_message_type === "formal_offer" && a.decision_message) ||
             ["offered", "offer_extended"].includes(st) ||
-            (a.response_letter && ["accepted", "approved", "declined"].includes(st))
+            (a.response_letter && ["accepted", "approved", "recruited", "declined"].includes(st))
           );
           return hasOffer;
         });
@@ -153,9 +153,9 @@ export default function ApplicantOfferLetter() {
               status: a.response_letter ? "Responded" : "Pending response",
               receivedDate: a.updated_at ? new Date(a.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Recent",
               respondByDate: "Within 7 days",
-              startDate: a.start_date || "Nov 3, 2026",
+              startDate: a.start_date || "To be mutually agreed upon",
               workSetup: a.work_arrangement || "Not specified",
-              salary: a.salary ? `PHP ${a.salary}` : "Not specified",
+              salary: a.salary ? `PHP ${a.salary}` : (a.salary_min && a.salary_max ? `PHP ${Number(a.salary_min).toLocaleString()} - ${Number(a.salary_max).toLocaleString()}` : "Competitive compensation"),
               letterContent: letter,
             };
           });
@@ -227,6 +227,7 @@ export default function ApplicantOfferLetter() {
 
   // Handle Download Letter
   const handleDownloadLetter = () => {
+    if (!currentOffer) return;
     const textToDownload = `OFFICIAL EMPLOYMENT OFFER LETTER
 Position: ${currentOffer.title}
 Company: ${currentOffer.company}
@@ -267,7 +268,7 @@ Document Timestamp: ${new Date().toLocaleString()}
 
   // Confirm Decision Submission
   const handleConfirmDecision = async () => {
-    if (!selectedDecision) return;
+    if (!selectedDecision || !currentOffer) return;
     setIsSubmittingDecision(true);
     setActionFeedback(null);
 
@@ -276,7 +277,10 @@ Document Timestamp: ${new Date().toLocaleString()}
         const endpoint = `/api/applicants/${userId}/applications/${currentOffer.id}/offer-response`;
         const res = await fetch(endpoint, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("elitecruit-token") || ""}`,
+          },
           body: JSON.stringify({
             decision: selectedDecision,
             letter_text: customMessage,
@@ -349,7 +353,10 @@ Document Timestamp: ${new Date().toLocaleString()}
     try {
       const res = await fetch(`/api/applicants/${userId}/letter-templates`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("elitecruit-token") || ""}`,
+        },
         body: JSON.stringify(payload),
       });
 
@@ -652,7 +659,7 @@ Document Timestamp: ${new Date().toLocaleString()}
                                       </svg>
                                     </div>
                                     <div className="aol-letter-text-content">
-                                      {offer.letterContent.split("\n\n").map((para, i) => (
+                                      {(offer.letterContent || "").split("\n\n").map((para, i) => (
                                         <p key={i}>{para}</p>
                                       ))}
                                     </div>
@@ -980,7 +987,7 @@ Document Timestamp: ${new Date().toLocaleString()}
                 {selectedDecision === "accept" ? "Confirm Offer Acceptance" : "Confirm Offer Decline"}
               </h3>
               <p className="aol-modal-desc">
-                You are about to <strong>{selectedDecision.toUpperCase()}</strong> the formal employment offer from{" "}
+                You are about to <strong>{(selectedDecision || "").toUpperCase()}</strong> the formal employment offer from{" "}
                 <strong>{currentOffer?.company}</strong> for the position of <strong>{currentOffer?.title}</strong>.
               </p>
               {customMessage.trim() && (
