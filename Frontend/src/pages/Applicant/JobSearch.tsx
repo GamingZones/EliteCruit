@@ -3636,11 +3636,11 @@ export default function JobSearch() {
                         <p className="meta-line">
                           <span className="company-meta-with-rating">
                             <MiniIcon name="company" />
-                            <span>{job.company}</span>
                             <span className="company-inline-rating-pill" title="Company rating">
                               <span className="star-icon">★</span>
                               <span>{job.rating ? Number(job.rating).toFixed(1) : "0.0"}</span>
                             </span>
+                            <span>{job.company}</span>
                           </span>
                           <RenderLocationMeta location={job.location} />
                         </p>

@@ -1594,11 +1594,11 @@ export default function ApplicantDashboard() {
                     <p className="meta-line">
                       <span className="company-meta-with-rating">
                         <MiniIcon name="company" />
-                        <strong>{job.company}</strong>
                         <span className="company-inline-rating-pill" title="Company rating">
                           <span className="star-icon">★</span>
                           <span>{job.rating ? Number(job.rating).toFixed(1) : "0.0"}</span>
                         </span>
+                        <strong>{job.company}</strong>
                       </span>
                       <span className="meta-divider">•</span>
                       <RenderLocationMeta location={job.location} />
@@ -1722,11 +1722,11 @@ export default function ApplicantDashboard() {
                   <p className="app-company-loc-line">
                     {app.company_name ? (
                       <span className="company-meta-with-rating">
-                        <strong>{app.company_name}</strong>
                         <span className="company-inline-rating-pill" title="Company rating">
                           <span className="star-icon">★</span>
                           <span>{app.rating ? Number(app.rating).toFixed(1) : "0.0"}</span>
                         </span>
+                        <strong>{app.company_name}</strong>
                       </span>
                     ) : null}
                     <span className="meta-divider">•</span>
@@ -1901,11 +1901,11 @@ export default function ApplicantDashboard() {
                       </div>
                       <p className="app-company-loc-line">
                         <span className="company-meta-with-rating">
-                          <strong>{inv.business_name || "Employer"}</strong>
                           <span className="company-inline-rating-pill" title="Company rating">
                             <span className="star-icon">★</span>
                             <span>{(inv as any).rating ? Number((inv as any).rating).toFixed(1) : "0.0"}</span>
                           </span>
+                          <strong>{inv.business_name || "Employer"}</strong>
                         </span>
                         <span className="meta-divider">•</span>
                         <span>{inv.job_location || "Cavite"}</span>
@@ -2280,11 +2280,11 @@ export default function ApplicantDashboard() {
                           <p className="app-company-loc-line">
                             {app.company_name ? (
                               <span className="company-meta-with-rating">
-                                <strong>{app.company_name}</strong>
                                 <span className="company-inline-rating-pill" title="Company rating">
                                   <span className="star-icon">★</span>
                                   <span>{app.rating ? Number(app.rating).toFixed(1) : "0.0"}</span>
                                 </span>
+                                <strong>{app.company_name}</strong>
                               </span>
                             ) : null}
                             <span className="meta-divider">•</span>
