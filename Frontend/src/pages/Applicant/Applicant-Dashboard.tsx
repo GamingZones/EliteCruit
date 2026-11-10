@@ -2126,9 +2126,6 @@ export default function ApplicantDashboard() {
             <div className="view-letter-modal-card" onClick={(e) => e.stopPropagation()}>
               <div className="view-letter-header">
                 <div>
-                  <span className="view-letter-eyebrow">
-                    {currentTab === "offer" ? "OFFICIAL OFFER LETTER" : "FORMAL RESPONSE LETTER"}
-                  </span>
                   <h3 className="view-letter-title">{viewLetterModalTarget.title}</h3>
                   <p className="view-letter-company">{viewLetterModalTarget.company}</p>
                 </div>
