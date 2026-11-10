@@ -4002,6 +4002,42 @@
   margin: 0;
 }
 
+.role-work-arrangement-select-wrap {
+  width: 100%;
+  position: relative;
+  height: 38px;
+  min-height: 38px;
+}
+
+.role-work-arrangement-select {
+  width: 100%;
+  height: 38px;
+  min-height: 38px;
+  padding: 8px 36px 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #0f172a;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px 16px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.role-work-arrangement-select:focus {
+  outline: none;
+  border-color: #00385e;
+  box-shadow: 0 0 0 3px rgba(0, 56, 94, 0.12);
+}
+
 .salary-controls-row {
   display: flex;
   align-items: center;
@@ -4316,6 +4352,23 @@ button.hide-salary-btn.active {
 
 [data-theme="dark"] .salary-confidential-tag {
   color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .role-work-arrangement-select {
+  background-color: #14151b !important;
+  border: 1px solid #2e3244 !important;
+  color: #f1f5f9 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") !important;
+}
+
+[data-theme="dark"] .role-work-arrangement-select:focus {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15) !important;
+}
+
+[data-theme="dark"] .role-work-arrangement-select option {
+  background-color: #14151b !important;
+  color: #f1f5f9 !important;
 }
 
 [data-theme="dark"] .empty-category-notice {

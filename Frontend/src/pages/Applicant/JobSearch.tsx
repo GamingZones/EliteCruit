@@ -1523,9 +1523,19 @@ export default function JobSearch() {
         job.location.toLowerCase().includes(selectedCity.toLowerCase()) ||
         selectedCity.toLowerCase().includes(job.location.toLowerCase());
 
-      const byWorkArrangement =
-        selectedWorkArrangement === "Any arrangement" ||
-        job.setup.toLowerCase() === selectedWorkArrangement.toLowerCase();
+      const byWorkArrangement = (() => {
+        if (selectedWorkArrangement === "Any arrangement") return true;
+        const targetWa = selectedWorkArrangement.replace(/[^a-zA-Z]/g, "").toLowerCase();
+        const jobWa = (job.setup || "").toLowerCase();
+        if (targetWa === "remote") {
+          return jobWa.includes("remote") || jobWa.includes("hybrid");
+        } else if (targetWa === "onsite") {
+          return jobWa.includes("site") || jobWa.includes("hybrid");
+        } else if (targetWa === "hybrid") {
+          return jobWa.includes("hybrid");
+        }
+        return jobWa === targetWa;
+      })();
 
       const bySalary = minSalary === 0 || job.salaryMin >= minSalary;
 

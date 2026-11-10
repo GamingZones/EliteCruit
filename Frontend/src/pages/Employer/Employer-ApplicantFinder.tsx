@@ -2415,9 +2415,19 @@ export default function EmployerApplicantFinder() {
 
       // 5. Work Arrangement
       if (selectedArrangement !== "Any arrangement") {
-        const candWa = (cand.work_arrangement || "").replace(/[^a-zA-Z]/g, "").toLowerCase();
+        const candWa = (cand.work_arrangement || "").toLowerCase();
         const targetWa = selectedArrangement.replace(/[^a-zA-Z]/g, "").toLowerCase();
-        if (!candWa || candWa !== targetWa) {
+        let matches = false;
+        if (targetWa === "remote") {
+          matches = candWa.includes("remote") || candWa.includes("hybrid");
+        } else if (targetWa === "onsite") {
+          matches = candWa.includes("site") || candWa.includes("hybrid");
+        } else if (targetWa === "hybrid") {
+          matches = candWa.includes("hybrid");
+        } else {
+          matches = candWa.includes(targetWa);
+        }
+        if (!matches) {
           return false;
         }
       }
