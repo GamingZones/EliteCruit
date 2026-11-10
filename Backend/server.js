@@ -719,6 +719,20 @@ async function ensureJobPostColumns() {
   await run("ALTER TABLE applications ADD COLUMN IF NOT EXISTS had_interview BOOLEAN NOT NULL DEFAULT FALSE");
   await run("ALTER TABLE applications ADD COLUMN IF NOT EXISTS previous_status TEXT");
   await run("UPDATE applications SET status = 'recruited' WHERE response_decision = 'accept' OR lower(status) = 'accepted'").catch(() => {});
+  await run(`
+    UPDATE applications
+    SET status = 'recruited',
+        response_decision = COALESCE(applications.response_decision, 'accept'),
+        response_letter = COALESCE(applications.response_letter, ji.response_letter),
+        responded_at = COALESCE(applications.responded_at, ji.responded_at),
+        start_date = COALESCE(applications.start_date, ji.start_date),
+        updated_at = CURRENT_TIMESTAMP
+    FROM job_invitations ji
+    WHERE ji.applicant_user_id = applications.applicant_user_id
+      AND ji.job_post_id = applications.job_post_id
+      AND ji.status = 'accepted'
+      AND applications.status != 'recruited'
+  `).catch(() => {});
   await run("ALTER TABLE job_invitations ADD COLUMN IF NOT EXISTS response_letter TEXT");
   await run("ALTER TABLE job_invitations ADD COLUMN IF NOT EXISTS responded_at TIMESTAMPTZ");
   await run("ALTER TABLE job_invitations ADD COLUMN IF NOT EXISTS start_date TEXT");
@@ -4452,6 +4466,10 @@ app.get("/api/applicants/:userId/applications", authenticateToken, requireUserOr
               a.was_shortlisted,
               a.had_interview,
               a.previous_status,
+              (SELECT ji.status FROM job_invitations ji WHERE ji.applicant_user_id = a.applicant_user_id AND ji.job_post_id = a.job_post_id ORDER BY ji.id DESC LIMIT 1) AS invitation_status,
+              (SELECT ji.response_letter FROM job_invitations ji WHERE ji.applicant_user_id = a.applicant_user_id AND ji.job_post_id = a.job_post_id ORDER BY ji.id DESC LIMIT 1) AS invitation_response_letter,
+              (SELECT ji.start_date FROM job_invitations ji WHERE ji.applicant_user_id = a.applicant_user_id AND ji.job_post_id = a.job_post_id ORDER BY ji.id DESC LIMIT 1) AS invitation_start_date,
+              (SELECT ji.responded_at FROM job_invitations ji WHERE ji.applicant_user_id = a.applicant_user_id AND ji.job_post_id = a.job_post_id ORDER BY ji.id DESC LIMIT 1) AS invitation_responded_at,
               (SELECT row_to_json(si_row) FROM (
                 SELECT si.id, si.interview_date, si.start_time, si.end_time, si.interview_stage, si.interview_type, si.meeting_link_or_address, si.status
                 FROM scheduled_interviews si
@@ -4494,8 +4512,14 @@ app.get("/api/applicants/:userId/applications", authenticateToken, requireUserOr
         ? "closed"
         : row.status;
 
+      const isInvAccepted = String(row.invitation_status || "").toLowerCase() === "accepted";
       // If the candidate accepted the formal offer or invitation, effective status is ALWAYS recruited
-      if (row.response_decision === "accept" || String(row.status || "").toLowerCase() === "accepted" || String(row.status || "").toLowerCase() === "recruited") {
+      if (
+        row.response_decision === "accept" ||
+        String(row.status || "").toLowerCase() === "accepted" ||
+        String(row.status || "").toLowerCase() === "recruited" ||
+        isInvAccepted
+      ) {
         effectiveStatus = "recruited";
       }
 
@@ -4509,8 +4533,12 @@ app.get("/api/applicants/:userId/applications", authenticateToken, requireUserOr
         was_shortlisted: wasShortlisted,
         had_interview: hasInterview,
         status: effectiveStatus,
+        response_letter: row.response_letter || row.invitation_response_letter || null,
+        response_decision: row.response_decision || (isInvAccepted ? "accept" : null),
+        start_date: row.start_date || row.invitation_start_date || null,
+        responded_at: row.responded_at || row.invitation_responded_at || null,
         rating: row.rating ? Number(row.rating).toFixed(1) : null,
-        offer_letter: row.decision_message_type === "formal_offer" ? (row.decision_message || null) : null,
+        offer_letter: (row.decision_message_type === "formal_offer" || effectiveStatus === "recruited" || row.status === "approved") ? (row.decision_message || null) : null,
       };
     });
 
@@ -5602,12 +5630,15 @@ app.post("/api/invitations/:id/respond", authenticateToken, requireInvitationRec
       );
       if (!existingApp) {
         await run(
-          "INSERT INTO applications (job_post_id, applicant_user_id, status, submitted_at, updated_at) VALUES (?, ?, 'recruited', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-          [invitation.job_post_id, invitation.applicant_user_id]
+          "INSERT INTO applications (job_post_id, applicant_user_id, status, response_decision, response_letter, start_date, responded_at, submitted_at, updated_at) VALUES (?, ?, 'recruited', 'accept', ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+          [invitation.job_post_id, invitation.applicant_user_id, letter_text || null, start_date || null]
         );
         await run("UPDATE job_posts SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", [invitation.job_post_id]);
       } else {
-        await run("UPDATE applications SET status = 'recruited', updated_at = CURRENT_TIMESTAMP WHERE id = ?", [existingApp.id]);
+        await run(
+          "UPDATE applications SET status = 'recruited', response_decision = 'accept', response_letter = COALESCE(?, response_letter), start_date = COALESCE(?, start_date), responded_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+          [letter_text || null, start_date || null, existingApp.id]
+        );
       }
 
       await run(
@@ -5703,9 +5734,11 @@ app.post("/api/applicants/:userId/applications/:id/offer-response", authenticate
       return res.status(404).json({ message: "Application not found for this applicant." });
     }
 
+    const statusLower = String(appRecord.status || "").toLowerCase();
     const hasOffer = (
       appRecord.decision_message_type === "formal_offer" ||
-      ["offered", "offer_extended"].includes(String(appRecord.status || "").toLowerCase()) ||
+      ["approved", "offered", "offer_extended"].includes(statusLower) ||
+      Boolean(appRecord.decision_message) ||
       Boolean(appRecord.response_letter)
     );
     if (!hasOffer) {
@@ -5863,12 +5896,15 @@ app.post("/api/job-invitations/respond-by-job", authenticateToken, async (req, r
       );
       if (!existingApp) {
         await run(
-          "INSERT INTO applications (job_post_id, applicant_user_id, status) VALUES (?, ?, 'recruited')",
-          [jobId, applicantId]
+          "INSERT INTO applications (job_post_id, applicant_user_id, status, response_decision, response_letter, start_date, responded_at, submitted_at, updated_at) VALUES (?, ?, 'recruited', 'accept', ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+          [jobId, applicantId, letter_text || null, start_date || null]
         );
         await run("UPDATE job_posts SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", [jobId]);
       } else {
-        await run("UPDATE applications SET status = 'recruited' WHERE id = ?", [existingApp.id]);
+        await run(
+          "UPDATE applications SET status = 'recruited', response_decision = 'accept', response_letter = COALESCE(?, response_letter), start_date = COALESCE(?, start_date), responded_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+          [letter_text || null, start_date || null, existingApp.id]
+        );
       }
 
       await run(
@@ -5980,12 +6016,15 @@ app.post("/api/job-invitations/respond-by-thread", authenticateToken, async (req
       );
       if (!existingApp) {
         await run(
-          "INSERT INTO applications (job_post_id, applicant_user_id, status) VALUES (?, ?, 'recruited')",
-          [invitation.job_post_id, applicantId]
+          "INSERT INTO applications (job_post_id, applicant_user_id, status, response_decision, response_letter, start_date, responded_at, submitted_at, updated_at) VALUES (?, ?, 'recruited', 'accept', ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+          [invitation.job_post_id, applicantId, letter_text || null, start_date || null]
         );
         await run("UPDATE job_posts SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", [invitation.job_post_id]);
       } else {
-        await run("UPDATE applications SET status = 'recruited' WHERE id = ?", [existingApp.id]);
+        await run(
+          "UPDATE applications SET status = 'recruited', response_decision = 'accept', response_letter = COALESCE(?, response_letter), start_date = COALESCE(?, start_date), responded_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+          [letter_text || null, start_date || null, existingApp.id]
+        );
       }
 
       await run(

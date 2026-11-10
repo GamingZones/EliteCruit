@@ -246,9 +246,9 @@ function parseExpectedSalary(raw: string | null | undefined) {
 
 function statusChipBadgeClass(status: string, app?: any) {
   const s = (status || "").toLowerCase();
-  if (s === "interviewing" || s === "interview") return "chip-interviewing";
-  if (s === "recruited" || s === "hired" || s === "accepted" || app?.response_decision === "accept") return "chip-recruited";
+  if (s === "recruited" || s === "hired" || s === "accepted" || app?.response_decision === "accept" || app?.invitation_status === "accepted") return "chip-recruited";
   if (s === "approved") return "chip-approved";
+  if (s === "interviewing" || s === "interview") return "chip-interviewing";
   if (s === "shortlisted") return "chip-shortlisted";
   if (s === "denied" || s === "declined" || s === "rejected" || s === "withdrawn") return "chip-denied chip-declined";
   return "chip-pending";
@@ -256,9 +256,9 @@ function statusChipBadgeClass(status: string, app?: any) {
 
 function statusChipClass(status: string, app?: any) {
   const s = (status || "").toLowerCase();
-  if (s === "interviewing" || s === "interview") return "match-chip chip-amber";
-  if (s === "recruited" || s === "hired" || s === "accepted" || app?.response_decision === "accept") return "match-chip chip-green";
+  if (s === "recruited" || s === "hired" || s === "accepted" || app?.response_decision === "accept" || app?.invitation_status === "accepted") return "match-chip chip-green";
   if (s === "approved") return "match-chip chip-green";
+  if (s === "interviewing" || s === "interview") return "match-chip chip-amber";
   if (s === "shortlisted") return "match-chip chip-amber";
   if (s === "denied" || s === "declined" || s === "rejected" || s === "withdrawn") return "match-chip chip-amber";
   return "match-chip chip-green";
@@ -266,9 +266,9 @@ function statusChipClass(status: string, app?: any) {
 
 function formatStatusLabel(status: string, app?: any) {
   const s = (status || "").toLowerCase();
-  if (s === "interviewing" || s === "interview") return "Interviewing";
-  if (s === "recruited" || s === "hired" || s === "accepted" || app?.response_decision === "accept") return "Recruited";
+  if (s === "recruited" || s === "hired" || s === "accepted" || app?.response_decision === "accept" || app?.invitation_status === "accepted") return "Recruited";
   if (s === "approved") return "Approved";
+  if (s === "interviewing" || s === "interview") return "Interviewing";
   if (s === "shortlisted") return "Shortlisted";
   if (s === "withdrawn") return "Withdrawn";
   if (s === "denied" || s === "declined" || s === "rejected") return "Declined";
@@ -277,7 +277,7 @@ function formatStatusLabel(status: string, app?: any) {
 
 function getApplicationTimelineSteps(app: any) {
   const rawStatus = (app?.status || "submitted").toLowerCase();
-  const isRecruited = rawStatus === "recruited" || rawStatus === "hired" || rawStatus === "accepted" || app?.response_decision === "accept";
+  const isRecruited = rawStatus === "recruited" || rawStatus === "hired" || rawStatus === "accepted" || app?.response_decision === "accept" || app?.invitation_status === "accepted";
   const status = isRecruited ? "recruited" : rawStatus;
   const submittedDate = app?.submitted_at ? formatDate(app.submitted_at) : "Submitted";
   const decidedDate = app?.decided_at ? formatDate(app.decided_at) : (app?.responded_at ? formatDate(app.responded_at) : null);
@@ -448,7 +448,7 @@ function ApplicationCardTimeline({
   const steps = getApplicationTimelineSteps(app);
   const [hoveredStepIndex, setHoveredStepIndex] = useState<number | null>(null);
   const rawStatus = (app?.status || "submitted").toLowerCase();
-  const isRecruited = rawStatus === "recruited" || rawStatus === "hired" || rawStatus === "accepted" || app?.response_decision === "accept";
+  const isRecruited = rawStatus === "recruited" || rawStatus === "hired" || rawStatus === "accepted" || app?.response_decision === "accept" || app?.invitation_status === "accepted";
   const status = isRecruited ? "recruited" : rawStatus;
 
   // Compute progress line width (3 intervals between 4 steps: 0%, 33.33%, 66.66%, 100%)
@@ -476,8 +476,8 @@ function ApplicationCardTimeline({
   return (
     <div className="card-timeline-wrapper">
       <div className="card-timeline-badge-row">
-        <span className={`status-badge-chip ${statusChipBadgeClass(app.status, app)}`}>
-          {formatStatusLabel(app.status, app)}
+        <span className={`status-badge-chip ${statusChipBadgeClass(status, app)}`}>
+          {formatStatusLabel(status, app)}
         </span>
       </div>
 
@@ -1746,40 +1746,63 @@ export default function ApplicantDashboard() {
                   {/* Top Action Button: Withdraw if still not approved, or Offer Letter / View Letter if approved */}
                   {(() => {
                     const statusLower = (app.status || "").toLowerCase();
-                    const isApproved = ["approved", "accepted", "recruited", "hired"].some((val) => statusLower.includes(val));
-                    const isConcluded = ["approved", "accepted", "recruited", "hired", "denied", "rejected", "withdrawn", "declined", "closed"].some((val) => statusLower.includes(val));
-                    const hasFormalOffer = Boolean(
-                      app.offer_letter ||
-                      app.decision_message_type === "formal_offer" ||
-                      ["offered", "offer_extended"].includes(statusLower) ||
-                      isApproved
-                    );
-                    const hasResponseLetter = Boolean(app.response_letter);
+                    const isRecruited = statusLower === "recruited" || statusLower === "hired" || statusLower === "accepted" || app.response_decision === "accept" || app.invitation_status === "accepted";
+                    const isApproved = statusLower === "approved" || isRecruited;
+                    const isConcluded = ["approved", "accepted", "recruited", "hired", "denied", "rejected", "withdrawn", "declined", "closed"].some((val) => statusLower.includes(val)) || isRecruited;
+                    const hasResponseLetter = Boolean(app.response_letter || app.invitation_response_letter);
+                    const hasOfferLetter = Boolean(app.offer_letter || app.decision_message);
+                    const isOfferPendingResponse = (statusLower === "approved" || ["offered", "offer_extended"].includes(statusLower) || app.decision_message_type === "formal_offer") && !isRecruited && !hasResponseLetter && app.response_decision !== "accept";
 
-                    // When approved: Offer Letter (or View Letter if candidate already responded)
-                    if (isApproved || hasResponseLetter || hasFormalOffer) {
-                      if (hasResponseLetter) {
-                        return (
-                          <button
-                            type="button"
-                            className="solid-btn offer-letter-action-btn"
-                            onClick={() => {
-                              setViewLetterModalTarget({
-                                title: app.job_title || app.title || "Applied Role",
-                                company: app.company_name || "Employer",
-                                letterText: app.response_letter,
-                                offerLetter: app.offer_letter || app.decision_message,
-                                startDate: app.start_date,
-                                respondedAt: app.responded_at,
-                                decision: app.response_decision || (app.status === "declined" ? "declined" : "accepted"),
-                              });
-                            }}
-                          >
-                            <span>View Letter</span>
-                          </button>
-                        );
-                      }
+                    // Candidate submitted a response letter
+                    if (hasResponseLetter) {
+                      return (
+                        <button
+                          type="button"
+                          className="solid-btn offer-letter-action-btn"
+                          title="View offer response letter"
+                          onClick={() => {
+                            setViewLetterModalTarget({
+                              title: app.job_title || app.title || "Applied Role",
+                              company: app.company_name || "Employer",
+                              letterText: app.response_letter || app.invitation_response_letter,
+                              offerLetter: app.offer_letter || app.decision_message,
+                              startDate: app.start_date || app.invitation_start_date,
+                              respondedAt: app.responded_at || app.invitation_responded_at,
+                              decision: app.response_decision || (app.status === "declined" ? "declined" : "accepted"),
+                            });
+                          }}
+                        >
+                          <span>View Letter</span>
+                        </button>
+                      );
+                    }
 
+                    // Candidate is already recruited and has an offer letter / decision message on file
+                    if (isRecruited && hasOfferLetter) {
+                      return (
+                        <button
+                          type="button"
+                          className="solid-btn offer-letter-action-btn"
+                          title="View formal offer details"
+                          onClick={() => {
+                            setViewLetterModalTarget({
+                              title: app.job_title || app.title || "Applied Role",
+                              company: app.company_name || "Employer",
+                              letterText: "Congratulations! You have been successfully recruited for this role.",
+                              offerLetter: app.offer_letter || app.decision_message,
+                              startDate: app.start_date || app.invitation_start_date,
+                              respondedAt: app.responded_at || app.decided_at,
+                              decision: "accepted",
+                            });
+                          }}
+                        >
+                          <span>View Offer</span>
+                        </button>
+                      );
+                    }
+
+                    // Formal offer is extended and actively awaiting candidate response
+                    if (isOfferPendingResponse) {
                       return (
                         <button
                           type="button"
@@ -1817,7 +1840,7 @@ export default function ApplicantDashboard() {
                   {/* Archive button for concluded applications so the applicant can file it away after seeing the outcome */}
                   {(() => {
                     const statusLower = (app.status || "").toLowerCase();
-                    const isConcluded = ["approved", "accepted", "recruited", "hired", "denied", "rejected", "withdrawn", "declined", "closed"].some((val) => statusLower.includes(val));
+                    const isConcluded = ["approved", "accepted", "recruited", "denied", "rejected", "withdrawn", "declined"].includes(statusLower);
                     if (!isConcluded) return null;
                     return (
                       <button
@@ -2263,15 +2286,11 @@ export default function ApplicantDashboard() {
                 <div className="app-history-list">
                   {filteredHistoryApplications.map((app: any) => {
                     const statusLower = (app?.status || "").toLowerCase();
-                    const isApproved = ["approved", "accepted", "recruited", "hired"].some((val) => statusLower.includes(val));
-                    const isConcluded = ["approved", "accepted", "recruited", "hired", "denied", "rejected", "withdrawn", "declined", "closed"].some((val) => statusLower.includes(val));
-                    const hasFormalOffer = Boolean(
-                      app.offer_letter ||
-                      app.decision_message_type === "formal_offer" ||
-                      ["offered", "offer_extended"].includes(statusLower) ||
-                      isApproved
-                    );
-                    const hasResponseLetter = Boolean(app.response_letter);
+                    const isRecruited = statusLower === "recruited" || statusLower === "hired" || statusLower === "accepted" || app.response_decision === "accept" || app.invitation_status === "accepted";
+                    const isApproved = statusLower === "approved" || isRecruited;
+                    const hasResponseLetter = Boolean(app.response_letter || app.invitation_response_letter);
+                    const hasOfferLetter = Boolean(app.offer_letter || app.decision_message);
+                    const isOfferPendingResponse = (statusLower === "approved" || ["offered", "offer_extended"].includes(statusLower) || app.decision_message_type === "formal_offer") && !isRecruited && !hasResponseLetter && app.response_decision !== "accept";
 
                     return (
                       <article key={app.id || app.job_post_id} className="job-card">
@@ -2305,29 +2324,53 @@ export default function ApplicantDashboard() {
                         <div className="app-card-actions">
                           {/* Top Action Button: Offer Letter / View Letter if approved */}
                           {(() => {
-                            if (isApproved || hasResponseLetter || hasFormalOffer) {
-                              if (hasResponseLetter) {
-                                return (
-                                  <button
-                                    type="button"
-                                    className="solid-btn offer-letter-action-btn"
-                                    onClick={() => {
-                                      setViewLetterModalTarget({
-                                        title: app.job_title || app.title || "Applied Role",
-                                        company: app.company_name || "Employer",
-                                        letterText: app.response_letter,
-                                        offerLetter: app.offer_letter || app.decision_message,
-                                        startDate: app.start_date,
-                                        respondedAt: app.responded_at,
-                                        decision: app.response_decision || (app.status === "declined" ? "declined" : "accepted"),
-                                      });
-                                    }}
-                                  >
-                                    <span>View Letter</span>
-                                  </button>
-                                );
-                              }
+                            if (hasResponseLetter) {
+                              return (
+                                <button
+                                  type="button"
+                                  className="solid-btn offer-letter-action-btn"
+                                  title="View offer response letter"
+                                  onClick={() => {
+                                    setViewLetterModalTarget({
+                                      title: app.job_title || app.title || "Applied Role",
+                                      company: app.company_name || "Employer",
+                                      letterText: app.response_letter || app.invitation_response_letter,
+                                      offerLetter: app.offer_letter || app.decision_message,
+                                      startDate: app.start_date || app.invitation_start_date,
+                                      respondedAt: app.responded_at || app.invitation_responded_at,
+                                      decision: app.response_decision || (app.status === "declined" ? "declined" : "accepted"),
+                                    });
+                                  }}
+                                >
+                                  <span>View Letter</span>
+                                </button>
+                              );
+                            }
 
+                            if (isRecruited && hasOfferLetter) {
+                              return (
+                                <button
+                                  type="button"
+                                  className="solid-btn offer-letter-action-btn"
+                                  title="View formal offer details"
+                                  onClick={() => {
+                                    setViewLetterModalTarget({
+                                      title: app.job_title || app.title || "Applied Role",
+                                      company: app.company_name || "Employer",
+                                      letterText: "Congratulations! You have been successfully recruited for this role.",
+                                      offerLetter: app.offer_letter || app.decision_message,
+                                      startDate: app.start_date || app.invitation_start_date,
+                                      respondedAt: app.responded_at || app.decided_at,
+                                      decision: "accepted",
+                                    });
+                                  }}
+                                >
+                                  <span>View Offer</span>
+                                </button>
+                              );
+                            }
+
+                            if (isOfferPendingResponse) {
                               return (
                                 <button
                                   type="button"
