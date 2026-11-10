@@ -806,22 +806,22 @@ export default function ApplicantDashboard() {
   const approvedHistoryCount = useMemo(() => {
     return archivedApplications.filter((app: any) => {
       const st = (app?.status || "").toLowerCase();
-      return ["approved", "accepted", "recruited"].includes(st);
+      return ["approved", "accepted", "recruited", "hired"].some((val) => st.includes(val));
     }).length;
   }, [archivedApplications]);
 
   const deniedHistoryCount = useMemo(() => {
     return archivedApplications.filter((app: any) => {
       const st = (app?.status || "").toLowerCase();
-      return ["denied", "rejected", "withdrawn", "declined"].includes(st);
+      return ["denied", "rejected", "withdrawn", "declined", "closed"].some((val) => st.includes(val));
     }).length;
   }, [archivedApplications]);
 
   const filteredHistoryApplications = useMemo(() => {
     return archivedApplications.filter((app: any) => {
       const st = (app?.status || "").toLowerCase();
-      const isApproved = ["approved", "accepted", "recruited"].includes(st);
-      const isDenied = ["denied", "rejected", "withdrawn", "declined"].includes(st);
+      const isApproved = ["approved", "accepted", "recruited", "hired"].some((val) => st.includes(val));
+      const isDenied = ["denied", "rejected", "withdrawn", "declined", "closed"].some((val) => st.includes(val));
       if (historyFilter === "approved") return isApproved;
       if (historyFilter === "denied") return isDenied;
       return true;
@@ -1746,8 +1746,8 @@ export default function ApplicantDashboard() {
                   {/* Top Action Button: Withdraw if still not approved, or Offer Letter / View Letter if approved */}
                   {(() => {
                     const statusLower = (app.status || "").toLowerCase();
-                    const isApproved = ["approved", "accepted", "recruited"].includes(statusLower);
-                    const isConcluded = ["approved", "accepted", "recruited", "denied", "rejected", "withdrawn", "declined"].includes(statusLower);
+                    const isApproved = ["approved", "accepted", "recruited", "hired"].some((val) => statusLower.includes(val));
+                    const isConcluded = ["approved", "accepted", "recruited", "hired", "denied", "rejected", "withdrawn", "declined", "closed"].some((val) => statusLower.includes(val));
                     const hasFormalOffer = Boolean(
                       app.offer_letter ||
                       app.decision_message_type === "formal_offer" ||
@@ -2263,8 +2263,8 @@ export default function ApplicantDashboard() {
                 <div className="app-history-list">
                   {filteredHistoryApplications.map((app: any) => {
                     const statusLower = (app?.status || "").toLowerCase();
-                    const isApproved = ["approved", "accepted", "recruited"].includes(statusLower);
-                    const isConcluded = ["approved", "accepted", "recruited", "denied", "rejected", "withdrawn", "declined"].includes(statusLower);
+                    const isApproved = ["approved", "accepted", "recruited", "hired"].some((val) => statusLower.includes(val));
+                    const isConcluded = ["approved", "accepted", "recruited", "hired", "denied", "rejected", "withdrawn", "declined", "closed"].some((val) => statusLower.includes(val));
                     const hasFormalOffer = Boolean(
                       app.offer_letter ||
                       app.decision_message_type === "formal_offer" ||

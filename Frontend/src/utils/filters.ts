@@ -3361,12 +3361,11 @@ export function calculateJobMatchDetails(
       profile.desiredJobTitle !== "None"
   );
 
-  // If applicant has an empty profile (no skills, certs, quals, or desired job title), default score to 0%
+  // If applicant has an empty profile (no skills, qualifications, or certifications), default score to 0%
   const isProfileEmpty =
     profileSkills.length === 0 &&
     profileCerts.length === 0 &&
-    profileQuals.length === 0 &&
-    !hasDesiredRole;
+    profileQuals.length === 0;
 
   if (isProfileEmpty) {
     return {
