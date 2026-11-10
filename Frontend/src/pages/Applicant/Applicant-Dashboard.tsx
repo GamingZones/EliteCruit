@@ -1817,7 +1817,7 @@ export default function ApplicantDashboard() {
                   {/* Archive button for concluded applications so the applicant can file it away after seeing the outcome */}
                   {(() => {
                     const statusLower = (app.status || "").toLowerCase();
-                    const isConcluded = ["approved", "accepted", "recruited", "denied", "rejected", "withdrawn", "declined"].includes(statusLower);
+                    const isConcluded = ["approved", "accepted", "recruited", "hired", "denied", "rejected", "withdrawn", "declined", "closed"].some((val) => statusLower.includes(val));
                     if (!isConcluded) return null;
                     return (
                       <button
