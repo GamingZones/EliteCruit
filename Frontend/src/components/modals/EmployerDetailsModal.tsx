@@ -326,11 +326,11 @@ export default function EmployerDetailsModal({
           </div>
           <div>
             <div className="jd-employer-name-row">
-              <strong className="jd-employer-name">{companyName}</strong>
               <span className="company-inline-rating-pill" title="Company rating">
                 <span className="star-icon">★</span>
                 <span>{ratingText}</span>
               </span>
+              <strong className="jd-employer-name">{companyName}</strong>
             </div>
             <span className="jd-employer-location">
               <svg viewBox="0 0 24 24" aria-hidden="true" width="13" height="13" fill="none" stroke="#5b8ab0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

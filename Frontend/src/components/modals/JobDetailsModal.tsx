@@ -1552,6 +1552,10 @@ export default function JobDetailsModal({
             </div>
             <div>
               <div className="jd-employer-name-row">
+                <span className="company-inline-rating-pill" title="Company rating">
+                  <span className="star-icon">★</span>
+                  <span>{ratingText}</span>
+                </span>
                 <strong
                   className={`jd-employer-name ${onEmployerClick ? "clickable" : ""}`}
                   onClick={() => onEmployerClick && (onEmployerClick as any)(empUserId)}
@@ -1559,10 +1563,6 @@ export default function JobDetailsModal({
                 >
                   {companyName}
                 </strong>
-                <span className="company-inline-rating-pill" title="Company rating">
-                  <span className="star-icon">★</span>
-                  <span>{ratingText}</span>
-                </span>
               </div>
               <span className="jd-employer-location">
                 <svg viewBox="0 0 24 24" aria-hidden="true" width="12" height="12" fill="none" stroke="#5b8ab0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

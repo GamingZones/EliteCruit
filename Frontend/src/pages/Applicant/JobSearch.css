@@ -1032,10 +1032,19 @@
 
 .employer-name-rating-row,
 .jd-employer-name-row {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.employer-name-rating-row h3,
+.result-title-row .employer-name-rating-row h3 {
+  flex: 0 1 auto !important;
+  width: auto !important;
+  margin: 0 !important;
 }
 
 .company-inline-rating-pill {

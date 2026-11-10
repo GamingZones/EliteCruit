@@ -3022,6 +3022,10 @@ export default function JobSearch() {
                   </div>
                   <div>
                     <div className="jd-employer-name-row">
+                      <span className="company-inline-rating-pill" title="Company rating">
+                        <span className="star-icon">★</span>
+                        <span>{ratingText}</span>
+                      </span>
                       <strong
                         className={`jd-employer-name ${empUserId ? "clickable" : ""}`}
                         onClick={() => {
@@ -3034,10 +3038,6 @@ export default function JobSearch() {
                       >
                         {companyName}
                       </strong>
-                      <span className="company-inline-rating-pill" title="Company rating">
-                        <span className="star-icon">★</span>
-                        <span>{ratingText}</span>
-                      </span>
                     </div>
                     <span className="jd-employer-location">
                       <svg viewBox="0 0 24 24" aria-hidden="true" width="12" height="12" fill="none" stroke="#5b8ab0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -3973,13 +3973,13 @@ export default function JobSearch() {
                           </div>
                           <div>
                             <div className="employer-name-rating-row">
-                              <h3 title={employer.company_name} style={{ margin: 0, fontSize: "1.1rem" }}>
-                                {employer.company_name}
-                              </h3>
                               <span className="company-inline-rating-pill" title="Employer rating">
                                 <span className="star-icon">★</span>
                                 <span>{employer.rating ? Number(employer.rating).toFixed(1) : "0.0"}</span>
                               </span>
+                              <h3 title={employer.company_name} style={{ margin: 0, fontSize: "1.1rem" }}>
+                                {employer.company_name}
+                              </h3>
                             </div>
                             <p className="meta-line" style={{ marginTop: "4px", marginBottom: 0 }}>
                               {(() => {
