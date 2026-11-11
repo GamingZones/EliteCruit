@@ -5708,28 +5708,26 @@ export default function ApplicantProfile() {
                                     <label className="role-pref-sublabel">JOB CATEGORY *</label>
                                     <small style={{ color: "#64748b", fontSize: "0.8rem" }}>Select parent industry</small>
                                   </div>
-                                  <div className="role-category-select-wrap">
-                                    <select
-                                      className="role-category-select"
-                                      value={newRoleCategory}
-                                      onChange={(e) => {
-                                        const cat = e.target.value;
-                                        setNewRoleCategory(cat);
-                                        if (cat && newRoleTitle && CATEGORIZED_JOB_ROLES[cat] && !CATEGORIZED_JOB_ROLES[cat].some((r) => r.toLowerCase() === newRoleTitle.toLowerCase())) {
-                                          setNewRoleTitle("");
-                                        }
-                                      }}
-                                      disabled={isSavingNewRole}
-                                      aria-label="Job Category"
-                                    >
-                                      <option value="">All Categories (or choose category)...</option>
-                                      {JOB_CATEGORIES_LIST.map((cat) => (
-                                        <option key={cat} value={cat}>
-                                          {cat}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </div>
+                                  <SearchableSelect
+                                    options={["All Categories", ...JOB_CATEGORIES_LIST]}
+                                    value={newRoleCategory || ""}
+                                    onChange={(cat) => {
+                                      const nextCat = cat === "All Categories" ? "" : cat;
+                                      setNewRoleCategory(nextCat);
+                                      if (cat && cat !== "All Categories" && newRoleTitle && CATEGORIZED_JOB_ROLES[cat] && !CATEGORIZED_JOB_ROLES[cat].some((r) => r.toLowerCase() === newRoleTitle.toLowerCase())) {
+                                        setNewRoleTitle("");
+                                      }
+                                    }}
+                                    onSelectOption={(cat) => {
+                                      const nextCat = cat === "All Categories" ? "" : cat;
+                                      setNewRoleCategory(nextCat);
+                                      if (cat && cat !== "All Categories" && newRoleTitle && CATEGORIZED_JOB_ROLES[cat] && !CATEGORIZED_JOB_ROLES[cat].some((r) => r.toLowerCase() === newRoleTitle.toLowerCase())) {
+                                        setNewRoleTitle("");
+                                      }
+                                    }}
+                                    placeholder="All Categories (or choose category)..."
+                                    disabled={isSavingNewRole}
+                                  />
                                 </div>
 
                                 <div className="profile-field">
@@ -6031,35 +6029,56 @@ export default function ApplicantProfile() {
                                         <label className="role-pref-sublabel">JOB CATEGORY *</label>
                                         <small style={{ color: "#64748b", fontSize: "0.8rem" }}>Parent industry</small>
                                       </div>
-                                      <div className="role-category-select-wrap">
-                                        <select
-                                          className="role-category-select"
-                                          value={roleItem.category || getCategoryForRole(roleItem.title)}
-                                          onChange={(e) => {
-                                            const newCat = e.target.value;
-                                            setTargetRoles((prev) =>
-                                              prev.map((r) =>
-                                                r.id === roleItem.id
-                                                  ? {
-                                                      ...r,
-                                                      category: newCat,
-                                                      title: newCat && r.title && CATEGORIZED_JOB_ROLES[newCat] && !CATEGORIZED_JOB_ROLES[newCat].some((ro) => ro.toLowerCase() === r.title.toLowerCase()) ? "" : r.title,
-                                                    }
-                                                  : r
-                                              )
-                                            );
-                                          }}
-                                          disabled={isSavingThisRole}
-                                          aria-label="Job Category"
-                                        >
-                                          <option value="">All Categories (or choose category)...</option>
-                                          {JOB_CATEGORIES_LIST.map((cat) => (
-                                            <option key={cat} value={cat}>
-                                              {cat}
-                                            </option>
-                                          ))}
-                                        </select>
-                                      </div>
+                                      <SearchableSelect
+                                        options={["All Categories", ...JOB_CATEGORIES_LIST]}
+                                        value={roleItem.category || getCategoryForRole(roleItem.title) || ""}
+                                        onChange={(cat) => {
+                                          const nextCat = cat === "All Categories" ? "" : cat;
+                                          setTargetRoles((prev) =>
+                                            prev.map((r) =>
+                                              r.id === roleItem.id
+                                                ? {
+                                                    ...r,
+                                                    category: nextCat,
+                                                    title:
+                                                      nextCat &&
+                                                      r.title &&
+                                                      CATEGORIZED_JOB_ROLES[nextCat] &&
+                                                      !CATEGORIZED_JOB_ROLES[nextCat].some(
+                                                        (ro) => ro.toLowerCase() === r.title.toLowerCase()
+                                                      )
+                                                        ? ""
+                                                        : r.title,
+                                                  }
+                                                : r
+                                            )
+                                          );
+                                        }}
+                                        onSelectOption={(cat) => {
+                                          const nextCat = cat === "All Categories" ? "" : cat;
+                                          setTargetRoles((prev) =>
+                                            prev.map((r) =>
+                                              r.id === roleItem.id
+                                                ? {
+                                                    ...r,
+                                                    category: nextCat,
+                                                    title:
+                                                      nextCat &&
+                                                      r.title &&
+                                                      CATEGORIZED_JOB_ROLES[nextCat] &&
+                                                      !CATEGORIZED_JOB_ROLES[nextCat].some(
+                                                        (ro) => ro.toLowerCase() === r.title.toLowerCase()
+                                                      )
+                                                        ? ""
+                                                        : r.title,
+                                                  }
+                                                : r
+                                            )
+                                          );
+                                        }}
+                                        placeholder="All Categories (or choose category)..."
+                                        disabled={isSavingThisRole}
+                                      />
                                     </div>
 
                                     <div className="profile-field">
