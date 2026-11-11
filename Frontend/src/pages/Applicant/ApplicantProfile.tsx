@@ -243,27 +243,9 @@ function parseSalaryInteger(value: string | number | null | undefined): string {
 }
 
 function computeNextArrangements(current: string[] = [], clickedArr: string): string[] {
-  if (clickedArr === "Hybrid") {
-    if (current.includes("Hybrid")) {
-      return current.filter((a) => a !== "Hybrid");
-    } else {
-      // when hybrid is clicked it will immediately highlight the other two
-      return ["Remote", "On-Site", "Hybrid"];
-    }
-  }
-
-  // Clicked Remote or On-Site
-  const isSelected = current.includes(clickedArr);
-  let next = isSelected
+  return current.includes(clickedArr)
     ? current.filter((a) => a !== clickedArr)
     : [...current, clickedArr];
-
-  // and when one of them is not selected the hybrid will be removed
-  if (!next.includes("Remote") || !next.includes("On-Site")) {
-    next = next.filter((a) => a !== "Hybrid");
-  }
-
-  return next;
 }
 
 function getSalaryRangeError(
@@ -2756,7 +2738,7 @@ export default function ApplicantProfile() {
   const [isAddingRole, setIsAddingRole] = useState(false);
   const [newRoleCategory, setNewRoleCategory] = useState<string>("");
   const [newRoleTitle, setNewRoleTitle] = useState("");
-  const [newRoleArrangement, setNewRoleArrangement] = useState<string>("");
+  const [newRoleArrangements, setNewRoleArrangements] = useState<string[]>(["On-Site"]);
   const [newRoleSalaryMin, setNewRoleSalaryMin] = useState("");
   const [newRoleSalaryMax, setNewRoleSalaryMax] = useState("");
   const [newRoleHideSalary, setNewRoleHideSalary] = useState(false);
@@ -3933,7 +3915,7 @@ export default function ApplicantProfile() {
   const resetNewRoleForm = () => {
     setNewRoleCategory("");
     setNewRoleTitle("");
-    setNewRoleArrangement("");
+    setNewRoleArrangements(["On-Site"]);
     setNewRoleSalaryMin("");
     setNewRoleSalaryMax("");
     setNewRoleHideSalary(false);
@@ -3960,9 +3942,9 @@ export default function ApplicantProfile() {
       return;
     }
 
-    if (!newRoleArrangement) {
+    if (newRoleArrangements.length === 0) {
       setProfileMessageType("error");
-      setProfileMessage("Please select a work arrangement preference.");
+      setProfileMessage("Please select at least one work arrangement preference.");
       return;
     }
 
@@ -4001,7 +3983,7 @@ export default function ApplicantProfile() {
       id: `role-${Date.now()}`,
       category,
       title,
-      work_arrangements: newRoleArrangement ? [newRoleArrangement] : ["On-Site"],
+      work_arrangements: newRoleArrangements.length > 0 ? newRoleArrangements : ["On-Site"],
       salary_min: formattedMin,
       salary_max: formattedMax,
       hide_salary: newRoleHideSalary,
@@ -4043,6 +4025,10 @@ export default function ApplicantProfile() {
     const updated = targetRoles.filter((r) => r.id !== roleId && r.title !== roleId);
     setExpandedRoleIds((prev) => prev.filter((id) => id !== roleId));
     await syncAndSaveTargetRoles(updated);
+  };
+
+  const handleToggleNewRoleArrangement = (arrangement: string) => {
+    setNewRoleArrangements((prev) => computeNextArrangements(prev, arrangement));
   };
 
   const handleToggleRoleArrangement = (roleId: string, arrangement: string) => {
@@ -5666,7 +5652,7 @@ export default function ApplicantProfile() {
                               </div>
                               {(() => {
                                 const isRoleTitleSet = Boolean(newRoleTitle.trim());
-                                const isWorkArrangementSet = Boolean(newRoleArrangement);
+                                const isWorkArrangementSet = Boolean(newRoleArrangements && newRoleArrangements.length > 0);
                                 const rawMin = newRoleSalaryMin.replace(/[^0-9.]/g, "").trim();
                                 const rawMax = newRoleSalaryMax.replace(/[^0-9.]/g, "").trim();
                                 const isSalaryValid = !rawMin || !rawMax || Number(rawMax) >= Number(rawMin);
@@ -5766,20 +5752,26 @@ export default function ApplicantProfile() {
                               <div className="role-pref-card-body">
                                 {/* Left Column: Work Arrangement */}
                                 <div className="role-pref-col role-pref-col-arrangement">
-                                  <label className="role-pref-sublabel">WORK ARRANGEMENT PREFERENCE *</label>
-                                  <div className="role-work-arrangement-select-wrap">
-                                    <select
-                                      className="role-work-arrangement-select"
-                                      value={newRoleArrangement}
-                                      onChange={(e) => setNewRoleArrangement(e.target.value)}
-                                      disabled={isSavingNewRole}
-                                      aria-label="Work Arrangement Preference"
-                                    >
-                                      <option value="">Select work arrangement...</option>
-                                      <option value="On-Site">On-Site</option>
-                                      <option value="Hybrid">Hybrid</option>
-                                      <option value="Remote">Remote</option>
-                                    </select>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                                    <label className="role-pref-sublabel">WORK ARRANGEMENT PREFERENCES *</label>
+                                    <small style={{ color: "#64748b", fontSize: "0.8rem" }}>Select 1 or more</small>
+                                  </div>
+                                  <div className="work-arrangement-pill-group" style={{ margin: 0 }}>
+                                    {["On-Site", "Hybrid", "Remote"].map((arr) => {
+                                      const isSelected = newRoleArrangements.includes(arr);
+                                      return (
+                                        <button
+                                          key={arr}
+                                          type="button"
+                                          className={`arr-toggle-pill ${isSelected ? "selected" : ""}`}
+                                          onClick={() => handleToggleNewRoleArrangement(arr)}
+                                          disabled={isSavingNewRole}
+                                          aria-label={`Toggle ${arr}`}
+                                        >
+                                          {isSelected ? "✓ " : "+ "}{arr}
+                                        </button>
+                                      );
+                                    })}
                                   </div>
                                 </div>
 
@@ -5890,7 +5882,7 @@ export default function ApplicantProfile() {
                             const isSavingThisRole = savingField === `role_${roleItem.id}`;
 
                             const isRoleTitleSet = Boolean((roleItem.title || "").trim());
-                            const isWorkArrangementSet = Boolean(roleItem.work_arrangements && roleItem.work_arrangements.length > 0 && roleItem.work_arrangements[0]);
+                            const isWorkArrangementSet = Boolean(roleItem.work_arrangements && roleItem.work_arrangements.length > 0);
                             let curMin = roleItem.salary_min != null ? String(roleItem.salary_min).replace(/[^0-9.]/g, "").trim() : "";
                             let curMax = roleItem.salary_max != null ? String(roleItem.salary_max).replace(/[^0-9.]/g, "").trim() : "";
                             if (activeRoleSalaryInput && activeRoleSalaryInput.id === roleItem.id) {
@@ -6118,29 +6110,26 @@ export default function ApplicantProfile() {
 
                                   {/* Left Column: Work Arrangement */}
                                   <div className="role-pref-col role-pref-col-arrangement">
-                                    <label className="role-pref-sublabel">WORK ARRANGEMENT PREFERENCE *</label>
-                                    <div className="role-work-arrangement-select-wrap">
-                                      <select
-                                        className="role-work-arrangement-select"
-                                        value={roleItem.work_arrangements?.[0] || ""}
-                                        onChange={(e) => {
-                                          const val = e.target.value;
-                                          setTargetRoles((prev) =>
-                                            prev.map((r) =>
-                                              r.id === roleItem.id
-                                                ? { ...r, work_arrangements: val ? [val] : [] }
-                                                : r
-                                            )
-                                          );
-                                        }}
-                                        disabled={isSavingThisRole}
-                                        aria-label="Work Arrangement Preference"
-                                      >
-                                        <option value="">Select work arrangement...</option>
-                                        <option value="On-Site">On-Site</option>
-                                        <option value="Hybrid">Hybrid</option>
-                                        <option value="Remote">Remote</option>
-                                      </select>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                                      <label className="role-pref-sublabel">WORK ARRANGEMENT PREFERENCES *</label>
+                                      <small style={{ color: "#64748b", fontSize: "0.8rem" }}>Select 1 or more</small>
+                                    </div>
+                                    <div className="work-arrangement-pill-group" style={{ margin: 0 }}>
+                                      {["On-Site", "Hybrid", "Remote"].map((arr) => {
+                                        const isSelected = (roleItem.work_arrangements || []).includes(arr);
+                                        return (
+                                          <button
+                                            key={arr}
+                                            type="button"
+                                            className={`arr-toggle-pill ${isSelected ? "selected" : ""}`}
+                                            onClick={() => handleToggleRoleArrangement(roleItem.id, arr)}
+                                            disabled={isSavingThisRole}
+                                            aria-label={`Toggle ${arr}`}
+                                          >
+                                            {isSelected ? "✓ " : "+ "}{arr}
+                                          </button>
+                                        );
+                                      })}
                                     </div>
                                   </div>
 
