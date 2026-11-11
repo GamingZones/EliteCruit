@@ -91,12 +91,26 @@ export interface WorkExpItem {
 
 export type TargetRolePreferenceItem = {
   id: string;
+  category?: string;
   title: string;
   work_arrangements: string[];
   salary_min: string | number;
   salary_max: string | number;
   hide_salary: boolean;
 };
+
+export const JOB_CATEGORIES_LIST = Object.keys(CATEGORIZED_JOB_ROLES);
+
+export function getCategoryForRole(roleTitle: string): string {
+  if (!roleTitle) return "Other Specializations";
+  const clean = roleTitle.trim().toLowerCase();
+  for (const [cat, roles] of Object.entries(CATEGORIZED_JOB_ROLES)) {
+    if (roles.some((r) => r.toLowerCase() === clean)) {
+      return cat;
+    }
+  }
+  return "Other Specializations";
+}
 
 type ApplicantProfileData = {
   first_name: string | null;
@@ -2740,6 +2754,7 @@ export default function ApplicantProfile() {
   const setRoleSalarySavedId = setRoleSavedId;
   const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
   const [isAddingRole, setIsAddingRole] = useState(false);
+  const [newRoleCategory, setNewRoleCategory] = useState<string>("");
   const [newRoleTitle, setNewRoleTitle] = useState("");
   const [newRoleArrangement, setNewRoleArrangement] = useState<string>("");
   const [newRoleSalaryMin, setNewRoleSalaryMin] = useState("");
@@ -3379,6 +3394,7 @@ export default function ApplicantProfile() {
           if (Array.isArray(arr) && arr.length > 0) {
             parsedRoles = arr.map((r: any, idx: number) => ({
               id: r.id || `role-${idx}-${Date.now()}`,
+              category: r.category || getCategoryForRole(r.title || ""),
               title: r.title || "Job Title",
               work_arrangements: Array.isArray(r.work_arrangements) ? r.work_arrangements : ["On-Site"],
               salary_min: r.salary_min != null ? r.salary_min : (initialMin || 25000),
@@ -3400,6 +3416,7 @@ export default function ApplicantProfile() {
           .filter(Boolean);
         parsedRoles = titles.map((t, idx) => ({
           id: `role-legacy-${idx}-${Date.now()}`,
+          category: getCategoryForRole(t),
           title: t,
           work_arrangements: legacyArrangements.length > 0 ? legacyArrangements : ["On-Site"],
           salary_min: initialMin || 25000,
@@ -3512,7 +3529,8 @@ export default function ApplicantProfile() {
     const saved = savedTargetRoles.find((r) => r.id === roleId);
     if (!current || !saved) return false;
 
-    // Check title
+    // Check category & title
+    const isCategoryDirty = (current.category || "").trim() !== (saved.category || "").trim();
     const isTitleDirty = (current.title || "").trim() !== (saved.title || "").trim();
 
     // Check work arrangements
@@ -3542,6 +3560,7 @@ export default function ApplicantProfile() {
     const savedHide = Boolean(saved.hide_salary);
 
     return (
+      isCategoryDirty ||
       isTitleDirty ||
       isArrDirty ||
       currentMin !== savedMin ||
@@ -3912,6 +3931,7 @@ export default function ApplicantProfile() {
   };
 
   const resetNewRoleForm = () => {
+    setNewRoleCategory("");
     setNewRoleTitle("");
     setNewRoleArrangement("");
     setNewRoleSalaryMin("");
@@ -3975,8 +3995,11 @@ export default function ApplicantProfile() {
     const formattedMin = formatSal(rawMin);
     const formattedMax = formatSal(rawMax);
 
+    const category = newRoleCategory || getCategoryForRole(title);
+
     const newItem: TargetRolePreferenceItem = {
       id: `role-${Date.now()}`,
+      category,
       title,
       work_arrangements: newRoleArrangement ? [newRoleArrangement] : ["On-Site"],
       salary_min: formattedMin,
@@ -4170,8 +4193,10 @@ export default function ApplicantProfile() {
     const formattedMin = formatSal(rawMin);
     const formattedMax = formatSal(rawMax);
 
+    const category = role.category || getCategoryForRole(title);
+
     const updated = targetRoles.map((r) =>
-      r.id === roleId ? { ...r, title, salary_min: formattedMin, salary_max: formattedMax } : r
+      r.id === roleId ? { ...r, title, category, salary_min: formattedMin, salary_max: formattedMax } : r
     );
 
     setActiveRoleSalaryInput(null);
@@ -5676,23 +5701,67 @@ export default function ApplicantProfile() {
                             </div>
 
                             <div className="role-add-form-body">
-                              {/* Selection Box for Target Job Role */}
-                              <div className="profile-field" style={{ width: "100%" }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                                  <label className="role-pref-sublabel">TARGET JOB ROLE *</label>
-                                  <small style={{ color: "#64748b", fontSize: "0.8rem" }}>Select from standard industry roles or type a custom role</small>
+                              {/* Categorized Job Selection: Category + Specific Role */}
+                              <div className="role-add-category-role-grid">
+                                <div className="profile-field">
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                                    <label className="role-pref-sublabel">JOB CATEGORY *</label>
+                                    <small style={{ color: "#64748b", fontSize: "0.8rem" }}>Select parent industry</small>
+                                  </div>
+                                  <div className="role-category-select-wrap">
+                                    <select
+                                      className="role-category-select"
+                                      value={newRoleCategory}
+                                      onChange={(e) => {
+                                        const cat = e.target.value;
+                                        setNewRoleCategory(cat);
+                                        if (cat && newRoleTitle && CATEGORIZED_JOB_ROLES[cat] && !CATEGORIZED_JOB_ROLES[cat].some((r) => r.toLowerCase() === newRoleTitle.toLowerCase())) {
+                                          setNewRoleTitle("");
+                                        }
+                                      }}
+                                      disabled={isSavingNewRole}
+                                      aria-label="Job Category"
+                                    >
+                                      <option value="">All Categories (or choose category)...</option>
+                                      {JOB_CATEGORIES_LIST.map((cat) => (
+                                        <option key={cat} value={cat}>
+                                          {cat}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
                                 </div>
-                                <SearchableSelect
-                                  options={ALL_MULTI_INDUSTRY_JOB_ROLES.filter(
-                                    (opt) => !targetRoles.some((r) => r.title.toLowerCase() === opt.toLowerCase())
-                                  )}
-                                  groupedOptions={CATEGORIZED_JOB_ROLES}
-                                  value={newRoleTitle}
-                                  onChange={setNewRoleTitle}
-                                  onEnterAdd={handleSaveNewRole}
-                                  placeholder="Select or type target job role (e.g. Full Stack Developer, UI/UX Designer)..."
-                                  disabled={isSavingNewRole}
-                                />
+
+                                <div className="profile-field">
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                                    <label className="role-pref-sublabel">TARGET JOB ROLE *</label>
+                                    <small style={{ color: "#64748b", fontSize: "0.8rem" }}>
+                                      {newRoleCategory ? `Roles in ${newRoleCategory}` : "Select role or type custom"}
+                                    </small>
+                                  </div>
+                                  <SearchableSelect
+                                    options={(newRoleCategory && CATEGORIZED_JOB_ROLES[newRoleCategory]
+                                      ? CATEGORIZED_JOB_ROLES[newRoleCategory]
+                                      : ALL_MULTI_INDUSTRY_JOB_ROLES
+                                    ).filter(
+                                      (opt) => !targetRoles.some((r) => r.title.toLowerCase() === opt.toLowerCase())
+                                    )}
+                                    groupedOptions={newRoleCategory ? undefined : CATEGORIZED_JOB_ROLES}
+                                    value={newRoleTitle}
+                                    onChange={(val) => {
+                                      setNewRoleTitle(val);
+                                      if (!newRoleCategory && val) {
+                                        const detected = getCategoryForRole(val);
+                                        if (detected && detected !== "Other Specializations") {
+                                          setNewRoleCategory(detected);
+                                        }
+                                      }
+                                    }}
+                                    onEnterAdd={handleSaveNewRole}
+                                    placeholder={newRoleCategory ? `Select role in ${newRoleCategory}...` : "Select or type target job role (e.g. Full Stack Developer, UI/UX Designer)..."}
+                                    disabled={isSavingNewRole}
+                                  />
+                                </div>
                               </div>
 
                               {/* Work Arrangement & Salary Range Row */}
@@ -5842,6 +5911,11 @@ export default function ApplicantProfile() {
                                 <div className="target-role-preference-card target-role-singular-line" key={roleItem.id}>
                                   <div className="role-pref-card-header">
                                     <div className="role-pref-header-left">
+                                      <div className="role-pref-category-tag-row">
+                                        <span className="role-pref-category-badge">
+                                          {roleItem.category || getCategoryForRole(roleItem.title)}
+                                        </span>
+                                      </div>
                                       <h4 className="role-pref-title">{roleItem.title}</h4>
                                       <div className="role-pref-summary-pills">
                                         {(roleItem.work_arrangements && roleItem.work_arrangements.length > 0) && (
@@ -5893,6 +5967,11 @@ export default function ApplicantProfile() {
                               <div className="target-role-preference-card editing-role-card" key={roleItem.id}>
                                 <div className="role-pref-card-header">
                                   <div className="role-pref-header-left">
+                                    <div className="role-pref-category-tag-row">
+                                      <span className="role-pref-category-badge">
+                                        {roleItem.category || getCategoryForRole(roleItem.title)}
+                                      </span>
+                                    </div>
                                     <h4 className="role-pref-title">{roleItem.title}</h4>
                                     <div className="role-pref-summary-pills">
                                       {(roleItem.work_arrangements && roleItem.work_arrangements.length > 0) && (
@@ -5946,24 +6025,76 @@ export default function ApplicantProfile() {
                                 </div>
 
                                 <div className="role-pref-card-body">
-                                  <div className="profile-field" style={{ gridColumn: "1 / -1", width: "100%", marginBottom: "6px" }}>
-                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                                      <label className="role-pref-sublabel">TARGET JOB ROLE *</label>
-                                      <small style={{ color: "#64748b", fontSize: "0.8rem" }}>Select from standard industry roles or type a custom role</small>
+                                  <div className="role-add-category-role-grid" style={{ gridColumn: "1 / -1", width: "100%", marginBottom: "14px" }}>
+                                    <div className="profile-field">
+                                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                                        <label className="role-pref-sublabel">JOB CATEGORY *</label>
+                                        <small style={{ color: "#64748b", fontSize: "0.8rem" }}>Parent industry</small>
+                                      </div>
+                                      <div className="role-category-select-wrap">
+                                        <select
+                                          className="role-category-select"
+                                          value={roleItem.category || getCategoryForRole(roleItem.title)}
+                                          onChange={(e) => {
+                                            const newCat = e.target.value;
+                                            setTargetRoles((prev) =>
+                                              prev.map((r) =>
+                                                r.id === roleItem.id
+                                                  ? {
+                                                      ...r,
+                                                      category: newCat,
+                                                      title: newCat && r.title && CATEGORIZED_JOB_ROLES[newCat] && !CATEGORIZED_JOB_ROLES[newCat].some((ro) => ro.toLowerCase() === r.title.toLowerCase()) ? "" : r.title,
+                                                    }
+                                                  : r
+                                              )
+                                            );
+                                          }}
+                                          disabled={isSavingThisRole}
+                                          aria-label="Job Category"
+                                        >
+                                          <option value="">All Categories (or choose category)...</option>
+                                          {JOB_CATEGORIES_LIST.map((cat) => (
+                                            <option key={cat} value={cat}>
+                                              {cat}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
                                     </div>
-                                    <SearchableSelect
-                                      options={ALL_MULTI_INDUSTRY_JOB_ROLES.filter(
-                                        (opt) => opt.toLowerCase() === roleItem.title.toLowerCase() || !targetRoles.some((r) => r.id !== roleItem.id && r.title.toLowerCase() === opt.toLowerCase())
-                                      )}
-                                      groupedOptions={CATEGORIZED_JOB_ROLES}
-                                      value={roleItem.title}
-                                      onChange={(newTitle) => {
-                                        setTargetRoles((prev) =>
-                                          prev.map((r) => (r.id === roleItem.id ? { ...r, title: newTitle } : r))
-                                        );
-                                      }}
-                                      placeholder="Select or type target job role..."
-                                    />
+
+                                    <div className="profile-field">
+                                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                                        <label className="role-pref-sublabel">TARGET JOB ROLE *</label>
+                                        <small style={{ color: "#64748b", fontSize: "0.8rem" }}>
+                                          {roleItem.category ? `Roles in ${roleItem.category}` : "Select role or type custom"}
+                                        </small>
+                                      </div>
+                                      <SearchableSelect
+                                        options={(roleItem.category && CATEGORIZED_JOB_ROLES[roleItem.category]
+                                          ? CATEGORIZED_JOB_ROLES[roleItem.category]
+                                          : ALL_MULTI_INDUSTRY_JOB_ROLES
+                                        ).filter(
+                                          (opt) => opt.toLowerCase() === roleItem.title.toLowerCase() || !targetRoles.some((r) => r.id !== roleItem.id && r.title.toLowerCase() === opt.toLowerCase())
+                                        )}
+                                        groupedOptions={roleItem.category ? undefined : CATEGORIZED_JOB_ROLES}
+                                        value={roleItem.title}
+                                        onChange={(newTitle) => {
+                                          const detected = getCategoryForRole(newTitle);
+                                          setTargetRoles((prev) =>
+                                            prev.map((r) =>
+                                              r.id === roleItem.id
+                                                ? {
+                                                    ...r,
+                                                    title: newTitle,
+                                                    category: r.category || (detected !== "Other Specializations" ? detected : r.category),
+                                                  }
+                                                : r
+                                            )
+                                          );
+                                        }}
+                                        placeholder="Select or type target job role..."
+                                      />
+                                    </div>
                                   </div>
 
                                   {/* Left Column: Work Arrangement */}
