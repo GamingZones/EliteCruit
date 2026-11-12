@@ -4868,57 +4868,59 @@ export default function Messages() {
               </button>
             </div>
 
-            <div className="view-letter-meta-row">
-              {viewLetterModalTarget.decision && (
-                <span className={`view-letter-badge ${viewLetterModalTarget.decision === "accepted" ? "accepted" : viewLetterModalTarget.decision === "declined" ? "declined" : "extended"}`}>
-                  {viewLetterModalTarget.decision === "accepted" ? "Offer Accepted" : viewLetterModalTarget.decision === "declined" ? "Offer Declined" : "Formal Offer Extended"}
-                </span>
+            <div className="view-letter-body-content">
+              <div className="view-letter-meta-row">
+                {viewLetterModalTarget.decision && (
+                  <span className={`view-letter-badge ${viewLetterModalTarget.decision === "accepted" ? "accepted" : viewLetterModalTarget.decision === "declined" ? "declined" : "extended"}`}>
+                    {viewLetterModalTarget.decision === "accepted" ? "Offer Accepted" : viewLetterModalTarget.decision === "declined" ? "Offer Declined" : "Formal Offer Extended"}
+                  </span>
+                )}
+                {viewLetterModalTarget.startDate && (
+                  <span className="view-letter-start-date-tag">
+                    Target Start Date: <strong>{viewLetterModalTarget.startDate}</strong>
+                  </span>
+                )}
+              </div>
+
+              {Boolean(viewLetterModalTarget.offerLetter && viewLetterModalTarget.letterText) && (
+                <div className="view-letter-tabs">
+                  <button
+                    type="button"
+                    className={`view-letter-tab-btn ${viewLetterActiveTab === "offer" ? "active" : ""}`}
+                    onClick={() => setViewLetterActiveTab("offer")}
+                  >
+                    Formal Offer Letter
+                  </button>
+                  <button
+                    type="button"
+                    className={`view-letter-tab-btn ${viewLetterActiveTab === "response" ? "active" : ""}`}
+                    onClick={() => setViewLetterActiveTab("response")}
+                  >
+                    Candidate Response Letter
+                  </button>
+                </div>
               )}
-              {viewLetterModalTarget.startDate && (
-                <span className="view-letter-start-date-tag">
-                  Target Start Date: <strong>{viewLetterModalTarget.startDate}</strong>
-                </span>
+
+              {viewLetterActiveTab === "offer" && viewLetterModalTarget.offerLetter ? (
+                <div className="view-letter-body-box view-letter-offer-box">
+                  <div className="view-letter-box-header">
+                    <span className="view-letter-box-label offer-label">
+                      EMPLOYMENT OFFER LETTER FROM {viewLetterModalTarget.company?.toUpperCase() || "EMPLOYER"}
+                    </span>
+                  </div>
+                  <pre className="view-letter-pre-text">{viewLetterModalTarget.offerLetter}</pre>
+                </div>
+              ) : (
+                <div className="view-letter-body-box">
+                  <div className="view-letter-box-header">
+                    <span className="view-letter-box-label">
+                      FORMAL RESPONSE LETTER
+                    </span>
+                  </div>
+                  <pre className="view-letter-pre-text">{viewLetterModalTarget.letterText || viewLetterModalTarget.offerLetter || "No letter text available."}</pre>
+                </div>
               )}
             </div>
-
-            {Boolean(viewLetterModalTarget.offerLetter && viewLetterModalTarget.letterText) && (
-              <div className="view-letter-tabs">
-                <button
-                  type="button"
-                  className={`view-letter-tab-btn ${viewLetterActiveTab === "offer" ? "active" : ""}`}
-                  onClick={() => setViewLetterActiveTab("offer")}
-                >
-                  Formal Offer Letter
-                </button>
-                <button
-                  type="button"
-                  className={`view-letter-tab-btn ${viewLetterActiveTab === "response" ? "active" : ""}`}
-                  onClick={() => setViewLetterActiveTab("response")}
-                >
-                  Candidate Response Letter
-                </button>
-              </div>
-            )}
-
-            {viewLetterActiveTab === "offer" && viewLetterModalTarget.offerLetter ? (
-              <div className="view-letter-body-box view-letter-offer-box">
-                <div className="view-letter-box-header">
-                  <span className="view-letter-box-label offer-label">
-                    EMPLOYMENT OFFER LETTER FROM {viewLetterModalTarget.company?.toUpperCase() || "EMPLOYER"}
-                  </span>
-                </div>
-                <pre className="view-letter-pre-text">{viewLetterModalTarget.offerLetter}</pre>
-              </div>
-            ) : (
-              <div className="view-letter-body-box">
-                <div className="view-letter-box-header">
-                  <span className="view-letter-box-label">
-                    FORMAL RESPONSE LETTER
-                  </span>
-                </div>
-                <pre className="view-letter-pre-text">{viewLetterModalTarget.letterText || viewLetterModalTarget.offerLetter || "No letter text available."}</pre>
-              </div>
-            )}
 
             <div className="view-letter-footer">
               <button

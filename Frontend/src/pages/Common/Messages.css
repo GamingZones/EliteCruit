@@ -2385,35 +2385,28 @@
 .view-letter-modal-card {
   background: #ffffff;
   border-radius: 14px;
-  max-width: 680px;
-  width: 100%;
+  width: 550px;
+  max-width: min(550px, calc(100vw - 32px));
+  height: 560px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
   border: 1px solid #e2e8f0;
-  padding: 24px;
+  padding: 0;
   box-sizing: border-box;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.25s ease;
+  transform: translateX(0);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .view-letter-modal-card.has-decision-open {
-  max-width: 550px;
-  width: 100%;
-  margin: 0;
   transform: translateX(calc(-50% - 12px));
-  animation: viewLetterSlidePair 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes viewLetterSlidePair {
-  0% {
-    opacity: 0;
-    transform: translateX(calc(-50% - 40px)) scale(0.98);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(calc(-50% - 12px)) scale(1);
+@media (max-width: 1160px) {
+  .view-letter-modal-card.has-decision-open {
+    transform: none !important;
   }
 }
 
@@ -2422,8 +2415,18 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
-  padding-bottom: 14px;
+  padding: 16px 22px;
   border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.view-letter-body-content {
+  padding: 16px 22px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
 }
 
 .view-letter-eyebrow {
@@ -2472,7 +2475,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
-  margin: 14px 0;
+  margin: 0 0 12px 0;
 }
 
 .view-letter-badge {
@@ -2536,12 +2539,13 @@
 
 .view-letter-body-box {
   flex: 1;
+  min-height: 0;
   background: #fafaf9;
   border: 1px solid #e7e5e4;
   border-radius: 10px;
   padding: 16px;
   overflow-y: auto;
-  max-height: 48vh;
+  max-height: none;
 }
 
 .view-letter-body-box.view-letter-offer-box {
@@ -2581,9 +2585,10 @@
   justify-content: flex-end;
   align-items: center;
   gap: 12px;
-  padding-top: 14px;
+  padding: 14px 22px;
   border-top: 1px solid #e2e8f0;
-  margin-top: 14px;
+  background: #f8fafc;
+  margin-top: 0;
 }
 
 .view-letter-done-btn {
@@ -2718,12 +2723,19 @@
 }
 
 [data-theme="dark"] .view-letter-modal-card {
-  background: #1c1e27 !important;
-  border-color: #2e3244 !important;
+  background: #14151B !important;
+  border: 1px solid #2e3244 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
+  color: #f1f5f9 !important;
 }
 
 [data-theme="dark"] .view-letter-header {
+  background: #14151B !important;
   border-bottom-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .view-letter-body-content {
+  background: #14151B !important;
 }
 
 [data-theme="dark"] .view-letter-title {
@@ -2735,13 +2747,13 @@
 }
 
 [data-theme="dark"] .view-letter-start-date-tag {
-  background: #14151b !important;
+  background: #181a24 !important;
   border-color: #2e3244 !important;
   color: #cbd5e1 !important;
 }
 
 [data-theme="dark"] .view-letter-tabs {
-  background: #14151b !important;
+  background: #181a24 !important;
   border: 1px solid #2e3244 !important;
 }
 
@@ -2755,13 +2767,13 @@
 }
 
 [data-theme="dark"] .view-letter-body-box {
-  background: #14151b !important;
+  background: #181a24 !important;
   border-color: #2e3244 !important;
 }
 
 [data-theme="dark"] .view-letter-body-box.view-letter-offer-box {
-  background: rgba(2, 132, 199, 0.12) !important;
-  border-color: rgba(56, 189, 248, 0.3) !important;
+  background: #181a24 !important;
+  border-color: #2e3244 !important;
 }
 
 [data-theme="dark"] .view-letter-pre-text {
@@ -2769,6 +2781,7 @@
 }
 
 [data-theme="dark"] .view-letter-footer {
+  background: #14151B !important;
   border-top-color: #2e3244 !important;
 }
 

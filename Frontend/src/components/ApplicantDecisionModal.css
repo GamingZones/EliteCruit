@@ -36,8 +36,10 @@
 }
 
 .adm-modal-backdrop.position-right.side-by-side .adm-decision-card {
-  max-width: 550px;
-  width: 100%;
+  width: 550px;
+  max-width: min(550px, calc(100vw - 32px));
+  height: 560px;
+  max-height: 90vh;
   margin: 0;
   transform: translateX(calc(50% + 12px));
   animation: admSlideInPair 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -102,11 +104,12 @@
 }
 
 .adm-decision-card {
-  width: 620px;
-  max-width: min(620px, calc(100vw - 32px));
+  width: 550px;
+  max-width: min(550px, calc(100vw - 32px));
+  height: 560px;
   max-height: 90vh;
   background: #ffffff;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #e2e8f0;
   border-radius: 14px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
   display: flex;
@@ -118,8 +121,9 @@
 }
 
 .adm-decision-card.card-right-side {
-  max-width: 580px;
-  width: 100%;
+  width: 550px;
+  max-width: min(550px, calc(100vw - 32px));
+  height: 560px;
   margin: 0;
   animation: admSlideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: auto;
@@ -165,12 +169,13 @@
 
 /* ── Body ── */
 .adm-card-body {
-  padding: 20px 22px;
+  padding: 16px 22px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   flex: 1;
+  min-height: 0;
   box-sizing: border-box;
 }
 
@@ -305,6 +310,8 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  flex: 1;
+  min-height: 0;
 }
 
 .adm-textarea {
@@ -317,8 +324,9 @@
   font-family: inherit;
   color: #1e293b;
   line-height: 1.55;
-  min-height: 220px;
-  resize: vertical;
+  flex: 1;
+  min-height: 140px;
+  resize: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -515,7 +523,7 @@
 }
 
 [data-theme="dark"] .adm-textarea {
-  background: #14151B !important;
+  background: #181a24 !important;
   border: 1px solid #2e3244 !important;
   color: #f8fafc !important;
 }
@@ -526,7 +534,7 @@
 }
 
 [data-theme="dark"] .adm-textarea.automated-preview {
-  background: #181a22 !important;
+  background: #181a24 !important;
   border-color: #2e3244 !important;
   color: #cbd5e1 !important;
 }
