@@ -3978,10 +3978,6 @@ export default function JobSearch() {
                     <div className="result-card-main">
                       <div className="result-left-col">
                         <div className="result-title-row" style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-                          <span className="company-inline-rating-pill" title="Employer rating">
-                            <span className="star-icon">★</span>
-                            <span>{employer.rating ? Number(employer.rating).toFixed(1) : "0.0"}</span>
-                          </span>
                           {employer.company_logo_path ? (
                             <img
                               src={
@@ -4006,9 +4002,20 @@ export default function JobSearch() {
                           </div>
                           <div>
                             <div className="employer-name-rating-row">
+                              <span className="company-inline-rating-pill" title="Employer rating">
+                                <span className="star-icon">★</span>
+                                <span>{employer.rating ? Number(employer.rating).toFixed(1) : "0.0"}</span>
+                              </span>
                               <h3 title={employer.company_name} style={{ margin: 0, fontSize: "1.1rem" }}>
                                 {employer.company_name}
                               </h3>
+                              {employer.active_jobs_count > 0 ? (
+                                <span className="status-chip open">
+                                  {employer.active_jobs_count} Open Position{employer.active_jobs_count > 1 ? "s" : ""}
+                                </span>
+                              ) : (
+                                <span className="status-chip closed">No Active Postings</span>
+                              )}
                             </div>
                             <p className="meta-line" style={{ marginTop: "4px", marginBottom: 0 }}>
                               {(() => {
@@ -4060,16 +4067,6 @@ export default function JobSearch() {
                         <p className="result-summary" style={{ marginTop: "10px" }}>
                           {shortenText(employer.company_description, "No company description provided yet.", 160)}
                         </p>
-
-                        <div className="result-tags employer-tags-row">
-                          {employer.active_jobs_count > 0 ? (
-                            <span className="status-chip open">
-                              {employer.active_jobs_count} Open Position{employer.active_jobs_count > 1 ? "s" : ""}
-                            </span>
-                          ) : (
-                            <span className="status-chip closed">No Active Postings</span>
-                          )}
-                        </div>
                       </div>
 
                       <div className="result-right-col" style={{ justifyContent: "center" }}>
