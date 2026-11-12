@@ -12,6 +12,8 @@ export interface ApplicantDecisionModalProps {
   isInvitation?: boolean;
   offerLetter?: string | null;
   startDate?: string | null;
+  position?: "center" | "right";
+  isSideBySide?: boolean;
   onClose: () => void;
   onConfirm: (payload: {
     action: "accept" | "decline";
@@ -77,6 +79,8 @@ export default function ApplicantDecisionModal({
   isInvitation = false,
   offerLetter,
   startDate,
+  position = "center",
+  isSideBySide = false,
   onClose,
   onConfirm,
 }: ApplicantDecisionModalProps) {
@@ -172,7 +176,7 @@ export default function ApplicantDecisionModal({
 
   return (
     <div
-      className="adm-modal-backdrop"
+      className={`adm-modal-backdrop ${position === "right" ? "position-right" : ""} ${isSideBySide ? "side-by-side" : ""}`}
       onClick={(e) => {
         if (e.target === e.currentTarget && !isSubmitting) onClose();
       }}
@@ -180,7 +184,7 @@ export default function ApplicantDecisionModal({
       aria-modal="true"
       aria-labelledby="adm-modal-title"
     >
-      <div className="adm-decision-card">
+      <div className={`adm-decision-card ${position === "right" ? "card-right-side" : ""}`}>
         {/* Header (Pic 2 & Pic 3 Match) */}
         <div className="adm-card-header">
           <h3 id="adm-modal-title" className="adm-card-title">

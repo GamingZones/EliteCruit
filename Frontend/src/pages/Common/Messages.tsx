@@ -2429,7 +2429,65 @@ export default function Messages() {
                               </article>
                             );
                           })() : special.type === "offer_response" ? (
-                            null
+                            <article className={`chat-bubble chat-special-card chat-response-card ${isMe ? "outgoing" : "incoming"}`}>
+                              <div className="chat-special-header">
+                                <div className="chat-special-badge-row">
+                                  <span className={`chat-special-badge ${special.isAccepted ? "badge-offer-accepted" : "badge-offer-declined"}`}>
+                                    {special.isAccepted ? (
+                                      <>
+                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                          <polyline points="20 6 9 17 4 12" />
+                                        </svg>
+                                        <span>Offer Accepted</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                          <line x1="18" y1="6" x2="6" y2="18" />
+                                          <line x1="6" y1="6" x2="18" y2="18" />
+                                        </svg>
+                                        <span>Offer Declined</span>
+                                      </>
+                                    )}
+                                  </span>
+                                  <time className="chat-special-time">{msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}</time>
+                                </div>
+                                <h4 className="chat-special-title">{special.jobTitle}</h4>
+                                {special.startDate && (
+                                  <div className="chat-special-subtitle">Target Start Date: {special.startDate}</div>
+                                )}
+                              </div>
+                              <div className="chat-special-body">
+                                <p className="chat-special-preview-text">
+                                  {special.cleanBody || (special.isAccepted
+                                    ? "Candidate has formally accepted the employment offer. Click below to view the signed response letter."
+                                    : "Candidate has formally declined this position. Click below to view the response letter.")}
+                                </p>
+                              </div>
+                              <div className="chat-special-actions">
+                                <button
+                                  type="button"
+                                  className="chat-special-btn response-action-btn"
+                                  onClick={() => {
+                                    handleOpenLetterViewer({
+                                      title: special.jobTitle || "Position",
+                                      company: selectedThread?.other_user_name || "Company",
+                                      letterText: msg.message_text,
+                                      decision: special.isAccepted ? "accepted" : "declined",
+                                      startDate: special.startDate,
+                                      respondedAt: msg.created_at,
+                                      defaultTab: "response",
+                                    });
+                                  }}
+                                >
+                                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                    <polyline points="14 2 14 8 20 8" />
+                                  </svg>
+                                  <span>View Response Letter</span>
+                                </button>
+                              </div>
+                            </article>
                           ) : special.type === "interview_scheduled" ? (
                             <article className={`chat-bubble chat-special-card chat-interview-card ${isMe ? "outgoing" : "incoming"}`}>
                               <div className="chat-special-header">
@@ -4758,25 +4816,41 @@ export default function Messages() {
         isInvitation={decisionModalTarget?.isInvitation}
         offerLetter={decisionModalTarget?.offerLetter}
         title={decisionModalTarget?.isInvitation ? undefined : "Respond to Employment Offer"}
+        position="right"
+        isSideBySide={Boolean(viewLetterModalTarget && decisionModalTarget)}
         onClose={() => setDecisionModalTarget(null)}
         onConfirm={async ({ action, letter_text, letter_type, start_date }) => {
           if (!decisionModalTarget) return;
-          if (decisionModalTarget.applicationId) {
-            await handleRespondOffer(decisionModalTarget.applicationId, action, letter_text, letter_type, start_date);
-          } else if (decisionModalTarget.type === "byJob" && decisionModalTarget.jobId) {
-            await handleRespondInvitationByJob(decisionModalTarget.jobId, action, letter_text, letter_type, start_date);
-          } else if (decisionModalTarget.type === "byDetails") {
-            await handleRespondInvitation(action, letter_text, letter_type, start_date);
-          } else {
-            await handleRespondInvitationFromChat(action, letter_text, letter_type, start_date);
+          try {
+            if (decisionModalTarget.applicationId) {
+              await handleRespondOffer(decisionModalTarget.applicationId, action, letter_text, letter_type, start_date);
+            } else if (decisionModalTarget.type === "byJob" && decisionModalTarget.jobId) {
+              await handleRespondInvitationByJob(decisionModalTarget.jobId, action, letter_text, letter_type, start_date);
+            } else if (decisionModalTarget.type === "byDetails") {
+              await handleRespondInvitation(action, letter_text, letter_type, start_date);
+            } else {
+              await handleRespondInvitationFromChat(action, letter_text, letter_type, start_date);
+            }
+          } finally {
+            setDecisionModalTarget(null);
+            setViewLetterModalTarget(null);
           }
         }}
       />
 
       {/* ── FORMAL LETTER VIEWER MODAL ── */}
       {viewLetterModalTarget && (
-        <div className="view-letter-backdrop" onClick={() => setViewLetterModalTarget(null)}>
-          <div className="view-letter-modal-card" onClick={(e) => e.stopPropagation()}>
+        <div
+          className={`view-letter-backdrop ${decisionModalTarget ? "has-decision-open" : ""}`}
+          onClick={() => {
+            setViewLetterModalTarget(null);
+            setDecisionModalTarget(null);
+          }}
+        >
+          <div
+            className={`view-letter-modal-card ${decisionModalTarget ? "has-decision-open" : ""}`}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="view-letter-header">
               <div>
                 <span className="view-letter-eyebrow">OFFICIAL CORRESPONDENCE</span>
@@ -4872,7 +4946,7 @@ export default function Messages() {
                     const targetAppId = viewLetterModalTarget.applicationId || matchedJob?.application?.id || matchedJob?.application_id;
                     const targetJobId = viewLetterModalTarget.jobId || matchedJob?.id;
 
-                    setViewLetterModalTarget(null);
+                    // Keep viewLetterModalTarget open side-by-side so candidate can view offer while responding
                     setDecisionModalTarget({
                       type: targetAppId ? "byDetails" : targetJobId ? "byJob" : "chat",
                       action: "accept",

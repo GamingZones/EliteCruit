@@ -12,13 +12,38 @@
   background: rgba(11, 18, 32, 0.68);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  z-index: 10500;
+  z-index: 12000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
   box-sizing: border-box;
   animation: admFadeIn 0.18s ease-out;
+}
+
+.adm-modal-backdrop.position-right {
+  justify-content: flex-end;
+  padding: 20px 36px 20px 20px;
+}
+
+.adm-modal-backdrop.position-right.side-by-side {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  pointer-events: none;
+}
+
+@media (max-width: 1160px) {
+  .adm-modal-backdrop.position-right {
+    justify-content: center !important;
+    padding: 16px !important;
+    pointer-events: auto !important;
+  }
+  .adm-modal-backdrop.position-right.side-by-side {
+    background: rgba(11, 18, 32, 0.68) !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
+  }
 }
 
 @keyframes admFadeIn {
@@ -37,6 +62,17 @@
   }
 }
 
+@keyframes admSlideInRight {
+  0% {
+    opacity: 0;
+    transform: translateX(50px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
 .adm-decision-card {
   width: 620px;
   max-width: min(620px, calc(100vw - 32px));
@@ -51,6 +87,14 @@
   animation: admScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   font-family: "Inter", sans-serif;
   box-sizing: border-box;
+}
+
+.adm-decision-card.card-right-side {
+  max-width: 580px;
+  width: 100%;
+  margin: 0;
+  animation: admSlideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
 }
 
 /* ── Header ── */
