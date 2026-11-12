@@ -700,6 +700,7 @@ export default function Messages() {
   const [selectedJobFilter, setSelectedJobFilter] = useState<string>("all");
   const companyLabel = useEmployerCompanyLabel("Employer");
   const isEmployer = sessionRole === "employer";
+  const currentUserRole = sessionRole;
 
   // Messenger-style Info Sidebar state
   const [isInfoSidebarOpen, setIsInfoSidebarOpen] = useState(false);
@@ -3659,7 +3660,7 @@ export default function Messages() {
       {/* ── Standardized Job Details Modal (Applicant View - Clean Base Modal) ── */}
       <JobDetailsModal
         isOpen={Boolean(detailsJob)}
-        isApplicantView={currentUserRole === "applicant"}
+        isApplicantView={sessionRole === "applicant"}
         onClose={() => {
           setDetailsJob(null);
           setIsApplicantBreakdownOpen(false);
