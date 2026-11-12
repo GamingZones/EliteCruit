@@ -6,6 +6,7 @@ import {
   evaluateSkillRequirementMatch,
   calculateJobMatchDetails,
   getMatchColorClass,
+  CATEGORIZED_JOB_ROLES,
 } from "../../utils/filters";
 
 export type BreakdownCourseSkillItem = {
@@ -233,6 +234,8 @@ export type CandidateModalData = {
   summary?: string;
   languages?: string | string[];
   desired_job_title?: string;
+  target_roles_json?: string | null;
+  hide_salary?: boolean | number | null;
   expected_salary?: number | string | null;
   expected_salary_min?: number | string | null;
   expected_salary_max?: number | string | null;
@@ -530,6 +533,88 @@ export default function ApplicantDetailsModal({
       lower.includes("tvl")
     );
   };
+
+  function getCategoryForRole(roleTitle: string): string {
+    if (!roleTitle) return "Other Specializations";
+    const clean = roleTitle.trim().toLowerCase();
+    for (const [cat, roles] of Object.entries(CATEGORIZED_JOB_ROLES)) {
+      if (roles.some((r) => r.toLowerCase() === clean)) {
+        return cat;
+      }
+    }
+    return "Other Specializations";
+  }
+
+  type ParsedCandidateTargetRole = {
+    id: string;
+    category: string;
+    title: string;
+    work_arrangements: string[];
+    salary_min?: string | number | null;
+    salary_max?: string | number | null;
+    hide_salary?: boolean;
+  };
+
+  function parseCandidateTargetRoles(cand: CandidateModalData): ParsedCandidateTargetRole[] {
+    if (cand.target_roles_json) {
+      try {
+        const arr = typeof cand.target_roles_json === "string" 
+          ? JSON.parse(cand.target_roles_json) 
+          : cand.target_roles_json;
+        if (Array.isArray(arr) && arr.length > 0) {
+          return arr.map((r: any, idx: number) => {
+            const rawArr = r.work_arrangements ?? r.work_arrangement;
+            const arrangements: string[] = Array.isArray(rawArr)
+              ? rawArr
+              : typeof rawArr === "string"
+              ? rawArr.split(",").map((s: string) => s.trim()).filter(Boolean)
+              : ["On-Site"];
+            return {
+              id: r.id || `role-${idx}`,
+              category: r.category || getCategoryForRole(r.title || ""),
+              title: r.title || "Target Role",
+              work_arrangements: arrangements.length > 0 ? arrangements : ["On-Site"],
+              salary_min: r.salary_min != null ? r.salary_min : null,
+              salary_max: r.salary_max != null ? r.salary_max : null,
+              hide_salary: Boolean(r.hide_salary),
+            };
+          });
+        }
+      } catch {}
+    }
+
+    const rawTitles = cand.desired_job_title || cand.job_title;
+    if (rawTitles) {
+      const titles = String(rawTitles)
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const legacyArrangements = cand.work_arrangement
+        ? String(cand.work_arrangement).split(",").map((s) => s.trim()).filter(Boolean)
+        : ["On-Site"];
+      return titles.map((t, idx) => ({
+        id: `role-legacy-${idx}`,
+        category: getCategoryForRole(t),
+        title: t,
+        work_arrangements: legacyArrangements.length > 0 ? legacyArrangements : ["On-Site"],
+        salary_min: cand.expected_salary_min ?? cand.expected_salary ?? null,
+        salary_max: cand.expected_salary_max ?? null,
+        hide_salary: Boolean(cand.hide_salary),
+      }));
+    }
+
+    return [];
+  }
+
+  function formatRoleSalaryDisplay(val: string | number | null | undefined): string {
+    if (val == null || val === "") return "";
+    const str = String(val).trim();
+    const num = Number(str.replace(/[^0-9.]/g, ""));
+    if (Number.isFinite(num) && num > 0) {
+      return num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    return str;
+  }
 
   const parseCandidateSalaryRange = (c: CandidateModalData) => {
     if (c.expected_salary_min && c.expected_salary_max) {
@@ -1034,40 +1119,67 @@ export default function ApplicantDetailsModal({
               {/* TAB 2: CAREER PREFERENCES */}
               {candDetailTab === "preferences" && (
                 <div className="cand-tab-content">
-                  <div className="cand-details-card">
-                    <h4 className="cand-details-card-title">
-                      Career Target
-                    </h4>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
-                      <div className="company-info-card">
-                        <small className="company-info-card-label">Desired Job Title</small>
-                        <span className="company-info-card-val" style={{ color: "#0284c7" }}>
-                          {candidate.desired_job_title || "Not specified"}
-                        </span>
-                      </div>
-                      {(() => {
-                        const sal = parseCandidateSalaryRange(candidate);
-                        return (
-                          <>
-                            <div className="company-info-card">
-                              <small className="company-info-card-label">Minimum Expected Salary</small>
-                              <span className="company-info-card-val">{sal.min}</span>
+                  {(() => {
+                    const parsedRoles = parseCandidateTargetRoles(candidate);
+                    return (
+                      <div className="cand-details-card role-employment-targeting-card">
+                        <div className="role-employment-heading">
+                          <div className="role-employment-heading-left">
+                            <div className="role-employment-title-row">
+                              <strong className="role-employment-section-title">Role & Employment Targeting</strong>
+                              <span className="role-count-pill">
+                                {parsedRoles.length} {parsedRoles.length === 1 ? "Role" : "Roles"} Configured
+                              </span>
                             </div>
-                            <div className="company-info-card">
-                              <small className="company-info-card-label">Maximum Expected Salary</small>
-                              <span className="company-info-card-val">{sal.max}</span>
+                            <small className="role-employment-subtext">
+                              Configure each target role with individual work arrangement and salary preferences
+                            </small>
+                          </div>
+                        </div>
+
+                        <div className="target-roles-list-container">
+                          {parsedRoles.length === 0 ? (
+                            <div className="empty-category-notice" style={{ padding: "16px", width: "100%", textAlign: "center" }}>
+                              No target roles configured.
                             </div>
-                          </>
-                        );
-                      })()}
-                      <div className="company-info-card">
-                        <small className="company-info-card-label">Work Arrangement</small>
-                        <span className="setup-pill" style={{ alignSelf: "flex-start", marginTop: "2px", display: "inline-block" }}>
-                          {candidate.work_arrangement || "On-site"}
-                        </span>
+                          ) : (
+                            parsedRoles.map((roleItem, idx) => (
+                              <div className="target-role-preference-card target-role-singular-line" key={roleItem.id || idx}>
+                                <div className="role-pref-card-header">
+                                  <div className="role-pref-header-left">
+                                    <div className="role-pref-category-tag-row">
+                                      <span className="role-pref-category-badge">
+                                        {roleItem.category || getCategoryForRole(roleItem.title)}
+                                      </span>
+                                    </div>
+                                    <h4 className="role-pref-title">{roleItem.title}</h4>
+                                    <div className="role-pref-summary-pills">
+                                      {roleItem.work_arrangements && roleItem.work_arrangements.length > 0 && (
+                                        <span className="role-summary-pill-arr">
+                                          {roleItem.work_arrangements.join(", ")}
+                                        </span>
+                                      )}
+                                      <span className="role-summary-pill-sal">
+                                        {roleItem.hide_salary
+                                          ? "Salary Hidden"
+                                          : roleItem.salary_min && roleItem.salary_max
+                                          ? `PHP ${formatRoleSalaryDisplay(roleItem.salary_min)} - ${formatRoleSalaryDisplay(roleItem.salary_max)}`
+                                          : roleItem.salary_min
+                                          ? `From PHP ${formatRoleSalaryDisplay(roleItem.salary_min)}`
+                                          : roleItem.salary_max
+                                          ? `Up to PHP ${formatRoleSalaryDisplay(roleItem.salary_max)}`
+                                          : "Salary Hidden"}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    );
+                  })()}
 
                   <div className="cand-details-card">
                     <h4 className="cand-details-card-title">

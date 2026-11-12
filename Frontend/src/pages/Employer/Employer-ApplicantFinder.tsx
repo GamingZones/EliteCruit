@@ -12,6 +12,7 @@ import JobDetailsModal from "../../components/modals/JobDetailsModal";
 import { resolveLocalGeocode, resolveLocalGeocodeDetailed, CAVITE_MUNICIPALITIES, getAreaInitials } from "../../data/mapData";
 import {
   BSIT_BSCS_JOB_TITLES,
+  CATEGORIZED_JOB_ROLES,
   BSIT_BSCS_SKILLS,
   BSIT_BSCS_QUALIFICATIONS,
   BSIT_BSCS_CERTIFICATIONS,
@@ -1099,6 +1100,97 @@ export function getCandidateTargetRoles(cand: Candidate): string[] {
       .filter(Boolean);
   }
   return [];
+}
+
+export function getCategoryForRole(roleTitle: string): string {
+  if (!roleTitle) return "Other Specializations";
+  const clean = roleTitle.trim().toLowerCase();
+  for (const [cat, roles] of Object.entries(CATEGORIZED_JOB_ROLES)) {
+    if (roles.some((r) => r.toLowerCase() === clean)) {
+      return cat;
+    }
+  }
+  return "Other Specializations";
+}
+
+export type ParsedCandidateTargetRole = {
+  id: string;
+  category: string;
+  title: string;
+  work_arrangements: string[];
+  salary_min?: string | number | null;
+  salary_max?: string | number | null;
+  hide_salary?: boolean;
+};
+
+export function parseCandidateTargetRoles(cand: {
+  target_roles_json?: string | null;
+  desired_job_title?: string | null;
+  job_title?: string | null;
+  work_arrangement?: string | null;
+  expected_salary?: number | string | null;
+  expected_salary_min?: number | string | null;
+  expected_salary_max?: number | string | null;
+  hide_salary?: boolean | number | null;
+}): ParsedCandidateTargetRole[] {
+  if (cand.target_roles_json) {
+    try {
+      const arr = typeof cand.target_roles_json === "string" 
+        ? JSON.parse(cand.target_roles_json) 
+        : cand.target_roles_json;
+      if (Array.isArray(arr) && arr.length > 0) {
+        return arr.map((r: any, idx: number) => {
+          const rawArr = r.work_arrangements ?? r.work_arrangement;
+          const arrangements: string[] = Array.isArray(rawArr)
+            ? rawArr
+            : typeof rawArr === "string"
+            ? rawArr.split(",").map((s: string) => s.trim()).filter(Boolean)
+            : ["On-Site"];
+          return {
+            id: r.id || `role-${idx}`,
+            category: r.category || getCategoryForRole(r.title || ""),
+            title: r.title || "Target Role",
+            work_arrangements: arrangements.length > 0 ? arrangements : ["On-Site"],
+            salary_min: r.salary_min != null ? r.salary_min : null,
+            salary_max: r.salary_max != null ? r.salary_max : null,
+            hide_salary: Boolean(r.hide_salary),
+          };
+        });
+      }
+    } catch {}
+  }
+
+  const rawTitles = cand.desired_job_title || cand.job_title;
+  if (rawTitles) {
+    const titles = String(rawTitles)
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const legacyArrangements = cand.work_arrangement
+      ? String(cand.work_arrangement).split(",").map((s) => s.trim()).filter(Boolean)
+      : ["On-Site"];
+    return titles.map((t, idx) => ({
+      id: `role-legacy-${idx}`,
+      category: getCategoryForRole(t),
+      title: t,
+      work_arrangements: legacyArrangements.length > 0 ? legacyArrangements : ["On-Site"],
+      salary_min: cand.expected_salary_min ?? cand.expected_salary ?? null,
+      salary_max: cand.expected_salary_max ?? null,
+      hide_salary: Boolean(cand.hide_salary),
+    }));
+  }
+
+  return [];
+}
+
+export function formatRoleSalaryDisplay(val: string | number | null | undefined): string {
+  if (val == null || val === "") return "";
+  const str = String(val).trim();
+  const num = Number(str.replace(/[^0-9.]/g, ""));
+  if (Number.isFinite(num) && num > 0) {
+    return num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  return str;
 }
 
 export interface CandidateGeoMatch {
@@ -3874,11 +3966,30 @@ export default function EmployerApplicantFinder() {
                                   <span className="finder-star-pill">
                                     <span className="star-icon">★</span> {cand.rating ? Number(cand.rating).toFixed(1) : "0.0"}
                                   </span>
-                                  {getCandidateTargetRoles(cand).map((role, idx) => (
-                                    <span key={idx} className="finder-target-role-pill" title={`Target Role: ${role}`}>
-                                      {role}
-                                    </span>
-                                  ))}
+                                  {(() => {
+                                    const roles = getCandidateTargetRoles(cand);
+                                    if (roles.length === 0) return null;
+                                    if (roles.length === 1) {
+                                      return (
+                                        <span className="finder-target-role-pill" title={`Target Role: ${roles[0]}`}>
+                                          {roles[0]}
+                                        </span>
+                                      );
+                                    }
+                                    return (
+                                      <>
+                                        <span className="finder-target-role-pill" title={`Primary Target Role: ${roles[0]}`}>
+                                          {roles[0]}
+                                        </span>
+                                        <span
+                                          className="finder-target-role-pill finder-target-role-more"
+                                          title={`All Target Roles:\n• ${roles.join("\n• ")}`}
+                                        >
+                                          +{roles.length - 1} more
+                                        </span>
+                                      </>
+                                    );
+                                  })()}
                                   {currentActiveJob && (
                                     <span className={`finder-match-pill ${matchClass}`}>
                                       {matchPercent}% Match
@@ -4249,11 +4360,30 @@ export default function EmployerApplicantFinder() {
                                 <span className="finder-star-pill">
                                   <span className="star-icon">★</span> {cand.rating ? Number(cand.rating).toFixed(1) : "0.0"}
                                 </span>
-                                {getCandidateTargetRoles(cand).map((role, idx) => (
-                                  <span key={idx} className="finder-target-role-pill" title={`Target Role: ${role}`}>
-                                    {role}
-                                  </span>
-                                ))}
+                                {(() => {
+                                  const roles = getCandidateTargetRoles(cand);
+                                  if (roles.length === 0) return null;
+                                  if (roles.length === 1) {
+                                    return (
+                                      <span className="finder-target-role-pill" title={`Target Role: ${roles[0]}`}>
+                                        {roles[0]}
+                                      </span>
+                                    );
+                                  }
+                                  return (
+                                    <>
+                                      <span className="finder-target-role-pill" title={`Primary Target Role: ${roles[0]}`}>
+                                        {roles[0]}
+                                      </span>
+                                      <span
+                                        className="finder-target-role-pill finder-target-role-more"
+                                        title={`All Target Roles:\n• ${roles.join("\n• ")}`}
+                                      >
+                                        +{roles.length - 1} more
+                                      </span>
+                                    </>
+                                  );
+                                })()}
                                 {currentActiveJob && matchPercent > 0 && (
                                   <span className={`finder-match-pill ${matchClass}`}>
                                     {matchPercent}% Match
@@ -4566,38 +4696,67 @@ export default function EmployerApplicantFinder() {
                   {/* TAB 2: CAREER PREFERENCES */}
                   {candDetailTab === "preferences" && (
                     <div className="cand-tab-content">
-                      <div className="cand-details-card">
-                        <div className="cand-card-header">
-                          <h4>Career Target</h4>
-                        </div>
-                        <div className="cand-info-row">
-                          <div className="cand-info-item">
-                            <span className="cand-info-label">Desired Job Title</span>
-                            <span className="cand-info-val highlight">{selectedCandidate.desired_job_title || "Not specified"}</span>
-                          </div>
-                          {(() => {
-                            const sal = parseCandidateSalaryRange(selectedCandidate);
-                            return (
-                              <>
-                                <div className="cand-info-item">
-                                  <span className="cand-info-label">Minimum Expected Salary</span>
-                                  <span className="cand-info-val">{sal.min}</span>
+                      {(() => {
+                        const parsedRoles = parseCandidateTargetRoles(selectedCandidate);
+                        return (
+                          <div className="cand-details-card role-employment-targeting-card">
+                            <div className="role-employment-heading">
+                              <div className="role-employment-heading-left">
+                                <div className="role-employment-title-row">
+                                  <strong className="role-employment-section-title">Role & Employment Targeting</strong>
+                                  <span className="role-count-pill">
+                                    {parsedRoles.length} {parsedRoles.length === 1 ? "Role" : "Roles"} Configured
+                                  </span>
                                 </div>
-                                <div className="cand-info-item">
-                                  <span className="cand-info-label">Maximum Expected Salary</span>
-                                  <span className="cand-info-val">{sal.max}</span>
+                                <small className="role-employment-subtext">
+                                  Configure each target role with individual work arrangement and salary preferences
+                                </small>
+                              </div>
+                            </div>
+
+                            <div className="target-roles-list-container">
+                              {parsedRoles.length === 0 ? (
+                                <div className="empty-category-notice" style={{ padding: "16px", width: "100%", textAlign: "center" }}>
+                                  No target roles configured.
                                 </div>
-                              </>
-                            );
-                          })()}
-                          <div className="cand-info-item">
-                            <span className="cand-info-label">Work Arrangement</span>
-                            <span className="setup-pill" style={{ alignSelf: "flex-start", marginTop: "2px" }}>
-                              {selectedCandidate.work_arrangement || "On-site"}
-                            </span>
+                              ) : (
+                                parsedRoles.map((roleItem, idx) => (
+                                  <div className="target-role-preference-card target-role-singular-line" key={roleItem.id || idx}>
+                                    <div className="role-pref-card-header">
+                                      <div className="role-pref-header-left">
+                                        <div className="role-pref-category-tag-row">
+                                          <span className="role-pref-category-badge">
+                                            {roleItem.category || getCategoryForRole(roleItem.title)}
+                                          </span>
+                                        </div>
+                                        <h4 className="role-pref-title">{roleItem.title}</h4>
+                                        <div className="role-pref-summary-pills">
+                                          {roleItem.work_arrangements && roleItem.work_arrangements.length > 0 && (
+                                            <span className="role-summary-pill-arr">
+                                              {roleItem.work_arrangements.join(", ")}
+                                            </span>
+                                          )}
+                                          <span className="role-summary-pill-sal">
+                                            {roleItem.hide_salary
+                                              ? "Salary Hidden"
+                                              : roleItem.salary_min && roleItem.salary_max
+                                              ? `PHP ${formatRoleSalaryDisplay(roleItem.salary_min)} - ${formatRoleSalaryDisplay(roleItem.salary_max)}`
+                                              : roleItem.salary_min
+                                              ? `From PHP ${formatRoleSalaryDisplay(roleItem.salary_min)}`
+                                              : roleItem.salary_max
+                                              ? `Up to PHP ${formatRoleSalaryDisplay(roleItem.salary_max)}`
+                                              : "Salary Hidden"}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </div>
+                        );
+                      })()}
 
                       <div className="cand-details-card">
                         <div className="cand-card-header">

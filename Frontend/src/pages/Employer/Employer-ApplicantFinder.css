@@ -4521,3 +4521,218 @@
 [data-theme="dark"] .cand-exp-skills-row {
   border-top-color: #2e3244 !important;
 }
+
+/* ── Compressed Target Role Badge on Candidate Card ── */
+.finder-target-role-pill.finder-target-role-more {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #7dd3fc;
+  cursor: help;
+  font-weight: 700;
+  padding: 2px 8px;
+  transition: all 0.15s ease;
+}
+
+.finder-target-role-pill.finder-target-role-more:hover {
+  background: #bae6fd;
+  border-color: #38bdf8;
+  color: #0284c7;
+}
+
+[data-theme="dark"] .finder-target-role-pill.finder-target-role-more {
+  background: rgba(56, 189, 248, 0.18);
+  color: #7dd3fc;
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+[data-theme="dark"] .finder-target-role-pill.finder-target-role-more:hover {
+  background: rgba(56, 189, 248, 0.28);
+  border-color: #38bdf8;
+  color: #ffffff;
+}
+
+/* ── Role & Employment Targeting in Candidate Details Modal ── */
+.role-employment-targeting-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.role-employment-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.role-employment-heading-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.role-employment-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.role-employment-section-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.role-employment-subtext {
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.role-count-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.target-roles-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.target-role-preference-card {
+  background: #fdfefe;
+  border: 1px solid #bdcddd;
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.18s ease;
+}
+
+.target-role-preference-card:hover {
+  border-color: #94a3b8;
+}
+
+.target-role-preference-card.target-role-singular-line {
+  padding: 12px 18px;
+  gap: 0;
+}
+
+.target-role-preference-card.target-role-singular-line .role-pref-card-header {
+  margin-bottom: 0;
+}
+
+.role-pref-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.role-pref-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.role-pref-category-tag-row {
+  display: inline-flex;
+  align-items: center;
+}
+
+.role-pref-category-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(2, 132, 199, 0.1);
+  color: #0284c7;
+  border: 1px solid rgba(2, 132, 199, 0.25);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.role-pref-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.role-pref-summary-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.role-summary-pill-arr,
+.role-summary-pill-sal {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+/* ── Dark Mode Isolation (Rule 9) ── */
+[data-theme="dark"] .role-employment-section-title {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .role-employment-subtext {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .role-count-pill {
+  background: rgba(2, 132, 199, 0.2);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+[data-theme="dark"] .target-role-preference-card {
+  background: #181b24;
+  border: 1px solid #2e3244;
+}
+
+[data-theme="dark"] .target-role-preference-card:hover {
+  border-color: #3e4459;
+}
+
+[data-theme="dark"] .target-role-preference-card.target-role-singular-line {
+  background: #181b24;
+  border: 1px solid #2e3244;
+}
+
+[data-theme="dark"] .role-pref-title {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .role-pref-category-badge {
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+[data-theme="dark"] .role-summary-pill-arr,
+[data-theme="dark"] .role-summary-pill-sal {
+  background: #1e2230;
+  color: #cbd5e1;
+  border-color: #2e3446;
+}
