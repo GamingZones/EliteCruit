@@ -6117,89 +6117,119 @@ export default function EmployerApplicantFinder() {
             style={{ zIndex: 100000 }}
           >
             <div
-              className="view-letter-modal-card"
+              className="view-letter-pair-row"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="view-letter-header">
-                <div>
-                  <span className="view-letter-eyebrow">OFFICIAL CORRESPONDENCE</span>
-                  <h3 className="view-letter-title">{viewLetterModalTarget.title}</h3>
-                  <p className="view-letter-company">{viewLetterModalTarget.company}</p>
-                </div>
-                <button
-                  type="button"
-                  className="view-letter-close-btn"
-                  onClick={() => setViewLetterModalTarget(null)}
-                  title="Close"
-                  aria-label="Close"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div className="view-letter-body-content">
-                <div className="view-letter-meta-row">
-                  {viewLetterModalTarget.decision && (
-                    <span className={`view-letter-badge ${viewLetterModalTarget.decision === "accepted" ? "accepted" : viewLetterModalTarget.decision === "declined" ? "declined" : "extended"}`}>
-                      {viewLetterModalTarget.decision === "accepted" ? "Offer Accepted" : viewLetterModalTarget.decision === "declined" ? "Offer Declined" : "Formal Offer Extended"}
-                    </span>
-                  )}
-                  {viewLetterModalTarget.startDate && (
-                    <span className="view-letter-start-date">
-                      📅 Target Start Date: <strong>{viewLetterModalTarget.startDate}</strong>
-                    </span>
-                  )}
-                </div>
-
-                {Boolean(viewLetterModalTarget.offerLetter && viewLetterModalTarget.letterText) && (
-                  <div className="view-letter-tabs">
-                    <button
-                      type="button"
-                      className={`view-letter-tab-btn ${viewLetterActiveTab === "offer" ? "active" : ""}`}
-                      onClick={() => setViewLetterActiveTab("offer")}
-                    >
-                      Official Offer Letter
-                    </button>
-                    <button
-                      type="button"
-                      className={`view-letter-tab-btn ${viewLetterActiveTab === "response" ? "active" : ""}`}
-                      onClick={() => setViewLetterActiveTab("response")}
-                    >
-                      Candidate Response Letter
-                    </button>
+              {/* ── LEFT MODAL: THE LETTER FROM THE SENDER (Employer Offer Letter) ── */}
+              <div className="view-letter-modal-card">
+                <div className="view-letter-header">
+                  <div>
+                    <span className="view-letter-eyebrow">OFFICIAL CORRESPONDENCE</span>
+                    <h3 className="view-letter-title">{viewLetterModalTarget.title}</h3>
+                    <p className="view-letter-company">{viewLetterModalTarget.company}</p>
                   </div>
-                )}
+                  {!viewLetterModalTarget.decision && (
+                    <button
+                      type="button"
+                      className="view-letter-close-btn"
+                      onClick={() => setViewLetterModalTarget(null)}
+                      title="Close"
+                      aria-label="Close"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
 
-                {viewLetterActiveTab === "offer" && viewLetterModalTarget.offerLetter ? (
+                <div className="view-letter-body-content">
+                  <div className="view-letter-meta-row">
+                    {viewLetterModalTarget.decision && (
+                      <span className={`view-letter-badge ${viewLetterModalTarget.decision === "accepted" ? "accepted" : viewLetterModalTarget.decision === "declined" ? "declined" : "extended"}`}>
+                        {viewLetterModalTarget.decision === "accepted" ? "Offer Accepted" : viewLetterModalTarget.decision === "declined" ? "Offer Declined" : "Formal Offer Extended"}
+                      </span>
+                    )}
+                  </div>
+
                   <div className="view-letter-body-box view-letter-offer-box">
                     <div className="view-letter-box-header">
                       <span className="view-letter-box-label offer-label">
                         EMPLOYMENT OFFER LETTER FROM {viewLetterModalTarget.company?.toUpperCase() || "EMPLOYER"}
                       </span>
                     </div>
-                    <pre className="view-letter-pre-text">{viewLetterModalTarget.offerLetter}</pre>
+                    <pre className="view-letter-pre-text">
+                      {viewLetterModalTarget.offerLetter || `Dear Candidate,\n\nCongratulations! We are pleased to extend an offer of employment for the position of "${viewLetterModalTarget.title}".\n\nPlease review this official offer letter and submit your formal response.\n\nSincerely,\n${viewLetterModalTarget.company || "Employer"}`}
+                    </pre>
                   </div>
-                ) : (
-                  <div className="view-letter-body-box">
-                    <div className="view-letter-box-header">
-                      <span className="view-letter-box-label">
-                        CANDIDATE SIGNED RESPONSE LETTER
-                      </span>
-                    </div>
-                    <pre className="view-letter-pre-text">{viewLetterModalTarget.letterText || viewLetterModalTarget.offerLetter || "No letter text available."}</pre>
-                  </div>
-                )}
+                </div>
+
+                <div className="view-letter-footer">
+                  <button
+                    type="button"
+                    className="solid-btn view-letter-done-btn"
+                    onClick={() => setViewLetterModalTarget(null)}
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
 
-              <div className="view-letter-footer">
-                <button
-                  type="button"
-                  className="solid-btn view-letter-done-btn"
-                  onClick={() => setViewLetterModalTarget(null)}
-                >
-                  Close
-                </button>
-              </div>
+              {/* ── RIGHT MODAL: USERS RESPONSE ── */}
+              {(viewLetterModalTarget.decision === "accepted" || viewLetterModalTarget.decision === "declined") && (
+                <div className="view-letter-modal-card view-letter-response-modal">
+                  <div className="view-letter-header">
+                    <div>
+                      <span className="view-letter-eyebrow">FORMAL CANDIDATE RESPONSE</span>
+                      <h3 className="view-letter-title">{viewLetterModalTarget.title}</h3>
+                      <p className="view-letter-company">Response to {viewLetterModalTarget.company}</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="view-letter-close-btn"
+                      onClick={() => setViewLetterModalTarget(null)}
+                      title="Close"
+                      aria-label="Close"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="view-letter-body-content">
+                    <div className="view-letter-meta-row">
+                      <span className={`view-letter-badge ${viewLetterModalTarget.decision === "accepted" ? "accepted" : "declined"}`}>
+                        {viewLetterModalTarget.decision === "accepted" ? "✓ Offer Accepted" : "✕ Offer Declined"}
+                      </span>
+                      {viewLetterModalTarget.startDate && (
+                        <span className="view-letter-start-date">
+                          📅 Target Start Date: <strong>{viewLetterModalTarget.startDate}</strong>
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="view-letter-body-box">
+                      <div className="view-letter-box-header">
+                        <span className="view-letter-box-label">
+                          CANDIDATE SIGNED RESPONSE LETTER
+                        </span>
+                      </div>
+                      <pre className="view-letter-pre-text">
+                        {viewLetterModalTarget.letterText || (viewLetterModalTarget.decision === "declined"
+                          ? `Dear ${viewLetterModalTarget.company || "Hiring Team"},\n\nThank you for considering me for the position of "${viewLetterModalTarget.title}". After careful consideration, I regret to inform you that I must decline this offer.\n\nSincerely,\nCandidate`
+                          : `Dear ${viewLetterModalTarget.company || "Hiring Team"},\n\nThank you for extending the offer for the position of "${viewLetterModalTarget.title}". I am pleased to accept your offer and excited to join the team.\n\nSincerely,\nCandidate`)}
+                      </pre>
+                    </div>
+                  </div>
+
+                  <div className="view-letter-footer">
+                    <button
+                      type="button"
+                      className="solid-btn view-letter-done-btn"
+                      onClick={() => setViewLetterModalTarget(null)}
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

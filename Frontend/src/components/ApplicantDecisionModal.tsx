@@ -14,6 +14,7 @@ export interface ApplicantDecisionModalProps {
   startDate?: string | null;
   position?: "center" | "right";
   isSideBySide?: boolean;
+  leftSideModal?: React.ReactNode;
   onClose: () => void;
   onConfirm: (payload: {
     action: "accept" | "decline";
@@ -81,6 +82,7 @@ export default function ApplicantDecisionModal({
   startDate,
   position = "center",
   isSideBySide = false,
+  leftSideModal,
   onClose,
   onConfirm,
 }: ApplicantDecisionModalProps) {
@@ -176,7 +178,7 @@ export default function ApplicantDecisionModal({
 
   return (
     <div
-      className={`adm-modal-backdrop ${position === "right" ? "position-right" : ""} ${isSideBySide ? "side-by-side" : ""}`}
+      className={`adm-modal-backdrop ${position === "right" ? "position-right" : ""} ${isSideBySide || leftSideModal ? "side-by-side" : ""}`}
       onClick={(e) => {
         if (e.target === e.currentTarget && !isSubmitting) onClose();
       }}
@@ -184,7 +186,9 @@ export default function ApplicantDecisionModal({
       aria-modal="true"
       aria-labelledby="adm-modal-title"
     >
-      <div className={`adm-decision-card ${position === "right" ? "card-right-side" : ""}`}>
+      <div className="adm-pair-container" onClick={(e) => e.stopPropagation()}>
+        {leftSideModal}
+        <div className={`adm-decision-card ${position === "right" && !leftSideModal ? "card-right-side" : ""}`}>
         {/* Header (Pic 2 & Pic 3 Match) */}
         <div className="adm-card-header">
           <h3 id="adm-modal-title" className="adm-card-title">
@@ -334,5 +338,6 @@ export default function ApplicantDecisionModal({
         </div>
       </div>
     </div>
+  </div>
   );
 }
