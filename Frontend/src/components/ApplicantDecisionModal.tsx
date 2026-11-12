@@ -203,25 +203,6 @@ export default function ApplicantDecisionModal({
 
         {/* Body (Pic 2 & Pic 3 Match) */}
         <div className="adm-card-body">
-          {/* Formal Offer Letter from Employer (if available) */}
-          {offerLetter && (
-            <div className="adm-offer-preview-section">
-              <div className="adm-offer-preview-header">
-                <span className="adm-field-label">OFFICIAL OFFER LETTER FROM {companyName.toUpperCase()}:</span>
-                {startDate && (
-                  <span className="adm-offer-start-pill">
-                    Proposed Start: {isNaN(new Date(startDate).getTime()) ? startDate : new Date(startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                  </span>
-                )}
-              </div>
-              <div className="adm-offer-letter-box">
-                {offerLetter.split("\n\n").map((para, idx) => (
-                  <p key={idx} style={{ margin: "0 0 10px" }}>{para}</p>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Select Response Type */}
           <div className="adm-type-selector">
             <span className="adm-field-label">SELECT RESPONSE TYPE:</span>
@@ -319,14 +300,6 @@ export default function ApplicantDecisionModal({
 
         {/* Footer (Pic 2 & Pic 3 Match - Strictly Without Schedule Interview Button) */}
         <div className="adm-card-footer">
-          <button
-            type="button"
-            className="adm-cancel-btn"
-            onClick={onClose}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </button>
           {currentAction === "accept" ? (
             <button
               type="button"

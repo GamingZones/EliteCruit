@@ -23,14 +23,36 @@
 
 .adm-modal-backdrop.position-right {
   justify-content: flex-end;
-  padding: 20px 36px 20px 20px;
+  padding: 20px 48px 20px 20px;
 }
 
 .adm-modal-backdrop.position-right.side-by-side {
+  justify-content: center !important;
+  padding: 16px !important;
   background: transparent !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   pointer-events: none;
+}
+
+.adm-modal-backdrop.position-right.side-by-side .adm-decision-card {
+  max-width: 550px;
+  width: 100%;
+  margin: 0;
+  transform: translateX(calc(50% + 12px));
+  animation: admSlideInPair 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
+}
+
+@keyframes admSlideInPair {
+  0% {
+    opacity: 0;
+    transform: translateX(calc(50% + 40px)) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(calc(50% + 12px)) scale(1);
+  }
 }
 
 @media (max-width: 1160px) {
@@ -43,6 +65,12 @@
     background: rgba(11, 18, 32, 0.68) !important;
     backdrop-filter: blur(4px) !important;
     -webkit-backdrop-filter: blur(4px) !important;
+    pointer-events: auto !important;
+  }
+  .adm-modal-backdrop.position-right.side-by-side .adm-decision-card {
+    transform: none !important;
+    margin: 0 auto !important;
+    max-width: 620px !important;
   }
 }
 
