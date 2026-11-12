@@ -2366,6 +2366,15 @@ export default function Messages() {
                                         type="button"
                                         className="chat-action-btn chat-btn-respond"
                                         onClick={() => {
+                                          openViewLetterModal({
+                                            title: special.jobTitle || "Job Position",
+                                            company: special.companyName || selectedThread.other_user_name || "Company",
+                                            offerLetter: special.cleanBody,
+                                            decision: null,
+                                            defaultTab: "offer",
+                                            jobId: targetJobId,
+                                            applicationId: targetAppId,
+                                          });
                                           setDecisionModalTarget({
                                             type: targetAppId ? "byDetails" : targetJobId ? "byJob" : "chat",
                                             action: "accept",
@@ -4815,86 +4824,44 @@ export default function Messages() {
         }}
       />
 
-      {/* APPLICANT DECISION MODAL (Accept / Decline Recruitment - Pic 2 & Pic 3 Design) */}
-      <ApplicantDecisionModal
-        isOpen={!!decisionModalTarget}
-        action={decisionModalTarget?.action || null}
-        jobTitle={decisionModalTarget?.title || detailsJob?.title}
-        companyName={decisionModalTarget?.companyName || selectedThread?.other_user_name}
-        candidateName={applicantLabel || "Candidate"}
-        currentUserId={currentUserId || undefined}
-        isInvitation={decisionModalTarget?.isInvitation}
-        offerLetter={decisionModalTarget?.offerLetter}
-        title={decisionModalTarget?.isInvitation ? undefined : "Respond to Employment Offer"}
-        position="right"
-        isSideBySide={Boolean(viewLetterModalTarget && decisionModalTarget)}
-        leftSideModal={
-          viewLetterModalTarget ? (
-            <div className="view-letter-modal-card" onClick={(e) => e.stopPropagation()}>
-              <div className="view-letter-header">
-                <div>
-                  <span className="view-letter-eyebrow">OFFICIAL CORRESPONDENCE</span>
-                  <h3 className="view-letter-title">{viewLetterModalTarget.title}</h3>
-                  <p className="view-letter-company">{viewLetterModalTarget.company}</p>
-                </div>
-              </div>
-
-              <div className="view-letter-body-content">
-                <div className="view-letter-meta-row">
-                  <span className="view-letter-badge extended">Formal Offer Extended</span>
-                </div>
-
-                <div className="view-letter-body-box view-letter-offer-box">
-                  <div className="view-letter-box-header">
-                    <span className="view-letter-box-label offer-label">
-                      EMPLOYMENT OFFER LETTER FROM {viewLetterModalTarget.company?.toUpperCase() || "EMPLOYER"}
-                    </span>
-                  </div>
-                  <pre className="view-letter-pre-text">
-                    {viewLetterModalTarget.offerLetter || "Official offer letter text is attached to this correspondence."}
-                  </pre>
-                </div>
-              </div>
-
-              <div className="view-letter-footer">
-                <button
-                  type="button"
-                  className="solid-btn view-letter-done-btn"
-                  onClick={() => {
-                    setViewLetterModalTarget(null);
-                    setDecisionModalTarget(null);
-                  }}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          ) : undefined
-        }
-        onClose={() => {
-          setDecisionModalTarget(null);
-        }}
-        onConfirm={async ({ action, letter_text, letter_type, start_date }) => {
-          if (!decisionModalTarget) return;
-          try {
-            if (decisionModalTarget.applicationId) {
-              await handleRespondOffer(decisionModalTarget.applicationId, action, letter_text, letter_type, start_date);
-            } else if (decisionModalTarget.type === "byJob" && decisionModalTarget.jobId) {
-              await handleRespondInvitationByJob(decisionModalTarget.jobId, action, letter_text, letter_type, start_date);
-            } else if (decisionModalTarget.type === "byDetails") {
-              await handleRespondInvitation(action, letter_text, letter_type, start_date);
-            } else {
-              await handleRespondInvitationFromChat(action, letter_text, letter_type, start_date);
-            }
-          } finally {
+      {/* ── STANDALONE APPLICANT DECISION MODAL (Only for standalone direct recruitment invitations without offer letter) ── */}
+      {!viewLetterModalTarget && decisionModalTarget && (
+        <ApplicantDecisionModal
+          isOpen={true}
+          withoutBackdrop={false}
+          action={decisionModalTarget?.action || null}
+          jobTitle={decisionModalTarget?.title || detailsJob?.title}
+          companyName={decisionModalTarget?.companyName || selectedThread?.other_user_name}
+          candidateName={applicantLabel || "Candidate"}
+          currentUserId={currentUserId || undefined}
+          isInvitation={decisionModalTarget?.isInvitation}
+          offerLetter={decisionModalTarget?.offerLetter}
+          title={decisionModalTarget?.isInvitation ? undefined : "Respond to Employment Offer"}
+          position="center"
+          onClose={() => {
             setDecisionModalTarget(null);
-            setViewLetterModalTarget(null);
-          }
-        }}
-      />
+          }}
+          onConfirm={async ({ action, letter_text, letter_type, start_date }) => {
+            if (!decisionModalTarget) return;
+            try {
+              if (decisionModalTarget.applicationId) {
+                await handleRespondOffer(decisionModalTarget.applicationId, action, letter_text, letter_type, start_date);
+              } else if (decisionModalTarget.type === "byJob" && decisionModalTarget.jobId) {
+                await handleRespondInvitationByJob(decisionModalTarget.jobId, action, letter_text, letter_type, start_date);
+              } else if (decisionModalTarget.type === "byDetails") {
+                await handleRespondInvitation(action, letter_text, letter_type, start_date);
+              } else {
+                await handleRespondInvitationFromChat(action, letter_text, letter_type, start_date);
+              }
+            } finally {
+              setDecisionModalTarget(null);
+            }
+          }}
+        />
+      )}
 
-      {/* ── FORMAL LETTER VIEWER MODAL (Side-by-Side Dual Modals for Approved / Declined Offers) ── */}
-      {!decisionModalTarget && viewLetterModalTarget && (() => {
+      {/* ── FORMAL LETTER VIEWER MODAL (Contains 1st modal Offer Letter + either 2nd modal Decision Form or Candidate Response) ── */}
+      {viewLetterModalTarget && (() => {
         const hasDecision = viewLetterModalTarget.decision === "accepted" || viewLetterModalTarget.decision === "declined";
         const offerText = viewLetterModalTarget.offerLetter || `Dear ${applicantLabel || "Candidate"},\n\nCongratulations! On behalf of ${viewLetterModalTarget.company || "the company"}, we are thrilled to formally extend an offer of employment for the position of "${viewLetterModalTarget.title}".\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!`;
         const isAcc = viewLetterModalTarget.decision === "accepted";
@@ -4905,7 +4872,10 @@ export default function Messages() {
         return (
           <div
             className="view-letter-backdrop"
-            onClick={() => setViewLetterModalTarget(null)}
+            onClick={() => {
+              setViewLetterModalTarget(null);
+              setDecisionModalTarget(null);
+            }}
           >
             <div
               className="view-letter-pair-row"
@@ -4919,25 +4889,28 @@ export default function Messages() {
                     <h3 className="view-letter-title">{viewLetterModalTarget.title}</h3>
                     <p className="view-letter-company">{viewLetterModalTarget.company}</p>
                   </div>
-                  {!hasDecision && (
-                    <button
-                      type="button"
-                      className="view-letter-close-btn"
-                      onClick={() => setViewLetterModalTarget(null)}
-                      title="Close"
-                      aria-label="Close"
-                    >
-                      ✕
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    className="view-letter-close-btn"
+                    onClick={() => {
+                      setViewLetterModalTarget(null);
+                      setDecisionModalTarget(null);
+                    }}
+                    title="Close"
+                    aria-label="Close"
+                  >
+                    ✕
+                  </button>
                 </div>
 
                 <div className="view-letter-body-content">
                   <div className="view-letter-meta-row">
-                    {viewLetterModalTarget.decision && (
+                    {viewLetterModalTarget.decision ? (
                       <span className={`view-letter-badge ${viewLetterModalTarget.decision === "accepted" ? "accepted" : viewLetterModalTarget.decision === "declined" ? "declined" : "extended"}`}>
                         {viewLetterModalTarget.decision === "accepted" ? "Offer Accepted" : viewLetterModalTarget.decision === "declined" ? "Offer Declined" : "Formal Offer Extended"}
                       </span>
+                    ) : (
+                      <span className="view-letter-badge extended">Formal Offer Extended</span>
                     )}
                   </div>
 
@@ -4955,12 +4928,15 @@ export default function Messages() {
                   <button
                     type="button"
                     className="solid-btn view-letter-done-btn"
-                    onClick={() => setViewLetterModalTarget(null)}
+                    onClick={() => {
+                      setViewLetterModalTarget(null);
+                      setDecisionModalTarget(null);
+                    }}
                   >
                     Close
                   </button>
 
-                  {!isEmployer && !hasDecision && (
+                  {!isEmployer && !hasDecision && !decisionModalTarget && (
                     <button
                       type="button"
                       className="solid-btn view-letter-respond-btn"
@@ -4994,8 +4970,44 @@ export default function Messages() {
                 </div>
               </div>
 
-              {/* ── RIGHT MODAL: USERS RESPONSE (For Approved / Declined Offers) ── */}
-              {hasDecision && (
+              {/* ── RIGHT MODAL CASE A: DECISION FORM (When Review & Respond is active) ── */}
+              {decisionModalTarget && (
+                <ApplicantDecisionModal
+                  isOpen={true}
+                  withoutBackdrop={true}
+                  action={decisionModalTarget.action || "accept"}
+                  jobTitle={decisionModalTarget.title || viewLetterModalTarget.title}
+                  companyName={decisionModalTarget.companyName || viewLetterModalTarget.company}
+                  candidateName={applicantLabel || "Candidate"}
+                  currentUserId={currentUserId || undefined}
+                  isInvitation={decisionModalTarget.isInvitation}
+                  offerLetter={decisionModalTarget.offerLetter || viewLetterModalTarget.offerLetter}
+                  title={decisionModalTarget.isInvitation ? undefined : "Respond to Employment Offer"}
+                  onClose={() => {
+                    setDecisionModalTarget(null);
+                  }}
+                  onConfirm={async ({ action, letter_text, letter_type, start_date }) => {
+                    if (!decisionModalTarget) return;
+                    try {
+                      if (decisionModalTarget.applicationId) {
+                        await handleRespondOffer(decisionModalTarget.applicationId, action, letter_text, letter_type, start_date);
+                      } else if (decisionModalTarget.type === "byJob" && decisionModalTarget.jobId) {
+                        await handleRespondInvitationByJob(decisionModalTarget.jobId, action, letter_text, letter_type, start_date);
+                      } else if (decisionModalTarget.type === "byDetails") {
+                        await handleRespondInvitation(action, letter_text, letter_type, start_date);
+                      } else {
+                        await handleRespondInvitationFromChat(action, letter_text, letter_type, start_date);
+                      }
+                    } finally {
+                      setDecisionModalTarget(null);
+                      setViewLetterModalTarget(null);
+                    }
+                  }}
+                />
+              )}
+
+              {/* ── RIGHT MODAL CASE B: USERS RESPONSE (For Approved / Declined Offers) ── */}
+              {!decisionModalTarget && hasDecision && (
                 <div className="view-letter-modal-card view-letter-response-modal">
                   <div className="view-letter-header">
                     <div>
@@ -5051,6 +5063,7 @@ export default function Messages() {
           </div>
         );
       })()}
+
 
       {/* DOUBLE VERIFICATION: SUBMIT JOB APPLICATION MODAL */}
       <ConfirmationModal

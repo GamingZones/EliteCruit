@@ -15,6 +15,7 @@ export interface ApplicantDecisionModalProps {
   position?: "center" | "right";
   isSideBySide?: boolean;
   leftSideModal?: React.ReactNode;
+  withoutBackdrop?: boolean;
   onClose: () => void;
   onConfirm: (payload: {
     action: "accept" | "decline";
@@ -83,6 +84,7 @@ export default function ApplicantDecisionModal({
   position = "center",
   isSideBySide = false,
   leftSideModal,
+  withoutBackdrop = false,
   onClose,
   onConfirm,
 }: ApplicantDecisionModalProps) {
@@ -176,20 +178,12 @@ export default function ApplicantDecisionModal({
     }
   };
 
-  return (
+  const cardContent = (
     <div
-      className={`adm-modal-backdrop ${position === "right" ? "position-right" : ""} ${isSideBySide || leftSideModal ? "side-by-side" : ""}`}
-      onClick={(e) => {
-        if (e.target === e.currentTarget && !isSubmitting) onClose();
-      }}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="adm-modal-title"
+      className={`adm-decision-card ${position === "right" && !leftSideModal && !withoutBackdrop ? "card-right-side" : ""}`}
+      onClick={(e) => e.stopPropagation()}
     >
-      <div className="adm-pair-container" onClick={(e) => e.stopPropagation()}>
-        {leftSideModal}
-        <div className={`adm-decision-card ${position === "right" && !leftSideModal ? "card-right-side" : ""}`}>
-        {/* Header (Pic 2 & Pic 3 Match) */}
+      {/* Header (Pic 2 & Pic 3 Match) */}
         <div className="adm-card-header">
           <h3 id="adm-modal-title" className="adm-card-title">
             {titleText}
@@ -337,7 +331,27 @@ export default function ApplicantDecisionModal({
           </button>
         </div>
       </div>
-    </div>
-  </div>
   );
+
+  if (withoutBackdrop) {
+    return cardContent;
+  }
+
+  return (
+    <div
+      className={`adm-modal-backdrop ${position === "right" ? "position-right" : ""} ${isSideBySide || leftSideModal ? "side-by-side" : ""}`}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !isSubmitting) onClose();
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="adm-modal-title"
+    >
+      <div className="adm-pair-container" onClick={(e) => e.stopPropagation()}>
+        {leftSideModal}
+        {cardContent}
+      </div>
+    </div>
+  );
+
 }

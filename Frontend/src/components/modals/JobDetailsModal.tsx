@@ -2245,69 +2245,28 @@ export default function JobDetailsModal({
 
       {renderBreakdownPopupModal()}
 
-      {/* ── APPLICANT DECISION MODAL (Accept / Decline Employment Offer) ── */}
-      <ApplicantDecisionModal
-        isOpen={Boolean(decisionModalTarget)}
-        position="right"
-        isSideBySide={Boolean(viewLetterModalTarget && decisionModalTarget)}
-        action={decisionModalTarget?.action || "accept"}
-        title="Respond to Employment Offer"
-        jobTitle={decisionModalTarget?.title || job?.title}
-        companyName={decisionModalTarget?.companyName || companyName}
-        candidateName={(applicantProfile as any)?.applicant_name || "Candidate"}
-        currentUserId={currentUserId ? Number(currentUserId) : undefined}
-        offerLetter={decisionModalTarget?.offerLetter}
-        leftSideModal={
-          viewLetterModalTarget ? (
-            <div className="view-letter-modal-card" onClick={(e) => e.stopPropagation()}>
-              <div className="view-letter-header">
-                <div>
-                  <span className="view-letter-eyebrow">OFFICIAL CORRESPONDENCE</span>
-                  <h3 className="view-letter-title">{viewLetterModalTarget.title}</h3>
-                  <p className="view-letter-company">{viewLetterModalTarget.company}</p>
-                </div>
-              </div>
+      {/* ── STANDALONE APPLICANT DECISION MODAL (Only when opened without offer letter) ── */}
+      {!viewLetterModalTarget && decisionModalTarget && (
+        <ApplicantDecisionModal
+          isOpen={true}
+          withoutBackdrop={false}
+          position="center"
+          action={decisionModalTarget?.action || "accept"}
+          title="Respond to Employment Offer"
+          jobTitle={decisionModalTarget?.title || job?.title}
+          companyName={decisionModalTarget?.companyName || companyName}
+          candidateName={(applicantProfile as any)?.applicant_name || "Candidate"}
+          currentUserId={currentUserId ? Number(currentUserId) : undefined}
+          offerLetter={decisionModalTarget?.offerLetter}
+          onClose={() => setDecisionModalTarget(null)}
+          onConfirm={async ({ action, letter_text, letter_type, start_date }) => {
+            await handleRespondFromModal({ action, letter_text, letter_type, start_date });
+          }}
+        />
+      )}
 
-              <div className="view-letter-body-content">
-                <div className="view-letter-meta-row">
-                  <span className="view-letter-badge extended">Formal Offer Extended</span>
-                </div>
-
-                <div className="view-letter-body-box view-letter-offer-box">
-                  <div className="view-letter-box-header">
-                    <span className="view-letter-box-label offer-label">
-                      EMPLOYMENT OFFER LETTER FROM {viewLetterModalTarget.company?.toUpperCase() || "EMPLOYER"}
-                    </span>
-                  </div>
-                  <pre className="view-letter-pre-text">
-                    {viewLetterModalTarget.offerLetter || "Official offer letter text is attached to this correspondence."}
-                  </pre>
-                </div>
-              </div>
-
-              <div className="view-letter-footer">
-                <button
-                  type="button"
-                  className="solid-btn view-letter-done-btn"
-                  onClick={() => {
-                    setViewLetterModalTarget(null);
-                    setDecisionModalTarget(null);
-                  }}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          ) : undefined
-        }
-        onClose={() => setDecisionModalTarget(null)}
-        onConfirm={async ({ action, letter_text, letter_type, start_date }) => {
-          await handleRespondFromModal({ action, letter_text, letter_type, start_date });
-        }}
-      />
-
-      {/* ── FORMAL LETTER VIEWER MODAL (Side-by-Side Dual Modals for Approved / Declined Offers) ── */}
-      {!decisionModalTarget && viewLetterModalTarget && (() => {
+      {/* ── FORMAL LETTER VIEWER MODAL (Contains 1st modal Offer Letter + either 2nd modal Decision Form or Candidate Response) ── */}
+      {viewLetterModalTarget && (() => {
         const hasDecision = viewLetterModalTarget.decision === "accepted" || viewLetterModalTarget.decision === "declined";
         const offerText = viewLetterModalTarget.offerLetter || `Dear ${(applicantProfile as any)?.applicant_name || "Candidate"},\n\nCongratulations! On behalf of ${viewLetterModalTarget.company || "the company"}, we are thrilled to formally extend an offer of employment for the position of "${viewLetterModalTarget.title}".\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!`;
         const isAcc = viewLetterModalTarget.decision === "accepted";
@@ -2336,20 +2295,18 @@ export default function JobDetailsModal({
                     <h3 className="view-letter-title">{viewLetterModalTarget.title}</h3>
                     <p className="view-letter-company">{viewLetterModalTarget.company}</p>
                   </div>
-                  {!hasDecision && (
-                    <button
-                      type="button"
-                      className="view-letter-close-btn"
-                      onClick={() => {
-                        setViewLetterModalTarget(null);
-                        setDecisionModalTarget(null);
-                      }}
-                      title="Close"
-                      aria-label="Close"
-                    >
-                      ✕
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    className="view-letter-close-btn"
+                    onClick={() => {
+                      setViewLetterModalTarget(null);
+                      setDecisionModalTarget(null);
+                    }}
+                    title="Close"
+                    aria-label="Close"
+                  >
+                    ✕
+                  </button>
                 </div>
 
                 <div className="view-letter-body-content">
@@ -2383,7 +2340,7 @@ export default function JobDetailsModal({
                     Close
                   </button>
 
-                  {!hasDecision && (
+                  {!hasDecision && !decisionModalTarget && (
                     <button
                       type="button"
                       className="solid-btn view-letter-respond-btn"
@@ -2404,8 +2361,28 @@ export default function JobDetailsModal({
                 </div>
               </div>
 
-              {/* ── RIGHT MODAL: USERS RESPONSE (For Approved / Declined Offers) ── */}
-              {hasDecision && (
+              {/* ── RIGHT MODAL CASE A: DECISION FORM (When Review & Respond is active) ── */}
+              {decisionModalTarget && (
+                <ApplicantDecisionModal
+                  isOpen={true}
+                  withoutBackdrop={true}
+                  position="right"
+                  action={decisionModalTarget?.action || "accept"}
+                  title="Respond to Employment Offer"
+                  jobTitle={decisionModalTarget?.title || job?.title}
+                  companyName={decisionModalTarget?.companyName || companyName}
+                  candidateName={(applicantProfile as any)?.applicant_name || "Candidate"}
+                  currentUserId={currentUserId ? Number(currentUserId) : undefined}
+                  offerLetter={decisionModalTarget?.offerLetter}
+                  onClose={() => setDecisionModalTarget(null)}
+                  onConfirm={async ({ action, letter_text, letter_type, start_date }) => {
+                    await handleRespondFromModal({ action, letter_text, letter_type, start_date });
+                  }}
+                />
+              )}
+
+              {/* ── RIGHT MODAL CASE B: USERS RESPONSE (For Approved / Declined Offers) ── */}
+              {!decisionModalTarget && hasDecision && (
                 <div className="view-letter-modal-card view-letter-response-modal">
                   <div className="view-letter-header">
                     <div>
@@ -2467,6 +2444,7 @@ export default function JobDetailsModal({
           </div>
         );
       })()}
+
     </>
   );
 }
