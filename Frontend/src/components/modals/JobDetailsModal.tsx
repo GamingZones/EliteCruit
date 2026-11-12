@@ -1175,6 +1175,14 @@ export default function JobDetailsModal({
                               type="button"
                               className="chat-action-btn chat-btn-respond"
                               onClick={() => {
+                                openViewLetterModal({
+                                  title: special.jobTitle || job?.title || "Job Position",
+                                  company: special.companyName || companyName || "Company",
+                                  offerLetter: special.cleanBody,
+                                  decision: null,
+                                  defaultTab: "offer",
+                                  jobId: Number(job?.id) || undefined,
+                                });
                                 setDecisionModalTarget({
                                   action: "accept",
                                   title: special.jobTitle || job?.title,
