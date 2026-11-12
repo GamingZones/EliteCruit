@@ -2235,6 +2235,10 @@ export default function Messages() {
                       const showSeparator = shouldShowTimeSeparator(msg, prevMsg);
                       const special = parseSpecialMessage(msg.message_text);
 
+                      if (special.type === "offer_response") {
+                        return null;
+                      }
+
                       return (
                         <React.Fragment key={msg.id || idx}>
                           {showSeparator && (
@@ -2437,77 +2441,7 @@ export default function Messages() {
                                 </div>
                               </article>
                             );
-                          })() : special.type === "offer_response" ? (
-                            <article className={`chat-bubble chat-special-card chat-response-card ${isMe ? "outgoing" : "incoming"}`}>
-                              <div className="chat-special-header">
-                                <div className="chat-special-badge-row">
-                                  <span className={`chat-special-badge ${special.isAccepted ? "badge-offer-accepted" : "badge-offer-declined"}`}>
-                                    {special.isAccepted ? (
-                                      <>
-                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                          <polyline points="20 6 9 17 4 12" />
-                                        </svg>
-                                        <span>Offer Accepted</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                          <line x1="18" y1="6" x2="6" y2="18" />
-                                          <line x1="6" y1="6" x2="18" y2="18" />
-                                        </svg>
-                                        <span>Offer Declined</span>
-                                      </>
-                                    )}
-                                  </span>
-                                  <time className="chat-special-time">{msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}</time>
-                                </div>
-                                <h4 className="chat-special-title">{special.jobTitle}</h4>
-                                {special.startDate && (
-                                  <div className="chat-special-subtitle">Target Start Date: {special.startDate}</div>
-                                )}
-                              </div>
-                              <div className="chat-special-body">
-                                <p className="chat-special-preview-text">
-                                  {special.cleanBody || (special.isAccepted
-                                    ? "Candidate has formally accepted the employment offer. Click below to view the signed response letter."
-                                    : "Candidate has formally declined this position. Click below to view the response letter.")}
-                                </p>
-                              </div>
-                              <div className="chat-special-actions">
-                                <button
-                                  type="button"
-                                  className="chat-special-btn response-action-btn"
-                                  onClick={() => {
-                                    const matchingOfferMsg = messages.find((m: any) => {
-                                      const p = parseSpecialMessage(m.message_text);
-                                      if (p.type !== "formal_offer") return false;
-                                      if (!p.jobTitle || !special.jobTitle) return false;
-                                      const pTitle = p.jobTitle.toLowerCase().trim();
-                                      const sTitle = special.jobTitle.toLowerCase().trim();
-                                      return pTitle === sTitle || pTitle.includes(sTitle) || sTitle.includes(pTitle);
-                                    });
-                                    const matchingOffer = matchingOfferMsg ? parseSpecialMessage(matchingOfferMsg.message_text) : null;
-                                    openViewLetterModal({
-                                      title: special.jobTitle || "Position",
-                                      company: special.companyName || selectedThread?.other_user_name || "Company",
-                                      offerLetter: matchingOffer?.cleanBody,
-                                      letterText: special.cleanBody || msg.message_text,
-                                      decision: special.isAccepted ? "accepted" : "declined",
-                                      startDate: special.startDate,
-                                      respondedAt: msg.created_at,
-                                      defaultTab: "response",
-                                    });
-                                  }}
-                                >
-                                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                    <polyline points="14 2 14 8 20 8" />
-                                  </svg>
-                                  <span>View Response Letter</span>
-                                </button>
-                              </div>
-                            </article>
-                          ) : special.type === "interview_scheduled" ? (
+                          })() : special.type === "interview_scheduled" ? (
                             <article className={`chat-bubble chat-special-card chat-interview-card ${isMe ? "outgoing" : "incoming"}`}>
                               <div className="chat-special-header">
                                 <div className="chat-special-badge-row">
