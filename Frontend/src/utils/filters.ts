@@ -3666,14 +3666,14 @@ export function getApplicantRecommendation(score: number): ApplicantRecommendati
   if (score >= 75) {
     return {
       label: "Recommended",
-      colorClass: "green",
+      colorClass: "rec-identical",
       score,
     };
   }
   if (score >= 50) {
     return {
       label: "Good Fit",
-      colorClass: "amber",
+      colorClass: "rec-identical",
       score,
     };
   }

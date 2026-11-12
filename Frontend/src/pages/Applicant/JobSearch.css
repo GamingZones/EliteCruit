@@ -1157,32 +1157,25 @@
   border-color: #9fdfb9;
 }
 
-/* Two-Tier Recommendation Badges (Option B) */
-.applicant-rec-badge {
+/* Recommendation Badges (Identical neutral style) */
+.applicant-rec-badge,
+.applicant-rec-badge.green,
+.applicant-rec-badge.amber,
+.applicant-rec-badge.rec-identical {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 5px 12px;
-  font-size: 0.78rem;
+  padding: 4px 10px;
+  font-size: 0.72rem;
   font-weight: 700;
   border-radius: 9999px;
   white-space: nowrap;
   line-height: 1;
-  letter-spacing: 0.2px;
-  border: 1px solid transparent;
+  letter-spacing: 0;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.applicant-rec-badge.green {
-  background: #e1f7ee;
-  color: #12874f;
-  border-color: #9fdfb9;
-}
-
-.applicant-rec-badge.amber {
-  background: #fff3da;
-  color: #b85a06;
-  border-color: #f7d49e;
 }
 
 .match-score-box small {
@@ -1984,40 +1977,34 @@
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
-  width: 96px;
-  min-width: 96px;
+  width: 102px;
+  min-width: 102px;
 }
 
-.jd-other-job-action-col .applicant-rec-badge {
+.jd-other-job-action-col .applicant-rec-badge,
+.jd-other-job-action-col .applicant-rec-badge.green,
+.jd-other-job-action-col .applicant-rec-badge.amber,
+.jd-other-job-action-col .applicant-rec-badge.rec-identical {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   border-radius: 999px !important;
-  padding: 5px 4px !important;
-  font-size: 0.76rem !important;
-  font-weight: 800 !important;
+  padding: 4px 4px !important;
+  font-size: 0.69rem !important;
+  font-weight: 700 !important;
   white-space: nowrap !important;
   font-family: 'Inter', sans-serif !important;
-  letter-spacing: 0.02em !important;
-  width: 96px !important;
-  min-width: 96px !important;
-  max-width: 96px !important;
+  letter-spacing: -0.01em !important;
+  width: 102px !important;
+  min-width: 102px !important;
+  max-width: 102px !important;
   box-sizing: border-box !important;
   text-align: center !important;
   line-height: 1.2 !important;
   box-shadow: none !important;
-}
-
-.jd-other-job-action-col .applicant-rec-badge.green {
-  background: #e1f7ee;
-  color: #12874f;
-  border: 1px solid #9fdfb9;
-}
-
-.jd-other-job-action-col .applicant-rec-badge.amber {
-  background: #fff3da;
-  color: #b85a06;
-  border: 1px solid #f7d49e;
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
 }
 
 .jd-other-job-match-pill {
@@ -2032,9 +2019,9 @@
   font-family: 'Inter', sans-serif;
   letter-spacing: 0.02em;
   transition: all 0.15s ease;
-  width: 96px;
-  min-width: 96px;
-  max-width: 96px;
+  width: 102px;
+  min-width: 102px;
+  max-width: 102px;
   box-sizing: border-box;
   text-align: center;
 }
@@ -2072,9 +2059,9 @@
   cursor: pointer !important;
   box-shadow: 0 2px 8px rgba(2, 132, 199, 0.28) !important;
   transition: all 0.15s ease !important;
-  width: 96px !important;
-  min-width: 96px !important;
-  max-width: 96px !important;
+  width: 102px !important;
+  min-width: 102px !important;
+  max-width: 102px !important;
   box-sizing: border-box !important;
   text-align: center !important;
   font-family: 'Inter', sans-serif !important;
@@ -2095,9 +2082,9 @@
   padding: 6px 8px;
   border-radius: 999px;
   white-space: nowrap;
-  width: 96px;
-  min-width: 96px;
-  max-width: 96px;
+  width: 102px;
+  min-width: 102px;
+  max-width: 102px;
   text-align: center;
   font-family: 'Inter', sans-serif;
   transition: all 0.15s ease;

@@ -6339,26 +6339,24 @@
 }
 
 /* Other Jobs Apply / Status Button Dark Mode */
-[data-theme="dark"] .jd-other-job-action-col .applicant-rec-badge {
-  width: 96px !important;
-  min-width: 96px !important;
-  max-width: 96px !important;
+[data-theme="dark"] .jd-other-job-action-col .applicant-rec-badge,
+[data-theme="dark"] .jd-other-job-action-col .applicant-rec-badge.green,
+[data-theme="dark"] .jd-other-job-action-col .applicant-rec-badge.amber,
+[data-theme="dark"] .jd-other-job-action-col .applicant-rec-badge.rec-identical {
+  width: 102px !important;
+  min-width: 102px !important;
+  max-width: 102px !important;
   box-sizing: border-box !important;
   text-align: center !important;
   justify-content: center !important;
-  padding: 5px 4px !important;
-}
-
-[data-theme="dark"] .jd-other-job-action-col .applicant-rec-badge.green {
-  background: rgba(16, 185, 129, 0.18) !important;
-  color: #34d399 !important;
-  border-color: rgba(16, 185, 129, 0.45) !important;
-}
-
-[data-theme="dark"] .jd-other-job-action-col .applicant-rec-badge.amber {
-  background: rgba(245, 158, 11, 0.18) !important;
-  color: #fbbf24 !important;
-  border-color: rgba(245, 158, 11, 0.45) !important;
+  padding: 4px 4px !important;
+  font-size: 0.69rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+  line-height: 1.2 !important;
+  background: rgba(148, 163, 184, 0.12) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.32) !important;
 }
 
 [data-theme="dark"] .jd-other-job-apply-btn.apply-btn-action {
@@ -6930,8 +6928,7 @@
 [data-theme="dark"] .preview-match-badge-box.green,
 [data-theme="dark"] .match-badge-pill.green,
 [data-theme="dark"] .jd-match-header-badge.green,
-[data-theme="dark"] .jd-other-job-match-pill.green,
-[data-theme="dark"] .applicant-rec-badge.green {
+[data-theme="dark"] .jd-other-job-match-pill.green {
   background: rgba(16, 185, 129, 0.18) !important;
   color: #34d399 !important;
   border-color: rgba(16, 185, 129, 0.45) !important;
@@ -6951,8 +6948,7 @@
 [data-theme="dark"] .match-badge-pill.yellow,
 [data-theme="dark"] .match-badge-pill.orange,
 [data-theme="dark"] .jd-match-header-badge.yellow,
-[data-theme="dark"] .jd-other-job-match-pill.yellow,
-[data-theme="dark"] .applicant-rec-badge.amber {
+[data-theme="dark"] .jd-other-job-match-pill.yellow {
   background: rgba(245, 158, 11, 0.18) !important;
   color: #fbbf24 !important;
   border-color: rgba(245, 158, 11, 0.45) !important;
@@ -6965,6 +6961,16 @@
 [data-theme="dark"] .preview-match-badge-box.yellow span,
 [data-theme="dark"] .preview-match-badge-box.orange span {
   color: #fbbf24 !important;
+}
+
+/* Applicant Recommendation Badges (Identical neutral style in Dark Mode) */
+[data-theme="dark"] .applicant-rec-badge,
+[data-theme="dark"] .applicant-rec-badge.green,
+[data-theme="dark"] .applicant-rec-badge.amber,
+[data-theme="dark"] .applicant-rec-badge.rec-identical {
+  background: rgba(148, 163, 184, 0.12) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.32) !important;
 }
 
 /* Red Match (Low < 50%) */
