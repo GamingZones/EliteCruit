@@ -2053,3 +2053,656 @@
   color: #f8fafc !important;
 }
 
+
+
+/* ── Special Chat Cards (Offer, Response, Interview) in Job Details Modal ── */
+.chat-special-card {
+  max-width: min(520px, 92%);
+  width: 100%;
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-sizing: border-box;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.chat-special-card.incoming {
+  align-self: flex-start;
+  background: #ffffff;
+  border-left: 4px solid #00385e;
+}
+
+.chat-special-card.outgoing {
+  align-self: flex-end;
+  background: #f8fafc;
+  border-right: 4px solid #0284c7;
+}
+
+.chat-offer-card.incoming {
+  border-left: 4px solid #0284c7;
+  background: #fbfdff;
+}
+
+.chat-offer-card.outgoing {
+  border-right: 4px solid #0284c7;
+  background: #fbfdff;
+}
+
+.chat-response-card.incoming {
+  border-left: 4px solid #16a34a;
+  background: #fbfdfb;
+}
+
+.chat-response-card.outgoing {
+  border-right: 4px solid #16a34a;
+  background: #fbfdfb;
+}
+
+.chat-interview-card.incoming {
+  border-left: 4px solid #0284c7;
+  background: #f8fafc;
+}
+
+.chat-interview-card.outgoing {
+  border-right: 4px solid #0284c7;
+  background: #f8fafc;
+}
+
+.chat-special-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chat-special-badge-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-special-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.chat-special-badge.badge-formal-offer {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.chat-special-badge.badge-accepted {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.chat-special-badge.badge-declined {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.chat-special-badge.badge-interview-sched {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.chat-special-time {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.chat-special-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+.chat-special-subtitle {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.chat-special-meta-pill {
+  font-size: 0.78rem;
+  color: #475569;
+  margin-top: 2px;
+}
+
+.chat-special-notice {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 3px solid #0284c7;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #475569;
+}
+
+.chat-special-notice p {
+  margin: 0;
+}
+
+.chat-special-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.chat-grid-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+
+.chat-grid-lbl {
+  font-weight: 700;
+  color: #64748b;
+  min-width: 85px;
+}
+
+.chat-grid-val {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.chat-special-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.chat-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.chat-btn-view {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+.chat-btn-view:hover {
+  background: #0369a1;
+}
+
+.chat-btn-respond {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.chat-btn-respond:hover {
+  background: #059669;
+}
+
+.chat-btn-accepted {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.chat-btn-accepted:hover {
+  background: #d1fae5;
+}
+
+.chat-btn-declined {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.chat-btn-declined:hover {
+  background: #fee2e2;
+}
+
+.chat-action-status-pill.pending {
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+/* ── Formal Response / Offer Letter Modal in Job Details ── */
+.view-letter-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  background: rgba(9, 21, 35, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.view-letter-backdrop.has-decision-open {
+  background: rgba(1, 41, 74, 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.view-letter-modal-card {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 550px;
+  max-width: 95vw;
+  height: 560px;
+  max-height: 90vh;
+  box-sizing: border-box;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 0;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+  z-index: 100000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.view-letter-modal-card.has-decision-open {
+  transform: translate(calc(-50% - 12px), -50%);
+}
+
+.view-letter-header {
+  padding: 16px 22px 14px 22px;
+  border-bottom: 1px solid #edf2f7;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.view-letter-eyebrow {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #64748b;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.view-letter-title {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #0c2a47;
+  line-height: 1.25;
+}
+
+.view-letter-company {
+  margin: 3px 0 0;
+  font-size: 0.9rem;
+  color: #475569;
+  font-weight: 600;
+}
+
+.view-letter-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.view-letter-close-btn:hover {
+  background: #f1f5f9;
+  color: #0c2a47;
+}
+
+.view-letter-body-content {
+  padding: 16px 22px;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.view-letter-meta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.view-letter-badge {
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 999px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.view-letter-badge.accepted {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.view-letter-badge.declined {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.view-letter-badge.extended {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.view-letter-start-date {
+  font-size: 0.82rem;
+  color: #0c4a6e;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.view-letter-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 14px 0;
+  padding: 4px;
+  background: #f1f5f9;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.view-letter-tab-btn {
+  flex: 1;
+  padding: 8px 14px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.view-letter-tab-btn:hover {
+  color: #0c2a47;
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.view-letter-tab-btn.active {
+  background: #ffffff;
+  color: #0c2a47;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.view-letter-body-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  margin-bottom: 0;
+}
+
+.view-letter-body-box.view-letter-offer-box {
+  background: rgba(2, 132, 199, 0.05);
+  border-color: rgba(2, 132, 199, 0.25);
+}
+
+.view-letter-box-header {
+  margin-bottom: 10px;
+}
+
+.view-letter-box-label {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+}
+
+.view-letter-box-label.offer-label {
+  color: #0284c7;
+}
+
+.view-letter-pre-text {
+  margin: 0;
+  font-family: inherit;
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: #1e293b;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.view-letter-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 22px;
+  border-top: 1px solid #edf2f7;
+  background: #fafbfc;
+  flex-shrink: 0;
+}
+
+.view-letter-done-btn {
+  background: #0284c7;
+  color: #ffffff;
+  border: none;
+  padding: 9px 22px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.view-letter-done-btn:hover {
+  background: #0369a1;
+}
+
+.view-letter-respond-btn {
+  background: #0284c7;
+  color: #ffffff;
+  border: none;
+  padding: 9px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.view-letter-respond-btn:hover {
+  background: #0369a1;
+}
+
+/* ── STRICT THEME ISOLATION: DARK MODE (Rule 9) ── */
+[data-theme="dark"] .chat-special-card.incoming,
+[data-theme="dark"] .chat-special-card.outgoing {
+  background: #1c1e27 !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .chat-offer-card.incoming,
+[data-theme="dark"] .chat-offer-card.outgoing {
+  border-color: #0284c7 !important;
+  background: #171b26 !important;
+}
+
+[data-theme="dark"] .chat-response-card.incoming,
+[data-theme="dark"] .chat-response-card.outgoing {
+  border-color: #16a34a !important;
+  background: #17211e !important;
+}
+
+[data-theme="dark"] .chat-interview-card.incoming,
+[data-theme="dark"] .chat-interview-card.outgoing {
+  border-color: #0284c7 !important;
+  background: #171b26 !important;
+}
+
+[data-theme="dark"] .chat-special-title {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .chat-special-subtitle {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .chat-special-meta-pill {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .chat-special-notice,
+[data-theme="dark"] .chat-special-grid {
+  background: #14151b !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .chat-special-notice {
+  border-left-color: #38bdf8 !important;
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .chat-grid-lbl {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .chat-grid-val {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .view-letter-modal-card {
+  background: #14151B !important;
+  border: 1px solid #2e3244 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .view-letter-header {
+  border-bottom-color: #2e3244;
+  background: #14151B;
+}
+
+[data-theme="dark"] .view-letter-title {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .view-letter-company {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .view-letter-close-btn:hover {
+  background: #242735;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .view-letter-tabs {
+  background: #171922;
+  border-color: #2e3244;
+}
+
+[data-theme="dark"] .view-letter-tab-btn {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .view-letter-tab-btn:hover {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .view-letter-tab-btn.active {
+  background: #242735;
+  color: #f8fafc;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .view-letter-box-label {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .view-letter-box-label.offer-label {
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .view-letter-body-box {
+  background: #181a24;
+  border-color: #2e3244;
+}
+
+[data-theme="dark"] .view-letter-body-box.view-letter-offer-box {
+  background: #181a24;
+  border-color: #2e3244;
+}
+
+[data-theme="dark"] .view-letter-pre-text {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .view-letter-footer {
+  border-top-color: #2e3244;
+  background: #14151B;
+}
+
+[data-theme="dark"] .view-letter-done-btn {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .view-letter-done-btn:hover {
+  background: #0369a1;
+}
