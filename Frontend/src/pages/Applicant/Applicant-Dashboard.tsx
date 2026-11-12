@@ -1663,7 +1663,7 @@ export default function ApplicantDashboard() {
                         return (
                           <span
                             className={`applicant-rec-badge ${rec.colorClass}`}
-                            title={matchInfo.breakdown || `${rec.label} (${matchInfo.score}%)`}
+                            title={rec.label}
                           >
                             {rec.label}
                           </span>

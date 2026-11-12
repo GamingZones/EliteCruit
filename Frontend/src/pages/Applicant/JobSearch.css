@@ -1988,6 +1988,38 @@
   min-width: 96px;
 }
 
+.jd-other-job-action-col .applicant-rec-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 999px !important;
+  padding: 5px 4px !important;
+  font-size: 0.76rem !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+  font-family: 'Inter', sans-serif !important;
+  letter-spacing: 0.02em !important;
+  width: 96px !important;
+  min-width: 96px !important;
+  max-width: 96px !important;
+  box-sizing: border-box !important;
+  text-align: center !important;
+  line-height: 1.2 !important;
+  box-shadow: none !important;
+}
+
+.jd-other-job-action-col .applicant-rec-badge.green {
+  background: #e1f7ee;
+  color: #12874f;
+  border: 1px solid #9fdfb9;
+}
+
+.jd-other-job-action-col .applicant-rec-badge.amber {
+  background: #fff3da;
+  color: #b85a06;
+  border: 1px solid #f7d49e;
+}
+
 .jd-other-job-match-pill {
   display: inline-flex;
   align-items: center;

@@ -6339,6 +6339,28 @@
 }
 
 /* Other Jobs Apply / Status Button Dark Mode */
+[data-theme="dark"] .jd-other-job-action-col .applicant-rec-badge {
+  width: 96px !important;
+  min-width: 96px !important;
+  max-width: 96px !important;
+  box-sizing: border-box !important;
+  text-align: center !important;
+  justify-content: center !important;
+  padding: 5px 4px !important;
+}
+
+[data-theme="dark"] .jd-other-job-action-col .applicant-rec-badge.green {
+  background: rgba(16, 185, 129, 0.18) !important;
+  color: #34d399 !important;
+  border-color: rgba(16, 185, 129, 0.45) !important;
+}
+
+[data-theme="dark"] .jd-other-job-action-col .applicant-rec-badge.amber {
+  background: rgba(245, 158, 11, 0.18) !important;
+  color: #fbbf24 !important;
+  border-color: rgba(245, 158, 11, 0.45) !important;
+}
+
 [data-theme="dark"] .jd-other-job-apply-btn.apply-btn-action {
   background: #0284c7 !important;
   color: #ffffff !important;

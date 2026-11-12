@@ -1065,7 +1065,7 @@ export default function JobSearch() {
 
   // Equal height calculation
   const calculateModalEqualHeight = React.useCallback(() => {
-    const hasSidePanel = Boolean((isMatchDrawerOpen && !isMatchDrawerClosing) || (isJobMsgOpen && !isJobMsgClosing));
+    const hasSidePanel = Boolean(isJobMsgOpen && !isJobMsgClosing);
     if (!hasSidePanel || window.innerWidth <= 860) {
       setModalMatchedHeight(null);
       return;
@@ -1078,7 +1078,7 @@ export default function JobSearch() {
     if (!h1) return;
 
     // The job details modal is master; docked side drawers match its height
-    // so opening messages or breakdown never shrinks or changes the job card height
+    // so opening messages never shrinks or changes the job card height
     const clampedH1 = Math.max(minAllowed, Math.min(h1, maxAllowed));
     const equalH = clampedH1;
 
@@ -1086,10 +1086,10 @@ export default function JobSearch() {
       if (prev !== null && Math.abs(prev - equalH) <= 2) return prev;
       return equalH;
     });
-  }, [isMatchDrawerOpen, isMatchDrawerClosing, isJobMsgOpen, isJobMsgClosing, measureModalH1]);
+  }, [isJobMsgOpen, isJobMsgClosing, measureModalH1]);
 
   useEffect(() => {
-    const hasSidePanel = Boolean((isMatchDrawerOpen && !isMatchDrawerClosing) || (isJobMsgOpen && !isJobMsgClosing));
+    const hasSidePanel = Boolean(isJobMsgOpen && !isJobMsgClosing);
     if (!detailsJob || !hasSidePanel) {
       setModalMatchedHeight(null);
       return;
@@ -2933,7 +2933,7 @@ export default function JobSearch() {
 
     const statusInfo = getJobApplicationStatus(detailsJob.id);
     const isApplying = applyingJobId === detailsJob.id;
-    const hasSidePanel = Boolean((isMatchDrawerOpen || isMatchDrawerClosing) && !isJobMsgOpen) || Boolean((isJobMsgOpen || isJobMsgClosing) && !isMatchDrawerOpen);
+    const hasSidePanel = Boolean(isJobMsgOpen || isJobMsgClosing);
 
     const toggleFaqItem = (id: number | string) => {
       setExpandedFaqIds((prev) =>
@@ -2972,13 +2972,6 @@ export default function JobSearch() {
                   }}
                 >
                   <span>Employer Details</span>
-                </button>
-                <button
-                  type="button"
-                  className={`jd-floating-breakdown-tab ${isMatchDrawerOpen && !isMatchDrawerClosing ? "active" : ""}`}
-                  onClick={handleToggleMatchDrawer}
-                >
-                  <span>{isMatchDrawerOpen && !isMatchDrawerClosing ? "Hide Breakdown" : "Match Breakdown"}</span>
                 </button>
                 <button
                   type="button"
@@ -3087,7 +3080,7 @@ export default function JobSearch() {
                     return (
                       <span
                         className={`applicant-rec-badge ${rec.colorClass}`}
-                        title={matchInfo.breakdown || `${rec.label} (${matchInfo.score}%)`}
+                        title={rec.label}
                       >
                         {rec.label}
                       </span>
@@ -3259,18 +3252,14 @@ export default function JobSearch() {
             </div>
           </div>
 
-          {/* Docked Side Panel (Match Breakdown or Message) */}
+          {/* Docked Side Panel (Message) */}
           {hasSidePanel && (
             <div
               ref={modalSidePanelSlotRef}
               className="jd-side-panel-slot"
               style={modalMatchedHeight ? { height: `${modalMatchedHeight}px`, maxHeight: `${modalMatchedHeight}px` } : undefined}
             >
-              {(isMatchDrawerOpen || isMatchDrawerClosing) && !isJobMsgOpen ? (
-                renderCompetenciesPanel()
-              ) : (isJobMsgOpen || isJobMsgClosing) && !isMatchDrawerOpen ? (
-                renderJobMessagePanel()
-              ) : null}
+              {isJobMsgOpen || isJobMsgClosing ? renderJobMessagePanel() : null}
             </div>
           )}
         </div>
@@ -3715,7 +3704,7 @@ export default function JobSearch() {
                             return (
                               <span
                                 className={`applicant-rec-badge ${rec.colorClass}`}
-                                title={matchInfo.breakdown || `${rec.label} (${matchInfo.score}%)`}
+                                title={rec.label}
                               >
                                 {rec.label}
                               </span>

@@ -1029,6 +1029,7 @@ export default function JobDetailsModal({
 
   // Render Built-in Option 2 Match Breakdown Panel (Matching JobSearch Pic 4)
   const renderBreakdownSidePanel = () => {
+    if (isApplicantView) return null;
     const scoreVal = matchScore !== undefined ? matchScore : 0;
     const appSkills: string[] = Array.isArray(applicantProfile?.skills)
       ? applicantProfile.skills
@@ -1477,7 +1478,7 @@ export default function JobDetailsModal({
   const renderFloatingTabs = () => {
     if (topFloatingActions !== undefined) return topFloatingActions;
 
-    const hasBreakdown = Boolean(applicantProfile || job.matchScore !== undefined);
+    const hasBreakdown = !isApplicantView && Boolean(applicantProfile || job.matchScore !== undefined);
     const canMessage = Boolean(empUserId && currentUserId && !hideEmployerHeader);
     const canShowEmployerDetails = Boolean(empUserId && onEmployerClick && !hideEmployerHeader);
 
@@ -1521,7 +1522,7 @@ export default function JobDetailsModal({
     ? sidePanel
     : (isMsgPanelOpen || isMsgPanelClosing)
       ? renderMessageSidePanel()
-      : (isBreakdownOpen || isBreakdownClosing)
+      : (!isApplicantView && (isBreakdownOpen || isBreakdownClosing))
         ? renderBreakdownSidePanel()
         : null;
 
@@ -1618,7 +1619,7 @@ export default function JobDetailsModal({
                   return (
                     <span
                       className={`applicant-rec-badge ${rec.colorClass}`}
-                      title={hasBreakdown ? "Job Match Breakdown" : `${rec.label} (${matchScore}%)`}
+                      title={rec.label}
                     >
                       {rec.label}
                     </span>
@@ -1663,7 +1664,7 @@ export default function JobDetailsModal({
                     return (
                       <span
                         className={`applicant-rec-badge ${rec.colorClass}`}
-                        title={hasBreakdown ? "Job Match Breakdown" : `${rec.label} (${matchScore}%)`}
+                        title={rec.label}
                         style={{ flexShrink: 0, margin: 0 }}
                       >
                         {rec.label}
