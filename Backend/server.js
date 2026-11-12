@@ -8688,8 +8688,9 @@ async function ensureMeetingsForZakiAccounts() {
       createdInterviews++;
     }
 
-    // 6. Ensure Application 3 (Job C: Approved with formal offer letter, waiting for applicant response)
-    const offerLetterTextC = "Dear Zaki Ablando,\n\nOn behalf of Cebuana Lhuillier, we are delighted to formally offer you the position of Full Stack Web Developer. We were extremely impressed by your technical proficiency, architectural knowledge, and team-oriented approach.\n\nYour compensation package includes a monthly salary of PHP 60,000, comprehensive health HMO coverage, hybrid work flexibility, and full equipment support.\n\nProposed Start Date: November 16, 2026.\n\nPlease review this offer letter and submit your response letter through EliteCruit to confirm your decision.\n\nSincerely,\nTalent Acquisition Team\nCebuana Lhuillier";
+    // 6. Ensure Application 3 (Job C: Accepted with candidate response letter - Accepted Offer Scenario)
+    const offerLetterTextC = "Dear Zaki Ablando,\n\nCongratulations! On behalf of Cebuana Lhuillier, we are thrilled to formally extend an offer of employment for the position of \"Full Stack Web Developer\".\n\nCompensation & Benefits:\n• Monthly Base Salary: PHP 75,000.00\n• Work Arrangement: Hybrid (Dasmarinas Tech Hub / Remote)\n• Comprehensive Medical & Dental Coverage (HMO on Day 1)\n• Annual Performance Incentive & 14th Month Pay\n• Paid Time Off: 18 Vacation Days + 12 Sick Days\n\nYour proven expertise in full stack development, cloud computing, and responsive UI engineering will be instrumental in accelerating our next-generation fintech solutions.\n\nPlease review this official offer letter and submit your formal response along with your preferred start date.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\nHiring Committee\nCebuana Lhuillier";
+    const acceptLetterTextC = "Dear Hiring Team at Cebuana Lhuillier,\n\nI am thrilled and deeply honored to formally accept your employment offer for the position of \"Full Stack Web Developer\".\n\nI confirm my target start date of December 1, 2026, and accept the proposed compensation package of PHP 75,000.00 monthly with the comprehensive benefits outlined.\n\nI have already begun gathering the pre-employment onboarding documents and am eager to contribute my full stack expertise to Cebuana Lhuillier's digital fintech initiatives.\n\nThank you once again for this incredible opportunity!\n\nSincerely,\nZaki Ablando";
 
     let appC = await get("SELECT id FROM applications WHERE applicant_user_id = ? AND job_post_id = ?", [applicant.id, jobC.id]);
     if (!appC) {
@@ -8698,42 +8699,8 @@ async function ensureMeetingsForZakiAccounts() {
           job_post_id, applicant_user_id, status, submitted_at, decided_at,
           decision_message, decision_message_type, start_date, response_decision, response_letter, responded_at,
           was_shortlisted, had_interview, previous_status, updated_at
-        ) VALUES (?, ?, 'approved', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'formal_offer', '2026-11-16', NULL, NULL, NULL, FALSE, FALSE, 'submitted', CURRENT_TIMESTAMP)`,
-        [jobC.id, applicant.id, offerLetterTextC]
-      );
-    } else {
-      await run(
-        `UPDATE applications SET
-          status = 'approved',
-          decision_message = ?,
-          decision_message_type = 'formal_offer',
-          start_date = '2026-11-16',
-          decided_at = CURRENT_TIMESTAMP,
-          response_decision = NULL,
-          response_letter = NULL,
-          responded_at = NULL,
-          was_shortlisted = FALSE,
-          had_interview = FALSE,
-          previous_status = 'submitted',
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?`,
-        [offerLetterTextC, appC.id]
-      );
-    }
-
-    // 7. Ensure Application 4 (Job D: Accepted with candidate response letter submitted)
-    const offerLetterTextD = "Dear Zaki Ablando,\n\nCebuana Lhuillier is pleased to offer you the position of Lead Enterprise Architect with a monthly compensation of PHP 85,000 and comprehensive benefits.\n\nProposed Start Date: December 1, 2026.\n\nSincerely,\nCebuana Lhuillier Hiring Committee";
-    const acceptLetterTextD = "Dear Cebuana Lhuillier Hiring Committee,\n\nI am thrilled to formally accept the job offer for the Lead Enterprise Architect position. I truly appreciate this wonderful opportunity and am eager to contribute to the innovation and digital fintech modernization.\n\nI confirm my start date on December 1, 2026.\n\nWarm regards,\nZaki Ablando";
-
-    let appD = await get("SELECT id FROM applications WHERE applicant_user_id = ? AND job_post_id = ?", [applicant.id, jobD.id]);
-    if (!appD) {
-      await run(
-        `INSERT INTO applications (
-          job_post_id, applicant_user_id, status, submitted_at, decided_at,
-          decision_message, decision_message_type, start_date, response_decision, response_letter, responded_at,
-          was_shortlisted, had_interview, previous_status, updated_at
         ) VALUES (?, ?, 'recruited', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'formal_offer', '2026-12-01', 'accept', ?, CURRENT_TIMESTAMP, FALSE, FALSE, 'submitted', CURRENT_TIMESTAMP)`,
-        [jobD.id, applicant.id, offerLetterTextD, acceptLetterTextD]
+        [jobC.id, applicant.id, offerLetterTextC, acceptLetterTextC]
       );
     } else {
       await run(
@@ -8751,11 +8718,100 @@ async function ensureMeetingsForZakiAccounts() {
           previous_status = 'submitted',
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ?`,
-        [offerLetterTextD, acceptLetterTextD, appD.id]
+        [offerLetterTextC, acceptLetterTextC, appC.id]
       );
     }
 
-    // 8. Ensure Application 5 (Job E: Declined directly during initial review - screening & interview bypassed)
+    // 7. Ensure Application 4 (Job Cloud: Declined with candidate response letter - Declined Offer Scenario)
+    const jobCloud = await ensureJob(
+      "Cloud Systems Associate",
+      "Dasmarinas, Cavite",
+      "On-Site",
+      "Entry-Mid Level",
+      45000,
+      65000,
+      "Maintain secure cloud infrastructure, cloud networks, and support IT system administrators.",
+      ["AWS", "Linux", "Networking", "Security"]
+    );
+
+    const offerLetterTextCloud = "Dear Zaki Ablando,\n\nWe are pleased to extend an official employment offer for the position of \"Cloud Systems Associate\" at Cebuana Lhuillier.\n\nCompensation & Benefits:\n• Monthly Base Salary: PHP 65,000.00\n• Work Arrangement: On-Site (Dasmarinas Tech Hub, Cavite)\n• Health & Dental Insurance (HMO on Day 1)\n• Performance Bonuses & Continuous Learning Stipend\n• Paid Time Off: 15 Vacation Days + 10 Sick Days\n\nPlease review this formal offer letter and submit your response through EliteCruit at your earliest convenience.\n\nSincerely,\nTalent Acquisition Team\nCebuana Lhuillier";
+    const declineLetterTextCloud = "Dear Hiring Team at Cebuana Lhuillier,\n\nThank you very much for considering my background and extending this formal employment offer for the position of \"Cloud Systems Associate\".\n\nAfter thoughtful consideration, I must respectfully decline this offer as I have decided to accept the Full Stack Web Developer position, which aligns directly with my core career focus in full-stack web engineering.\n\nI truly appreciate your time, consideration, and the opportunity to interview with your team, and I wish Cebuana Lhuillier continued success.\n\nBest regards,\nZaki Ablando";
+
+    let appCloud = await get("SELECT id FROM applications WHERE applicant_user_id = ? AND job_post_id = ?", [applicant.id, jobCloud.id]);
+    if (!appCloud) {
+      await run(
+        `INSERT INTO applications (
+          job_post_id, applicant_user_id, status, submitted_at, decided_at,
+          decision_message, decision_message_type, start_date, response_decision, response_letter, responded_at,
+          was_shortlisted, had_interview, previous_status, updated_at
+        ) VALUES (?, ?, 'rejected', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'formal_offer', NULL, 'decline', ?, CURRENT_TIMESTAMP, FALSE, FALSE, 'submitted', CURRENT_TIMESTAMP)`,
+        [jobCloud.id, applicant.id, offerLetterTextCloud, declineLetterTextCloud]
+      );
+    } else {
+      await run(
+        `UPDATE applications SET
+          status = 'rejected',
+          decision_message = ?,
+          decision_message_type = 'formal_offer',
+          start_date = NULL,
+          decided_at = CURRENT_TIMESTAMP,
+          response_decision = 'decline',
+          response_letter = ?,
+          responded_at = CURRENT_TIMESTAMP,
+          was_shortlisted = FALSE,
+          had_interview = FALSE,
+          previous_status = 'submitted',
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?`,
+        [offerLetterTextCloud, declineLetterTextCloud, appCloud.id]
+      );
+    }
+
+    // 8. Ensure Application 5 (Job Pending: Extended formal offer, no candidate response yet - Pending Offer Scenario)
+    const jobPending = await ensureJob(
+      "Senior Frontend Engineer",
+      "Indang - Dasmarinas Tech Hub, Cavite",
+      "Hybrid",
+      "Senior",
+      65000,
+      85000,
+      "Architect and build next-generation responsive fintech web applications and interactive banking portals.",
+      ["React", "TypeScript", "Next.js", "Tailwind CSS"]
+    );
+
+    const offerLetterTextPending = "Dear Zaki Ablando,\n\nCongratulations! On behalf of Cebuana Lhuillier, we are thrilled to formally extend an offer of employment for the position of \"Senior Frontend Engineer\".\n\nCompensation & Benefits:\n• Monthly Base Salary: PHP 75,000.00\n• Work Arrangement: Hybrid (Indang Tech Hub / Remote)\n• Comprehensive Medical & Dental Coverage (HMO on Day 1)\n• Performance Bonus & 14th Month Pay\n• Paid Time Off: 18 Vacation Days + 12 Sick Days\n\nYour proven expertise in frontend architecture, modern component design, and responsive web performance will play a vital role in our ongoing digital expansion.\n\nPlease review this official offer letter and submit your formal response along with your desired start date through EliteCruit.\n\nWe look forward to welcoming you to our engineering organization!\n\nWarm regards,\nTalent Acquisition Team\nCebuana Lhuillier";
+
+    let appPending = await get("SELECT id FROM applications WHERE applicant_user_id = ? AND job_post_id = ?", [applicant.id, jobPending.id]);
+    if (!appPending) {
+      await run(
+        `INSERT INTO applications (
+          job_post_id, applicant_user_id, status, submitted_at, decided_at,
+          decision_message, decision_message_type, start_date, response_decision, response_letter, responded_at,
+          was_shortlisted, had_interview, previous_status, updated_at
+        ) VALUES (?, ?, 'approved', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'formal_offer', '2026-12-15', NULL, NULL, NULL, FALSE, FALSE, 'submitted', CURRENT_TIMESTAMP)`,
+        [jobPending.id, applicant.id, offerLetterTextPending]
+      );
+    } else {
+      await run(
+        `UPDATE applications SET
+          status = 'approved',
+          decision_message = ?,
+          decision_message_type = 'formal_offer',
+          start_date = '2026-12-15',
+          decided_at = CURRENT_TIMESTAMP,
+          response_decision = NULL,
+          response_letter = NULL,
+          responded_at = NULL,
+          was_shortlisted = FALSE,
+          had_interview = FALSE,
+          previous_status = 'submitted',
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?`,
+        [offerLetterTextPending, appPending.id]
+      );
+    }
+
+    // 9. Ensure Application 6 (Job E: Declined directly during initial review - screening & interview bypassed)
     const jobE = await ensureJob(
       "Cybersecurity Analyst",
       "Imus, Cavite",
@@ -8940,12 +8996,13 @@ async function ensureMeetingsForZakiAccounts() {
       }
 
       if (threadId) {
-        const existingOfferMsg = await get(
-          `SELECT id FROM messages WHERE thread_id = ? AND message_text LIKE '%Formal Employment Offer%' LIMIT 1`,
+        // 1. Ensure basic introductory messages and interview cards
+        const existingInterviewMsg = await get(
+          `SELECT id FROM messages WHERE thread_id = ? AND message_text LIKE '%[Interview Scheduled]%' LIMIT 1`,
           [threadId]
         );
-        if (!existingOfferMsg) {
-          const demoMessages = [
+        if (!existingInterviewMsg) {
+          const introMessages = [
             {
               sender: employer.id,
               text: "Hello Zaki! We were very impressed by your qualifications and software engineering background. We would like to schedule an initial technical evaluation."
@@ -8965,34 +9022,79 @@ async function ensureMeetingsForZakiAccounts() {
             {
               sender: employer.id,
               text: `[Interview Cancelled]: Preliminary Screen - Full Stack Web Developer\nOriginal Schedule: 2026-11-18 at 09:00 AM\nReason: "Schedule consolidated directly into the technical evaluation panel."`
-            },
-            {
-              sender: employer.id,
-              text: `[Formal Employment Offer: Full Stack Web Developer]\nCompany: Cebuana Lhuillier\n\nDear Zaki Ablando,\n\nCongratulations! On behalf of Cebuana Lhuillier, we are thrilled to formally extend an offer of employment for the position of "Full Stack Web Developer".\n\nCompensation & Benefits:\n• Monthly Base Salary: PHP 75,000.00\n• Work Arrangement: Hybrid (Dasmarinas Tech Hub / Remote)\n• Comprehensive Medical & Dental Coverage (HMO on Day 1)\n• Annual Performance Incentive & 14th Month Pay\n• Paid Time Off: 18 Vacation Days + 12 Sick Days\n\nYour proven expertise in full stack development, cloud computing, and responsive UI engineering will be instrumental in accelerating our next-generation fintech solutions.\n\nPlease review this official offer letter and submit your formal response along with your preferred start date.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\nHiring Committee\nCebuana Lhuillier`
-            },
-            {
-              sender: applicant.id,
-              text: `[Official Job Offer Response: ACCEPTED]\nPosition: Full Stack Web Developer\nTarget Start Date: 2026-12-01\n\nDear Hiring Team at Cebuana Lhuillier,\n\nI am thrilled and deeply honored to formally accept your employment offer for the position of "Full Stack Web Developer".\n\nI confirm my target start date of December 1, 2026, and accept the proposed compensation package of PHP 75,000.00 monthly with the comprehensive benefits outlined.\n\nI have already begun gathering the pre-employment onboarding documents and am eager to contribute my full stack expertise to Cebuana Lhuillier's digital fintech initiatives.\n\nThank you once again for this incredible opportunity!\n\nSincerely,\nZaki Ablando`
-            },
-            {
-              sender: applicant.id,
-              text: `[Formal Invitation Response: DECLINED]\nPosition: Cloud Systems Associate\n\nDear Hiring Team,\n\nThank you very much for considering my profile for the Cloud Systems Associate opportunity. While I greatly respect the work your team does, I must respectfully decline this specific invitation as I have accepted the Full Stack Web Developer role. I appreciate your time and consideration!\n\nBest regards,\nZaki Ablando`
-            },
-            {
-              sender: employer.id,
-              text: "Wonderful! We have received your signed acceptance letter, Zaki. Our People Operations team will reach out shortly with onboarding credentials. Welcome aboard!"
             }
           ];
-
-          for (const m of demoMessages) {
-            await run(
-              `INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`,
-              [threadId, m.sender, m.text]
-            );
+          for (const m of introMessages) {
+            await run(`INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`, [threadId, m.sender, m.text]);
           }
-          await run(`UPDATE message_threads SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [threadId]);
-          console.log("[Zaki Accounts] Seeded formal letters and interview messages in conversation thread.");
         }
+
+        // 2. Ensure Accepted Offer: Full Stack Web Developer
+        const hasAcceptedOffer = await get(
+          `SELECT id FROM messages WHERE thread_id = ? AND message_text LIKE '%Formal Employment Offer: Full Stack Web Developer%' LIMIT 1`,
+          [threadId]
+        );
+        if (!hasAcceptedOffer) {
+          await run(`INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`, [
+            threadId,
+            employer.id,
+            `[Formal Employment Offer: Full Stack Web Developer]\nCompany: Cebuana Lhuillier\n\nDear Zaki Ablando,\n\nCongratulations! On behalf of Cebuana Lhuillier, we are thrilled to formally extend an offer of employment for the position of "Full Stack Web Developer".\n\nCompensation & Benefits:\n• Monthly Base Salary: PHP 75,000.00\n• Work Arrangement: Hybrid (Dasmarinas Tech Hub / Remote)\n• Comprehensive Medical & Dental Coverage (HMO on Day 1)\n• Annual Performance Incentive & 14th Month Pay\n• Paid Time Off: 18 Vacation Days + 12 Sick Days\n\nYour proven expertise in full stack development, cloud computing, and responsive UI engineering will be instrumental in accelerating our next-generation fintech solutions.\n\nPlease review this official offer letter and submit your formal response along with your preferred start date.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\nHiring Committee\nCebuana Lhuillier`
+          ]);
+        }
+
+        const hasAcceptedResponse = await get(
+          `SELECT id FROM messages WHERE thread_id = ? AND message_text LIKE '%Official Job Offer Response: ACCEPTED%' AND message_text LIKE '%Full Stack Web Developer%' LIMIT 1`,
+          [threadId]
+        );
+        if (!hasAcceptedResponse) {
+          await run(`INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`, [
+            threadId,
+            applicant.id,
+            `[Official Job Offer Response: ACCEPTED]\nPosition: Full Stack Web Developer\nTarget Start Date: 2026-12-01\n\nDear Hiring Team at Cebuana Lhuillier,\n\nI am thrilled and deeply honored to formally accept your employment offer for the position of "Full Stack Web Developer".\n\nI confirm my target start date of December 1, 2026, and accept the proposed compensation package of PHP 75,000.00 monthly with the comprehensive benefits outlined.\n\nI have already begun gathering the pre-employment onboarding documents and am eager to contribute my full stack expertise to Cebuana Lhuillier's digital fintech initiatives.\n\nThank you once again for this incredible opportunity!\n\nSincerely,\nZaki Ablando`
+          ]);
+        }
+
+        // 3. Ensure Declined Offer: Cloud Systems Associate
+        const hasDeclinedOffer = await get(
+          `SELECT id FROM messages WHERE thread_id = ? AND message_text LIKE '%Formal Employment Offer: Cloud Systems Associate%' LIMIT 1`,
+          [threadId]
+        );
+        if (!hasDeclinedOffer) {
+          await run(`INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`, [
+            threadId,
+            employer.id,
+            `[Formal Employment Offer: Cloud Systems Associate]\nCompany: Cebuana Lhuillier\n\nDear Zaki Ablando,\n\nWe are pleased to extend an official employment offer for the position of "Cloud Systems Associate" at Cebuana Lhuillier.\n\nCompensation & Benefits:\n• Monthly Base Salary: PHP 65,000.00\n• Work Arrangement: On-Site (Dasmarinas Tech Hub, Cavite)\n• Health & Dental Insurance (HMO on Day 1)\n• Performance Bonuses & Continuous Learning Stipend\n• Paid Time Off: 15 Vacation Days + 10 Sick Days\n\nPlease review this formal offer letter and submit your response through EliteCruit at your earliest convenience.\n\nSincerely,\nTalent Acquisition Team\nCebuana Lhuillier`
+          ]);
+        }
+
+        const hasDeclinedResponse = await get(
+          `SELECT id FROM messages WHERE thread_id = ? AND message_text LIKE '%Official Job Offer Response: DECLINED%' AND message_text LIKE '%Cloud Systems Associate%' LIMIT 1`,
+          [threadId]
+        );
+        if (!hasDeclinedResponse) {
+          await run(`DELETE FROM messages WHERE thread_id = ? AND message_text LIKE '%Formal Invitation Response: DECLINED%Cloud Systems Associate%'`, [threadId]).catch(() => {});
+          await run(`INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`, [
+            threadId,
+            applicant.id,
+            `[Official Job Offer Response: DECLINED]\nPosition: Cloud Systems Associate\n\nDear Hiring Team at Cebuana Lhuillier,\n\nThank you very much for considering my background and extending this formal employment offer for the position of "Cloud Systems Associate".\n\nAfter thoughtful consideration, I must respectfully decline this offer as I have decided to accept the Full Stack Web Developer position, which aligns directly with my core career focus in full-stack web engineering.\n\nI truly appreciate your time, consideration, and the opportunity to interview with your team, and I wish Cebuana Lhuillier continued success.\n\nBest regards,\nZaki Ablando`
+          ]);
+        }
+
+        // 4. Ensure Pending Offer: Senior Frontend Engineer (Extended, no response yet)
+        const hasPendingOffer = await get(
+          `SELECT id FROM messages WHERE thread_id = ? AND message_text LIKE '%Formal Employment Offer: Senior Frontend Engineer%' LIMIT 1`,
+          [threadId]
+        );
+        if (!hasPendingOffer) {
+          await run(`INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`, [
+            threadId,
+            employer.id,
+            `[Formal Employment Offer: Senior Frontend Engineer]\nCompany: Cebuana Lhuillier\n\nDear Zaki Ablando,\n\nCongratulations! On behalf of Cebuana Lhuillier, we are thrilled to formally extend an offer of employment for the position of "Senior Frontend Engineer".\n\nCompensation & Benefits:\n• Monthly Base Salary: PHP 75,000.00\n• Work Arrangement: Hybrid (Indang Tech Hub / Remote)\n• Comprehensive Medical & Dental Coverage (HMO on Day 1)\n• Performance Bonus & 14th Month Pay\n• Paid Time Off: 18 Vacation Days + 12 Sick Days\n\nYour proven expertise in frontend architecture, modern component design, and responsive web performance will play a vital role in our ongoing digital expansion.\n\nPlease review this official offer letter and submit your formal response along with your desired start date through EliteCruit.\n\nWe look forward to welcoming you to our engineering organization!\n\nWarm regards,\nTalent Acquisition Team\nCebuana Lhuillier`
+          ]);
+        }
+
+        await run(`UPDATE message_threads SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [threadId]);
+        console.log("[Zaki Accounts] Seeded formal offer letters (Accepted, Declined, Pending) in conversation thread.");
       }
     } catch (msgErr) {
       console.error("[Zaki Accounts] Error seeding messages:", msgErr?.message || msgErr);

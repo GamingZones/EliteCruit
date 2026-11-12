@@ -2248,7 +2248,7 @@ export default function Messages() {
                             const matchingResponseMsg = messages.find((m) => {
                               const p = parseSpecialMessage(m.message_text);
                               if (p.type !== "offer_response") return false;
-                              if (!p.jobTitle || !special.jobTitle) return true;
+                              if (!p.jobTitle || !special.jobTitle) return false;
                               const pTitle = p.jobTitle.toLowerCase().trim();
                               const sTitle = special.jobTitle.toLowerCase().trim();
                               return pTitle === sTitle || pTitle.includes(sTitle) || sTitle.includes(pTitle);
@@ -2256,23 +2256,33 @@ export default function Messages() {
                             const matchingResponse = matchingResponseMsg ? parseSpecialMessage(matchingResponseMsg.message_text) : null;
 
                             const matchedJob = (companyJobsData?.applied_jobs || []).find((j: any) =>
-                              j.title?.toLowerCase() === special.jobTitle?.toLowerCase() ||
-                              special.jobTitle?.toLowerCase().includes(j.title?.toLowerCase())
+                              special.jobTitle && j.title && (
+                                j.title.toLowerCase().trim() === special.jobTitle.toLowerCase().trim() ||
+                                special.jobTitle.toLowerCase().includes(j.title.toLowerCase().trim()) ||
+                                j.title.toLowerCase().includes(special.jobTitle.toLowerCase().trim())
+                              )
                             ) || (companyJobsData?.recruited_jobs || []).find((j: any) =>
-                              j.title?.toLowerCase() === special.jobTitle?.toLowerCase() ||
-                              special.jobTitle?.toLowerCase().includes(j.title?.toLowerCase())
+                              special.jobTitle && j.title && (
+                                j.title.toLowerCase().trim() === special.jobTitle.toLowerCase().trim() ||
+                                special.jobTitle.toLowerCase().includes(j.title.toLowerCase().trim()) ||
+                                j.title.toLowerCase().includes(special.jobTitle.toLowerCase().trim())
+                              )
                             );
 
-                            const isAccepted = Boolean(
-                              matchingResponse?.isAccepted ||
-                              matchedJob?.application?.status === "hired" ||
-                              matchedJob?.invitation?.status === "accepted"
-                            );
-                            const isDeclined = Boolean(
-                              (matchingResponse && !matchingResponse.isAccepted) ||
-                              matchedJob?.application?.status === "rejected" ||
-                              matchedJob?.invitation?.status === "declined"
-                            );
+                            const isAccepted = matchingResponse
+                              ? matchingResponse.isAccepted
+                              : Boolean(
+                                  matchedJob?.application?.status === "hired" ||
+                                  matchedJob?.application?.response_decision === "accept" ||
+                                  matchedJob?.invitation?.status === "accepted"
+                                );
+                            const isDeclined = matchingResponse
+                              ? !matchingResponse.isAccepted
+                              : Boolean(
+                                  matchedJob?.application?.status === "rejected" ||
+                                  matchedJob?.application?.response_decision === "decline" ||
+                                  matchedJob?.invitation?.status === "declined"
+                                );
                             const hasDecision = isAccepted || isDeclined;
                             const decisionType = isAccepted ? "accepted" : isDeclined ? "declined" : "extended";
 
