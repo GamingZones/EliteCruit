@@ -388,6 +388,194 @@ function MenuIcon() {
   );
 }
 
+interface ParsedSpecialMessage {
+  type: "formal_offer" | "offer_response" | "interview_scheduled" | "interview_rescheduled" | "interview_cancelled" | "plain";
+  jobTitle?: string;
+  companyName?: string;
+  isAccepted?: boolean;
+  startDate?: string;
+  stage?: string;
+  date?: string;
+  time?: string;
+  interviewType?: string;
+  location?: string;
+  notes?: string;
+  reason?: string;
+  cleanBody: string;
+}
+
+function parseSpecialMessage(text: string): ParsedSpecialMessage {
+  if (!text) return { type: "plain", cleanBody: "" };
+
+  // 1. Formal Employment Offer
+  if (
+    text.startsWith("[Formal Employment Offer") ||
+    text.includes("Congratulations! We are pleased to inform you that your application for the position of") ||
+    (text.includes("Dear ") && text.includes("has been accepted") && text.includes("position of"))
+  ) {
+    let jobTitle = "";
+    let companyName = "";
+    const offerMatch = text.match(/\[Formal Employment Offer:\s*(.*?)\]/i);
+    if (offerMatch) jobTitle = offerMatch[1].trim();
+
+    const companyMatch = text.match(/Company:\s*(.*?)\n/i);
+    if (companyMatch) companyName = companyMatch[1].trim();
+
+    if (!jobTitle) {
+      const posMatch = text.match(/position of ["'](.*?)["']/i);
+      if (posMatch) jobTitle = posMatch[1].trim();
+    }
+    if (!companyName) {
+      const atCompMatch = text.match(/at (.*?) has been accepted/i) || text.match(/Best regards,\s*\n\s*(.*?)$/m);
+      if (atCompMatch) companyName = atCompMatch[1].trim();
+    }
+
+    let cleanBody = text;
+    if (cleanBody.startsWith("[")) {
+      cleanBody = cleanBody.replace(/^\[Formal Employment Offer:[^\]]*\]\s*/i, "");
+      cleanBody = cleanBody.replace(/^Company:[^\n]*\n+/i, "");
+    }
+
+    return {
+      type: "formal_offer",
+      jobTitle: jobTitle || "Employment Position",
+      companyName: companyName || "Employer",
+      cleanBody: cleanBody.trim(),
+    };
+  }
+
+  // 2. Candidate Formal Response Letter (Offer or Invitation Response)
+  if (
+    text.startsWith("[Official Job Offer Response:") ||
+    text.startsWith("[Formal Invitation Response:") ||
+    text.includes("[Official Job Offer Response:") ||
+    text.includes("[Formal Invitation Response:")
+  ) {
+    const isAccepted = text.includes("ACCEPTED");
+    let jobTitle = "";
+    let startDate = "";
+
+    const posMatch = text.match(/Position:\s*(.*?)(?:\n|$)/i);
+    if (posMatch) jobTitle = posMatch[1].trim();
+
+    const dateMatch = text.match(/Target Start Date:\s*(.*?)(?:\n|$)/i);
+    if (dateMatch) startDate = dateMatch[1].trim();
+
+    let cleanBody = text;
+    const splitIndex = cleanBody.indexOf("\n\n");
+    if (splitIndex !== -1 && cleanBody.startsWith("[")) {
+      cleanBody = cleanBody.slice(splitIndex + 2).trim();
+    }
+
+    return {
+      type: "offer_response",
+      jobTitle: jobTitle || "Applied Position",
+      isAccepted,
+      startDate: startDate || undefined,
+      cleanBody: cleanBody || (isAccepted ? "Candidate has accepted the formal offer." : "Candidate has declined the formal offer."),
+    };
+  }
+
+  // 3. Interview Scheduled
+  if (
+    text.startsWith("[Interview Scheduled]:") ||
+    text.includes("[Interview Scheduled]:") ||
+    (text.includes("[System Notice]:") && text.toLowerCase().includes("scheduled") && !text.toLowerCase().includes("cancelled") && !text.toLowerCase().includes("rescheduled"))
+  ) {
+    let title = "";
+    let stage = "";
+    let date = "";
+    let time = "";
+    let type = "";
+    let loc = "";
+    let notes = "";
+
+    const titleMatch = text.match(/\[Interview Scheduled\]:\s*(.*?)(?:\n|$)/i);
+    if (titleMatch) title = titleMatch[1].trim();
+
+    const stageMatch = text.match(/Stage:\s*(.*?)(?:\n|$)/i);
+    if (stageMatch) stage = stageMatch[1].trim();
+
+    const dateMatch = text.match(/Date:\s*(.*?)(?:\n|$)/i);
+    if (dateMatch) date = dateMatch[1].trim();
+
+    const timeMatch = text.match(/Time:\s*(.*?)(?:\n|$)/i);
+    if (timeMatch) time = timeMatch[1].trim();
+
+    const typeMatch = text.match(/Type:\s*(.*?)(?:\n|$)/i);
+    if (typeMatch) type = typeMatch[1].trim();
+
+    const locMatch = text.match(/(?:Location\/Link|Location):\s*(.*?)(?:\n|$)/i);
+    if (locMatch) loc = locMatch[1].trim();
+
+    const notesMatch = text.match(/Notes:\s*(.*?)$/i);
+    if (notesMatch) notes = notesMatch[1].trim();
+
+    return {
+      type: "interview_scheduled",
+      jobTitle: title || "Interview",
+      stage: stage || "Technical Evaluation",
+      date,
+      time,
+      interviewType: type || "On-Site",
+      location: loc,
+      notes,
+      cleanBody: text,
+    };
+  }
+
+  // 4. Interview Cancelled
+  if (
+    text.startsWith("[Interview Cancelled]:") ||
+    (text.includes("[System Notice]:") && text.toLowerCase().includes("was cancelled"))
+  ) {
+    let title = "";
+    let origSchedule = "";
+    let reason = "";
+
+    const titleMatch = text.match(/\[Interview Cancelled\]:\s*(.*?)(?:\n|$)/i);
+    if (titleMatch) title = titleMatch[1].trim();
+
+    const schedMatch = text.match(/Original Schedule:\s*(.*?)(?:\n|$)/i) || text.match(/scheduled for\s*(.*?)\s*was cancelled/i);
+    if (schedMatch) origSchedule = schedMatch[1].trim();
+
+    const reasonMatch = text.match(/Reason:\s*["']?(.*?)["']?\.?$/im);
+    if (reasonMatch) reason = reasonMatch[1].trim();
+
+    return {
+      type: "interview_cancelled",
+      jobTitle: title || "Interview",
+      date: origSchedule,
+      reason: reason || "Interviewer unavailable",
+      cleanBody: text,
+    };
+  }
+
+  // 5. Interview Rescheduled
+  if (
+    text.startsWith("[Interview Rescheduled]:") ||
+    (text.includes("[System Notice]:") && text.toLowerCase().includes("has been rescheduled"))
+  ) {
+    let title = "";
+    let newSched = "";
+
+    const titleMatch = text.match(/\[Interview Rescheduled\]:\s*(.*?)(?:\n|$)/i);
+    if (titleMatch) title = titleMatch[1].trim();
+
+    const newMatch = text.match(/New Schedule:\s*(.*?)(?:\n|$)/i) || text.match(/rescheduled to\s*(.*?)\./i);
+    if (newMatch) newSched = newMatch[1].trim();
+
+    return {
+      type: "interview_rescheduled",
+      jobTitle: title || "Interview",
+      date: newSched,
+      cleanBody: text,
+    };
+  }
+
+  return { type: "plain", cleanBody: text };
+}
+
 export default function Messages() {
   const [isSidebarVisible, setIsSidebarVisible] = useState(() => {
     if (typeof window !== "undefined" && window.innerWidth <= 768) {
@@ -398,6 +586,40 @@ export default function Messages() {
   const [sessionRole, setSessionRole] = useState<"applicant" | "employer">("applicant");
   const [applicantLabel, setApplicantLabel] = useState(getInitialApplicantName);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+
+  // Formal Letter Viewer Modal State
+  const [viewLetterModalTarget, setViewLetterModalTarget] = useState<{
+    title: string;
+    company: string;
+    letterText?: string;
+    offerLetter?: string;
+    startDate?: string;
+    respondedAt?: string;
+    decision?: string;
+    defaultTab?: "response" | "offer";
+  } | null>(null);
+  const [viewLetterActiveTab, setViewLetterActiveTab] = useState<"response" | "offer">("offer");
+
+  const openViewLetterModal = (target: {
+    title: string;
+    company: string;
+    letterText?: string;
+    offerLetter?: string;
+    startDate?: string;
+    respondedAt?: string;
+    decision?: string;
+    defaultTab?: "response" | "offer";
+  }) => {
+    const hasOffer = Boolean(target.offerLetter && target.offerLetter.trim());
+    const hasResponse = Boolean(target.letterText && target.letterText.trim());
+    const initialTab = target.defaultTab
+      ? target.defaultTab
+      : hasResponse
+      ? "response"
+      : "offer";
+    setViewLetterActiveTab(initialTab);
+    setViewLetterModalTarget(target);
+  };
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   const unreadNotifCount = useUnreadNotificationsCount();
   const unreadMessagesCount = useUnreadMessagesCount();
@@ -1018,7 +1240,12 @@ export default function Messages() {
     }
   };
 
-  const handleRespondInvitationFromChat = async (action: "accept" | "decline") => {
+  const handleRespondInvitationFromChat = async (
+    action: "accept" | "decline",
+    letter_text?: string,
+    letter_type?: string,
+    start_date?: string
+  ) => {
     if (!currentUserId || !selectedThread?.id) return;
     setIsRespondingInvitation(true);
     try {
@@ -1029,6 +1256,9 @@ export default function Messages() {
           thread_id: selectedThread.id,
           applicant_user_id: currentUserId,
           action,
+          letter_text,
+          letter_type,
+          start_date,
         }),
       });
       if (res.ok) {
@@ -1959,6 +2189,7 @@ export default function Messages() {
                       const isMe = msg.sender_user_id === currentUserId;
                       const prevMsg = idx > 0 ? messages[idx - 1] : null;
                       const showSeparator = shouldShowTimeSeparator(msg, prevMsg);
+                      const special = parseSpecialMessage(msg.message_text);
 
                       return (
                         <React.Fragment key={msg.id || idx}>
@@ -1969,11 +2200,261 @@ export default function Messages() {
                               </span>
                             </div>
                           )}
-                          <article className={`chat-bubble ${isMe ? "outgoing" : "incoming"}`}>
-                            <small>{isMe ? "You" : selectedThread.other_user_name || "Sender"}</small>
-                            <p>{msg.message_text}</p>
-                            <time>{msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}</time>
-                          </article>
+                          {special.type === "formal_offer" ? (
+                            <article className={`chat-bubble chat-special-card chat-offer-card ${isMe ? "outgoing" : "incoming"}`}>
+                              <div className="chat-special-header">
+                                <div className="chat-special-badge-row">
+                                  <span className="chat-special-badge badge-formal-offer">
+                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                      <polyline points="14 2 14 8 20 8" />
+                                      <line x1="16" y1="13" x2="8" y2="13" />
+                                      <line x1="16" y1="17" x2="8" y2="17" />
+                                    </svg>
+                                    <span>Formal Employment Offer</span>
+                                  </span>
+                                  <time className="chat-special-time">{msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}</time>
+                                </div>
+                                <h4 className="chat-special-title">{special.jobTitle}</h4>
+                                <div className="chat-special-subtitle">{special.companyName || selectedThread.other_user_name || "Company"}</div>
+                              </div>
+
+                              <div className="chat-special-body">
+                                <p className="chat-special-text">{special.cleanBody}</p>
+                              </div>
+
+                              <div className="chat-special-actions">
+                                <button
+                                  type="button"
+                                  className="chat-action-btn chat-btn-view"
+                                  onClick={() => openViewLetterModal({
+                                    title: special.jobTitle || "Job Position",
+                                    company: special.companyName || selectedThread.other_user_name || "Company",
+                                    offerLetter: special.cleanBody,
+                                    decision: "extended",
+                                    defaultTab: "offer"
+                                  })}
+                                >
+                                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                    <circle cx="12" cy="12" r="3" />
+                                  </svg>
+                                  <span>View Full Offer Letter</span>
+                                </button>
+
+                                {!isEmployer && !isMe && (
+                                  <button
+                                    type="button"
+                                    className="chat-action-btn chat-btn-respond"
+                                    onClick={() => {
+                                      const matchedJob = (companyJobsData?.applied_jobs || []).find((j: any) =>
+                                        j.title?.toLowerCase() === special.jobTitle?.toLowerCase() ||
+                                        special.jobTitle?.toLowerCase().includes(j.title?.toLowerCase())
+                                      ) || (companyJobsData?.recruited_jobs || []).find((j: any) =>
+                                        j.title?.toLowerCase() === special.jobTitle?.toLowerCase() ||
+                                        special.jobTitle?.toLowerCase().includes(j.title?.toLowerCase())
+                                      );
+                                      setDecisionModalTarget({
+                                        type: matchedJob ? "byJob" : "chat",
+                                        action: "accept",
+                                        jobId: matchedJob?.id,
+                                        title: special.jobTitle,
+                                        companyName: special.companyName || selectedThread.other_user_name,
+                                      });
+                                    }}
+                                  >
+                                    <span>Review &amp; Respond</span>
+                                  </button>
+                                )}
+                              </div>
+                            </article>
+                          ) : special.type === "offer_response" ? (
+                            <article className={`chat-bubble chat-special-card chat-response-card ${isMe ? "outgoing" : "incoming"}`}>
+                              <div className="chat-special-header">
+                                <div className="chat-special-badge-row">
+                                  <span className={`chat-special-badge ${special.isAccepted ? "badge-accepted" : "badge-declined"}`}>
+                                    {special.isAccepted ? (
+                                      <>
+                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                          <polyline points="20 6 9 17 4 12" />
+                                        </svg>
+                                        <span>Offer Accepted</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                          <line x1="18" y1="6" x2="6" y2="18" />
+                                          <line x1="6" y1="6" x2="18" y2="18" />
+                                        </svg>
+                                        <span>Offer Declined</span>
+                                      </>
+                                    )}
+                                  </span>
+                                  <time className="chat-special-time">{msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}</time>
+                                </div>
+                                <h4 className="chat-special-title">{special.jobTitle}</h4>
+                                {special.startDate && (
+                                  <div className="chat-special-meta-pill">
+                                    <span>Target Start Date: <strong>{special.startDate}</strong></span>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="chat-special-body">
+                                <p className="chat-special-text">{special.cleanBody}</p>
+                              </div>
+
+                              <div className="chat-special-actions">
+                                <button
+                                  type="button"
+                                  className="chat-action-btn chat-btn-view"
+                                  onClick={() => openViewLetterModal({
+                                    title: special.jobTitle || "Applied Position",
+                                    company: selectedThread.other_user_name || "Employer",
+                                    letterText: special.cleanBody,
+                                    startDate: special.startDate,
+                                    decision: special.isAccepted ? "accepted" : "declined",
+                                    defaultTab: "response"
+                                  })}
+                                >
+                                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                    <polyline points="14 2 14 8 20 8" />
+                                  </svg>
+                                  <span>View Response Letter</span>
+                                </button>
+                              </div>
+                            </article>
+                          ) : special.type === "interview_scheduled" ? (
+                            <article className={`chat-bubble chat-special-card chat-interview-card ${isMe ? "outgoing" : "incoming"}`}>
+                              <div className="chat-special-header">
+                                <div className="chat-special-badge-row">
+                                  <span className="chat-special-badge badge-interview-sched">
+                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                      <line x1="16" y1="2" x2="16" y2="6" />
+                                      <line x1="8" y1="2" x2="8" y2="6" />
+                                      <line x1="3" y1="10" x2="21" y2="10" />
+                                    </svg>
+                                    <span>Interview Scheduled</span>
+                                  </span>
+                                  <time className="chat-special-time">{msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}</time>
+                                </div>
+                                <h4 className="chat-special-title">{special.jobTitle}</h4>
+                                {special.stage && <div className="chat-special-subtitle">{special.stage}</div>}
+                              </div>
+
+                              <div className="chat-special-grid">
+                                {special.date && (
+                                  <div className="chat-grid-row">
+                                    <span className="chat-grid-lbl">Date &amp; Time:</span>
+                                    <span className="chat-grid-val">{special.date} {special.time ? `at ${special.time}` : ""}</span>
+                                  </div>
+                                )}
+                                {special.interviewType && (
+                                  <div className="chat-grid-row">
+                                    <span className="chat-grid-lbl">Format:</span>
+                                    <span className="chat-grid-val">{special.interviewType}</span>
+                                  </div>
+                                )}
+                                {special.location && (
+                                  <div className="chat-grid-row">
+                                    <span className="chat-grid-lbl">Venue / Link:</span>
+                                    <span className="chat-grid-val">{special.location}</span>
+                                  </div>
+                                )}
+                                {special.notes && (
+                                  <div className="chat-grid-row">
+                                    <span className="chat-grid-lbl">Notes:</span>
+                                    <span className="chat-grid-val">{special.notes}</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="chat-special-actions">
+                                <button
+                                  type="button"
+                                  className="chat-action-btn chat-btn-open-cal"
+                                  onClick={() => window.dispatchEvent(new CustomEvent("elitecruit-open-calendar"))}
+                                >
+                                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                    <line x1="16" y1="2" x2="16" y2="6" />
+                                    <line x1="8" y1="2" x2="8" y2="6" />
+                                    <line x1="3" y1="10" x2="21" y2="10" />
+                                  </svg>
+                                  <span>Open Meeting Calendar</span>
+                                </button>
+                              </div>
+                            </article>
+                          ) : special.type === "interview_cancelled" ? (
+                            <article className={`chat-bubble chat-special-card chat-cancelled-card ${isMe ? "outgoing" : "incoming"}`}>
+                              <div className="chat-special-header">
+                                <div className="chat-special-badge-row">
+                                  <span className="chat-special-badge badge-interview-cancelled">
+                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                                      <circle cx="12" cy="12" r="10" />
+                                      <line x1="15" y1="9" x2="9" y2="15" />
+                                      <line x1="9" y1="9" x2="15" y2="15" />
+                                    </svg>
+                                    <span>Interview Cancelled</span>
+                                  </span>
+                                  <time className="chat-special-time">{msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}</time>
+                                </div>
+                                <h4 className="chat-special-title">{special.jobTitle}</h4>
+                                {special.date && <div className="chat-special-subtitle">Schedule: {special.date}</div>}
+                              </div>
+
+                              {special.reason && (
+                                <div className="chat-special-alert-box">
+                                  <strong>Reason:</strong> {special.reason}
+                                </div>
+                              )}
+
+                              <div className="chat-special-actions">
+                                <button
+                                  type="button"
+                                  className="chat-action-btn chat-btn-open-cal"
+                                  onClick={() => window.dispatchEvent(new CustomEvent("elitecruit-open-calendar"))}
+                                >
+                                  <span>Open Meeting Calendar</span>
+                                </button>
+                              </div>
+                            </article>
+                          ) : special.type === "interview_rescheduled" ? (
+                            <article className={`chat-bubble chat-special-card chat-rescheduled-card ${isMe ? "outgoing" : "incoming"}`}>
+                              <div className="chat-special-header">
+                                <div className="chat-special-badge-row">
+                                  <span className="chat-special-badge badge-interview-resched">
+                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                      <circle cx="12" cy="12" r="10" />
+                                      <polyline points="12 6 12 12 14 14" />
+                                    </svg>
+                                    <span>Interview Rescheduled</span>
+                                  </span>
+                                  <time className="chat-special-time">{msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}</time>
+                                </div>
+                                <h4 className="chat-special-title">{special.jobTitle}</h4>
+                                {special.date && <div className="chat-special-meta-pill">New Schedule: <strong>{special.date}</strong></div>}
+                              </div>
+
+                              <div className="chat-special-actions">
+                                <button
+                                  type="button"
+                                  className="chat-action-btn chat-btn-open-cal"
+                                  onClick={() => window.dispatchEvent(new CustomEvent("elitecruit-open-calendar"))}
+                                >
+                                  <span>Open Meeting Calendar</span>
+                                </button>
+                              </div>
+                            </article>
+                          ) : (
+                            <article className={`chat-bubble ${isMe ? "outgoing" : "incoming"}`}>
+                              <small>{isMe ? "You" : selectedThread.other_user_name || "Sender"}</small>
+                              <p>{msg.message_text}</p>
+                              <time>{msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}</time>
+                            </article>
+                          )}
                         </React.Fragment>
                       );
                     })
@@ -4177,10 +4658,96 @@ export default function Messages() {
           } else if (decisionModalTarget.type === "byDetails") {
             await handleRespondInvitation(action, letter_text, letter_type, start_date);
           } else if (decisionModalTarget.type === "chat") {
-            await handleRespondInvitationFromChat(action);
+            await handleRespondInvitationFromChat(action, letter_text, letter_type, start_date);
           }
         }}
       />
+
+      {/* ── FORMAL LETTER VIEWER MODAL ── */}
+      {viewLetterModalTarget && (
+        <div className="view-letter-backdrop" onClick={() => setViewLetterModalTarget(null)}>
+          <div className="view-letter-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="view-letter-header">
+              <div>
+                <span className="view-letter-eyebrow">OFFICIAL CORRESPONDENCE</span>
+                <h3 className="view-letter-title">{viewLetterModalTarget.title}</h3>
+                <p className="view-letter-company">{viewLetterModalTarget.company}</p>
+              </div>
+              <button
+                type="button"
+                className="view-letter-close-btn"
+                onClick={() => setViewLetterModalTarget(null)}
+                title="Close"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="view-letter-meta-row">
+              {viewLetterModalTarget.decision && (
+                <span className={`view-letter-badge ${viewLetterModalTarget.decision === "accepted" ? "accepted" : viewLetterModalTarget.decision === "declined" ? "declined" : "extended"}`}>
+                  {viewLetterModalTarget.decision === "accepted" ? "Offer Accepted" : viewLetterModalTarget.decision === "declined" ? "Offer Declined" : "Formal Offer Extended"}
+                </span>
+              )}
+              {viewLetterModalTarget.startDate && (
+                <span className="view-letter-start-date-tag">
+                  Target Start Date: <strong>{viewLetterModalTarget.startDate}</strong>
+                </span>
+              )}
+            </div>
+
+            {Boolean(viewLetterModalTarget.offerLetter && viewLetterModalTarget.letterText) && (
+              <div className="view-letter-tabs">
+                <button
+                  type="button"
+                  className={`view-letter-tab-btn ${viewLetterActiveTab === "offer" ? "active" : ""}`}
+                  onClick={() => setViewLetterActiveTab("offer")}
+                >
+                  Formal Offer Letter
+                </button>
+                <button
+                  type="button"
+                  className={`view-letter-tab-btn ${viewLetterActiveTab === "response" ? "active" : ""}`}
+                  onClick={() => setViewLetterActiveTab("response")}
+                >
+                  Candidate Response Letter
+                </button>
+              </div>
+            )}
+
+            {viewLetterActiveTab === "offer" && viewLetterModalTarget.offerLetter ? (
+              <div className="view-letter-body-box view-letter-offer-box">
+                <div className="view-letter-box-header">
+                  <span className="view-letter-box-label offer-label">
+                    EMPLOYMENT OFFER LETTER FROM {viewLetterModalTarget.company?.toUpperCase() || "EMPLOYER"}
+                  </span>
+                </div>
+                <pre className="view-letter-pre-text">{viewLetterModalTarget.offerLetter}</pre>
+              </div>
+            ) : (
+              <div className="view-letter-body-box">
+                <div className="view-letter-box-header">
+                  <span className="view-letter-box-label">
+                    FORMAL RESPONSE LETTER
+                  </span>
+                </div>
+                <pre className="view-letter-pre-text">{viewLetterModalTarget.letterText || viewLetterModalTarget.offerLetter || "No letter text available."}</pre>
+              </div>
+            )}
+
+            <div className="view-letter-footer">
+              <button
+                type="button"
+                className="solid-btn view-letter-done-btn"
+                onClick={() => setViewLetterModalTarget(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* DOUBLE VERIFICATION: SUBMIT JOB APPLICATION MODAL */}
       <ConfirmationModal

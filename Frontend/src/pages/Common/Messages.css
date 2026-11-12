@@ -2046,3 +2046,602 @@
   }
 }
 
+/* ==========================================================================
+   FORMAL LETTERS & INTERVIEW CARDS IN CHAT (Messages Benchmark)
+   ========================================================================== */
+
+.chat-special-card {
+  max-width: min(520px, 86%);
+  width: 100%;
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-sizing: border-box;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chat-special-card.incoming {
+  align-self: flex-start;
+  background: #ffffff;
+  border-left: 4px solid #00385e;
+}
+
+.chat-special-card.outgoing {
+  align-self: flex-end;
+  background: #f8fafc;
+  border-right: 4px solid #0284c7;
+}
+
+/* Offer Card Special Accent */
+.chat-offer-card.incoming {
+  border-left: 4px solid #0284c7;
+  background: #fbfdff;
+}
+
+.chat-offer-card.outgoing {
+  border-right: 4px solid #0284c7;
+  background: #fbfdff;
+}
+
+/* Response Card Special Accent */
+.chat-response-card.incoming {
+  border-left: 4px solid #16a34a;
+}
+.chat-response-card.outgoing {
+  border-right: 4px solid #16a34a;
+}
+
+/* Interview Card Special Accent */
+.chat-interview-card.incoming {
+  border-left: 4px solid #0284c7;
+  background: #f8fafc;
+}
+.chat-interview-card.outgoing {
+  border-right: 4px solid #0284c7;
+  background: #f8fafc;
+}
+
+.chat-cancelled-card.incoming {
+  border-left: 4px solid #dc2626;
+  background: #fffafa;
+}
+.chat-cancelled-card.outgoing {
+  border-right: 4px solid #dc2626;
+  background: #fffafa;
+}
+
+.chat-rescheduled-card.incoming {
+  border-left: 4px solid #d97706;
+  background: #fffdfa;
+}
+.chat-rescheduled-card.outgoing {
+  border-right: 4px solid #d97706;
+  background: #fffdfa;
+}
+
+.chat-special-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chat-special-badge-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-special-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.chat-special-badge.badge-formal-offer {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.chat-special-badge.badge-accepted {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.chat-special-badge.badge-declined {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.chat-special-badge.badge-interview-sched {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.chat-special-badge.badge-interview-cancelled {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.chat-special-badge.badge-interview-resched {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.chat-special-time {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.chat-special-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+.chat-special-subtitle {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.chat-special-meta-pill {
+  font-size: 0.78rem;
+  color: #475569;
+  margin-top: 2px;
+}
+
+.chat-special-body {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.chat-special-text {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #334155;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.chat-special-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.chat-grid-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+
+.chat-grid-lbl {
+  font-weight: 700;
+  color: #64748b;
+  min-width: 85px;
+}
+
+.chat-grid-val {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.chat-special-alert-box {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  color: #991b1b;
+}
+
+.chat-special-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.chat-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 7px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+}
+
+.chat-action-btn.chat-btn-view {
+  background: #00385e;
+  color: #ffffff;
+}
+
+.chat-action-btn.chat-btn-view:hover {
+  background: #002742;
+}
+
+.chat-action-btn.chat-btn-respond {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.chat-action-btn.chat-btn-respond:hover {
+  background: #15803d;
+}
+
+.chat-action-btn.chat-btn-open-cal {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+.chat-action-btn.chat-btn-open-cal:hover {
+  background: #0369a1;
+}
+
+/* ── FORMAL LETTER VIEWER MODAL IN MESSAGES (Rule 1 & Rule 9 Isolation) ── */
+.view-letter-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 11000;
+  background: rgba(9, 21, 35, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.view-letter-modal-card {
+  background: #ffffff;
+  border-radius: 14px;
+  max-width: 680px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
+  border: 1px solid #e2e8f0;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.view-letter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.view-letter-eyebrow {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #64748b;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.view-letter-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0c2a47;
+  line-height: 1.25;
+}
+
+.view-letter-company {
+  margin: 3px 0 0;
+  font-size: 0.88rem;
+  color: #475569;
+  font-weight: 600;
+}
+
+.view-letter-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.view-letter-close-btn:hover {
+  background: #f1f5f9;
+  color: #0c2a47;
+}
+
+.view-letter-meta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.view-letter-badge {
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 999px;
+  letter-spacing: 0.03em;
+}
+
+.view-letter-badge.accepted {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.view-letter-badge.declined {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.view-letter-badge.extended {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.view-letter-start-date-tag {
+  font-size: 0.8rem;
+  color: #334155;
+  background: #f1f5f9;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.view-letter-tabs {
+  display: flex;
+  gap: 6px;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 8px;
+  margin-bottom: 14px;
+}
+
+.view-letter-tab-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #64748b;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.view-letter-tab-btn.active {
+  background: #ffffff;
+  color: #0c2a47;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.view-letter-body-box {
+  flex: 1;
+  background: #fafaf9;
+  border: 1px solid #e7e5e4;
+  border-radius: 10px;
+  padding: 16px;
+  overflow-y: auto;
+  max-height: 48vh;
+}
+
+.view-letter-body-box.view-letter-offer-box {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+}
+
+.view-letter-box-header {
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #cbd5e1;
+}
+
+.view-letter-box-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #64748b;
+}
+
+.view-letter-box-label.offer-label {
+  color: #0284c7;
+}
+
+.view-letter-pre-text {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #1e293b;
+}
+
+.view-letter-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 14px;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 14px;
+}
+
+.view-letter-done-btn {
+  background: #00385e;
+  color: #ffffff;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+}
+
+.view-letter-done-btn:hover {
+  background: #002742;
+}
+
+/* ── STRICT THEME ISOLATION: DARK MODE (Rule 9) ── */
+[data-theme="dark"] .chat-special-card.incoming,
+[data-theme="dark"] .chat-special-card.outgoing {
+  background: #1c1e27 !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .chat-offer-card.incoming,
+[data-theme="dark"] .chat-offer-card.outgoing {
+  border-color: #0284c7 !important;
+  background: #171b26 !important;
+}
+
+[data-theme="dark"] .chat-response-card.incoming,
+[data-theme="dark"] .chat-response-card.outgoing {
+  border-color: #16a34a !important;
+  background: #17211e !important;
+}
+
+[data-theme="dark"] .chat-interview-card.incoming,
+[data-theme="dark"] .chat-interview-card.outgoing {
+  border-color: #0284c7 !important;
+  background: #171b26 !important;
+}
+
+[data-theme="dark"] .chat-cancelled-card.incoming,
+[data-theme="dark"] .chat-cancelled-card.outgoing {
+  border-color: #dc2626 !important;
+  background: #23171a !important;
+}
+
+[data-theme="dark"] .chat-rescheduled-card.incoming,
+[data-theme="dark"] .chat-rescheduled-card.outgoing {
+  border-color: #d97706 !important;
+  background: #231e17 !important;
+}
+
+[data-theme="dark"] .chat-special-title {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .chat-special-subtitle {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .chat-special-meta-pill {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .chat-special-body,
+[data-theme="dark"] .chat-special-grid {
+  background: #14151b !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .chat-special-text {
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .chat-grid-lbl {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .chat-grid-val {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .chat-special-alert-box {
+  background: rgba(220, 38, 38, 0.15) !important;
+  border-color: rgba(220, 38, 38, 0.35) !important;
+  color: #fca5a5 !important;
+}
+
+[data-theme="dark"] .view-letter-modal-card {
+  background: #1c1e27 !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .view-letter-header {
+  border-bottom-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .view-letter-title {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .view-letter-company {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .view-letter-start-date-tag {
+  background: #14151b !important;
+  border-color: #2e3244 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .view-letter-tabs {
+  background: #14151b !important;
+  border: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .view-letter-tab-btn {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .view-letter-tab-btn.active {
+  background: #242735 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .view-letter-body-box {
+  background: #14151b !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .view-letter-body-box.view-letter-offer-box {
+  background: rgba(2, 132, 199, 0.12) !important;
+  border-color: rgba(56, 189, 248, 0.3) !important;
+}
+
+[data-theme="dark"] .view-letter-pre-text {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .view-letter-footer {
+  border-top-color: #2e3244 !important;
+}
+

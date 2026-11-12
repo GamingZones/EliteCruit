@@ -5129,10 +5129,12 @@ app.put("/api/applications/:id/status", authenticateToken, requireApplicationDec
       let finalMsg = typeof message_text === "string" && message_text.trim() ? message_text.trim() : null;
       if (!finalMsg) {
         if (isApproved) {
-          finalMsg = `Dear ${applicantName},\n\nCongratulations! We are pleased to inform you that your application for the position of "${jobTitle}" at ${companyName} has been accepted.\n\nOur hiring team will be reaching out to you shortly with next steps and onboarding details.\n\nThank you for choosing to grow your career with us!\n\nBest regards,\n${companyName}`;
+          finalMsg = `[Formal Employment Offer: ${jobTitle}]\nCompany: ${companyName}\n\nDear ${applicantName},\n\nCongratulations! We are pleased to inform you that your application for the position of "${jobTitle}" at ${companyName} has been accepted.\n\nOur hiring team will be reaching out to you shortly with next steps and onboarding details.\n\nThank you for choosing to grow your career with us!\n\nBest regards,\n${companyName}`;
         } else {
-          finalMsg = `Dear ${applicantName},\n\nThank you for taking the time to apply for the position of "${jobTitle}" at ${companyName}.\n\nAfter careful evaluation of all applicants, we regret to inform you that we have decided to proceed with other candidates whose experience more closely matches our current requirements.\n\nWe appreciate your interest in our team and wish you the best in your career pursuits.\n\nSincerely,\n${companyName}`;
+          finalMsg = `[Application Status Update: ${jobTitle}]\nCompany: ${companyName}\n\nDear ${applicantName},\n\nThank you for taking the time to apply for the position of "${jobTitle}" at ${companyName}.\n\nAfter careful evaluation of all applicants, we regret to inform you that we have decided to proceed with other candidates whose experience more closely matches our current requirements.\n\nWe appreciate your interest in our team and wish you the best in your career pursuits.\n\nSincerely,\n${companyName}`;
         }
+      } else if (isApproved && !finalMsg.startsWith("[Formal Employment Offer")) {
+        finalMsg = `[Formal Employment Offer: ${jobTitle}]\nCompany: ${companyName}\n\n${finalMsg}`;
       }
 
       const msgType = isApproved ? "formal_offer" : (message_type === "manual" ? "manual" : "automated");
@@ -5978,7 +5980,7 @@ app.post("/api/job-invitations/respond-by-job", authenticateToken, async (req, r
 });
 
 app.post("/api/job-invitations/respond-by-thread", authenticateToken, async (req, res) => {
-  const { thread_id, applicant_user_id, action } = req.body ?? {};
+  const { thread_id, applicant_user_id, action, letter_text, letter_type, start_date } = req.body ?? {};
   const threadId = Number(thread_id);
   const applicantId = Number(applicant_user_id);
 
@@ -6063,13 +6065,20 @@ app.post("/api/job-invitations/respond-by-thread", authenticateToken, async (req
         ]
       );
 
+      if (letter_text) {
+        await run(
+          "UPDATE job_invitations SET response_letter = ?, responded_at = CURRENT_TIMESTAMP, start_date = ? WHERE id = ?",
+          [letter_text, start_date || null, invitation.id]
+        ).catch(() => {});
+      }
+
+      const msgText = letter_text
+        ? `[Official Job Offer Response: ACCEPTED]\nPosition: ${jobTitle}${start_date ? `\nTarget Start Date: ${start_date}` : ""}\n\n${letter_text}`
+        : `Hello! I have accepted your invitation to apply for "${jobTitle}". Looking forward to discussing this opportunity!`;
+
       await run(
         `INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`,
-        [
-          threadId,
-          applicantId,
-          `Hello! I have accepted your invitation to apply for "${jobTitle}". Looking forward to discussing this opportunity!`
-        ]
+        [threadId, applicantId, msgText]
       );
     } else {
       await run(
@@ -6084,13 +6093,20 @@ app.post("/api/job-invitations/respond-by-thread", authenticateToken, async (req
         ]
       );
 
+      if (letter_text) {
+        await run(
+          "UPDATE job_invitations SET response_letter = ?, responded_at = CURRENT_TIMESTAMP WHERE id = ?",
+          [letter_text, invitation.id]
+        ).catch(() => {});
+      }
+
+      const msgText = letter_text
+        ? `[Official Job Offer Response: DECLINED]\nPosition: ${jobTitle}\n\n${letter_text}`
+        : `Thank you for considering me for "${jobTitle}". Unfortunately, I have to decline this invitation at this time.`;
+
       await run(
         `INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`,
-        [
-          threadId,
-          applicantId,
-          `Thank you for considering me for "${jobTitle}". Unfortunately, I have to decline this invitation at this time.`
-        ]
+        [threadId, applicantId, msgText]
       );
     }
 
@@ -7598,6 +7614,39 @@ app.post("/api/interviews", async (req, res) => {
           jobPostId,
         ]
       ).catch(() => {});
+
+      // Dispatch structured interview notice to message thread
+      try {
+        let thread = await get(
+          `SELECT t.id FROM message_threads t
+           JOIN message_participants p1 ON p1.thread_id = t.id AND p1.user_id = ?
+           JOIN message_participants p2 ON p2.thread_id = t.id AND p2.user_id = ?
+           LIMIT 1`,
+          [employerId, primaryApplicantId]
+        );
+        let threadId = thread?.id;
+        if (!threadId) {
+          const createdThread = await run(
+            `INSERT INTO message_threads (created_by_user_id, title) VALUES (?, ?)`,
+            [employerId, `Interview: ${interview_title.trim()}`]
+          );
+          threadId = createdThread.lastID;
+          if (threadId) {
+            await run(`INSERT INTO message_participants (thread_id, user_id) VALUES (?, ?)`, [threadId, employerId]).catch(() => {});
+            await run(`INSERT INTO message_participants (thread_id, user_id) VALUES (?, ?)`, [threadId, primaryApplicantId]).catch(() => {});
+          }
+        }
+        if (threadId) {
+          const interviewMsg = `[Interview Scheduled]: ${interview_title.trim()}\nStage: ${stage}\nDate: ${interview_date.trim()}\nTime: ${start_time.trim()}${formattedEndTime ? ` - ${formattedEndTime}` : ""}\nType: ${type}${address ? `\nLocation/Link: ${address}` : ""}${notes ? `\nNotes: ${notes.trim()}` : ""}`;
+          await run(
+            `INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`,
+            [threadId, employerId, interviewMsg]
+          );
+          await run(`UPDATE message_threads SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [threadId]).catch(() => {});
+        }
+      } catch (tErr) {
+        console.error("Interview thread message creation error:", tErr?.message || tErr);
+      }
     }
 
     const newInterview = await get(
@@ -7935,8 +7984,8 @@ app.patch("/api/interviews/:id/status", async (req, res) => {
 
           if (targetStatus === "cancelled" || targetStatus === "rescheduled") {
             const chatText = targetStatus === "cancelled"
-              ? `[System Notice]: The interview scheduled for ${existing.interview_date} at ${existing.start_time} was cancelled.${cancellation_reason ? ` Reason: "${cancellation_reason}".` : ""}`
-              : `[System Notice]: The interview has been rescheduled to ${finalNewDate || existing.interview_date} at ${finalNewStartTime || existing.start_time}.`;
+              ? `[Interview Cancelled]: ${existing.interview_title || "Interview"}\nOriginal Schedule: ${existing.interview_date} at ${existing.start_time}${cancellation_reason ? `\nReason: "${cancellation_reason}".` : ""}`
+              : `[Interview Rescheduled]: ${existing.interview_title || "Interview"}\nNew Schedule: ${finalNewDate || existing.interview_date} at ${finalNewStartTime || existing.start_time}\nOriginal Schedule: ${existing.interview_date} at ${existing.start_time}`;
 
             await run(
               `INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`,
