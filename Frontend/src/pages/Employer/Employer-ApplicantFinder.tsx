@@ -3959,22 +3959,25 @@ export default function EmployerApplicantFinder() {
                               </button>
 
                               {(() => {
-                                const isCandidateRecruited = Boolean(
+                                const isCandidateInvited = Boolean(
+                                  isInvited ||
+                                  cand.is_invited ||
                                   cand.is_recruited ||
                                   (cand.latest_application_status || "").toLowerCase() === "recruited" ||
                                   (cand.latest_application_status || "").toLowerCase() === "accepted" ||
-                                  (cand.invited_jobs && Array.isArray(cand.invited_jobs) && cand.invited_jobs.some((ij: any) => (ij.status || "").toLowerCase() === "recruited"))
+                                  (cand.invited_jobs && Array.isArray(cand.invited_jobs) && cand.invited_jobs.length > 0) ||
+                                  invitedCandidateIds.includes(cand.user_id)
                                 );
 
-                                if (isCandidateRecruited) {
+                                if (isCandidateInvited) {
                                   return (
                                     <button
                                       type="button"
-                                      className="finder-card-btn btn-invite status-recruited"
-                                      disabled
-                                      title="Candidate has already been recruited"
+                                      className="finder-card-btn btn-invite status-invited"
+                                      onClick={() => openCandidateRecruit(cand)}
+                                      title="Candidate has been invited"
                                     >
-                                      Recruited
+                                      Invited
                                     </button>
                                   );
                                 }
@@ -4357,22 +4360,25 @@ export default function EmployerApplicantFinder() {
                             </button>
 
                             {(() => {
-                              const isCandidateRecruited = Boolean(
+                              const isCandidateInvited = Boolean(
+                                isInvited ||
+                                cand.is_invited ||
                                 cand.is_recruited ||
                                 (cand.latest_application_status || "").toLowerCase() === "recruited" ||
                                 (cand.latest_application_status || "").toLowerCase() === "accepted" ||
-                                (cand.invited_jobs && Array.isArray(cand.invited_jobs) && cand.invited_jobs.some((ij: any) => (ij.status || "").toLowerCase() === "recruited"))
+                                (cand.invited_jobs && Array.isArray(cand.invited_jobs) && cand.invited_jobs.length > 0) ||
+                                invitedCandidateIds.includes(cand.user_id)
                               );
 
-                              if (isCandidateRecruited) {
+                              if (isCandidateInvited) {
                                 return (
                                   <button
                                     type="button"
-                                    className="finder-card-btn btn-invite status-recruited"
-                                    disabled
-                                    title="Candidate has already been recruited"
+                                    className="finder-card-btn btn-invite status-invited"
+                                    onClick={() => openCandidateRecruit(cand)}
+                                    title="Candidate has been invited"
                                   >
-                                    Recruited
+                                    Invited
                                   </button>
                                 );
                               }

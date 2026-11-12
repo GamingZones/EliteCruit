@@ -1328,11 +1328,13 @@ export default function JobDetailsModal({
     const comparisonTargetList = type === "skills" ? skills : certifications;
     const label = type === "skills" ? (itemsList.length === 1 ? "skill" : "skills") : (itemsList.length === 1 ? "certification" : "certifications");
 
+    const effectivePopupZIndex = Math.max(100050, (zIndex ? Number(zIndex) + 500 : 100050));
+
     return (
       <div
         className="skill-popup-modal-overlay"
         onClick={() => setActiveBreakdownPopup(null)}
-        style={{ zIndex: 10200 }}
+        style={{ zIndex: effectivePopupZIndex }}
       >
         <div
           className="skill-popup-modal-content"

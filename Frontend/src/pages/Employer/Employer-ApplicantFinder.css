@@ -903,7 +903,7 @@
   background: #fef3c7 !important;
   color: #92400e !important;
   border: 1px solid #fde68a !important;
-  cursor: not-allowed !important;
+  cursor: pointer !important;
 }
 
 .finder-card-btn.btn-invite.status-recruited {
