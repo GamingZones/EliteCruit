@@ -2222,7 +2222,7 @@ export default function EmployerApplicantDetailsModal({
                           <div className="chat-special-notice">
                             <p>
                               {isAccepted
-                                ? `Candidate has officially accepted this employment offer.${matchingResponse?.startDate ? ` Target Start Date: ${matchingResponse.startDate}.` : ""} Click below to review the offer and signed response letter.`
+                                ? "Candidate has officially accepted this employment offer. Click below to review the offer and signed response letter."
                                 : isDeclined
                                 ? "Candidate has formally declined this employment offer. Click below to view the response details."
                                 : "An official employment offer has been extended for this position. Click below to review the full offer letter, compensation, and benefits."}
@@ -2713,16 +2713,11 @@ export default function EmployerApplicantDetailsModal({
                   </div>
 
                   <div className="view-letter-body-content">
-                    {viewLetterModalTarget.startDate && (
+                    {viewLetterModalTarget.respondedAt && (
                       <div className="view-letter-meta-row" style={{ marginBottom: "12px" }}>
-                        <span className="view-letter-start-date-tag">
-                          📅 Target Start Date: <strong>{viewLetterModalTarget.startDate}</strong>
+                        <span className="view-letter-timestamp-tag">
+                          Submitted: {typeof formatDate === "function" ? formatDate(viewLetterModalTarget.respondedAt) : String(viewLetterModalTarget.respondedAt)}
                         </span>
-                        {viewLetterModalTarget.respondedAt && (
-                          <span className="view-letter-timestamp-tag">
-                            Submitted: {typeof formatDate === "function" ? formatDate(viewLetterModalTarget.respondedAt) : String(viewLetterModalTarget.respondedAt)}
-                          </span>
-                        )}
                       </div>
                     )}
 

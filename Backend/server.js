@@ -5713,7 +5713,7 @@ app.post("/api/invitations/:id/respond", authenticateToken, requireInvitationRec
     }
 
     const msgText = letter_text
-      ? `[Formal Invitation Response: ${action === "accept" ? "ACCEPTED" : "DECLINED"}]\nPosition: ${jobTitle}${start_date ? `\nTarget Start Date: ${start_date}` : ""}\n\n${letter_text}`
+      ? `[Formal Invitation Response: ${action === "accept" ? "ACCEPTED" : "DECLINED"}]\nPosition: ${jobTitle}\n\n${letter_text}`
       : action === "accept"
       ? `Hello! I have accepted your invitation to apply for "${jobTitle}". Looking forward to discussing this opportunity!`
       : `Thank you for considering me for "${jobTitle}". Unfortunately, I have to decline this invitation at this time.`;
@@ -5830,7 +5830,7 @@ app.post("/api/applicants/:userId/applications/:id/offer-response", authenticate
     }
 
     const msgText = letter_text
-      ? `[Official Job Offer Response: ${decision === "accept" ? "ACCEPTED" : "DECLINED"}]\nPosition: ${jobTitle}${start_date ? `\nTarget Start Date: ${start_date}` : ""}\n\n${letter_text}`
+      ? `[Official Job Offer Response: ${decision === "accept" ? "ACCEPTED" : "DECLINED"}]\nPosition: ${jobTitle}\n\n${letter_text}`
       : decision === "accept"
       ? `Hello! I am officially accepting the employment offer for "${jobTitle}". Looking forward to working together!`
       : `Thank you for extending the job offer for "${jobTitle}". Unfortunately, I have to respectfully decline at this time.`;
@@ -5910,7 +5910,7 @@ app.post("/api/job-invitations/respond-by-job", authenticateToken, async (req, r
     );
 
     const msgContent = letter_text
-      ? `[Formal Invitation Response: ${action === "accept" ? "ACCEPTED" : "DECLINED"}]\nPosition: ${jobTitle}${start_date ? `\nTarget Start Date: ${start_date}` : ""}\n\n${letter_text}`
+      ? `[Formal Invitation Response: ${action === "accept" ? "ACCEPTED" : "DECLINED"}]\nPosition: ${jobTitle}\n\n${letter_text}`
       : action === "accept"
       ? `Hello! I have accepted your invitation to apply for "${jobTitle}". Looking forward to discussing this opportunity!`
       : `Thank you for considering me for "${jobTitle}". Unfortunately, I have to decline this invitation at this time.`;
@@ -6073,7 +6073,7 @@ app.post("/api/job-invitations/respond-by-thread", authenticateToken, async (req
       }
 
       const msgText = letter_text
-        ? `[Official Job Offer Response: ACCEPTED]\nPosition: ${jobTitle}${start_date ? `\nTarget Start Date: ${start_date}` : ""}\n\n${letter_text}`
+        ? `[Official Job Offer Response: ACCEPTED]\nPosition: ${jobTitle}\n\n${letter_text}`
         : `Hello! I have accepted your invitation to apply for "${jobTitle}". Looking forward to discussing this opportunity!`;
 
       await run(
@@ -8690,7 +8690,7 @@ async function ensureMeetingsForZakiAccounts() {
 
     // 6. Ensure Application 3 (Job C: Accepted with candidate response letter - Accepted Offer Scenario)
     const offerLetterTextC = "Dear Zaki Ablando,\n\nCongratulations! On behalf of Cebuana Lhuillier, we are thrilled to formally extend an offer of employment for the position of \"Full Stack Web Developer\".\n\nCompensation & Benefits:\n• Monthly Base Salary: PHP 75,000.00\n• Work Arrangement: Hybrid (Dasmarinas Tech Hub / Remote)\n• Comprehensive Medical & Dental Coverage (HMO on Day 1)\n• Annual Performance Incentive & 14th Month Pay\n• Paid Time Off: 18 Vacation Days + 12 Sick Days\n\nYour proven expertise in full stack development, cloud computing, and responsive UI engineering will be instrumental in accelerating our next-generation fintech solutions.\n\nPlease review this official offer letter and submit your formal response along with your preferred start date.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\nHiring Committee\nCebuana Lhuillier";
-    const acceptLetterTextC = "Dear Hiring Team at Cebuana Lhuillier,\n\nI am thrilled and deeply honored to formally accept your employment offer for the position of \"Full Stack Web Developer\".\n\nI confirm my target start date of December 1, 2026, and accept the proposed compensation package of PHP 75,000.00 monthly with the comprehensive benefits outlined.\n\nI have already begun gathering the pre-employment onboarding documents and am eager to contribute my full stack expertise to Cebuana Lhuillier's digital fintech initiatives.\n\nThank you once again for this incredible opportunity!\n\nSincerely,\nZaki Ablando";
+    const acceptLetterTextC = "Dear Hiring Team at Cebuana Lhuillier,\n\nI am thrilled and deeply honored to formally accept your employment offer for the position of \"Full Stack Web Developer\".\n\nI confirm my acceptance of this position and accept the proposed compensation package of PHP 75,000.00 monthly with the comprehensive benefits outlined.\n\nI have already begun gathering the pre-employment onboarding documents and am eager to contribute my full stack expertise to Cebuana Lhuillier's digital fintech initiatives.\n\nThank you once again for this incredible opportunity!\n\nSincerely,\nZaki Ablando";
 
     let appC = await get("SELECT id FROM applications WHERE applicant_user_id = ? AND job_post_id = ?", [applicant.id, jobC.id]);
     if (!appC) {
@@ -9050,7 +9050,7 @@ async function ensureMeetingsForZakiAccounts() {
           await run(`INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`, [
             threadId,
             applicant.id,
-            `[Official Job Offer Response: ACCEPTED]\nPosition: Full Stack Web Developer\nTarget Start Date: 2026-12-01\n\nDear Hiring Team at Cebuana Lhuillier,\n\nI am thrilled and deeply honored to formally accept your employment offer for the position of "Full Stack Web Developer".\n\nI confirm my target start date of December 1, 2026, and accept the proposed compensation package of PHP 75,000.00 monthly with the comprehensive benefits outlined.\n\nI have already begun gathering the pre-employment onboarding documents and am eager to contribute my full stack expertise to Cebuana Lhuillier's digital fintech initiatives.\n\nThank you once again for this incredible opportunity!\n\nSincerely,\nZaki Ablando`
+            `[Official Job Offer Response: ACCEPTED]\nPosition: Full Stack Web Developer\n\nDear Hiring Team at Cebuana Lhuillier,\n\nI am thrilled and deeply honored to formally accept your employment offer for the position of "Full Stack Web Developer".\n\nI confirm my acceptance of the employment offer and accept the proposed compensation package of PHP 75,000.00 monthly with the comprehensive benefits outlined.\n\nI have already begun gathering the pre-employment onboarding documents and am eager to contribute my full stack expertise to Cebuana Lhuillier's digital fintech initiatives.\n\nThank you once again for this incredible opportunity!\n\nSincerely,\nZaki Ablando`
           ]);
         }
 

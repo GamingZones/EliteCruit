@@ -5316,18 +5316,11 @@ export default function EmployerApplicantManagement() {
                 </div>
 
                 <div className="view-letter-body-content">
-                  {(viewingResponseLetterApp.start_date || viewingResponseLetterApp.responded_at) && (
+                  {viewingResponseLetterApp.responded_at && (
                     <div className="view-letter-meta-row" style={{ marginBottom: "12px" }}>
-                      {viewingResponseLetterApp.start_date && (
-                        <span className="view-letter-start-date">
-                          📅 Target Start Date: <strong>{new Date(viewingResponseLetterApp.start_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</strong>
-                        </span>
-                      )}
-                      {viewingResponseLetterApp.responded_at && (
-                        <span className="view-letter-timestamp">
-                          Responded: {new Date(viewingResponseLetterApp.responded_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                        </span>
-                      )}
+                      <span className="view-letter-timestamp">
+                        Responded: {new Date(viewingResponseLetterApp.responded_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      </span>
                     </div>
                   )}
 

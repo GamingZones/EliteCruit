@@ -70,13 +70,9 @@ export function parseSpecialMessage(text: string): ParsedSpecialMessage {
   ) {
     const isAccepted = text.includes("ACCEPTED");
     let jobTitle = "";
-    let startDate = "";
 
     const posMatch = text.match(/Position:\s*(.*?)(?:\n|$)/i);
     if (posMatch) jobTitle = posMatch[1].trim();
-
-    const dateMatch = text.match(/Target Start Date:\s*(.*?)(?:\n|$)/i);
-    if (dateMatch) startDate = dateMatch[1].trim();
 
     let cleanBody = text;
     const splitIndex = cleanBody.indexOf("\n\n");
@@ -88,7 +84,6 @@ export function parseSpecialMessage(text: string): ParsedSpecialMessage {
       type: "offer_response",
       jobTitle: jobTitle || "Applied Position",
       isAccepted,
-      startDate: startDate || undefined,
       cleanBody:
         cleanBody ||
         (isAccepted

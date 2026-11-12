@@ -1140,7 +1140,7 @@ export default function JobDetailsModal({
                       <div className="chat-special-notice">
                         <p>
                           {isAccepted
-                            ? `Candidate has officially accepted this employment offer.${matchingResponse?.startDate ? ` Target Start Date: ${matchingResponse.startDate}.` : ""} Click below to review the offer and signed response letter.`
+                            ? "Candidate has officially accepted this employment offer. Click below to review the offer and signed response letter."
                             : isDeclined
                             ? "Candidate has formally declined this employment offer. Click below to view the response details."
                             : "An official employment offer has been extended for this position. Click below to review the full offer letter, compensation, and benefits."}
@@ -2214,7 +2214,7 @@ export default function JobDetailsModal({
         const offerText = viewLetterModalTarget.offerLetter || `Dear ${(applicantProfile as any)?.applicant_name || "Candidate"},\n\nCongratulations! On behalf of ${viewLetterModalTarget.company || "the company"}, we are thrilled to formally extend an offer of employment for the position of "${viewLetterModalTarget.title}".\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!`;
         const isAcc = viewLetterModalTarget.decision === "accepted";
         const responseText = viewLetterModalTarget.letterText || (isAcc
-          ? `Dear ${viewLetterModalTarget.company || "Hiring Team"},\n\nThank you for extending the offer for the position of "${viewLetterModalTarget.title}". I am pleased to accept your offer and excited to join the team.${viewLetterModalTarget.startDate ? ` My target start date is ${viewLetterModalTarget.startDate}.` : ""}\n\nSincerely,\n${(applicantProfile as any)?.applicant_name || "Candidate"}`
+          ? `Dear ${viewLetterModalTarget.company || "Hiring Team"},\n\nThank you for extending the offer for the position of "${viewLetterModalTarget.title}". I am pleased to accept your offer and excited to join the team.\n\nSincerely,\n${(applicantProfile as any)?.applicant_name || "Candidate"}`
           : `Dear ${viewLetterModalTarget.company || "Hiring Team"},\n\nThank you for considering me for the position of "${viewLetterModalTarget.title}". After careful consideration, I regret to inform you that I must decline this offer.\n\nSincerely,\n${(applicantProfile as any)?.applicant_name || "Candidate"}`);
 
         return (
@@ -2348,16 +2348,11 @@ export default function JobDetailsModal({
                   </div>
 
                   <div className="view-letter-body-content">
-                    {viewLetterModalTarget.startDate && (
+                    {viewLetterModalTarget.respondedAt && (
                       <div className="view-letter-meta-row" style={{ marginBottom: "12px" }}>
-                        <span className="view-letter-start-date-tag">
-                          📅 Target Start Date: <strong>{viewLetterModalTarget.startDate}</strong>
+                        <span className="view-letter-timestamp-tag">
+                          Submitted: {typeof formatDate === "function" ? formatDate(viewLetterModalTarget.respondedAt) : String(viewLetterModalTarget.respondedAt)}
                         </span>
-                        {viewLetterModalTarget.respondedAt && (
-                          <span className="view-letter-timestamp-tag">
-                            Submitted: {typeof formatDate === "function" ? formatDate(viewLetterModalTarget.respondedAt) : String(viewLetterModalTarget.respondedAt)}
-                          </span>
-                        )}
                       </div>
                     )}
 
