@@ -3857,28 +3857,6 @@ export default function EmployerApplicantFinder() {
                     <h2>
                       Showing {filteredCandidates.length === 0 ? 0 : `${(candidatePage - 1) * CANDIDATES_PER_PAGE + 1} - ${Math.min(candidatePage * CANDIDATES_PER_PAGE, filteredCandidates.length)}`} of {filteredCandidates.length} candidate{filteredCandidates.length === 1 ? "" : "s"}
                     </h2>
-                    {selectedJobId && (
-                      <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
-                        <span style={{ fontSize: "0.8rem", color: "#0284c7", fontWeight: 600 }}>
-                          Evaluating against vacancy: <strong>{activeJobs.find((j) => j.id === selectedJobId)?.title}</strong>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedJobId("")}
-                          style={{
-                            background: "transparent",
-                            border: "none",
-                            color: "#64748b",
-                            cursor: "pointer",
-                            fontSize: "0.82rem",
-                            padding: "0 4px",
-                          }}
-                          title="Reset to general pool"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    )}
                   </div>
                   <span className="finder-sort-hint">
                     {selectedJobId
@@ -4006,12 +3984,6 @@ export default function EmployerApplicantFinder() {
                                     </span>
                                   )}
                                 </div>
-                                {currentActiveJob && (
-                                  <div className="finder-card-job-badge" title="Active vacancy context">
-                                    <span className="job-badge-label">Evaluating for:</span>{" "}
-                                    <strong>{currentActiveJob.title}</strong>
-                                  </div>
-                                )}
                                 <div className="finder-candidate-meta-inline">
                                   <span className="finder-meta-inline-item">
                                     <FinderIcon name="location" />
@@ -4400,12 +4372,6 @@ export default function EmployerApplicantFinder() {
                                   </span>
                                 )}
                               </div>
-                              {currentActiveJob && (
-                                <div className="finder-card-job-badge" title="Active vacancy context">
-                                  <span className="job-badge-label">Evaluating for:</span>{" "}
-                                  <strong>{currentActiveJob.title}</strong>
-                                </div>
-                              )}
                               <div className="finder-candidate-meta-inline">
                                 <span className="finder-meta-inline-item">
                                   <FinderIcon name="location" />
