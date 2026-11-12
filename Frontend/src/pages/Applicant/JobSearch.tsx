@@ -4,6 +4,8 @@ import { ChevronIcon, SideIcon } from "../../components/Icons";
 import ApplicantChatbotDrawer from "../../components/ApplicantChatbotDrawer";
 import CalendarDrawer from "../../components/CalendarDrawer";
 import ConfirmationModal from "../../components/ConfirmationModal";
+import ApplicantDecisionModal from "../../components/ApplicantDecisionModal";
+import { ParsedSpecialMessage, parseSpecialMessage } from "../../utils/specialMessages";
 import { EmployerDetailsModal } from "../../components/modals";
 import {
   calculateJobMatch,
@@ -955,6 +957,102 @@ export default function JobSearch() {
   const employerMsgEndRef = useRef<HTMLDivElement>(null);
   const jobMsgScrollRef = useRef<HTMLDivElement>(null);
   const employerMsgScrollRef = useRef<HTMLDivElement>(null);
+
+  const [viewLetterModalTarget, setViewLetterModalTarget] = useState<{
+    title: string;
+    company: string;
+    letterText?: string;
+    offerLetter?: string;
+    startDate?: string;
+    respondedAt?: string;
+    decision?: string;
+    defaultTab?: "response" | "offer";
+    applicationId?: number;
+    jobId?: number;
+  } | null>(null);
+  const [decisionModalTarget, setDecisionModalTarget] = useState<{
+    action: "accept" | "decline" | null;
+    title?: string;
+    companyName?: string;
+    offerLetter?: string;
+    isInvitation?: boolean;
+    applicationId?: number;
+    jobId?: number;
+  } | null>(null);
+
+  const openViewLetterModal = (target: {
+    title: string;
+    company: string;
+    letterText?: string;
+    offerLetter?: string;
+    startDate?: string;
+    respondedAt?: string;
+    decision?: string;
+    defaultTab?: "response" | "offer";
+    applicationId?: number;
+    jobId?: number;
+  }) => {
+    setViewLetterModalTarget(target);
+  };
+
+  const handleRespondFromModal = async ({
+    action,
+    letter_text,
+    letter_type,
+    start_date,
+  }: {
+    action: "accept" | "decline";
+    letter_text?: string;
+    letter_type?: string;
+    start_date?: string;
+  }) => {
+    if (!applicantUserId) return;
+    try {
+      if (employerMsgThread?.id) {
+        await authFetch("/api/job-invitations/respond-by-thread", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            thread_id: employerMsgThread.id,
+            applicant_user_id: applicantUserId,
+            action,
+            letter_text,
+            letter_type,
+            start_date,
+          }),
+        }).catch(() => {});
+      }
+
+      const jobId = decisionModalTarget?.jobId || viewLetterModalTarget?.jobId || detailsJob?.id;
+      if (jobId) {
+        await authFetch("/api/job-invitations/respond-by-job", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            job_post_id: jobId,
+            applicant_user_id: applicantUserId,
+            action,
+            letter_text,
+            letter_type,
+            start_date,
+          }),
+        }).catch(() => {});
+      }
+
+      if (employerMsgThread?.id) {
+        const res = await fetch(`/api/messages/threads/${employerMsgThread.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setEmployerMessages(Array.isArray(data?.messages) ? data.messages : []);
+        }
+      }
+    } catch (err) {
+      console.error("Error responding from modal in JobSearch:", err);
+    } finally {
+      setDecisionModalTarget(null);
+      setViewLetterModalTarget(null);
+    }
+  };
 
   const availableEmployerCities = useMemo(() => {
     if (employerSelectedProvince !== "All provinces") {
@@ -2658,6 +2756,223 @@ export default function JobSearch() {
     );
   };
 
+  const renderSpecialOrStandardMsg = (
+    msg: any,
+    defaultCompany: string,
+    defaultJobTitle?: string,
+    targetJobId?: number
+  ) => {
+    const isMe = Number(msg.sender_user_id) === Number(applicantUserId);
+    const timeStr = msg.created_at
+      ? new Date(msg.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+      : "";
+    const special = parseSpecialMessage(msg.message_text);
+
+    if (special.type === "formal_offer") {
+      const matchingResponseMsg = employerMessages.find((other: any) => {
+        const p = parseSpecialMessage(other.message_text);
+        if (p.type !== "offer_response") return false;
+        if (!p.jobTitle || !special.jobTitle) return false;
+        const pTitle = p.jobTitle.toLowerCase().trim();
+        const sTitle = special.jobTitle.toLowerCase().trim();
+        return pTitle === sTitle || pTitle.includes(sTitle) || sTitle.includes(pTitle);
+      });
+      const matchingResponse = matchingResponseMsg ? parseSpecialMessage(matchingResponseMsg.message_text) : null;
+      const isAccepted = matchingResponse ? matchingResponse.isAccepted : false;
+      const isDeclined = matchingResponse ? !matchingResponse.isAccepted : false;
+      const hasDecision = isAccepted || isDeclined;
+      const decisionType = isAccepted ? "accepted" : isDeclined ? "declined" : "extended";
+      const jobTitle = special.jobTitle || defaultJobTitle || "Job Position";
+      const company = special.companyName || defaultCompany || "Employer";
+
+      return (
+        <article
+          key={msg.id}
+          className={`chat-bubble chat-special-card chat-offer-card ${isMe ? "outgoing" : "incoming"} ${isAccepted ? "offer-card-accepted" : isDeclined ? "offer-card-declined" : ""}`}
+        >
+          <div className="chat-special-header">
+            <div className="chat-special-badge-row">
+              <span className={`chat-special-badge ${isAccepted ? "badge-accepted" : isDeclined ? "badge-declined" : "badge-formal-offer"}`}>
+                {isAccepted ? (
+                  <>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    <span>Offer Accepted</span>
+                  </>
+                ) : isDeclined ? (
+                  <>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                    <span>Offer Declined</span>
+                  </>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                    </svg>
+                    <span>Formal Employment Offer</span>
+                  </>
+                )}
+              </span>
+              <time className="chat-special-time">{timeStr}</time>
+            </div>
+            <h4 className="chat-special-title">{jobTitle}</h4>
+            <div className="chat-special-subtitle">{company}</div>
+          </div>
+
+          <div className="chat-special-notice">
+            <p>
+              {isAccepted
+                ? `Candidate has officially accepted this employment offer.${matchingResponse?.startDate ? ` Target Start Date: ${matchingResponse.startDate}.` : ""} Click below to review the offer and signed response letter.`
+                : isDeclined
+                ? "Candidate has formally declined this employment offer. Click below to view the response details."
+                : "An official employment offer has been extended for this position. Click below to review the full offer letter, compensation, and benefits."}
+            </p>
+          </div>
+
+          <div className="chat-special-actions">
+            <button
+              type="button"
+              className="chat-action-btn chat-btn-view"
+              onClick={() => openViewLetterModal({
+                title: jobTitle,
+                company,
+                offerLetter: special.cleanBody,
+                letterText: matchingResponse?.cleanBody,
+                startDate: matchingResponse?.startDate,
+                decision: decisionType,
+                defaultTab: "offer",
+                jobId: targetJobId,
+              })}
+            >
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <span>View Full Offer Letter</span>
+            </button>
+
+            {!hasDecision ? (
+              !isMe ? (
+                <button
+                  type="button"
+                  className="chat-action-btn chat-btn-respond"
+                  onClick={() => {
+                    openViewLetterModal({
+                      title: jobTitle,
+                      company,
+                      offerLetter: special.cleanBody,
+                      decision: null,
+                      defaultTab: "offer",
+                      jobId: targetJobId,
+                    });
+                    setDecisionModalTarget({
+                      action: "accept",
+                      title: jobTitle,
+                      companyName: company,
+                      offerLetter: special.cleanBody,
+                      jobId: targetJobId,
+                    });
+                  }}
+                >
+                  <span>Review &amp; Respond</span>
+                </button>
+              ) : (
+                <span className="chat-action-status-pill pending">Awaiting Candidate Response</span>
+              )
+            ) : isAccepted ? (
+              <button
+                type="button"
+                className="chat-action-btn chat-btn-accepted"
+                onClick={() => openViewLetterModal({
+                  title: jobTitle,
+                  company,
+                  offerLetter: special.cleanBody,
+                  letterText: matchingResponse?.cleanBody,
+                  startDate: matchingResponse?.startDate,
+                  decision: "accepted",
+                  defaultTab: "response",
+                  jobId: targetJobId,
+                })}
+              >
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                <span>Offer Accepted</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="chat-action-btn chat-btn-declined"
+                onClick={() => openViewLetterModal({
+                  title: jobTitle,
+                  company,
+                  offerLetter: special.cleanBody,
+                  letterText: matchingResponse?.cleanBody,
+                  decision: "declined",
+                  defaultTab: "response",
+                  jobId: targetJobId,
+                })}
+              >
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+                <span>Offer Declined</span>
+              </button>
+            )}
+          </div>
+        </article>
+      );
+    }
+
+    if (special.type === "offer_response") {
+      return null;
+    }
+
+    return (
+      <div
+        key={msg.id}
+        className={`cand-msg-row ${isMe ? "outgoing" : "incoming"}`}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: isMe ? "flex-end" : "flex-start",
+          gap: "3px",
+        }}
+      >
+        {!isMe && (
+          <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 700, paddingLeft: "4px" }}>
+            {defaultCompany}
+          </span>
+        )}
+        <div
+          className={`cand-msg-bubble ${isMe ? "outgoing" : "incoming"}`}
+          style={{
+            maxWidth: "82%",
+            padding: "10px 14px",
+            borderRadius: isMe ? "14px 14px 2px 14px" : "14px 14px 14px 2px",
+            fontSize: "0.86rem",
+            lineHeight: 1.5,
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+          }}
+        >
+          {msg.message_text}
+        </div>
+        <span style={{ fontSize: "0.68rem", color: "#94a3b8", padding: "0 4px" }}>
+          {timeStr}
+        </span>
+      </div>
+    );
+  };
+
   const renderJobMessagePanel = () => {
     if (!detailsJob) return null;
     return (
@@ -2810,47 +3125,14 @@ export default function JobSearch() {
               </div>
             ) : (
               <>
-                {employerMessages.map((msg: any) => {
-                  const isMe = Number(msg.sender_user_id) === Number(applicantUserId);
-                  const timeStr = msg.created_at
-                    ? new Date(msg.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
-                    : "";
-                  return (
-                    <div
-                      key={msg.id}
-                      className={`cand-msg-row ${isMe ? "outgoing" : "incoming"}`}
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: isMe ? "flex-end" : "flex-start",
-                        gap: "3px",
-                      }}
-                    >
-                      {!isMe && (
-                        <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 700, paddingLeft: "4px" }}>
-                          {detailsJob.company}
-                        </span>
-                      )}
-                      <div
-                        className={`cand-msg-bubble ${isMe ? "outgoing" : "incoming"}`}
-                        style={{
-                          maxWidth: "82%",
-                          padding: "10px 14px",
-                          borderRadius: isMe ? "14px 14px 2px 14px" : "14px 14px 14px 2px",
-                          fontSize: "0.86rem",
-                          lineHeight: 1.5,
-                          whiteSpace: "pre-wrap",
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        {msg.message_text}
-                      </div>
-                      <span style={{ fontSize: "0.68rem", color: "#94a3b8", padding: "0 4px" }}>
-                        {timeStr}
-                      </span>
-                    </div>
-                  );
-                })}
+                {employerMessages.map((msg: any) =>
+                  renderSpecialOrStandardMsg(
+                    msg,
+                    detailsJob.company,
+                    detailsJob.title,
+                    detailsJob.id
+                  )
+                )}
                 <div ref={employerMsgEndRef} />
               </>
             )}
@@ -4653,47 +4935,14 @@ export default function JobSearch() {
                     </div>
                   ) : (
                     <>
-                      {employerMessages.map((msg: any) => {
-                        const isMe = Number(msg.sender_user_id) === Number(applicantUserId);
-                        const timeStr = msg.created_at
-                          ? new Date(msg.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
-                          : "";
-                        return (
-                          <div
-                            key={msg.id}
-                            className={`cand-msg-row ${isMe ? "outgoing" : "incoming"}`}
-                            style={{
-                              display: "flex",
-                              flexDirection: "column",
-                              alignItems: isMe ? "flex-end" : "flex-start",
-                              gap: "3px",
-                            }}
-                          >
-                            {!isMe && (
-                              <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 700, paddingLeft: "4px" }}>
-                                {selectedEmployerDetails.company_name}
-                              </span>
-                            )}
-                            <div
-                              className={`cand-msg-bubble ${isMe ? "outgoing" : "incoming"}`}
-                              style={{
-                                maxWidth: "82%",
-                                padding: "10px 14px",
-                                borderRadius: isMe ? "14px 14px 2px 14px" : "14px 14px 14px 2px",
-                                fontSize: "0.86rem",
-                                lineHeight: 1.5,
-                                whiteSpace: "pre-wrap",
-                                wordBreak: "break-word",
-                              }}
-                            >
-                              {msg.message_text}
-                            </div>
-                            <span style={{ fontSize: "0.68rem", color: "#94a3b8", padding: "0 4px" }}>
-                              {timeStr}
-                            </span>
-                          </div>
-                        );
-                      })}
+                      {employerMessages.map((msg: any) =>
+                        renderSpecialOrStandardMsg(
+                          msg,
+                          selectedEmployerDetails.company_name,
+                          undefined,
+                          undefined
+                        )
+                      )}
                       <div ref={employerMsgEndRef} />
                     </>
                   )}
@@ -4801,6 +5050,208 @@ export default function JobSearch() {
         onCancel={() => setApplyJobTarget(null)}
         onConfirm={handleConfirmApply}
       />
+
+      {/* ── STANDALONE APPLICANT DECISION MODAL (Only when opened without offer letter) ── */}
+      {!viewLetterModalTarget && decisionModalTarget && (
+        <ApplicantDecisionModal
+          isOpen={true}
+          withoutBackdrop={false}
+          position="center"
+          action={decisionModalTarget?.action || "accept"}
+          title="Respond to Employment Offer"
+          jobTitle={decisionModalTarget?.title || detailsJob?.title}
+          companyName={decisionModalTarget?.companyName || selectedEmployerDetails?.company_name || detailsJob?.company}
+          candidateName={applicantLabel || "Candidate"}
+          currentUserId={applicantUserId ? Number(applicantUserId) : undefined}
+          offerLetter={decisionModalTarget?.offerLetter}
+          onClose={() => setDecisionModalTarget(null)}
+          onConfirm={async ({ action, letter_text, letter_type, start_date }) => {
+            await handleRespondFromModal({ action, letter_text, letter_type, start_date });
+          }}
+        />
+      )}
+
+      {/* ── FORMAL LETTER VIEWER MODAL (Contains 1st modal Offer Letter + either 2nd modal Decision Form or Candidate Response) ── */}
+      {viewLetterModalTarget && (() => {
+        const hasDecision = viewLetterModalTarget.decision === "accepted" || viewLetterModalTarget.decision === "declined";
+        const offerText = viewLetterModalTarget.offerLetter || `Dear ${applicantLabel || "Candidate"},\n\nCongratulations! On behalf of ${viewLetterModalTarget.company || "the company"}, we are thrilled to formally extend an offer of employment for the position of "${viewLetterModalTarget.title}".\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!`;
+        const isAcc = viewLetterModalTarget.decision === "accepted";
+        const responseText = viewLetterModalTarget.letterText || (isAcc
+          ? `Dear ${viewLetterModalTarget.company || "Hiring Team"},\n\nThank you for extending the offer for the position of "${viewLetterModalTarget.title}". I am pleased to accept your offer and excited to join the team.${viewLetterModalTarget.startDate ? ` My target start date is ${viewLetterModalTarget.startDate}.` : ""}\n\nSincerely,\n${applicantLabel || "Candidate"}`
+          : `Dear ${viewLetterModalTarget.company || "Hiring Team"},\n\nThank you for considering me for the position of "${viewLetterModalTarget.title}". After careful consideration, I regret to inform you that I must decline this offer.\n\nSincerely,\n${applicantLabel || "Candidate"}`);
+
+        return (
+          <div
+            className="view-letter-backdrop"
+            onClick={() => {
+              setViewLetterModalTarget(null);
+              setDecisionModalTarget(null);
+            }}
+            style={{ zIndex: 100000 }}
+          >
+            <div
+              className="view-letter-pair-row"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* ── LEFT MODAL: THE LETTER FROM THE SENDER (Employer Offer Letter) ── */}
+              <div className="view-letter-modal-card">
+                <div className="view-letter-header">
+                  <div>
+                    <span className="view-letter-eyebrow">OFFICIAL CORRESPONDENCE</span>
+                    <h3 className="view-letter-title">{viewLetterModalTarget.title}</h3>
+                    <p className="view-letter-company">{viewLetterModalTarget.company}</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="view-letter-close-btn"
+                    onClick={() => {
+                      setViewLetterModalTarget(null);
+                      setDecisionModalTarget(null);
+                    }}
+                    title="Close"
+                    aria-label="Close"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="view-letter-body-content">
+                  <div className="view-letter-meta-row">
+                    {viewLetterModalTarget.decision && (
+                      <span className={`view-letter-badge ${viewLetterModalTarget.decision === "accepted" ? "accepted" : viewLetterModalTarget.decision === "declined" ? "declined" : "extended"}`}>
+                        {viewLetterModalTarget.decision === "accepted" ? "Offer Accepted" : viewLetterModalTarget.decision === "declined" ? "Offer Declined" : "Formal Offer Extended"}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="view-letter-body-box view-letter-offer-box">
+                    <div className="view-letter-box-header">
+                      <span className="view-letter-box-label offer-label">
+                        EMPLOYMENT OFFER LETTER FROM {viewLetterModalTarget.company?.toUpperCase() || "EMPLOYER"}
+                      </span>
+                    </div>
+                    <pre className="view-letter-pre-text">{offerText}</pre>
+                  </div>
+                </div>
+
+                <div className="view-letter-footer">
+                  <button
+                    type="button"
+                    className="solid-btn view-letter-done-btn"
+                    onClick={() => {
+                      setViewLetterModalTarget(null);
+                      setDecisionModalTarget(null);
+                    }}
+                  >
+                    Close
+                  </button>
+
+                  {!hasDecision && !decisionModalTarget && (
+                    <button
+                      type="button"
+                      className="solid-btn view-letter-respond-btn"
+                      onClick={() => {
+                        setDecisionModalTarget({
+                          action: "accept",
+                          title: viewLetterModalTarget.title,
+                          companyName: viewLetterModalTarget.company,
+                          offerLetter: viewLetterModalTarget.offerLetter,
+                          jobId: viewLetterModalTarget.jobId,
+                          applicationId: viewLetterModalTarget.applicationId,
+                        });
+                      }}
+                    >
+                      Review &amp; Respond
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* ── RIGHT MODAL CASE A: DECISION FORM (When Review & Respond is active) ── */}
+              {decisionModalTarget && (
+                <ApplicantDecisionModal
+                  isOpen={true}
+                  withoutBackdrop={true}
+                  position="right"
+                  action={decisionModalTarget?.action || "accept"}
+                  title="Respond to Employment Offer"
+                  jobTitle={decisionModalTarget?.title || detailsJob?.title}
+                  companyName={decisionModalTarget?.companyName || selectedEmployerDetails?.company_name || detailsJob?.company}
+                  candidateName={applicantLabel || "Candidate"}
+                  currentUserId={applicantUserId ? Number(applicantUserId) : undefined}
+                  offerLetter={decisionModalTarget?.offerLetter}
+                  onClose={() => setDecisionModalTarget(null)}
+                  onConfirm={async ({ action, letter_text, letter_type, start_date }) => {
+                    await handleRespondFromModal({ action, letter_text, letter_type, start_date });
+                  }}
+                />
+              )}
+
+              {/* ── RIGHT MODAL CASE B: USERS RESPONSE (For Approved / Declined Offers) ── */}
+              {!decisionModalTarget && hasDecision && (
+                <div className="view-letter-modal-card view-letter-response-modal">
+                  <div className="view-letter-header" style={{ alignItems: "center" }}>
+                    <div>
+                      <h3 className="view-letter-title" style={{ fontSize: "1.15rem" }}>
+                        Response Letter ({viewLetterModalTarget.decision === "accepted" ? "Accepted" : "Denied"})
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      className="view-letter-close-btn"
+                      onClick={() => {
+                        setViewLetterModalTarget(null);
+                        setDecisionModalTarget(null);
+                      }}
+                      title="Close"
+                      aria-label="Close"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="view-letter-body-content">
+                    {viewLetterModalTarget.startDate && (
+                      <div className="view-letter-meta-row" style={{ marginBottom: "12px" }}>
+                        <span className="view-letter-start-date-tag">
+                          📅 Target Start Date: <strong>{viewLetterModalTarget.startDate}</strong>
+                        </span>
+                        {viewLetterModalTarget.respondedAt && (
+                          <span className="view-letter-timestamp-tag">
+                            Submitted: {typeof formatDate === "function" ? formatDate(viewLetterModalTarget.respondedAt) : String(viewLetterModalTarget.respondedAt)}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="view-letter-body-box">
+                      <div className="view-letter-box-header">
+                        <span className="view-letter-box-label">
+                          FORMAL RESPONSE LETTER
+                        </span>
+                      </div>
+                      <pre className="view-letter-pre-text">{responseText}</pre>
+                    </div>
+                  </div>
+
+                  <div className="view-letter-footer">
+                    <button
+                      type="button"
+                      className="solid-btn view-letter-done-btn"
+                      onClick={() => {
+                        setViewLetterModalTarget(null);
+                        setDecisionModalTarget(null);
+                      }}
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

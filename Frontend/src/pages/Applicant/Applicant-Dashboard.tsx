@@ -1158,7 +1158,7 @@ export default function ApplicantDashboard() {
     }
   };
 
-  const handleReviewInvitation = (inv: JobInvitationItem) => {
+  const handleReviewInvitation = (inv: JobInvitationItem, openMessagePanel = false) => {
     setReviewingInv(inv);
     const jobObj: JobCard = {
       id: Number(inv.job_post_id),
@@ -1191,7 +1191,7 @@ export default function ApplicantDashboard() {
       companyCoverPath: (inv as any).company_cover_path || null,
       rating: (inv as any).rating ? String((inv as any).rating) : "0.0",
     };
-    setIsDetailsMessageOpen(false);
+    setIsDetailsMessageOpen(openMessagePanel);
     setDetailsJob(jobObj);
   };
 
@@ -2050,9 +2050,13 @@ export default function ApplicantDashboard() {
                           {status === "accepted" ? "Accepted • View Letter" : "Declined • View Letter"}
                         </button>
                       )}
-                      <a href="/messages" className="inv-action-btn inv-message-btn">
+                      <button
+                        type="button"
+                        className="inv-action-btn inv-message-btn"
+                        onClick={() => handleReviewInvitation(inv, true)}
+                      >
                         Message
-                      </a>
+                      </button>
                     </div>
                   </article>
                 );
