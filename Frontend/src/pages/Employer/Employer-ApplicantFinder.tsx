@@ -3958,40 +3958,13 @@ export default function EmployerApplicantFinder() {
                                 Details
                               </button>
 
-                              {(() => {
-                                const isCandidateInvited = Boolean(
-                                  isInvited ||
-                                  cand.is_invited ||
-                                  cand.is_recruited ||
-                                  (cand.latest_application_status || "").toLowerCase() === "recruited" ||
-                                  (cand.latest_application_status || "").toLowerCase() === "accepted" ||
-                                  (cand.invited_jobs && Array.isArray(cand.invited_jobs) && cand.invited_jobs.length > 0) ||
-                                  invitedCandidateIds.includes(cand.user_id)
-                                );
-
-                                if (isCandidateInvited) {
-                                  return (
-                                    <button
-                                      type="button"
-                                      className="finder-card-btn btn-invite status-invited"
-                                      onClick={() => openCandidateRecruit(cand)}
-                                      title="Candidate has been invited"
-                                    >
-                                      Invited
-                                    </button>
-                                  );
-                                }
-
-                                return (
-                                  <button
-                                    type="button"
-                                    className="finder-card-btn btn-invite"
-                                    onClick={() => openCandidateRecruit(cand)}
-                                  >
-                                    Invite
-                                  </button>
-                                );
-                              })()}
+                              <button
+                                type="button"
+                                className="finder-card-btn btn-invite"
+                                onClick={() => openCandidateRecruit(cand)}
+                              >
+                                Invite
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -4359,40 +4332,13 @@ export default function EmployerApplicantFinder() {
                               Details
                             </button>
 
-                            {(() => {
-                              const isCandidateInvited = Boolean(
-                                isInvited ||
-                                cand.is_invited ||
-                                cand.is_recruited ||
-                                (cand.latest_application_status || "").toLowerCase() === "recruited" ||
-                                (cand.latest_application_status || "").toLowerCase() === "accepted" ||
-                                (cand.invited_jobs && Array.isArray(cand.invited_jobs) && cand.invited_jobs.length > 0) ||
-                                invitedCandidateIds.includes(cand.user_id)
-                              );
-
-                              if (isCandidateInvited) {
-                                return (
-                                  <button
-                                    type="button"
-                                    className="finder-card-btn btn-invite status-invited"
-                                    onClick={() => openCandidateRecruit(cand)}
-                                    title="Candidate has been invited"
-                                  >
-                                    Invited
-                                  </button>
-                                );
-                              }
-
-                              return (
-                                <button
-                                  type="button"
-                                  className="finder-card-btn btn-invite"
-                                  onClick={() => openCandidateRecruit(cand)}
-                                >
-                                  Invite
-                                </button>
-                              );
-                            })()}
+                            <button
+                              type="button"
+                              className="finder-card-btn btn-invite"
+                              onClick={() => openCandidateRecruit(cand)}
+                            >
+                              Invite
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -5451,10 +5397,10 @@ export default function EmployerApplicantFinder() {
                                 style={{
                                   fontWeight: 800,
                                   fontSize: "0.84rem",
-                                  padding: "6px 22px",
+                                  padding: "6px 20px",
                                   borderRadius: "999px",
                                   whiteSpace: "nowrap",
-                                  minWidth: "85px",
+                                  minWidth: "96px",
                                   textAlign: "center",
                                 }}
                                 onClick={() => {
@@ -5463,7 +5409,7 @@ export default function EmployerApplicantFinder() {
                                   }
                                 }}
                               >
-                                {isJobInvited ? "Invited" : "Invite"}
+                                {isJobInvited ? "✓ Invite Sent" : "Send Invite"}
                               </button>
                             </div>
                           );
@@ -5669,14 +5615,11 @@ export default function EmployerApplicantFinder() {
                       className={`solid-btn jd-recruit-btn ${isJobInvited ? "status-invited" : ""}`}
                       disabled={isJobInvited}
                       style={{
-                        background: isJobInvited ? "#fef3c7" : "#059669",
-                        color: isJobInvited ? "#92400e" : "#ffffff",
-                        border: isJobInvited ? "1px solid #fde68a" : "none",
                         borderRadius: "8px",
                         padding: "10px 22px",
                         fontWeight: 700,
                         fontSize: "0.9rem",
-                        cursor: isJobInvited ? "not-allowed" : "pointer",
+                        cursor: isJobInvited ? "default" : "pointer",
                         display: "inline-flex",
                         alignItems: "center",
                         gap: "6px",
@@ -5691,7 +5634,7 @@ export default function EmployerApplicantFinder() {
                         }
                       }}
                     >
-                      {isJobInvited ? "Invited" : "Invite"}
+                      {isJobInvited ? "✓ Invite Sent" : "Send Invite"}
                     </button>
                   );
                 })()

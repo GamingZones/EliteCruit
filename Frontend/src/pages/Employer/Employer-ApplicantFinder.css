@@ -940,11 +940,13 @@
 }
 
 .jd-other-job-invite-btn.status-invited,
-.jd-other-job-invite-btn:disabled {
-  background: #fef3c7 !important;
-  color: #92400e !important;
-  border: 1px solid #fde68a !important;
-  cursor: not-allowed !important;
+.jd-other-job-invite-btn:disabled,
+.jd-recruit-btn.status-invited,
+.jd-recruit-btn:disabled {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1px solid #a7f3d0 !important;
+  cursor: default !important;
   box-shadow: none !important;
 }
 
@@ -958,9 +960,11 @@
 [data-theme="dark"] .jd-other-job-invite-btn:disabled,
 [data-theme="dark"] .jd-recruit-btn.status-invited,
 [data-theme="dark"] .jd-recruit-btn:disabled {
-  background: rgba(245, 158, 11, 0.18) !important;
-  color: #fbbf24 !important;
-  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+  background: rgba(16, 185, 129, 0.12) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.32) !important;
+  cursor: default !important;
+  box-shadow: none !important;
 }
 
 .finder-pill.quali,
