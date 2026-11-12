@@ -4000,7 +4000,7 @@ export default function JobSearch() {
                           >
                             {employer.company_name?.charAt(0)?.toUpperCase() || "E"}
                           </div>
-                          <div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "6px", minWidth: 0, flex: 1 }}>
                             <div className="employer-name-rating-row">
                               <span className="company-inline-rating-pill" title="Employer rating">
                                 <span className="star-icon">★</span>
@@ -4017,7 +4017,7 @@ export default function JobSearch() {
                                 <span className="status-chip closed">No Active Postings</span>
                               )}
                             </div>
-                            <p className="meta-line" style={{ marginTop: "4px", marginBottom: 0 }}>
+                            <p className="meta-line" style={{ margin: 0, display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px" }}>
                               {(() => {
                                 const rawAddr = (employer.company_address || employer.location || "").trim();
                                 const rawCity = (employer.city || "").trim();
