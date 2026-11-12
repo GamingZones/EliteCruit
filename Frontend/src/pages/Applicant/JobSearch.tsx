@@ -10,6 +10,7 @@ import {
   calculateJobMatchDetails,
   calculateSkillExperienceYears,
   getMatchColorClass,
+  getApplicantRecommendation,
   inferMatchScore,
   isSkillMatch,
   isCertificationMatch,
@@ -2367,9 +2368,15 @@ export default function JobSearch() {
             <span className="jd-side-subtitle">Side-by-side profile match vs employer postings</span>
           </div>
           <div className="jd-side-header-actions">
-            <span className={`match-badge-pill ${getMatchColorClass(matchDetails.score)}`}>
-              {matchDetails.score}% Match
-            </span>
+            {(() => {
+              const rec = getApplicantRecommendation(matchDetails.score);
+              if (!rec) return null;
+              return (
+                <span className={`applicant-rec-badge ${rec.colorClass}`}>
+                  {rec.label}
+                </span>
+              );
+            })()}
             <button
               type="button"
               className="jd-side-close-btn"
@@ -3074,13 +3081,18 @@ export default function JobSearch() {
                 </div>
 
                 <div className="jd-header-right-actions">
-                  <div
-                    className={`match-score-box ${getMatchColorClass(matchInfo.score)}`}
-                    title="Match Score"
-                  >
-                    <small>MATCH</small>
-                    <b>{matchInfo.score}%</b>
-                  </div>
+                  {(() => {
+                    const rec = getApplicantRecommendation(matchInfo.score);
+                    if (!rec) return null;
+                    return (
+                      <span
+                        className={`applicant-rec-badge ${rec.colorClass}`}
+                        title={matchInfo.breakdown || `${rec.label} (${matchInfo.score}%)`}
+                      >
+                        {rec.label}
+                      </span>
+                    );
+                  })()}
                   <button
                     type="button"
                     className={`jd-faq-btn ${isFaqDrawerOpen ? "active" : ""}`}
@@ -3698,11 +3710,15 @@ export default function JobSearch() {
                         <div className="card-top-actions">
                           {(() => {
                             const matchInfo = calculateJobMatchDetails(job, applicantMatchProfile);
+                            const rec = getApplicantRecommendation(matchInfo.score);
+                            if (!rec) return null;
                             return (
-                              <div className={`match-score-box ${getMatchColorClass(matchInfo.score)}`} title={matchInfo.breakdown}>
-                                <small>Match</small>
-                                <b>{matchInfo.score}%</b>
-                              </div>
+                              <span
+                                className={`applicant-rec-badge ${rec.colorClass}`}
+                                title={matchInfo.breakdown || `${rec.label} (${matchInfo.score}%)`}
+                              >
+                                {rec.label}
+                              </span>
                             );
                           })()}
                         </div>
@@ -4426,11 +4442,15 @@ export default function JobSearch() {
                         </div>
 
                         <div className="jd-other-job-action-col">
-                          <span
-                            className={`jd-other-job-match-pill ${j.matchPct >= 75 ? "green" : j.matchPct >= 50 ? "yellow" : "red"}`}
-                          >
-                            {j.matchPct}% Match
-                          </span>
+                          {(() => {
+                            const rec = getApplicantRecommendation(j.matchPct);
+                            if (!rec) return null;
+                            return (
+                              <span className={`applicant-rec-badge ${rec.colorClass}`}>
+                                {rec.label}
+                              </span>
+                            );
+                          })()}
                           <button
                             type="button"
                             className="details-btn jd-other-job-details-btn"

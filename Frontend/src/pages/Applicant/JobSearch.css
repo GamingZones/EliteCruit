@@ -1157,6 +1157,34 @@
   border-color: #9fdfb9;
 }
 
+/* Two-Tier Recommendation Badges (Option B) */
+.applicant-rec-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  white-space: nowrap;
+  line-height: 1;
+  letter-spacing: 0.2px;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.applicant-rec-badge.green {
+  background: #e1f7ee;
+  color: #12874f;
+  border-color: #9fdfb9;
+}
+
+.applicant-rec-badge.amber {
+  background: #fff3da;
+  color: #b85a06;
+  border-color: #f7d49e;
+}
+
 .match-score-box small {
   display: block;
   text-transform: uppercase;

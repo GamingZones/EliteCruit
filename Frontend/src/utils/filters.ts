@@ -3650,6 +3650,36 @@ export function getMatchColorClass(score: number): "red" | "yellow" | "orange" |
   return "green";
 }
 
+export type ApplicantRecommendation = {
+  label: "Recommended" | "Good Fit";
+  colorClass: "green" | "amber";
+  score: number;
+};
+
+/**
+ * Option B Two-Tier Recommendation Badges for Applicant views:
+ *   >= 75%:  Green badge "Recommended"
+ *   50-74%: Amber badge "Good Fit"
+ *   < 50%:   No badge (null)
+ */
+export function getApplicantRecommendation(score: number): ApplicantRecommendation | null {
+  if (score >= 75) {
+    return {
+      label: "Recommended",
+      colorClass: "green",
+      score,
+    };
+  }
+  if (score >= 50) {
+    return {
+      label: "Good Fit",
+      colorClass: "amber",
+      score,
+    };
+  }
+  return null;
+}
+
 export function calculateJobMatch(
   job: JobCardInput,
   profile: ApplicantProfileInput | null

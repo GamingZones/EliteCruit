@@ -5,6 +5,7 @@ import {
   calculateJobMatchDetails,
   evaluateSkillRequirementMatch,
   getMatchColorClass,
+  getApplicantRecommendation,
   isSkillMatch,
   isCertificationMatch,
   parseCompetencyDisplayTags,
@@ -89,6 +90,7 @@ export type JobDetailsModalProps = {
   zIndex?: number;
   hideEmployerHeader?: boolean;
   initialOpenMessage?: boolean;
+  isApplicantView?: boolean;
 };
 
 type BreakdownCourseSkillItem = {
@@ -352,6 +354,7 @@ export default function JobDetailsModal({
   zIndex,
   hideEmployerHeader = false,
   initialOpenMessage = false,
+  isApplicantView = false,
 }: JobDetailsModalProps) {
   const [internalFaqOpen, setInternalFaqOpen] = useState(false);
   const isFaqOpen = isFaqOpenProp !== undefined ? isFaqOpenProp : internalFaqOpen;
@@ -1071,9 +1074,21 @@ export default function JobDetailsModal({
             <span className="jd-side-subtitle">Side-by-side profile match vs employer postings</span>
           </div>
           <div className="jd-side-header-actions">
-            <span className={`match-badge-pill ${getMatchColorClass(scoreVal)}`}>
-              {scoreVal}% Match
-            </span>
+            {isApplicantView ? (
+              (() => {
+                const rec = getApplicantRecommendation(scoreVal);
+                if (!rec) return null;
+                return (
+                  <span className={`applicant-rec-badge ${rec.colorClass}`}>
+                    {rec.label}
+                  </span>
+                );
+              })()
+            ) : (
+              <span className={`match-badge-pill ${getMatchColorClass(scoreVal)}`}>
+                {scoreVal}% Match
+              </span>
+            )}
             <button
               type="button"
               className="jd-side-close-btn"
@@ -1596,13 +1611,28 @@ export default function JobDetailsModal({
 
           <div className="jd-header-right-actions">
             {matchScore !== undefined && (
-              <div
-                className={`match-score-box ${getMatchColorClass(matchScore)}`}
-                title="Match Score"
-              >
-                <small>MATCH</small>
-                <b>{matchScore}%</b>
-              </div>
+              isApplicantView ? (
+                (() => {
+                  const rec = getApplicantRecommendation(matchScore);
+                  if (!rec) return null;
+                  return (
+                    <span
+                      className={`applicant-rec-badge ${rec.colorClass}`}
+                      title={hasBreakdown ? "Job Match Breakdown" : `${rec.label} (${matchScore}%)`}
+                    >
+                      {rec.label}
+                    </span>
+                  );
+                })()
+              ) : (
+                <div
+                  className={`match-score-box ${getMatchColorClass(matchScore)}`}
+                  title="Match Score"
+                >
+                  <small>MATCH</small>
+                  <b>{matchScore}%</b>
+                </div>
+              )
             )}
             <button
               type="button"
@@ -1626,14 +1656,30 @@ export default function JobDetailsModal({
             >
               <h2 className="jd-title-h2" style={hideEmployerHeader ? { flex: 1, minWidth: 0, margin: 0 } : undefined}>{jobTitle}</h2>
               {hideEmployerHeader && matchScore !== undefined && (
-                <div
-                  className={`match-score-box ${getMatchColorClass(matchScore)}`}
-                  title="Match Score"
-                  style={{ flexShrink: 0, margin: 0 }}
-                >
-                  <small>MATCH</small>
-                  <b>{matchScore}%</b>
-                </div>
+                isApplicantView ? (
+                  (() => {
+                    const rec = getApplicantRecommendation(matchScore);
+                    if (!rec) return null;
+                    return (
+                      <span
+                        className={`applicant-rec-badge ${rec.colorClass}`}
+                        title={hasBreakdown ? "Job Match Breakdown" : `${rec.label} (${matchScore}%)`}
+                        style={{ flexShrink: 0, margin: 0 }}
+                      >
+                        {rec.label}
+                      </span>
+                    );
+                  })()
+                ) : (
+                  <div
+                    className={`match-score-box ${getMatchColorClass(matchScore)}`}
+                    title="Match Score"
+                    style={{ flexShrink: 0, margin: 0 }}
+                  >
+                    <small>MATCH</small>
+                    <b>{matchScore}%</b>
+                  </div>
+                )
               )}
             </div>
             <div className="jd-chips-inline">

@@ -3178,6 +3178,7 @@ export default function Messages() {
       {/* ── Standardized Job Details Modal (Applicant View - Clean Base Modal) ── */}
       <JobDetailsModal
         isOpen={Boolean(detailsJob)}
+        isApplicantView={currentUserRole === "applicant"}
         onClose={() => {
           setDetailsJob(null);
           setIsApplicantBreakdownOpen(false);

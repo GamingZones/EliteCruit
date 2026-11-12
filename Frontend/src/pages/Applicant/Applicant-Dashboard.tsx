@@ -7,6 +7,7 @@ import {
   calculateJobMatch,
   calculateJobMatchDetails,
   getMatchColorClass,
+  getApplicantRecommendation,
   inferMatchScore,
   parseCompetencyDisplayTags,
   formatExperienceLevel,
@@ -1657,11 +1658,15 @@ export default function ApplicantDashboard() {
                     <div className="card-top-actions">
                       {(() => {
                         const matchInfo = calculateJobMatchDetails(job, applicantMatchProfile);
+                        const rec = getApplicantRecommendation(matchInfo.score);
+                        if (!rec) return null;
                         return (
-                          <div className={`match-score-box ${getMatchColorClass(matchInfo.score)}`} title={matchInfo.breakdown}>
-                            <small>Match</small>
-                            <b>{matchInfo.score}%</b>
-                          </div>
+                          <span
+                            className={`applicant-rec-badge ${rec.colorClass}`}
+                            title={matchInfo.breakdown || `${rec.label} (${matchInfo.score}%)`}
+                          >
+                            {rec.label}
+                          </span>
                         );
                       })()}
                     </div>
@@ -2507,6 +2512,7 @@ export default function ApplicantDashboard() {
             isOpen={Boolean(detailsJob)}
             job={jobModalData}
             zIndex={25000}
+            isApplicantView={true}
             initialOpenMessage={isDetailsMessageOpen}
             onClose={() => {
               setDetailsJob(null);
