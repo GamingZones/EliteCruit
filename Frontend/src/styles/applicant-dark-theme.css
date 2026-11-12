@@ -9986,3 +9986,41 @@
   border-color: #38bdf8 !important;
   box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15) !important;
 }
+
+/* ── Offer Accepted / Declined Action Buttons & Badges (Borderless) ── */
+[data-theme="dark"] .chat-action-btn.chat-btn-accepted,
+[data-theme="dark"] .chat-btn-accepted {
+  background: #059669 !important;
+  color: #ffffff !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .chat-action-btn.chat-btn-accepted:hover,
+[data-theme="dark"] .chat-btn-accepted:hover {
+  background: #047857 !important;
+  border: none !important;
+  outline: none !important;
+}
+
+[data-theme="dark"] .chat-action-btn.chat-btn-declined,
+[data-theme="dark"] .chat-btn-declined {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .chat-action-btn.chat-btn-declined:hover,
+[data-theme="dark"] .chat-btn-declined:hover {
+  background: #b91c1c !important;
+  border: none !important;
+  outline: none !important;
+}
+
+[data-theme="dark"] .view-letter-badge.accepted,
+[data-theme="dark"] .view-letter-badge.declined {
+  border: none !important;
+}

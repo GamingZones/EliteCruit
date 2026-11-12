@@ -2336,22 +2336,36 @@
   background: #0369a1;
 }
 
-.chat-action-btn.chat-btn-accepted {
+.chat-action-btn.chat-btn-accepted,
+.chat-btn-accepted {
   background: #059669;
   color: #ffffff;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
-.chat-action-btn.chat-btn-accepted:hover {
+.chat-action-btn.chat-btn-accepted:hover,
+.chat-btn-accepted:hover {
   background: #047857;
+  border: none !important;
+  outline: none !important;
 }
 
-.chat-action-btn.chat-btn-declined {
+.chat-action-btn.chat-btn-declined,
+.chat-btn-declined {
   background: #dc2626;
   color: #ffffff;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
-.chat-action-btn.chat-btn-declined:hover {
+.chat-action-btn.chat-btn-declined:hover,
+.chat-btn-declined:hover {
   background: #b91c1c;
+  border: none !important;
+  outline: none !important;
 }
 
 .chat-action-status-pill {
@@ -2655,13 +2669,13 @@
 .view-letter-status-pill.accepted {
   background: #dcfce7;
   color: #15803d;
-  border: 1px solid #bbf7d0;
+  border: none !important;
 }
 
 .view-letter-status-pill.declined {
   background: #fee2e2;
   color: #b91c1c;
-  border: 1px solid #fecaca;
+  border: none !important;
 }
 
 /* ── STRICT THEME ISOLATION: DARK MODE (Rule 9) ── */
@@ -2831,15 +2845,47 @@
   border-color: rgba(2, 132, 199, 0.3) !important;
 }
 
+[data-theme="dark"] .chat-action-btn.chat-btn-accepted,
+[data-theme="dark"] .chat-btn-accepted {
+  background: #059669 !important;
+  color: #ffffff !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .chat-action-btn.chat-btn-accepted:hover,
+[data-theme="dark"] .chat-btn-accepted:hover {
+  background: #047857 !important;
+  border: none !important;
+  outline: none !important;
+}
+
+[data-theme="dark"] .chat-action-btn.chat-btn-declined,
+[data-theme="dark"] .chat-btn-declined {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .chat-action-btn.chat-btn-declined:hover,
+[data-theme="dark"] .chat-btn-declined:hover {
+  background: #b91c1c !important;
+  border: none !important;
+  outline: none !important;
+}
+
 [data-theme="dark"] .view-letter-status-pill.accepted {
   background: rgba(16, 185, 129, 0.15) !important;
   color: #34d399 !important;
-  border-color: rgba(16, 185, 129, 0.3) !important;
+  border: none !important;
 }
 
 [data-theme="dark"] .view-letter-status-pill.declined {
   background: rgba(239, 68, 68, 0.15) !important;
   color: #f87171 !important;
-  border-color: rgba(239, 68, 68, 0.3) !important;
+  border: none !important;
 }
 

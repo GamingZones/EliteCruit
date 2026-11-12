@@ -2281,24 +2281,36 @@
   background: #059669;
 }
 
+.chat-action-btn.chat-btn-accepted,
 .chat-btn-accepted {
-  background: #ecfdf5;
-  color: #047857;
-  border: 1px solid #a7f3d0;
+  background: #059669;
+  color: #ffffff;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
+.chat-action-btn.chat-btn-accepted:hover,
 .chat-btn-accepted:hover {
-  background: #d1fae5;
+  background: #047857;
+  border: none !important;
+  outline: none !important;
 }
 
+.chat-action-btn.chat-btn-declined,
 .chat-btn-declined {
-  background: #fef2f2;
-  color: #b91c1c;
-  border: 1px solid #fecaca;
+  background: #dc2626;
+  color: #ffffff;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
+.chat-action-btn.chat-btn-declined:hover,
 .chat-btn-declined:hover {
-  background: #fee2e2;
+  background: #b91c1c;
+  border: none !important;
+  outline: none !important;
 }
 
 .chat-action-status-pill.pending {
@@ -2446,13 +2458,13 @@
 .view-letter-badge.accepted {
   background: #ecfdf5;
   color: #047857;
-  border: 1px solid #a7f3d0;
+  border: none !important;
 }
 
 .view-letter-badge.declined {
   background: #fef2f2;
   color: #b91c1c;
-  border: 1px solid #fecaca;
+  border: none !important;
 }
 
 .view-letter-badge.extended {
@@ -2749,4 +2761,41 @@
 
 [data-theme="dark"] .view-letter-done-btn:hover {
   background: #0369a1;
+}
+
+[data-theme="dark"] .chat-action-btn.chat-btn-accepted,
+[data-theme="dark"] .chat-btn-accepted {
+  background: #059669 !important;
+  color: #ffffff !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .chat-action-btn.chat-btn-accepted:hover,
+[data-theme="dark"] .chat-btn-accepted:hover {
+  background: #047857 !important;
+  border: none !important;
+  outline: none !important;
+}
+
+[data-theme="dark"] .chat-action-btn.chat-btn-declined,
+[data-theme="dark"] .chat-btn-declined {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .chat-action-btn.chat-btn-declined:hover,
+[data-theme="dark"] .chat-btn-declined:hover {
+  background: #b91c1c !important;
+  border: none !important;
+  outline: none !important;
+}
+
+[data-theme="dark"] .view-letter-badge.accepted,
+[data-theme="dark"] .view-letter-badge.declined {
+  border: none !important;
 }
