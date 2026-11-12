@@ -3978,6 +3978,10 @@ export default function JobSearch() {
                     <div className="result-card-main">
                       <div className="result-left-col">
                         <div className="result-title-row" style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                          <span className="company-inline-rating-pill" title="Employer rating">
+                            <span className="star-icon">★</span>
+                            <span>{employer.rating ? Number(employer.rating).toFixed(1) : "0.0"}</span>
+                          </span>
                           {employer.company_logo_path ? (
                             <img
                               src={
@@ -4002,10 +4006,6 @@ export default function JobSearch() {
                           </div>
                           <div>
                             <div className="employer-name-rating-row">
-                              <span className="company-inline-rating-pill" title="Employer rating">
-                                <span className="star-icon">★</span>
-                                <span>{employer.rating ? Number(employer.rating).toFixed(1) : "0.0"}</span>
-                              </span>
                               <h3 title={employer.company_name} style={{ margin: 0, fontSize: "1.1rem" }}>
                                 {employer.company_name}
                               </h3>
