@@ -1003,6 +1003,7 @@ export type Candidate = {
   last_name?: string | null;
   applicant_name: string;
   desired_job_title: string;
+  target_roles_json?: string | null;
   gender?: string | null;
   city: string;
   province?: string | null;
@@ -1080,6 +1081,25 @@ export type EmployerProfileData = {
 };
 
 export type GeoMatchLevel = "exact_city" | "preferred_city" | "same_province" | "all_matched" | "none";
+
+export function getCandidateTargetRoles(cand: Candidate): string[] {
+  if (cand.target_roles_json) {
+    try {
+      const parsed = JSON.parse(cand.target_roles_json);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const titles = parsed.map((r: any) => (r.title || "").trim()).filter(Boolean);
+        if (titles.length > 0) return titles;
+      }
+    } catch {}
+  }
+  if (cand.desired_job_title) {
+    return cand.desired_job_title
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
 
 export interface CandidateGeoMatch {
   level: GeoMatchLevel;
@@ -2096,6 +2116,7 @@ export default function EmployerApplicantFinder() {
                     email: a.email || "",
                     applicant_name: a.applicant_name || "Applicant",
                     desired_job_title: a.desired_job_title || a.job_title || "",
+                    target_roles_json: a.target_roles_json || null,
                     gender: a.gender || null,
                     city: a.city || "",
                     address: a.address || null,
@@ -2134,6 +2155,7 @@ export default function EmployerApplicantFinder() {
                 if (pData.profile.work_arrangement) c.work_arrangement = pData.profile.work_arrangement;
                 if (pData.profile.expected_salary) c.expected_salary = pData.profile.expected_salary;
                 if (pData.profile.desired_job_title) c.desired_job_title = pData.profile.desired_job_title;
+                if (pData.profile.target_roles_json) c.target_roles_json = pData.profile.target_roles_json;
                 if (pData.profile.summary) c.summary = pData.profile.summary;
                 if (pData.profile.languages) c.languages = pData.profile.languages;
                 if (pData.profile.skills) c.skills = pData.profile.skills;
@@ -2219,6 +2241,7 @@ export default function EmployerApplicantFinder() {
                     work_arrangement: data.profile.work_arrangement || prev.work_arrangement || null,
                     expected_salary: data.profile.expected_salary || prev.expected_salary || null,
                     desired_job_title: data.profile.desired_job_title || prev.desired_job_title,
+                    target_roles_json: data.profile.target_roles_json || prev.target_roles_json || null,
                     skills: data.profile.skills || prev.skills,
                     qualifications: data.profile.qualifications || prev.qualifications,
                     certifications: data.profile.certifications || prev.certifications,
@@ -3832,16 +3855,23 @@ export default function EmployerApplicantFinder() {
                                   <span className="finder-star-pill">
                                     <span className="star-icon">★</span> {cand.rating ? Number(cand.rating).toFixed(1) : "0.0"}
                                   </span>
+                                  {getCandidateTargetRoles(cand).map((role, idx) => (
+                                    <span key={idx} className="finder-target-role-pill" title={`Target Role: ${role}`}>
+                                      {role}
+                                    </span>
+                                  ))}
                                   {currentActiveJob && (
                                     <span className={`finder-match-pill ${matchClass}`}>
                                       {matchPercent}% Match
                                     </span>
                                   )}
                                 </div>
-                                <div className="finder-card-job-badge" title="Active vacancy context">
-                                  <span className="job-badge-label">Evaluating for:</span>{" "}
-                                  <strong>{currentActiveJob ? currentActiveJob.title : (activeJobs[0]?.title || "All Vacancies")}</strong>
-                                </div>
+                                {currentActiveJob && (
+                                  <div className="finder-card-job-badge" title="Active vacancy context">
+                                    <span className="job-badge-label">Evaluating for:</span>{" "}
+                                    <strong>{currentActiveJob.title}</strong>
+                                  </div>
+                                )}
                                 <div className="finder-candidate-meta-inline">
                                   <span className="finder-meta-inline-item">
                                     <FinderIcon name="location" />
@@ -4224,16 +4254,23 @@ export default function EmployerApplicantFinder() {
                                 <span className="finder-star-pill">
                                   <span className="star-icon">★</span> {cand.rating ? Number(cand.rating).toFixed(1) : "0.0"}
                                 </span>
-                                {(currentActiveJob || activeJobs.length > 0) && matchPercent > 0 && (
+                                {getCandidateTargetRoles(cand).map((role, idx) => (
+                                  <span key={idx} className="finder-target-role-pill" title={`Target Role: ${role}`}>
+                                    {role}
+                                  </span>
+                                ))}
+                                {currentActiveJob && matchPercent > 0 && (
                                   <span className={`finder-match-pill ${matchClass}`}>
                                     {matchPercent}% Match
                                   </span>
                                 )}
                               </div>
-                              <div className="finder-card-job-badge" title="Active vacancy context">
-                                <span className="job-badge-label">Evaluating for:</span>{" "}
-                                <strong>{currentActiveJob ? currentActiveJob.title : (activeJobs[0]?.title || "All Vacancies")}</strong>
-                              </div>
+                              {currentActiveJob && (
+                                <div className="finder-card-job-badge" title="Active vacancy context">
+                                  <span className="job-badge-label">Evaluating for:</span>{" "}
+                                  <strong>{currentActiveJob.title}</strong>
+                                </div>
+                              )}
                               <div className="finder-candidate-meta-inline">
                                 <span className="finder-meta-inline-item">
                                   <FinderIcon name="location" />
