@@ -3266,23 +3266,42 @@ export default function EmployerApplicantFinder() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [warningPopup, setWarningPopup] = useState("");
 
-  const handleInitiateSendInvite = (e: React.FormEvent) => {
+  const handleInitiateSendInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    const effectiveJobId = selectedJobId || (activeJobs.length > 0 ? activeJobs[jobCarouselIndex]?.id || activeJobs[0]?.id : null);
-    if (!currentEmployerId || !inviteCandidate || !effectiveJobId) return;
-    setIsConfirmRecruitOpen(true);
+    await handleConfirmSendInvite();
   };
 
   const handleConfirmSendInvite = async () => {
+    let empId = currentEmployerId;
+    if (!empId) {
+      try {
+        const raw = localStorage.getItem("elitecruit-user");
+        if (raw) {
+          const u = JSON.parse(raw);
+          if (u?.id) empId = Number(u.id);
+        }
+      } catch {}
+    }
     const effectiveJobId = selectedJobId || (activeJobs.length > 0 ? activeJobs[jobCarouselIndex]?.id || activeJobs[0]?.id : null);
-    if (!currentEmployerId || !inviteCandidate || !effectiveJobId) return;
+    if (!empId || !inviteCandidate || !effectiveJobId) {
+      alert("Missing employer or job details to send invitation.");
+      return;
+    }
 
     setIsSendingInvite(true);
     setInviteSuccessMsg("");
     try {
-      const res = await fetch(`/api/employers/${currentEmployerId}/invite-candidate`, {
+      const token = localStorage.getItem("elitecruit-token") || localStorage.getItem("token") || "";
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const res = await fetch(`/api/employers/${empId}/invite-candidate`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           applicant_user_id: inviteCandidate.user_id,
           job_post_id: effectiveJobId,
@@ -3323,7 +3342,7 @@ export default function EmployerApplicantFinder() {
         setInviteCandidate(null);
         setInviteSuccessMsg("");
         setCustomInviteMsg("");
-      }, 1600);
+      }, 1500);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Unable to send invitation.");
     } finally {
@@ -5317,28 +5336,35 @@ export default function EmployerApplicantFinder() {
                     );
                   }
 
-                  return activeJobs.map((otherJob: any) => {
-                    const percent = calculateCandidateMatch(
-                      {
-                        desired_job_title: inviteJobsCandidate.desired_job_title || "",
-                        work_arrangement: inviteJobsCandidate.work_arrangement || "",
-                        expected_salary: inviteJobsCandidate.expected_salary || 0,
-                        skills: inviteJobsCandidate.skills || "",
-                        qualifications: inviteJobsCandidate.qualifications || "",
-                        certifications: inviteJobsCandidate.certifications || "",
-                        city: inviteJobsCandidate.city || inviteJobsCandidate.address || "",
-                      },
-                      {
-                        title: otherJob.title || "",
-                        work_arrangement: otherJob.work_arrangement || "",
-                        required_skills: otherJob.required_skills || "",
-                        required_qualifications: otherJob.qualifications || otherJob.required_qualifications || "",
-                        required_certifications: otherJob.certifications || otherJob.required_certifications || "",
-                        location: otherJob.location || "",
-                        salary_min: Number(otherJob.salary_min) || 0,
-                        salary_max: Number(otherJob.salary_max) || 0,
-                      }
-                    );
+                  const sortedJobs = activeJobs
+                    .map((otherJob: any) => {
+                      const percent = calculateCandidateMatch(
+                        {
+                          desired_job_title: inviteJobsCandidate.desired_job_title || "",
+                          work_arrangement: inviteJobsCandidate.work_arrangement || "",
+                          expected_salary: inviteJobsCandidate.expected_salary || 0,
+                          skills: inviteJobsCandidate.skills || "",
+                          qualifications: inviteJobsCandidate.qualifications || "",
+                          certifications: inviteJobsCandidate.certifications || "",
+                          city: inviteJobsCandidate.city || inviteJobsCandidate.address || "",
+                          preferred_locations: inviteJobsCandidate.preferred_locations || "",
+                        },
+                        {
+                          title: otherJob.title || "",
+                          work_arrangement: otherJob.work_arrangement || "",
+                          required_skills: otherJob.required_skills || otherJob.skills || "",
+                          required_qualifications: otherJob.qualifications || otherJob.required_qualifications || "",
+                          required_certifications: otherJob.certifications || otherJob.required_certifications || "",
+                          location: otherJob.location || "",
+                          salary_min: Number(otherJob.salary_min) || 0,
+                          salary_max: Number(otherJob.salary_max) || 0,
+                        }
+                      );
+                      return { otherJob, percent };
+                    })
+                    .sort((a, b) => b.percent - a.percent);
+
+                  return sortedJobs.map(({ otherJob, percent }) => {
 
                     return (
                       <div

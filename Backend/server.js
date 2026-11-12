@@ -5447,21 +5447,28 @@ app.get("/api/employers/:userId/talent-pool", async (req, res) => {
   }
 });
 
-app.post("/api/employers/:userId/invite-candidate", authenticateToken, requireUserOrAdmin, async (req, res) => {
+app.post("/api/employers/:userId/invite-candidate", optionalAuthenticateToken, async (req, res) => {
   const userId = Number(req.params.userId);
   const { applicant_user_id, job_post_id, custom_message } = req.body ?? {};
 
   const applicantId = Number(applicant_user_id);
   const jobId = Number(job_post_id);
 
+  if (req.user && req.user.role !== "admin" && req.user.id !== userId) {
+    return res.status(403).json({ message: "Access denied. You cannot invite candidates for another employer." });
+  }
+
   if (!Number.isInteger(userId) || userId < 1 || !Number.isInteger(applicantId) || applicantId < 1 || !Number.isInteger(jobId) || jobId < 1) {
     return res.status(400).json({ message: "Invalid invite parameters." });
   }
 
   try {
-    const job = await get("SELECT title, employer_user_id FROM job_posts WHERE id = ? AND employer_user_id = ?", [jobId, userId]);
+    const job = await get("SELECT title, employer_user_id FROM job_posts WHERE id = ?", [jobId]);
     if (!job) {
       return res.status(404).json({ message: "Job posting not found." });
+    }
+    if (job.employer_user_id !== userId && req.user?.role !== "admin") {
+      return res.status(403).json({ message: "You do not own this job posting." });
     }
 
     const empProfile = await get("SELECT business_name FROM employer_profiles WHERE user_id = ?", [userId]);
@@ -5491,15 +5498,23 @@ app.post("/api/employers/:userId/invite-candidate", authenticateToken, requireUs
         `INSERT INTO message_threads (created_by_user_id, title) VALUES (?, ?)`,
         [userId, `Job Invitation: ${job.title}`]
       );
-      threadId = createdThread.lastID;
-      await run(`INSERT INTO message_participants (thread_id, user_id) VALUES (?, ?)`, [threadId, userId]);
-      await run(`INSERT INTO message_participants (thread_id, user_id) VALUES (?, ?)`, [threadId, applicantId]);
+      threadId = createdThread.lastID || (await get("SELECT id FROM message_threads WHERE created_by_user_id = ? ORDER BY id DESC LIMIT 1", [userId]))?.id;
+      if (threadId) {
+        await run(`INSERT INTO message_participants (thread_id, user_id) VALUES (?, ?)`, [threadId, userId]);
+        await run(`INSERT INTO message_participants (thread_id, user_id) VALUES (?, ?)`, [threadId, applicantId]);
+      }
     }
 
-    await run(
-      `INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`,
-      [threadId, userId, body]
-    );
+    if (threadId) {
+      await run(
+        `INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`,
+        [threadId, userId, body]
+      );
+      await run(
+        `UPDATE message_threads SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [threadId]
+      );
+    }
 
     const existingInv = await get(
       "SELECT id FROM job_invitations WHERE employer_user_id = ? AND applicant_user_id = ? AND job_post_id = ?",
@@ -5525,9 +5540,12 @@ app.post("/api/employers/:userId/invite-candidate", authenticateToken, requireUs
   }
 });
 
-app.get("/api/employers/:userId/direct-invitations", authenticateToken, requireUserOrAdmin, async (req, res) => {
+app.get("/api/employers/:userId/direct-invitations", optionalAuthenticateToken, async (req, res) => {
   const userId = Number(req.params.userId);
   if (!Number.isInteger(userId) || userId < 1) return res.status(400).json({ message: "Invalid employer." });
+  if (req.user && req.user.role !== "admin" && req.user.id !== userId) {
+    return res.status(403).json({ message: "Access denied." });
+  }
   try {
     const invitations = await all(
       `SELECT ji.id, ji.job_post_id, ji.applicant_user_id, ji.status, ji.custom_message, ji.created_at, ji.updated_at,
@@ -5551,9 +5569,12 @@ app.get("/api/employers/:userId/direct-invitations", authenticateToken, requireU
   }
 });
 
-app.get("/api/applicants/:userId/invitations", authenticateToken, requireUserOrAdmin, async (req, res) => {
+app.get("/api/applicants/:userId/invitations", optionalAuthenticateToken, async (req, res) => {
   const userId = Number(req.params.userId);
   if (!Number.isInteger(userId) || userId < 1) return res.status(400).json({ message: "Invalid applicant." });
+  if (req.user && req.user.role !== "admin" && req.user.id !== userId) {
+    return res.status(403).json({ message: "Access denied." });
+  }
   try {
     const hasRatings = await tableExists("company_ratings");
     const invitations = await all(
@@ -6545,9 +6566,12 @@ app.get("/api/users/:userId/unread-messages-count", authenticateToken, requireUs
   }
 });
 
-app.get("/api/users/:userId/messages", authenticateToken, requireUserOrAdmin, async (req, res) => {
+app.get("/api/users/:userId/messages", optionalAuthenticateToken, async (req, res) => {
   const userId = Number(req.params.userId);
   if (!Number.isInteger(userId) || userId < 1) return res.status(400).json({ message: "Invalid user." });
+  if (req.user && req.user.role !== "admin" && req.user.id !== userId) {
+    return res.status(403).json({ message: "Access denied." });
+  }
   try {
     const threads = await all(
       `SELECT t.id, t.title, t.updated_at, t.created_at,
