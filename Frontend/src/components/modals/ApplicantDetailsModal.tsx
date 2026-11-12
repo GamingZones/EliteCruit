@@ -7,6 +7,9 @@ import {
   calculateJobMatchDetails,
   getMatchColorClass,
   CATEGORIZED_JOB_ROLES,
+  splitTopLevelTokens,
+  lookupCategoryForSkill,
+  SKILLS_COURSE_TAXONOMY_MAP,
 } from "../../utils/filters";
 
 export type BreakdownCourseSkillItem = {
@@ -48,6 +51,14 @@ function parseSingleBreakdownSkillToken(token: string): BreakdownCourseSkillItem
     cleanName = cleanName.replace(/\)+$/, "");
   }
 
+  if (course === "BS Information Technology") course = "Web & Software Development";
+  if (course === "BS Computer Science") course = "Programming & Algorithms";
+
+  if (!course || course === "General IT" || !SKILLS_COURSE_TAXONOMY_MAP[course]) {
+    const inferred = lookupCategoryForSkill(cleanName);
+    if (inferred) course = inferred;
+  }
+
   return {
     name: cleanName || token.trim(),
     course,
@@ -63,9 +74,13 @@ function parseBreakdownSkillItems(raw?: string | null, fallbackTags: string[] = 
       if (Array.isArray(parsed)) {
         parsed.forEach((p) => {
           if (typeof p === "object" && p !== null && p.name) {
+            let course = p.course || "";
+            if (!course || course === "General IT" || !SKILLS_COURSE_TAXONOMY_MAP[course]) {
+              course = lookupCategoryForSkill(String(p.name)) || course || "General IT";
+            }
             items.push({
               name: String(p.name).trim(),
-              course: p.course || "General IT",
+              course,
               year: p.year || p.years || "2026",
             });
           } else if (p) {
@@ -76,12 +91,15 @@ function parseBreakdownSkillItems(raw?: string | null, fallbackTags: string[] = 
     } catch {}
 
     if (items.length === 0) {
-      const rawTokens = raw.includes(")")
-        ? raw.split(/(?<=\))\s*,\s*/)
-        : raw.split(/[\n,;•|]+/);
-      rawTokens.forEach((tok) => {
+      const rawTokens = splitTopLevelTokens(raw);
+      for (let i = 0; i < rawTokens.length; i++) {
+        let tok = rawTokens[i].trim();
+        while (tok.includes("[") && !tok.includes("]") && i + 1 < rawTokens.length) {
+          i++;
+          tok = tok + ", " + rawTokens[i].trim();
+        }
         if (tok.trim()) items.push(parseSingleBreakdownSkillToken(tok));
-      });
+      }
     }
   }
 

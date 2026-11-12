@@ -2207,6 +2207,74 @@ export function isPlaceholderRequirement(val?: string | null): boolean {
  * Parses raw text, JSON arrays, or comma/newline/bullet-delimited strings
  * into a clean array of string tokens.
  */
+/**
+ * Splits a delimited string by commas, newlines, semicolons, bullets, or pipes,
+ * while safely ignoring delimiters nested inside parentheses `(...)` or brackets `[...]`.
+ */
+export function splitTopLevelTokens(str: string): string[] {
+  if (!str) return [];
+  const res: string[] = [];
+  let current = "";
+  let parenCount = 0;
+  let bracketCount = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str[i];
+    if (char === "(") parenCount++;
+    else if (char === ")") parenCount = Math.max(0, parenCount - 1);
+    else if (char === "[") bracketCount++;
+    else if (char === "]") bracketCount = Math.max(0, bracketCount - 1);
+
+    if (
+      (char === "," || char === "\n" || char === ";" || char === "•" || char === "|") &&
+      parenCount === 0 &&
+      bracketCount === 0
+    ) {
+      if (current.trim()) res.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  if (current.trim()) res.push(current.trim());
+  return res;
+}
+
+/**
+ * Looks up the taxonomy category for a given skill name from SKILLS_COURSE_TAXONOMY_MAP.
+ * Prevents skills from incorrectly falling back to "General IT".
+ */
+export function lookupCategoryForSkill(skillName: string): string | null {
+  if (!skillName || !skillName.trim()) return null;
+  const clean = skillName
+    .replace(/\s*\[.*?\]/g, "")
+    .replace(/\s*\(.*?\)/g, "")
+    .trim()
+    .toLowerCase();
+  if (!clean) return null;
+
+  // 1. Exact match in taxonomy
+  for (const [category, skills] of Object.entries(SKILLS_COURSE_TAXONOMY_MAP)) {
+    if (skills.some((s) => s.toLowerCase() === clean)) {
+      return category;
+    }
+  }
+
+  // 2. Contains match
+  for (const [category, skills] of Object.entries(SKILLS_COURSE_TAXONOMY_MAP)) {
+    if (
+      skills.some(
+        (s) =>
+          s.toLowerCase().includes(clean) ||
+          clean.includes(s.toLowerCase())
+      )
+    ) {
+      return category;
+    }
+  }
+
+  return null;
+}
+
 export function parseItemList(
   raw?: string | any[] | null,
   fallback: string[] = []
@@ -2238,16 +2306,18 @@ export function parseItemList(
       if (res.length > 0) return res;
     }
   } catch {}
-  const res = raw
-    .split(/[\n,;•|]+/)
+  const tokens = splitTopLevelTokens(raw);
+  const res = tokens
     .map((s) => s.trim())
     .filter((s) => Boolean(s) && !isPlaceholderRequirement(s))
     .map((token) => {
-      const match = token.match(/^(.*?)\s*\((.*?)\)$/);
+      // Strip [Category] if present
+      const withoutBracket = token.replace(/\s*\[[^\[\]]*\]/g, "").trim();
+      const match = withoutBracket.match(/^(.*?)\s*\((.*?)\)$/);
       if (match) {
         return `${match[1].trim()} (${match[2].trim()})`;
       }
-      return token;
+      return withoutBracket;
     })
     .filter((s) => Boolean(s) && !isPlaceholderRequirement(s));
   return res.length > 0 ? res : fallback;
@@ -3684,7 +3754,7 @@ export function parseCompetencyDisplayTags(
         }
         return `${match[1].trim()} (${match[3].trim()})`;
       }
-      return token;
+      return token.replace(/\s*\[[^\[\]]*\]/g, "").trim();
     })
     .filter((s) => Boolean(s) && !isPlaceholderRequirement(s));
 }

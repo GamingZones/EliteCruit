@@ -40,6 +40,8 @@ import {
   parseCompetencyDisplayTags,
   parsePreferredLocationTags,
   PREFERRED_LOCATION_OPTIONS,
+  splitTopLevelTokens,
+  lookupCategoryForSkill,
 } from "../../utils/filters";
 import "./Applicant-Dashboard.css";
 import "./ApplicantProfile.css";
@@ -1303,33 +1305,50 @@ type CourseSkillItem = {
 };
 
 function parseSingleCourseSkillToken(token: string): CourseSkillItem {
-  const courseMatch = token.match(/^(.*?)\s*\[(.*?)\]\s*\((.*?)\)$/);
+  let name = "";
+  let course = "";
+  let year = "2026";
+
+  const yearMatch = token.match(/\((?:Since\s*|Acquired\s*)?([0-9]{4})\)$/i);
+  if (yearMatch) {
+    year = yearMatch[1];
+  }
+
+  let withoutYear = token.replace(/\s*\((?:Since\s*|Acquired\s*)?[0-9]{4}\)$/i, "").trim();
+
+  const courseMatch = withoutYear.match(/\[([^\[\]]+)\]$/);
   if (courseMatch) {
-    const cleanYear = courseMatch[3].replace(/^Since\s*/i, "").replace(/^Acquired\s*/i, "").trim();
-    return {
-      name: courseMatch[1].trim(),
-      course: courseMatch[2].trim() || "General IT",
-      year: cleanYear || "2026",
-    };
+    course = courseMatch[1].trim();
+    withoutYear = withoutYear.replace(/\s*\[[^\[\]]+\]$/, "").trim();
+  } else {
+    const anyBracket = withoutYear.match(/\[(.*?)\]/);
+    if (anyBracket) {
+      course = anyBracket[1].trim();
+      withoutYear = withoutYear.replace(/\s*\[.*?\]/g, "").trim();
+    }
   }
-  const bracketOnly = token.match(/^(.*?)\s*\[(.*?)\]$/);
-  if (bracketOnly) {
-    return {
-      name: bracketOnly[1].trim(),
-      course: bracketOnly[2].trim() || "General IT",
-      year: "2026",
-    };
+
+  name = withoutYear.trim();
+
+  // Normalize legacy categories
+  if (course === "BS Information Technology") course = "Web & Software Development";
+  if (course === "BS Computer Science") course = "Programming & Algorithms";
+
+  // If course is empty, "General IT", or unknown, look up the skill in taxonomy
+  if (!course || course === "General IT" || !SKILLS_COURSE_TAXONOMY_MAP[course]) {
+    const inferred = lookupCategoryForSkill(name);
+    if (inferred) {
+      course = inferred;
+    } else if (!course) {
+      course = "General IT";
+    }
   }
-  const match = token.match(/^(.*?)\s*\((.*?)\)$/);
-  if (match) {
-    const cleanYear = match[2].replace(/^Since\s*/i, "").replace(/^Acquired\s*/i, "").trim();
-    return {
-      name: match[1].trim(),
-      course: "General IT",
-      year: cleanYear || "2026",
-    };
-  }
-  return { name: token.trim(), course: "General IT", year: "2026" };
+
+  return {
+    name: name || token.trim(),
+    course,
+    year,
+  };
 }
 
 function parseCourseSkillItems(raw?: string | null): CourseSkillItem[] {
@@ -1340,9 +1359,13 @@ function parseCourseSkillItems(raw?: string | null): CourseSkillItem[] {
       return parsed
         .map((p) => {
           if (typeof p === "object" && p !== null && p.name) {
+            let course = p.course || "";
+            if (!course || course === "General IT" || !SKILLS_COURSE_TAXONOMY_MAP[course]) {
+              course = lookupCategoryForSkill(String(p.name)) || course || "General IT";
+            }
             return {
               name: String(p.name).trim(),
-              course: p.course || "General IT",
+              course,
               year: p.year || p.years || "2026",
             };
           }
@@ -1352,10 +1375,50 @@ function parseCourseSkillItems(raw?: string | null): CourseSkillItem[] {
     }
   } catch {}
 
-  return raw
-    .split(/[\n,;•|]+/)
-    .map((s) => s.trim())
-    .filter(Boolean)
+  // Safe top-level splitting preserving brackets & parentheses
+  const rawTokens = splitTopLevelTokens(raw);
+
+  // Auto-heal orphaned fragments (e.g. "SEO [Marketing" followed by "Sales & Customer Support]")
+  const healedTokens: string[] = [];
+  for (let i = 0; i < rawTokens.length; i++) {
+    let tok = rawTokens[i].trim();
+    if (!tok) continue;
+
+    // Detect unclosed bracket fragment: "Name [CategoryPart" + "RemainingCategoryPart]"
+    while (tok.includes("[") && !tok.includes("]") && i + 1 < rawTokens.length) {
+      i++;
+      tok = tok + ", " + rawTokens[i].trim();
+    }
+
+    // Detect if previous bad split saved item with "[Marketing [General IT] (Since 2026)" and orphan "Sales & Customer Support] [General IT] (Since 2026)"
+    if (
+      tok.includes("[Marketing") &&
+      i + 1 < rawTokens.length &&
+      rawTokens[i + 1].includes("Sales & Customer Support]")
+    ) {
+      const yrMatch =
+        tok.match(/\((?:Since\s*|Acquired\s*)?([0-9]{4})\)/i) ||
+        rawTokens[i + 1].match(/\((?:Since\s*|Acquired\s*)?([0-9]{4})\)/i);
+      const yr = yrMatch ? yrMatch[1] : "2026";
+      const cleanSkill = tok.replace(/\[.*$/, "").trim() || "SEO";
+      healedTokens.push(`${cleanSkill} [Marketing, Sales & Customer Support] (Since ${yr})`);
+      i++;
+      continue;
+    }
+
+    // Discard any standalone orphaned category fragments like "Sales & Customer Support]"
+    if (
+      (tok.endsWith("]") || tok.includes("Sales & Customer Support")) &&
+      !tok.includes("[") &&
+      !lookupCategoryForSkill(tok)
+    ) {
+      continue;
+    }
+
+    healedTokens.push(tok);
+  }
+
+  return healedTokens
     .map(parseSingleCourseSkillToken)
     .filter((item) => Boolean(item.name));
 }
@@ -1408,7 +1471,10 @@ function CourseSkillsEditor({
     if (!nameToAdd) return;
     if (items.some((it) => it.name.toLowerCase() === nameToAdd.toLowerCase())) return;
 
-    const courseTag = selectedCourse.trim() || "General IT";
+    let courseTag = selectedCourse.trim();
+    if (!courseTag || courseTag === "General IT" || !SKILLS_COURSE_TAXONOMY_MAP[courseTag]) {
+      courseTag = lookupCategoryForSkill(nameToAdd) || courseTag || "General IT";
+    }
     const newItems: CourseSkillItem[] = [
       ...items,
       { name: nameToAdd, course: courseTag, year: selectedYear },
