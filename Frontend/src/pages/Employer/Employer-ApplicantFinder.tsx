@@ -2432,11 +2432,13 @@ export default function EmployerApplicantFinder() {
       if (targetJob) {
         const targetTitle = (targetJob.title || "").toLowerCase();
         const candRole = (cand.desired_job_title || "").toLowerCase();
+        const candTargetRoles = getCandidateTargetRoles(cand).map((r) => r.toLowerCase());
         const candSummary = (cand.summary || "").toLowerCase();
         const candWorkExp = (cand.work_experience_json || "").toLowerCase();
         const candSkills = (cand.skills || "").toLowerCase();
 
         const roleMatches =
+          candTargetRoles.some((r) => r.includes(targetTitle) || targetTitle.includes(r)) ||
           (candRole && (candRole.includes(targetTitle) || targetTitle.includes(candRole))) ||
           candSummary.includes(targetTitle) ||
           candWorkExp.includes(targetTitle);
@@ -2471,12 +2473,14 @@ export default function EmployerApplicantFinder() {
       if (appliedSearchQuery) {
         const name = (cand.applicant_name || "").toLowerCase();
         const role = (cand.desired_job_title || "").toLowerCase();
+        const candTargetRoles = getCandidateTargetRoles(cand).map((r) => r.toLowerCase());
         const skills = (cand.skills || "").toLowerCase();
         const city = (cand.city || "").toLowerCase();
         const addr = (cand.address || "").toLowerCase();
         if (
           !name.includes(appliedSearchQuery) &&
           !role.includes(appliedSearchQuery) &&
+          !candTargetRoles.some((r) => r.includes(appliedSearchQuery)) &&
           !skills.includes(appliedSearchQuery) &&
           !city.includes(appliedSearchQuery) &&
           !addr.includes(appliedSearchQuery)

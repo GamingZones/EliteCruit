@@ -2102,6 +2102,31 @@ export default function CalendarDrawer({
                                 </span>
                               </div>
                               {(() => {
+                                const rolesJson = viewingApplicantProfile?.target_roles_json || viewingApplicantDetails?.target_roles_json;
+                                let parsedRoles: Array<{ title: string; category?: string }> = [];
+                                if (rolesJson) {
+                                  try {
+                                    const arr = typeof rolesJson === "string" ? JSON.parse(rolesJson) : rolesJson;
+                                    if (Array.isArray(arr)) parsedRoles = arr;
+                                  } catch {}
+                                }
+                                if (parsedRoles.length > 1) {
+                                  return (
+                                    <div className="cand-info-item" style={{ gridColumn: "1 / -1" }}>
+                                      <span className="cand-info-label">Configured Target Roles ({parsedRoles.length})</span>
+                                      <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}>
+                                        {parsedRoles.map((r, i) => (
+                                          <span key={i} className="js-tag-chip js-tag-skill" style={{ fontSize: "0.8rem", padding: "3px 8px" }}>
+                                            {r.title}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })()}
+                              {(() => {
                                 const sal = parseCandidateSalaryRange(viewingApplicantProfile || viewingApplicantDetails);
                                 return (
                                   <>

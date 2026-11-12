@@ -67,6 +67,8 @@ type JobCard = {
 
 type ApplicantMatchProfile = {
   desiredJobTitle?: string;
+  targetRoles?: string[];
+  rawTargetRolesJson?: string | null;
   workArrangement?: string;
   expectedSalary?: number | null;
   city?: string;
@@ -1032,8 +1034,23 @@ export default function ApplicantDashboard() {
             } catch {}
           }
 
+          let parsedTargetRoles: string[] = [];
+          if (profile?.target_roles_json) {
+            try {
+              const arr = JSON.parse(profile.target_roles_json);
+              if (Array.isArray(arr)) {
+                parsedTargetRoles = arr.map((r: any) => (r.title || "").trim()).filter(Boolean);
+              }
+            } catch {}
+          }
+          if (parsedTargetRoles.length === 0 && profile?.desired_job_title) {
+            parsedTargetRoles = profile.desired_job_title.split(",").map((s: string) => s.trim()).filter(Boolean);
+          }
+
           setApplicantMatchProfile({
             desiredJobTitle: profile?.desired_job_title || "",
+            targetRoles: parsedTargetRoles,
+            rawTargetRolesJson: profile?.target_roles_json || null,
             workArrangement: profile?.work_arrangement || "",
             expectedSalary: parseExpectedSalary(profile?.expected_salary),
             city: profile?.city || "",

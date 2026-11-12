@@ -4936,6 +4936,7 @@ app.get("/api/employers/:userId/applications", authenticateToken, requireUserOrA
           ap.gender,
           COALESCE(NULLIF(TRIM(COALESCE(ap.first_name, '') || ' ' || COALESCE(ap.last_name, '')), ''), au.email, 'Applicant') AS applicant_name,
           ap.desired_job_title,
+          ap.target_roles_json,
           ap.work_arrangement,
           ap.expected_salary,
           ap.years_of_experience,
@@ -5309,6 +5310,7 @@ app.get("/api/talent-pool", async (req, res) => {
           ap.summary,
           ap.languages,
           ap.desired_job_title,
+          ap.target_roles_json,
           ap.expected_salary,
           ap.expected_salary_min,
           ap.expected_salary_max,
@@ -5372,6 +5374,7 @@ app.get("/api/employers/:userId/talent-pool", async (req, res) => {
           ap.summary,
           ap.languages,
           ap.desired_job_title,
+          ap.target_roles_json,
           ap.expected_salary,
           ap.expected_salary_min,
           ap.expected_salary_max,
@@ -5552,7 +5555,7 @@ app.get("/api/employers/:userId/direct-invitations", optionalAuthenticateToken, 
               ji.response_letter, ji.responded_at, ji.start_date,
               jp.title AS job_title, jp.location AS job_location, jp.salary_min, jp.salary_max, jp.hide_salary, jp.work_arrangement,
               jp.required_skills AS job_required_skills, jp.qualifications AS job_required_qualifications, jp.certifications AS job_required_certifications,
-              ap.first_name, ap.last_name, ap.gender, ap.phone, ap.city, ap.skills, ap.qualifications, ap.certifications, ap.desired_job_title, ap.work_arrangement AS applicant_work_arrangement, ap.expected_salary, ap.resume_path, ap.profile_picture_path,
+              ap.first_name, ap.last_name, ap.gender, ap.phone, ap.city, ap.skills, ap.qualifications, ap.certifications, ap.desired_job_title, ap.target_roles_json, ap.work_arrangement AS applicant_work_arrangement, ap.expected_salary, ap.resume_path, ap.profile_picture_path,
               u.email AS applicant_email
        FROM job_invitations ji
        JOIN job_posts jp ON jp.id = ji.job_post_id
@@ -7973,7 +7976,7 @@ app.get("/api/employers/:id/schedulable-candidates", async (req, res) => {
        )
        SELECT DISTINCT c.user_id,
               COALESCE(NULLIF(TRIM(CONCAT_WS(' ', ap.first_name, ap.middle_name, ap.last_name)), ''), u.email, 'Candidate') AS full_name,
-              ap.first_name, ap.last_name, ap.gender, ap.desired_job_title, ap.phone, ap.city,
+              ap.first_name, ap.last_name, ap.gender, ap.desired_job_title, ap.target_roles_json, ap.phone, ap.city,
               u.email,
               c.job_post_id,
               jp.title AS job_title,

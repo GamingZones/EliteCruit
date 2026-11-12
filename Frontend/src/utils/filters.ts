@@ -2430,8 +2430,23 @@ export function calculateCandidateMatch(
       : parseCompetencyDisplayTags(job.required_certifications ?? job.certifications, "certifications"),
   };
 
+  let candTargetRoles: string[] = [];
+  if ((cand as any).target_roles_json) {
+    try {
+      const arr = typeof (cand as any).target_roles_json === "string" ? JSON.parse((cand as any).target_roles_json) : (cand as any).target_roles_json;
+      if (Array.isArray(arr)) {
+        candTargetRoles = arr.map((r: any) => (r.title || "").trim()).filter(Boolean);
+      }
+    } catch {}
+  }
+  if (candTargetRoles.length === 0 && cand.desired_job_title) {
+    candTargetRoles = cand.desired_job_title.split(",").map((s) => s.trim()).filter(Boolean);
+  }
+
   const applicantProfile: ApplicantProfileInput = {
     desiredJobTitle: cand.desired_job_title || "",
+    targetRoles: candTargetRoles,
+    target_roles_json: (cand as any).target_roles_json || null,
     workArrangement: cand.work_arrangement || "Any",
     expectedSalary: cand.expected_salary ? parseExpectedSalary(cand.expected_salary) : 0,
     city: cand.city || cand.address || "Cavite",
@@ -2452,6 +2467,8 @@ export function calculateCandidateMatch(
 
 export type ApplicantProfileInput = {
   desiredJobTitle?: string;
+  targetRoles?: string[];
+  target_roles_json?: string | null;
   workArrangement?: string;
   expectedSalary?: number;
   city?: string;
