@@ -3976,22 +3976,18 @@ export default function EmployerApplicantFinder() {
                                         </span>
                                       );
                                     }
-                                    const extraRoles = roles.slice(1);
-                                    const extraTooltip = extraRoles.length === 1
-                                      ? extraRoles[0]
-                                      : extraRoles.map((r) => `• ${r}`).join("\n");
                                     return (
-                                      <>
-                                        <span className="finder-target-role-pill" title={`Target Role: ${roles[0]}`}>
-                                          {roles[0]}
-                                        </span>
-                                        <span
-                                          className="finder-target-role-pill finder-target-role-more"
-                                          title={extraTooltip}
-                                        >
-                                          +{extraRoles.length} more
-                                        </span>
-                                      </>
+                                      <span
+                                        className="finder-target-role-pill finder-target-role-compressed"
+                                        title={`Target Roles:\n• ${roles.join("\n• ")}`}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          openCandidateModal(cand);
+                                          setCandDetailTab("preferences");
+                                        }}
+                                      >
+                                        {roles.length} Target Roles
+                                      </span>
                                     );
                                   })()}
                                   {currentActiveJob && (
@@ -4374,22 +4370,18 @@ export default function EmployerApplicantFinder() {
                                       </span>
                                     );
                                   }
-                                  const extraRoles = roles.slice(1);
-                                  const extraTooltip = extraRoles.length === 1
-                                    ? extraRoles[0]
-                                    : extraRoles.map((r) => `• ${r}`).join("\n");
                                   return (
-                                    <>
-                                      <span className="finder-target-role-pill" title={`Target Role: ${roles[0]}`}>
-                                        {roles[0]}
-                                      </span>
-                                      <span
-                                        className="finder-target-role-pill finder-target-role-more"
-                                        title={extraTooltip}
-                                      >
-                                        +{extraRoles.length} more
-                                      </span>
-                                    </>
+                                    <span
+                                      className="finder-target-role-pill finder-target-role-compressed"
+                                      title={`Target Roles:\n• ${roles.join("\n• ")}`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openCandidateModal(cand);
+                                        setCandDetailTab("preferences");
+                                      }}
+                                    >
+                                      {roles.length} Target Roles
+                                    </span>
                                   );
                                 })()}
                                 {currentActiveJob && matchPercent > 0 && (

@@ -4523,29 +4523,34 @@
 }
 
 /* ── Compressed Target Role Badge on Candidate Card ── */
-.finder-target-role-pill.finder-target-role-more {
+.finder-target-role-pill.finder-target-role-more,
+.finder-target-role-pill.finder-target-role-compressed {
   background: #e0f2fe;
   color: #0369a1;
   border-color: #7dd3fc;
-  cursor: help;
+  cursor: pointer;
   font-weight: 700;
-  padding: 2px 8px;
+  padding: 2px 10px;
   transition: all 0.15s ease;
 }
 
-.finder-target-role-pill.finder-target-role-more:hover {
+.finder-target-role-pill.finder-target-role-more:hover,
+.finder-target-role-pill.finder-target-role-compressed:hover {
   background: #bae6fd;
   border-color: #38bdf8;
   color: #0284c7;
+  transform: translateY(-1px);
 }
 
-[data-theme="dark"] .finder-target-role-pill.finder-target-role-more {
+[data-theme="dark"] .finder-target-role-pill.finder-target-role-more,
+[data-theme="dark"] .finder-target-role-pill.finder-target-role-compressed {
   background: rgba(56, 189, 248, 0.18);
   color: #7dd3fc;
   border-color: rgba(56, 189, 248, 0.4);
 }
 
-[data-theme="dark"] .finder-target-role-pill.finder-target-role-more:hover {
+[data-theme="dark"] .finder-target-role-pill.finder-target-role-more:hover,
+[data-theme="dark"] .finder-target-role-pill.finder-target-role-compressed:hover {
   background: rgba(56, 189, 248, 0.28);
   border-color: #38bdf8;
   color: #ffffff;
