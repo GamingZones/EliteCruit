@@ -1298,7 +1298,7 @@ export default function EmployerApplicantDetailsModal({
                 return (
                   <div
                     className={`match-score-box ${
-                      scoreToShow >= 80
+                      scoreToShow >= 75
                         ? "green"
                         : scoreToShow >= 50
                         ? "yellow"
@@ -2251,7 +2251,7 @@ export default function EmployerApplicantDetailsModal({
                   }
                 );
 
-                const pillClass = percent >= 80 ? "green" : percent >= 50 ? "yellow" : "red";
+                const pillClass = percent >= 75 ? "green" : percent >= 50 ? "yellow" : "red";
 
                 return (
                   <div

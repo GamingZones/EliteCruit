@@ -233,10 +233,10 @@ function initialsFromName(name?: string | null): string {
 }
 
 function getMatchBadgeStyle(percent: number = 95) {
-  if (percent >= 85) {
+  if (percent >= 75) {
     return { track: "#dcfce7", color: "#15803d", fill: "#86efac" };
   }
-  if (percent >= 70) {
+  if (percent >= 50) {
     return { track: "#fef3c7", color: "#b45309", fill: "#fde68a" };
   }
   return { track: "#fee2e2", color: "#b91c1c", fill: "#fca5a5" };
@@ -2850,9 +2850,9 @@ export default function CalendarDrawer({
                       .map((otherJob) => {
                         const baseMatch = viewingApplicantDetails.match_percentage || 90;
                         const percent = Math.max(70, Math.min(99, baseMatch - ((otherJob.id * 3) % 12)));
-                        const matchStyle = percent >= 85
+                        const matchStyle = percent >= 75
                           ? { track: "#dcfce7", color: "#15803d", fill: "#86efac" }
-                          : percent >= 70
+                          : percent >= 50
                           ? { track: "#fef3c7", color: "#b45309", fill: "#fde68a" }
                           : { track: "#fee2e2", color: "#b91c1c", fill: "#fca5a5" };
 

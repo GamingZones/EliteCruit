@@ -3530,7 +3530,7 @@ export function calculateJobMatchDetails(
       `Add "${missingCerts.slice(0, 2).join('", "')}" to your profile certifications.`
     );
   }
-  if (score >= 80) {
+  if (score >= 75) {
     recommendations.push(
       "You are a top candidate for this role! We recommend submitting your application immediately."
     );
@@ -3570,13 +3570,13 @@ export function calculateJobMatchDetails(
 /**
  * Returns color category for match score badges: 'red' | 'yellow' | 'green'.
  * Thresholds:
- *   0 - 50:  red
- *  51 - 80:  yellow
- *  81 - 100: green
+ *   < 50:    red
+ *   50 - 74: yellow
+ *   >= 75:   green
  */
 export function getMatchColorClass(score: number): "red" | "yellow" | "orange" | "green" {
-  if (score <= 50) return "red";
-  if (score <= 80) return "yellow";
+  if (score < 50) return "red";
+  if (score < 75) return "yellow";
   return "green";
 }
 

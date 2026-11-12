@@ -897,14 +897,14 @@ function FilterLocationCategoryEditor({
 }
 
 function getMatchPercentStyle(percent: number) {
-  if (percent >= 81) {
+  if (percent >= 75) {
     return {
       color: "#059669",
       track: "#d1fae5",
       fill: "#10b981",
     };
   }
-  if (percent >= 51) {
+  if (percent >= 50) {
     return {
       color: "#d97706",
       track: "#fef3c7",
@@ -3926,7 +3926,7 @@ export default function EmployerApplicantFinder() {
                       }
                       return 0;
                     })();
-                    const matchClass = matchPercent >= 85 ? "high" : matchPercent >= 70 ? "med" : "low";
+                    const matchClass = matchPercent >= 75 ? "high" : matchPercent >= 50 ? "med" : "low";
 
                     return (
                       <article key={cand.user_id} className="finder-card">
@@ -4314,7 +4314,7 @@ export default function EmployerApplicantFinder() {
                     }
                     return 0;
                   })();
-                  const matchClass = matchPercent >= 85 ? "high" : matchPercent >= 70 ? "med" : "low";
+                  const matchClass = matchPercent >= 75 ? "high" : matchPercent >= 50 ? "med" : "low";
 
                   return (
                     <article key={cand.user_id} className="finder-card">
@@ -5488,7 +5488,7 @@ export default function EmployerApplicantFinder() {
                           return (
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px", flexShrink: 0 }}>
                               <span
-                                className={`jd-other-job-match-pill ${percent >= 80 ? "green" : percent >= 50 ? "yellow" : "red"}`}
+                                className={`jd-other-job-match-pill ${percent >= 75 ? "green" : percent >= 50 ? "yellow" : "red"}`}
                               >
                                 {percent}% Match
                               </span>

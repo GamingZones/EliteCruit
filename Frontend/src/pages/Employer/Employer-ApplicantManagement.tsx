@@ -839,14 +839,14 @@ function getMatchPercent(app: Application, profileOverride?: any, jobsMap?: Reco
 }
 
 function getMatchPercentStyle(percent: number) {
-  if (percent >= 81) {
+  if (percent >= 75) {
     return {
       color: "#059669",
       track: "#d1fae5",
       fill: "#10b981",
     };
   }
-  if (percent >= 51) {
+  if (percent >= 50) {
     return {
       color: "#d97706",
       track: "#fef3c7",

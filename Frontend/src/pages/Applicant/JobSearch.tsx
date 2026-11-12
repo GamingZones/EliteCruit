@@ -4403,7 +4403,7 @@ export default function JobSearch() {
 
                         <div className="jd-other-job-action-col">
                           <span
-                            className={`jd-other-job-match-pill ${j.matchPct >= 80 ? "green" : j.matchPct >= 50 ? "yellow" : "red"}`}
+                            className={`jd-other-job-match-pill ${j.matchPct >= 75 ? "green" : j.matchPct >= 50 ? "yellow" : "red"}`}
                           >
                             {j.matchPct}% Match
                           </span>

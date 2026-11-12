@@ -979,7 +979,7 @@ export default function ApplicantDetailsModal({
               {candidate.match_percentage != null && (
                 <div
                   className={`match-score-box ${
-                    Number(candidate.match_percentage) >= 80
+                    Number(candidate.match_percentage) >= 75
                       ? "green"
                       : Number(candidate.match_percentage) >= 50
                       ? "yellow"

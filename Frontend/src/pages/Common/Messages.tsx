@@ -3263,9 +3263,9 @@ export default function Messages() {
       {(employerViewingJob || isJobDetailsClosing) && employerViewingJob && (
         (() => {
           const detailsMatchPct = targetCandidate ? calculateCandidateMatch(targetCandidate, employerViewingJob) : 0;
-          const matchStyle = detailsMatchPct >= 85
+          const matchStyle = detailsMatchPct >= 75
             ? { track: "#dcfce7", color: "#15803d", fill: "#86efac" }
-            : detailsMatchPct >= 70
+            : detailsMatchPct >= 50
             ? { track: "#fef3c7", color: "#b45309", fill: "#fde68a" }
             : { track: "#fee2e2", color: "#b91c1c", fill: "#fca5a5" };
 
