@@ -1349,6 +1349,7 @@ export default function EmployerApplicantManagement() {
   const [directScheduleApp, setDirectScheduleApp] = useState<Application | null>(null);
   const [scheduleSuccessPopup, setScheduleSuccessPopup] = useState<string | null>(null);
   const [viewingResponseLetterApp, setViewingResponseLetterApp] = useState<Application | null>(null);
+  const [viewingResponseTab, setViewingResponseTab] = useState<"offer" | "response">("response");
 
   // Sync automated decision notice text when immediate scheduling is active
   useEffect(() => {
@@ -5237,59 +5238,97 @@ export default function EmployerApplicantManagement() {
 
         {/* ── CANDIDATE RESPONSE LETTER VIEW MODAL ── */}
         {typeof document !== "undefined" && viewingResponseLetterApp && createPortal(
-          <div className="decision-modal-overlay candidate-response-overlay" onClick={() => setViewingResponseLetterApp(null)}>
-            <div className="decision-modal-containers-row" onClick={(e) => e.stopPropagation()}>
-              <div className="decision-card decision-main-card" style={{ maxWidth: "560px", width: "100%" }}>
-                <div className="decision-card-header">
-                  <div>
-                    <h3 className="decision-card-title">
-                      {viewingResponseLetterApp.response_decision === "declined" ? "Candidate Response: Offer Declined" : "Candidate Response: Offer Accepted"}
-                    </h3>
-                    <span className="decision-card-sub">{viewingResponseLetterApp.applicant_name} • {viewingResponseLetterApp.job_title}</span>
-                  </div>
-                  <button
-                    type="button"
-                    className="decision-card-close-btn"
-                    onClick={() => setViewingResponseLetterApp(null)}
-                    aria-label="Close"
-                  >
-                    ✕
-                  </button>
+          <div
+            className="view-letter-backdrop"
+            onClick={() => setViewingResponseLetterApp(null)}
+            style={{ zIndex: 100000 }}
+          >
+            <div
+              className="view-letter-modal-card"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="view-letter-header">
+                <div>
+                  <span className="view-letter-eyebrow">OFFICIAL CORRESPONDENCE</span>
+                  <h3 className="view-letter-title">{viewingResponseLetterApp.job_title}</h3>
+                  <p className="view-letter-company">{viewingResponseLetterApp.applicant_name} • Application Outcome</p>
                 </div>
-                <div className="decision-card-body">
+                <button
+                  type="button"
+                  className="view-letter-close-btn"
+                  onClick={() => setViewingResponseLetterApp(null)}
+                  title="Close"
+                  aria-label="Close"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="view-letter-body-content">
+                <div className="view-letter-meta-row">
+                  <span className={`view-letter-badge ${viewingResponseLetterApp.response_decision === "declined" ? "declined" : "accepted"}`}>
+                    {viewingResponseLetterApp.response_decision === "declined" ? "Offer Declined" : "Offer Accepted"}
+                  </span>
                   {viewingResponseLetterApp.start_date && (
-                    <div className="candidate-response-start-date">
-                      <strong>Confirmed Target Start Date:</strong>{" "}
-                      {new Date(viewingResponseLetterApp.start_date).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </div>
+                    <span className="view-letter-start-date">
+                      📅 Target Start Date: <strong>{new Date(viewingResponseLetterApp.start_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</strong>
+                    </span>
                   )}
                   {viewingResponseLetterApp.responded_at && (
-                    <div className="candidate-response-meta">
-                      Responded on:{" "}
-                      {new Date(viewingResponseLetterApp.responded_at).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </div>
+                    <span className="view-letter-timestamp">
+                      Responded: {new Date(viewingResponseLetterApp.responded_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </span>
                   )}
-                  <div className="candidate-response-letter-body">
-                    {viewingResponseLetterApp.response_letter || "No response letter text provided."}
+                </div>
+
+                {Boolean(viewingResponseLetterApp.decision_message && viewingResponseLetterApp.response_letter) && (
+                  <div className="view-letter-tabs">
+                    <button
+                      type="button"
+                      className={`view-letter-tab-btn ${viewingResponseTab === "response" ? "active" : ""}`}
+                      onClick={() => setViewingResponseTab("response")}
+                    >
+                      Candidate Response Letter
+                    </button>
+                    <button
+                      type="button"
+                      className={`view-letter-tab-btn ${viewingResponseTab === "offer" ? "active" : ""}`}
+                      onClick={() => setViewingResponseTab("offer")}
+                    >
+                      Official Offer Letter
+                    </button>
                   </div>
-                </div>
-                <div className="decision-card-footer" style={{ justifyContent: "flex-end" }}>
-                  <button
-                    type="button"
-                    className="decision-confirm-btn candidate-response-close-btn"
-                    onClick={() => setViewingResponseLetterApp(null)}
-                  >
-                    Close
-                  </button>
-                </div>
+                )}
+
+                {viewingResponseTab === "offer" && viewingResponseLetterApp.decision_message ? (
+                  <div className="view-letter-body-box view-letter-offer-box">
+                    <div className="view-letter-box-header">
+                      <span className="view-letter-box-label offer-label">
+                        FORMAL EMPLOYMENT OFFER EXTENDED
+                      </span>
+                    </div>
+                    <pre className="view-letter-pre-text">{viewingResponseLetterApp.decision_message}</pre>
+                  </div>
+                ) : (
+                  <div className="view-letter-body-box">
+                    <div className="view-letter-box-header">
+                      <span className="view-letter-box-label">
+                        CANDIDATE SIGNED RESPONSE LETTER
+                      </span>
+                    </div>
+                    <pre className="view-letter-pre-text">{viewingResponseLetterApp.response_letter || viewingResponseLetterApp.decision_message || "No letter text available."}</pre>
+                  </div>
+                )}
+              </div>
+
+              <div className="view-letter-footer">
+                <button
+                  type="button"
+                  className="solid-btn view-letter-done-btn"
+                  onClick={() => setViewingResponseLetterApp(null)}
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>,

@@ -3261,40 +3261,44 @@
 .view-letter-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 11000;
+  z-index: 10000;
   background: rgba(9, 21, 35, 0.65);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
   box-sizing: border-box;
+}
+
+.view-letter-backdrop.has-decision-open {
+  background: rgba(1, 41, 74, 0.45);
+  backdrop-filter: blur(4px);
 }
 
 .view-letter-modal-card {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 550px;
+  max-width: 95vw;
+  height: 560px;
+  max-height: 90vh;
+  box-sizing: border-box;
   background: #ffffff;
   border-radius: 14px;
-  max-width: 680px;
-  width: 100%;
-  max-height: 90vh;
+  padding: 0;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+  z-index: 10000;
   display: flex;
   flex-direction: column;
-  padding: 24px 28px;
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
-  box-sizing: border-box;
   overflow: hidden;
-  animation: viewLetterFadeIn 0.2s ease-out;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
 }
 
-@keyframes viewLetterFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+.view-letter-modal-card.has-decision-open {
+  transform: translate(calc(-50% - 12px), -50%);
 }
 
 .view-letter-header {
@@ -3302,8 +3306,9 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
-  padding-bottom: 14px;
+  padding: 16px 22px 14px 22px;
   border-bottom: 1px solid #edf2f7;
+  flex-shrink: 0;
 }
 
 .view-letter-eyebrow {
@@ -3449,14 +3454,24 @@
   color: #0284c7;
 }
 
+.view-letter-body-content {
+  padding: 16px 22px;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .view-letter-body-box {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
-  padding: 18px;
+  padding: 16px;
   overflow-y: auto;
-  max-height: 48vh;
-  margin-bottom: 18px;
+  flex: 1;
+  min-height: 0;
+  margin-bottom: 0;
 }
 
 .view-letter-body-box.view-letter-offer-box {
@@ -3477,35 +3492,57 @@
 .view-letter-footer {
   display: flex;
   justify-content: flex-end;
-  padding-top: 12px;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 22px;
   border-top: 1px solid #edf2f7;
+  background: #fafbfc;
+  flex-shrink: 0;
 }
 
 .view-letter-done-btn {
-  background: #0c2a47;
+  background: #0284c7;
   color: #ffffff;
   border: none;
-  padding: 9px 24px;
+  padding: 9px 22px;
   border-radius: 8px;
   font-weight: 700;
   font-size: 0.88rem;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 .view-letter-done-btn:hover {
-  background: #174c78;
+  background: #0369a1;
+}
+
+.view-letter-respond-btn {
+  background: #0284c7;
+  color: #ffffff;
+  border: none;
+  padding: 9px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.view-letter-respond-btn:hover {
+  background: #0369a1;
 }
 
 /* Dark Mode View Letter Modal Isolation */
 [data-theme="dark"] .view-letter-modal-card {
-  background: #1c1e27;
-  border: 1px solid #2e3244;
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6);
+  background: #14151B !important;
+  border: 1px solid #2e3244 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
+  color: #f1f5f9 !important;
 }
 
 [data-theme="dark"] .view-letter-header {
   border-bottom-color: #2e3244;
+  background: #14151B;
 }
 
 [data-theme="dark"] .view-letter-title {
@@ -3550,30 +3587,31 @@
 }
 
 [data-theme="dark"] .view-letter-body-box {
-  background: #242735;
-  border-color: #3b4054;
+  background: #181a24;
+  border-color: #2e3244;
 }
 
 [data-theme="dark"] .view-letter-body-box.view-letter-offer-box {
-  background: rgba(2, 132, 199, 0.12);
-  border-color: rgba(56, 189, 248, 0.3);
+  background: #181a24;
+  border-color: #2e3244;
 }
 
 [data-theme="dark"] .view-letter-pre-text {
-  color: #e2e8f0;
+  color: #f8fafc;
 }
 
 [data-theme="dark"] .view-letter-footer {
   border-top-color: #2e3244;
+  background: #14151B;
 }
 
 [data-theme="dark"] .view-letter-done-btn {
-  background: #f6be45;
-  color: #0c2a47;
+  background: #0284c7;
+  color: #ffffff;
 }
 
 [data-theme="dark"] .view-letter-done-btn:hover {
-  background: #e5ad35;
+  background: #0369a1;
 }
 
 /* Dark Mode Status Badges */
