@@ -2494,11 +2494,17 @@ export default function EmployerApplicantFinder() {
       // 3. Target Role
       if (selectedRole !== "All roles") {
         const target = selectedRole.toLowerCase();
+        const candTargetRoles = getCandidateTargetRoles(cand).map((r) => r.toLowerCase());
         const candRole = (cand.desired_job_title || "").toLowerCase();
         const candSummary = (cand.summary || "").toLowerCase();
         const candWorkExp = (cand.work_experience_json || "").toLowerCase();
 
+        const targetRolesMatch = candTargetRoles.some(
+          (r) => r.includes(target) || target.includes(r)
+        );
+
         const roleMatches =
+          targetRolesMatch ||
           (candRole && (candRole.includes(target) || target.includes(candRole))) ||
           candSummary.includes(target) ||
           candWorkExp.includes(target);
@@ -3700,9 +3706,13 @@ export default function EmployerApplicantFinder() {
                         value={selectedRole}
                         onChange={(e) => setSelectedRole(e.target.value)}
                       >
-                        <option>All roles</option>
-                        {BSIT_BSCS_JOB_TITLES.map((role) => (
-                          <option key={role} value={role}>{role}</option>
+                        <option value="All roles">All roles</option>
+                        {Object.entries(CATEGORIZED_JOB_ROLES).map(([category, roles]) => (
+                          <optgroup key={category} label={category}>
+                            {roles.map((role) => (
+                              <option key={role} value={role}>{role}</option>
+                            ))}
+                          </optgroup>
                         ))}
                       </select>
                     </div>

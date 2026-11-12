@@ -4163,10 +4163,28 @@
   border-color: #0284c7;
   box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
 }
+.filter-drawer-select optgroup {
+  font-weight: 700;
+  color: #0284c7;
+  background: #f8fafc;
+}
+.filter-drawer-select option {
+  font-weight: 400;
+  color: #0f172a;
+  background: #ffffff;
+}
 [data-theme="dark"] .filter-drawer-select {
   background: #14151b !important;
   border-color: #2e3244 !important;
   color: #f1f5f9 !important;
+}
+[data-theme="dark"] .filter-drawer-select optgroup {
+  color: #38bdf8 !important;
+  background: #1e2230 !important;
+}
+[data-theme="dark"] .filter-drawer-select option {
+  color: #f1f5f9 !important;
+  background: #14151b !important;
 }
 
 .filter-drawer-two-col {
