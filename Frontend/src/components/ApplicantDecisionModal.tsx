@@ -145,7 +145,7 @@ export default function ApplicantDecisionModal({
   const isAccept = currentAction === "accept";
   const titleText = title || (isInvitation
     ? (isAccept ? "Respond to Direct Recruitment Invitation" : "Decline Direct Recruitment Invitation")
-    : (isAccept ? "Accept Formal Employment Offer" : "Decline Formal Employment Offer"));
+    : (isAccept ? "Respond to Employment Offer" : "Decline Employment Offer"));
 
   const handleSubmit = async () => {
     const finalLetterText = responseType === "automated" ? automatedText : manualText;

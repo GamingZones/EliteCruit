@@ -597,6 +597,8 @@ export default function Messages() {
     respondedAt?: string;
     decision?: string;
     defaultTab?: "response" | "offer";
+    jobId?: number;
+    applicationId?: number;
   } | null>(null);
   const [viewLetterActiveTab, setViewLetterActiveTab] = useState<"response" | "offer">("offer");
 
@@ -609,6 +611,8 @@ export default function Messages() {
     respondedAt?: string;
     decision?: string;
     defaultTab?: "response" | "offer";
+    jobId?: number;
+    applicationId?: number;
   }) => {
     const hasOffer = Boolean(target.offerLetter && target.offerLetter.trim());
     const hasResponse = Boolean(target.letterText && target.letterText.trim());
@@ -752,8 +756,11 @@ export default function Messages() {
     type: "chat" | "byJob" | "byDetails";
     action: "accept" | "decline";
     jobId?: number;
+    applicationId?: number;
     title?: string;
     companyName?: string;
+    isInvitation?: boolean;
+    offerLetter?: string;
   } | null>(null);
   const [applyJobTarget, setApplyJobTarget] = useState<{
     jobId: number;
@@ -989,6 +996,42 @@ export default function Messages() {
       }
     } catch (err) {
       console.error("Error responding to invitation:", err);
+    }
+  };
+
+  const handleRespondOffer = async (
+    applicationId: number,
+    action: "accept" | "decline",
+    letter_text?: string,
+    letter_type?: string,
+    start_date?: string
+  ) => {
+    if (!currentUserId || !selectedThread) return;
+    try {
+      const token = localStorage.getItem("elitecruit-token") || "";
+      const res = await fetch(`/api/applicants/${currentUserId}/applications/${applicationId}/offer-response`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          decision: action,
+          letter_text,
+          letter_type,
+          start_date,
+        }),
+      });
+      if (res.ok) {
+        const refreshedRes = await fetch(`/api/messages/threads/${selectedThread.id}/company-jobs`);
+        if (refreshedRes.ok) {
+          const refreshed = await refreshedRes.json();
+          setCompanyJobsData(refreshed);
+        }
+        fetchThreadMessages(selectedThread.id);
+      }
+    } catch (err) {
+      console.error("Error responding to offer:", err);
     }
   };
 
@@ -2201,135 +2244,182 @@ export default function Messages() {
                               </span>
                             </div>
                           )}
-                          {special.type === "formal_offer" ? (
-                            <article className={`chat-bubble chat-special-card chat-offer-card ${isMe ? "outgoing" : "incoming"}`}>
-                              <div className="chat-special-header">
-                                <div className="chat-special-badge-row">
-                                  <span className="chat-special-badge badge-formal-offer">
-                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                      <polyline points="14 2 14 8 20 8" />
-                                      <line x1="16" y1="13" x2="8" y2="13" />
-                                      <line x1="16" y1="17" x2="8" y2="17" />
-                                    </svg>
-                                    <span>Formal Employment Offer</span>
-                                  </span>
-                                  <time className="chat-special-time">{msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}</time>
+                          {special.type === "formal_offer" ? (() => {
+                            const matchingResponseMsg = messages.find((m) => {
+                              const p = parseSpecialMessage(m.message_text);
+                              if (p.type !== "offer_response") return false;
+                              if (!p.jobTitle || !special.jobTitle) return true;
+                              const pTitle = p.jobTitle.toLowerCase().trim();
+                              const sTitle = special.jobTitle.toLowerCase().trim();
+                              return pTitle === sTitle || pTitle.includes(sTitle) || sTitle.includes(pTitle);
+                            });
+                            const matchingResponse = matchingResponseMsg ? parseSpecialMessage(matchingResponseMsg.message_text) : null;
+
+                            const matchedJob = (companyJobsData?.applied_jobs || []).find((j: any) =>
+                              j.title?.toLowerCase() === special.jobTitle?.toLowerCase() ||
+                              special.jobTitle?.toLowerCase().includes(j.title?.toLowerCase())
+                            ) || (companyJobsData?.recruited_jobs || []).find((j: any) =>
+                              j.title?.toLowerCase() === special.jobTitle?.toLowerCase() ||
+                              special.jobTitle?.toLowerCase().includes(j.title?.toLowerCase())
+                            );
+
+                            const isAccepted = Boolean(
+                              matchingResponse?.isAccepted ||
+                              matchedJob?.application?.status === "hired" ||
+                              matchedJob?.invitation?.status === "accepted"
+                            );
+                            const isDeclined = Boolean(
+                              (matchingResponse && !matchingResponse.isAccepted) ||
+                              matchedJob?.application?.status === "rejected" ||
+                              matchedJob?.invitation?.status === "declined"
+                            );
+                            const hasDecision = isAccepted || isDeclined;
+                            const decisionType = isAccepted ? "accepted" : isDeclined ? "declined" : "extended";
+
+                            const targetAppId = matchedJob?.application?.id || matchedJob?.application_id;
+                            const targetJobId = matchedJob?.id;
+
+                            return (
+                              <article className={`chat-bubble chat-special-card chat-offer-card ${isMe ? "outgoing" : "incoming"} ${isAccepted ? "offer-card-accepted" : isDeclined ? "offer-card-declined" : ""}`}>
+                                <div className="chat-special-header">
+                                  <div className="chat-special-badge-row">
+                                    <span className={`chat-special-badge ${isAccepted ? "badge-accepted" : isDeclined ? "badge-declined" : "badge-formal-offer"}`}>
+                                      {isAccepted ? (
+                                        <>
+                                          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="20 6 9 17 4 12" />
+                                          </svg>
+                                          <span>Offer Accepted</span>
+                                        </>
+                                      ) : isDeclined ? (
+                                        <>
+                                          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <line x1="18" y1="6" x2="6" y2="18" />
+                                            <line x1="6" y1="6" x2="18" y2="18" />
+                                          </svg>
+                                          <span>Offer Declined</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                            <polyline points="14 2 14 8 20 8" />
+                                            <line x1="16" y1="13" x2="8" y2="13" />
+                                            <line x1="16" y1="17" x2="8" y2="17" />
+                                          </svg>
+                                          <span>Formal Employment Offer</span>
+                                        </>
+                                      )}
+                                    </span>
+                                    <time className="chat-special-time">{msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}</time>
+                                  </div>
+                                  <h4 className="chat-special-title">{special.jobTitle}</h4>
+                                  <div className="chat-special-subtitle">{special.companyName || selectedThread.other_user_name || "Company"}</div>
                                 </div>
-                                <h4 className="chat-special-title">{special.jobTitle}</h4>
-                                <div className="chat-special-subtitle">{special.companyName || selectedThread.other_user_name || "Company"}</div>
-                              </div>
 
-                              <div className="chat-special-notice">
-                                <p>An official employment offer has been extended for this position. Click below to review the full offer letter, compensation, and benefits.</p>
-                              </div>
+                                <div className="chat-special-notice">
+                                  <p>
+                                    {isAccepted
+                                      ? `Candidate has officially accepted this employment offer.${matchingResponse?.startDate ? ` Target Start Date: ${matchingResponse.startDate}.` : ""} Click below to review the offer and signed response letter.`
+                                      : isDeclined
+                                      ? "Candidate has formally declined this employment offer. Click below to view the response details."
+                                      : "An official employment offer has been extended for this position. Click below to review the full offer letter, compensation, and benefits."}
+                                  </p>
+                                </div>
 
-                              <div className="chat-special-actions">
-                                <button
-                                  type="button"
-                                  className="chat-action-btn chat-btn-view"
-                                  onClick={() => openViewLetterModal({
-                                    title: special.jobTitle || "Job Position",
-                                    company: special.companyName || selectedThread.other_user_name || "Company",
-                                    offerLetter: special.cleanBody,
-                                    decision: "extended",
-                                    defaultTab: "offer"
-                                  })}
-                                >
-                                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                                    <circle cx="12" cy="12" r="3" />
-                                  </svg>
-                                  <span>View Full Offer Letter</span>
-                                </button>
-
-                                {!isEmployer && !isMe && (
+                                <div className="chat-special-actions">
                                   <button
                                     type="button"
-                                    className="chat-action-btn chat-btn-respond"
-                                    onClick={() => {
-                                      const matchedJob = (companyJobsData?.applied_jobs || []).find((j: any) =>
-                                        j.title?.toLowerCase() === special.jobTitle?.toLowerCase() ||
-                                        special.jobTitle?.toLowerCase().includes(j.title?.toLowerCase())
-                                      ) || (companyJobsData?.recruited_jobs || []).find((j: any) =>
-                                        j.title?.toLowerCase() === special.jobTitle?.toLowerCase() ||
-                                        special.jobTitle?.toLowerCase().includes(j.title?.toLowerCase())
-                                      );
-                                      setDecisionModalTarget({
-                                        type: matchedJob ? "byJob" : "chat",
-                                        action: "accept",
-                                        jobId: matchedJob?.id,
-                                        title: special.jobTitle,
-                                        companyName: special.companyName || selectedThread.other_user_name,
-                                      });
-                                    }}
+                                    className="chat-action-btn chat-btn-view"
+                                    onClick={() => openViewLetterModal({
+                                      title: special.jobTitle || "Job Position",
+                                      company: special.companyName || selectedThread.other_user_name || "Company",
+                                      offerLetter: special.cleanBody,
+                                      letterText: matchingResponse?.cleanBody,
+                                      startDate: matchingResponse?.startDate,
+                                      decision: decisionType,
+                                      defaultTab: "offer",
+                                      jobId: targetJobId,
+                                      applicationId: targetAppId,
+                                    })}
                                   >
-                                    <span>Review &amp; Respond</span>
+                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                      <circle cx="12" cy="12" r="3" />
+                                    </svg>
+                                    <span>View Full Offer Letter</span>
                                   </button>
-                                )}
-                              </div>
-                            </article>
-                          ) : special.type === "offer_response" ? (
-                            <article className={`chat-bubble chat-special-card chat-response-card ${isMe ? "outgoing" : "incoming"}`}>
-                              <div className="chat-special-header">
-                                <div className="chat-special-badge-row">
-                                  <span className={`chat-special-badge ${special.isAccepted ? "badge-accepted" : "badge-declined"}`}>
-                                    {special.isAccepted ? (
-                                      <>
-                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                          <polyline points="20 6 9 17 4 12" />
-                                        </svg>
-                                        <span>Offer Accepted</span>
-                                      </>
+
+                                  {!hasDecision ? (
+                                    !isEmployer && !isMe ? (
+                                      <button
+                                        type="button"
+                                        className="chat-action-btn chat-btn-respond"
+                                        onClick={() => {
+                                          setDecisionModalTarget({
+                                            type: targetAppId ? "byDetails" : targetJobId ? "byJob" : "chat",
+                                            action: "accept",
+                                            jobId: targetJobId,
+                                            applicationId: targetAppId,
+                                            title: special.jobTitle,
+                                            companyName: special.companyName || selectedThread.other_user_name,
+                                            offerLetter: special.cleanBody,
+                                          });
+                                        }}
+                                      >
+                                        <span>Review &amp; Respond</span>
+                                      </button>
                                     ) : (
-                                      <>
-                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                          <line x1="18" y1="6" x2="6" y2="18" />
-                                          <line x1="6" y1="6" x2="18" y2="18" />
-                                        </svg>
-                                        <span>Offer Declined</span>
-                                      </>
-                                    )}
-                                  </span>
-                                  <time className="chat-special-time">{msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}</time>
+                                      <span className="chat-action-status-pill pending">Awaiting Candidate Response</span>
+                                    )
+                                  ) : isAccepted ? (
+                                    <button
+                                      type="button"
+                                      className="chat-action-btn chat-btn-accepted"
+                                      onClick={() => openViewLetterModal({
+                                        title: special.jobTitle || "Job Position",
+                                        company: special.companyName || selectedThread.other_user_name || "Company",
+                                        offerLetter: special.cleanBody,
+                                        letterText: matchingResponse?.cleanBody,
+                                        startDate: matchingResponse?.startDate,
+                                        decision: "accepted",
+                                        defaultTab: "response",
+                                        jobId: targetJobId,
+                                        applicationId: targetAppId,
+                                      })}
+                                    >
+                                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="20 6 9 17 4 12" />
+                                      </svg>
+                                      <span>Offer Accepted</span>
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      className="chat-action-btn chat-btn-declined"
+                                      onClick={() => openViewLetterModal({
+                                        title: special.jobTitle || "Job Position",
+                                        company: special.companyName || selectedThread.other_user_name || "Company",
+                                        offerLetter: special.cleanBody,
+                                        letterText: matchingResponse?.cleanBody,
+                                        decision: "declined",
+                                        defaultTab: "response",
+                                        jobId: targetJobId,
+                                        applicationId: targetAppId,
+                                      })}
+                                    >
+                                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18" />
+                                        <line x1="6" y1="6" x2="18" y2="18" />
+                                      </svg>
+                                      <span>Offer Declined</span>
+                                    </button>
+                                  )}
                                 </div>
-                                <h4 className="chat-special-title">{special.jobTitle}</h4>
-                                {special.startDate && (
-                                  <div className="chat-special-meta-pill">
-                                    <span>Target Start Date: <strong>{special.startDate}</strong></span>
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className="chat-special-notice">
-                                <p>
-                                  {special.isAccepted
-                                    ? "Candidate has formally accepted the employment offer. Click below to view the signed response letter."
-                                    : "Candidate has formally declined this position. Click below to view the response letter."}
-                                </p>
-                              </div>
-
-                              <div className="chat-special-actions">
-                                <button
-                                  type="button"
-                                  className="chat-action-btn chat-btn-view"
-                                  onClick={() => openViewLetterModal({
-                                    title: special.jobTitle || "Applied Position",
-                                    company: selectedThread.other_user_name || "Employer",
-                                    letterText: special.cleanBody,
-                                    startDate: special.startDate,
-                                    decision: special.isAccepted ? "accepted" : "declined",
-                                    defaultTab: "response"
-                                  })}
-                                >
-                                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                    <polyline points="14 2 14 8 20 8" />
-                                  </svg>
-                                  <span>View Response Letter</span>
-                                </button>
-                              </div>
-                            </article>
+                              </article>
+                            );
+                          })() : special.type === "offer_response" ? (
+                            null
                           ) : special.type === "interview_scheduled" ? (
                             <article className={`chat-bubble chat-special-card chat-interview-card ${isMe ? "outgoing" : "incoming"}`}>
                               <div className="chat-special-header">
@@ -4655,14 +4745,19 @@ export default function Messages() {
         companyName={decisionModalTarget?.companyName || selectedThread?.other_user_name}
         candidateName={applicantLabel || "Candidate"}
         currentUserId={currentUserId || undefined}
+        isInvitation={decisionModalTarget?.isInvitation}
+        offerLetter={decisionModalTarget?.offerLetter}
+        title={decisionModalTarget?.isInvitation ? undefined : "Respond to Employment Offer"}
         onClose={() => setDecisionModalTarget(null)}
         onConfirm={async ({ action, letter_text, letter_type, start_date }) => {
           if (!decisionModalTarget) return;
-          if (decisionModalTarget.type === "byJob" && decisionModalTarget.jobId) {
+          if (decisionModalTarget.applicationId) {
+            await handleRespondOffer(decisionModalTarget.applicationId, action, letter_text, letter_type, start_date);
+          } else if (decisionModalTarget.type === "byJob" && decisionModalTarget.jobId) {
             await handleRespondInvitationByJob(decisionModalTarget.jobId, action, letter_text, letter_type, start_date);
           } else if (decisionModalTarget.type === "byDetails") {
             await handleRespondInvitation(action, letter_text, letter_type, start_date);
-          } else if (decisionModalTarget.type === "chat") {
+          } else {
             await handleRespondInvitationFromChat(action, letter_text, letter_type, start_date);
           }
         }}
@@ -4749,6 +4844,46 @@ export default function Messages() {
               >
                 Close
               </button>
+
+              {!isEmployer && viewLetterModalTarget.decision !== "accepted" && viewLetterModalTarget.decision !== "declined" && (
+                <button
+                  type="button"
+                  className="solid-btn view-letter-respond-btn"
+                  onClick={() => {
+                    const targetTitle = viewLetterModalTarget.title;
+                    const targetCompany = viewLetterModalTarget.company;
+                    const matchedJob = (companyJobsData?.applied_jobs || []).find((j: any) =>
+                      j.title?.toLowerCase() === targetTitle?.toLowerCase() ||
+                      targetTitle?.toLowerCase().includes(j.title?.toLowerCase())
+                    ) || (companyJobsData?.recruited_jobs || []).find((j: any) =>
+                      j.title?.toLowerCase() === targetTitle?.toLowerCase() ||
+                      targetTitle?.toLowerCase().includes(j.title?.toLowerCase())
+                    );
+                    const targetAppId = viewLetterModalTarget.applicationId || matchedJob?.application?.id || matchedJob?.application_id;
+                    const targetJobId = viewLetterModalTarget.jobId || matchedJob?.id;
+
+                    setViewLetterModalTarget(null);
+                    setDecisionModalTarget({
+                      type: targetAppId ? "byDetails" : targetJobId ? "byJob" : "chat",
+                      action: "accept",
+                      jobId: targetJobId,
+                      applicationId: targetAppId,
+                      title: targetTitle,
+                      companyName: targetCompany || selectedThread?.other_user_name,
+                      offerLetter: viewLetterModalTarget.offerLetter,
+                    });
+                  }}
+                >
+                  Review &amp; Respond
+                </button>
+              )}
+
+              {viewLetterModalTarget.decision === "accepted" && (
+                <span className="view-letter-status-pill accepted">✓ Offer Accepted</span>
+              )}
+              {viewLetterModalTarget.decision === "declined" && (
+                <span className="view-letter-status-pill declined">✕ Offer Declined</span>
+              )}
             </div>
           </div>
         </div>

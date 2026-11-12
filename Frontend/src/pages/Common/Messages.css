@@ -2321,6 +2321,42 @@
   background: #0369a1;
 }
 
+.chat-action-btn.chat-btn-accepted {
+  background: #059669;
+  color: #ffffff;
+}
+
+.chat-action-btn.chat-btn-accepted:hover {
+  background: #047857;
+}
+
+.chat-action-btn.chat-btn-declined {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.chat-action-btn.chat-btn-declined:hover {
+  background: #b91c1c;
+}
+
+.chat-action-status-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+}
+
+.chat-action-status-pill.pending {
+  color: #0284c7;
+  background: #f0f9ff;
+  border-color: #bae6fd;
+}
+
 /* ── FORMAL LETTER VIEWER MODAL IN MESSAGES (Rule 1 & Rule 9 Isolation) ── */
 .view-letter-backdrop {
   position: fixed;
@@ -2532,6 +2568,43 @@
   background: #002742;
 }
 
+.view-letter-respond-btn {
+  background: #16a34a;
+  color: #ffffff;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.view-letter-respond-btn:hover {
+  background: #15803d;
+}
+
+.view-letter-status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.view-letter-status-pill.accepted {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.view-letter-status-pill.declined {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
 /* ── STRICT THEME ISOLATION: DARK MODE (Rule 9) ── */
 [data-theme="dark"] .chat-special-card.incoming,
 [data-theme="dark"] .chat-special-card.outgoing {
@@ -2664,5 +2737,29 @@
 
 [data-theme="dark"] .view-letter-footer {
   border-top-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .chat-action-status-pill {
+  background: #14151b !important;
+  color: #94a3b8 !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .chat-action-status-pill.pending {
+  background: rgba(2, 132, 199, 0.15) !important;
+  color: #38bdf8 !important;
+  border-color: rgba(2, 132, 199, 0.3) !important;
+}
+
+[data-theme="dark"] .view-letter-status-pill.accepted {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+[data-theme="dark"] .view-letter-status-pill.declined {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
 }
 
