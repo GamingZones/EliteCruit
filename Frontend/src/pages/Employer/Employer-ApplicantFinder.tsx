@@ -3976,16 +3976,20 @@ export default function EmployerApplicantFinder() {
                                         </span>
                                       );
                                     }
+                                    const extraRoles = roles.slice(1);
+                                    const extraTooltip = extraRoles.length === 1
+                                      ? extraRoles[0]
+                                      : extraRoles.map((r) => `• ${r}`).join("\n");
                                     return (
                                       <>
-                                        <span className="finder-target-role-pill" title={`Primary Target Role: ${roles[0]}`}>
+                                        <span className="finder-target-role-pill" title={`Target Role: ${roles[0]}`}>
                                           {roles[0]}
                                         </span>
                                         <span
                                           className="finder-target-role-pill finder-target-role-more"
-                                          title={`All Target Roles:\n• ${roles.join("\n• ")}`}
+                                          title={extraTooltip}
                                         >
-                                          +{roles.length - 1} more
+                                          +{extraRoles.length} more
                                         </span>
                                       </>
                                     );
@@ -4370,16 +4374,20 @@ export default function EmployerApplicantFinder() {
                                       </span>
                                     );
                                   }
+                                  const extraRoles = roles.slice(1);
+                                  const extraTooltip = extraRoles.length === 1
+                                    ? extraRoles[0]
+                                    : extraRoles.map((r) => `• ${r}`).join("\n");
                                   return (
                                     <>
-                                      <span className="finder-target-role-pill" title={`Primary Target Role: ${roles[0]}`}>
+                                      <span className="finder-target-role-pill" title={`Target Role: ${roles[0]}`}>
                                         {roles[0]}
                                       </span>
                                       <span
                                         className="finder-target-role-pill finder-target-role-more"
-                                        title={`All Target Roles:\n• ${roles.join("\n• ")}`}
+                                        title={extraTooltip}
                                       >
-                                        +{roles.length - 1} more
+                                        +{extraRoles.length} more
                                       </span>
                                     </>
                                   );
@@ -4696,22 +4704,49 @@ export default function EmployerApplicantFinder() {
                   {/* TAB 2: CAREER PREFERENCES */}
                   {candDetailTab === "preferences" && (
                     <div className="cand-tab-content">
+                      <div className="cand-details-card">
+                        <div className="cand-card-header">
+                          <h4>Geographic & Discovery Location</h4>
+                        </div>
+                        <div className="cand-info-row">
+                          <div className="cand-info-item">
+                            <span className="cand-info-label">Designated Nearby Location</span>
+                            <span className="cand-info-val highlight">
+                              {selectedCandidate.nearby_location || selectedCandidate.city || "Not designated"}
+                            </span>
+                          </div>
+                          <div className="cand-info-item">
+                            <span className="cand-info-label">Home Address / Municipality</span>
+                            <span className="cand-info-val">
+                              {selectedCandidate.address || selectedCandidate.city || "Not specified"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="cand-details-card">
+                        <div className="cand-card-header">
+                          <h4>Preferred Work Locations</h4>
+                        </div>
+                        <div className="cand-details-tags-wrap">
+                          {parsePreferredLocationTags(selectedCandidate.preferred_locations).length > 0 ? (
+                            parsePreferredLocationTags(selectedCandidate.preferred_locations).map((loc, idx) => (
+                              <span key={idx} className="js-tag-chip js-tag-skill" style={{ background: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0" }}>
+                                {loc}
+                              </span>
+                            ))
+                          ) : (
+                            <span style={{ fontSize: "0.85rem", color: "#94a3b8" }}>No preferred location restrictions specified</span>
+                          )}
+                        </div>
+                      </div>
+
                       {(() => {
                         const parsedRoles = parseCandidateTargetRoles(selectedCandidate);
                         return (
                           <div className="cand-details-card role-employment-targeting-card">
-                            <div className="role-employment-heading">
-                              <div className="role-employment-heading-left">
-                                <div className="role-employment-title-row">
-                                  <strong className="role-employment-section-title">Role & Employment Targeting</strong>
-                                  <span className="role-count-pill">
-                                    {parsedRoles.length} {parsedRoles.length === 1 ? "Role" : "Roles"} Configured
-                                  </span>
-                                </div>
-                                <small className="role-employment-subtext">
-                                  Configure each target role with individual work arrangement and salary preferences
-                                </small>
-                              </div>
+                            <div className="cand-card-header">
+                              <h4>Role & Employment Targeting</h4>
                             </div>
 
                             <div className="target-roles-list-container">
@@ -4757,43 +4792,6 @@ export default function EmployerApplicantFinder() {
                           </div>
                         );
                       })()}
-
-                      <div className="cand-details-card">
-                        <div className="cand-card-header">
-                          <h4>Geographic & Discovery Location</h4>
-                        </div>
-                        <div className="cand-info-row">
-                          <div className="cand-info-item">
-                            <span className="cand-info-label">Designated Nearby Location</span>
-                            <span className="cand-info-val highlight">
-                              {selectedCandidate.nearby_location || selectedCandidate.city || "Not designated"}
-                            </span>
-                          </div>
-                          <div className="cand-info-item">
-                            <span className="cand-info-label">Home Address / Municipality</span>
-                            <span className="cand-info-val">
-                              {selectedCandidate.address || selectedCandidate.city || "Not specified"}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="cand-details-card">
-                        <div className="cand-card-header">
-                          <h4>Preferred Work Locations</h4>
-                        </div>
-                        <div className="cand-details-tags-wrap">
-                          {parsePreferredLocationTags(selectedCandidate.preferred_locations).length > 0 ? (
-                            parsePreferredLocationTags(selectedCandidate.preferred_locations).map((loc, idx) => (
-                              <span key={idx} className="js-tag-chip js-tag-skill" style={{ background: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0" }}>
-                                {loc}
-                              </span>
-                            ))
-                          ) : (
-                            <span style={{ fontSize: "0.85rem", color: "#94a3b8" }}>No preferred location restrictions specified</span>
-                          )}
-                        </div>
-                      </div>
                     </div>
                   )}
 

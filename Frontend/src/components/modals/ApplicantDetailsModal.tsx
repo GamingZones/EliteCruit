@@ -1119,23 +1119,28 @@ export default function ApplicantDetailsModal({
               {/* TAB 2: CAREER PREFERENCES */}
               {candDetailTab === "preferences" && (
                 <div className="cand-tab-content">
+                  <div className="cand-details-card">
+                    <h4 className="cand-details-card-title">
+                      Preferred Work Locations
+                    </h4>
+                    <div className="jd-tags-wrap">
+                      {prefLocs.length > 0 ? (
+                        prefLocs.map((loc, idx) => (
+                          <span key={idx} className="js-tag-chip js-tag-skill">{loc}</span>
+                        ))
+                      ) : (
+                        <span className="cand-empty-muted-text">No preferred location restrictions specified</span>
+                      )}
+                    </div>
+                  </div>
+
                   {(() => {
                     const parsedRoles = parseCandidateTargetRoles(candidate);
                     return (
                       <div className="cand-details-card role-employment-targeting-card">
-                        <div className="role-employment-heading">
-                          <div className="role-employment-heading-left">
-                            <div className="role-employment-title-row">
-                              <strong className="role-employment-section-title">Role & Employment Targeting</strong>
-                              <span className="role-count-pill">
-                                {parsedRoles.length} {parsedRoles.length === 1 ? "Role" : "Roles"} Configured
-                              </span>
-                            </div>
-                            <small className="role-employment-subtext">
-                              Configure each target role with individual work arrangement and salary preferences
-                            </small>
-                          </div>
-                        </div>
+                        <h4 className="cand-details-card-title">
+                          Role & Employment Targeting
+                        </h4>
 
                         <div className="target-roles-list-container">
                           {parsedRoles.length === 0 ? (
@@ -1180,21 +1185,6 @@ export default function ApplicantDetailsModal({
                       </div>
                     );
                   })()}
-
-                  <div className="cand-details-card">
-                    <h4 className="cand-details-card-title">
-                      Preferred Work Locations
-                    </h4>
-                    <div className="jd-tags-wrap">
-                      {prefLocs.length > 0 ? (
-                        prefLocs.map((loc, idx) => (
-                          <span key={idx} className="js-tag-chip js-tag-skill">{loc}</span>
-                        ))
-                      ) : (
-                        <span className="cand-empty-muted-text">No preferred location restrictions specified</span>
-                      )}
-                    </div>
-                  </div>
                 </div>
               )}
 
