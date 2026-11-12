@@ -2220,8 +2220,8 @@ export default function Messages() {
                                 <div className="chat-special-subtitle">{special.companyName || selectedThread.other_user_name || "Company"}</div>
                               </div>
 
-                              <div className="chat-special-body">
-                                <p className="chat-special-text">{special.cleanBody}</p>
+                              <div className="chat-special-notice">
+                                <p>An official employment offer has been extended for this position. Click below to review the full offer letter, compensation, and benefits.</p>
                               </div>
 
                               <div className="chat-special-actions">
@@ -2301,8 +2301,12 @@ export default function Messages() {
                                 )}
                               </div>
 
-                              <div className="chat-special-body">
-                                <p className="chat-special-text">{special.cleanBody}</p>
+                              <div className="chat-special-notice">
+                                <p>
+                                  {special.isAccepted
+                                    ? "Candidate has formally accepted the employment offer. Click below to view the signed response letter."
+                                    : "Candidate has formally declined this position. Click below to view the response letter."}
+                                </p>
                               </div>
 
                               <div className="chat-special-actions">
