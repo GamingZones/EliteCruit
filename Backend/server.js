@@ -8912,6 +8912,92 @@ async function ensureMeetingsForZakiAccounts() {
       );
     }
 
+    // 9. Ensure Conversation Thread & Example Formal Letters & Interview Cards for Zaki Accounts
+    try {
+      let thread = await get(
+        `SELECT t.id FROM message_threads t
+         JOIN message_participants p1 ON p1.thread_id = t.id AND p1.user_id = ?
+         JOIN message_participants p2 ON p2.thread_id = t.id AND p2.user_id = ?
+         LIMIT 1`,
+        [employer.id, applicant.id]
+      );
+      let threadId = thread?.id;
+      if (!threadId) {
+        const createdThread = await run(
+          `INSERT INTO message_threads (created_by_user_id, title) VALUES (?, ?)`,
+          [employer.id, "Full Stack Web Developer - Zaki Ablando & Cebuana Lhuillier"]
+        );
+        threadId = createdThread.lastID;
+        if (threadId) {
+          await run(`INSERT INTO message_participants (thread_id, user_id) VALUES (?, ?)`, [threadId, employer.id]).catch(() => {});
+          await run(`INSERT INTO message_participants (thread_id, user_id) VALUES (?, ?)`, [threadId, applicant.id]).catch(() => {});
+        }
+      } else {
+        await run(
+          `UPDATE message_threads SET title = 'Full Stack Web Developer - Zaki Ablando & Cebuana Lhuillier' WHERE id = ?`,
+          [threadId]
+        ).catch(() => {});
+      }
+
+      if (threadId) {
+        const existingOfferMsg = await get(
+          `SELECT id FROM messages WHERE thread_id = ? AND message_text LIKE '%Formal Employment Offer%' LIMIT 1`,
+          [threadId]
+        );
+        if (!existingOfferMsg) {
+          const demoMessages = [
+            {
+              sender: employer.id,
+              text: "Hello Zaki! We were very impressed by your qualifications and software engineering background. We would like to schedule an initial technical evaluation."
+            },
+            {
+              sender: employer.id,
+              text: `[Interview Scheduled]: Technical Interview - Full Stack Web Developer\nStage: Technical Evaluation\nDate: 2026-11-20\nTime: 10:00 AM - 10:45 AM\nType: Video Conference\nLocation/Link: https://meet.google.com/zaki-interview-cebuana\nNotes: Please prepare a walkthrough of your latest architecture and full stack portfolio projects.`
+            },
+            {
+              sender: applicant.id,
+              text: "Thank you for the opportunity! I have added the technical interview to my calendar and look forward to meeting the engineering team."
+            },
+            {
+              sender: employer.id,
+              text: `[Interview Rescheduled]: Technical Interview - Full Stack Web Developer\nNew Schedule: 2026-11-22 at 02:00 PM\nOriginal Schedule: 2026-11-20 at 10:00 AM`
+            },
+            {
+              sender: employer.id,
+              text: `[Interview Cancelled]: Preliminary Screen - Full Stack Web Developer\nOriginal Schedule: 2026-11-18 at 09:00 AM\nReason: "Schedule consolidated directly into the technical evaluation panel."`
+            },
+            {
+              sender: employer.id,
+              text: `[Formal Employment Offer: Full Stack Web Developer]\nCompany: Cebuana Lhuillier\n\nDear Zaki Ablando,\n\nCongratulations! On behalf of Cebuana Lhuillier, we are thrilled to formally extend an offer of employment for the position of "Full Stack Web Developer".\n\nCompensation & Benefits:\n• Monthly Base Salary: PHP 75,000.00\n• Work Arrangement: Hybrid (Dasmarinas Tech Hub / Remote)\n• Comprehensive Medical & Dental Coverage (HMO on Day 1)\n• Annual Performance Incentive & 14th Month Pay\n• Paid Time Off: 18 Vacation Days + 12 Sick Days\n\nYour proven expertise in full stack development, cloud computing, and responsive UI engineering will be instrumental in accelerating our next-generation fintech solutions.\n\nPlease review this official offer letter and submit your formal response along with your preferred start date.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\nHiring Committee\nCebuana Lhuillier`
+            },
+            {
+              sender: applicant.id,
+              text: `[Official Job Offer Response: ACCEPTED]\nPosition: Full Stack Web Developer\nTarget Start Date: 2026-12-01\n\nDear Hiring Team at Cebuana Lhuillier,\n\nI am thrilled and deeply honored to formally accept your employment offer for the position of "Full Stack Web Developer".\n\nI confirm my target start date of December 1, 2026, and accept the proposed compensation package of PHP 75,000.00 monthly with the comprehensive benefits outlined.\n\nI have already begun gathering the pre-employment onboarding documents and am eager to contribute my full stack expertise to Cebuana Lhuillier's digital fintech initiatives.\n\nThank you once again for this incredible opportunity!\n\nSincerely,\nZaki Ablando`
+            },
+            {
+              sender: applicant.id,
+              text: `[Formal Invitation Response: DECLINED]\nPosition: Cloud Systems Associate\n\nDear Hiring Team,\n\nThank you very much for considering my profile for the Cloud Systems Associate opportunity. While I greatly respect the work your team does, I must respectfully decline this specific invitation as I have accepted the Full Stack Web Developer role. I appreciate your time and consideration!\n\nBest regards,\nZaki Ablando`
+            },
+            {
+              sender: employer.id,
+              text: "Wonderful! We have received your signed acceptance letter, Zaki. Our People Operations team will reach out shortly with onboarding credentials. Welcome aboard!"
+            }
+          ];
+
+          for (const m of demoMessages) {
+            await run(
+              `INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`,
+              [threadId, m.sender, m.text]
+            );
+          }
+          await run(`UPDATE message_threads SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [threadId]);
+          console.log("[Zaki Accounts] Seeded formal letters and interview messages in conversation thread.");
+        }
+      }
+    } catch (msgErr) {
+      console.error("[Zaki Accounts] Error seeding messages:", msgErr?.message || msgErr);
+    }
+
     console.log("[Zaki Accounts] Seeded 5 recruitment workflow test scenarios + 3 direct invitation scenarios successfully!");
     return {
       success: true,
@@ -8985,6 +9071,15 @@ app.get("/api/admin/ensure-zaki-meetings", async (req, res) => {
 app.get("/api/admin/seed-recruitment-test-data", async (req, res) => {
   const result = await ensureMeetingsForZakiAccounts();
   res.json(result);
+});
+
+app.get("/api/admin/seed-messages-demo", async (req, res) => {
+  try {
+    const result = await ensureMeetingsForZakiAccounts();
+    res.json({ success: true, message: "Letters and interview messages seeded successfully!", result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // In production or full-stack deployment, serve built Frontend files if dist exists
