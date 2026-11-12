@@ -15,6 +15,7 @@ import {
   isSkillMatch,
   isCertificationMatch,
   BSIT_BSCS_JOB_TITLES,
+  CATEGORIZED_JOB_ROLES,
   BSIT_BSCS_SKILLS,
   BSIT_BSCS_QUALIFICATIONS,
   BSIT_BSCS_CERTIFICATIONS,
@@ -3487,23 +3488,33 @@ export default function JobSearch() {
                       value={selectedRole}
                       onChange={(e) => setSelectedRole(e.target.value)}
                     >
-                      <option>All roles</option>
-                      {BSIT_BSCS_JOB_TITLES.map((role) => (
-                        <option key={role} value={role}>{role}</option>
+                      <option value="All roles">All roles</option>
+                      {Object.entries(CATEGORIZED_JOB_ROLES).map(([category, roles]) => (
+                        <optgroup key={category} label={category}>
+                          {roles.map((role) => (
+                            <option key={role} value={role}>{role}</option>
+                          ))}
+                        </optgroup>
                       ))}
                     </select>
-                    {/* Popular Role Quick Chips */}
+                    {/* Role Quick Chips: Prioritize Applicant's Profile Target Roles, fallback to popular roles */}
                     <div className="filter-role-quick-chips">
-                      {["Software Engineer", "Web Developer", "Data Analyst", "IT Support", "Database Administrator"].map((r) => (
-                        <button
-                          key={r}
-                          type="button"
-                          className={`filter-quick-chip ${selectedRole === r ? "active" : ""}`}
-                          onClick={() => setSelectedRole(selectedRole === r ? "All roles" : r)}
-                        >
-                          {r}
-                        </button>
-                      ))}
+                      {(() => {
+                        const profileRoles = (applicantMatchProfile?.targetRoles || []).filter(Boolean);
+                        const quickChips = profileRoles.length > 0
+                          ? profileRoles
+                          : ["Software Engineer", "Web Developer", "Data Analyst", "Cybersecurity Analyst", "UI/UX Designer"];
+                        return quickChips.map((r) => (
+                          <button
+                            key={r}
+                            type="button"
+                            className={`filter-quick-chip ${selectedRole === r ? "active" : ""}`}
+                            onClick={() => setSelectedRole(selectedRole === r ? "All roles" : r)}
+                          >
+                            {r}
+                          </button>
+                        ));
+                      })()}
                     </div>
                   </div>
 

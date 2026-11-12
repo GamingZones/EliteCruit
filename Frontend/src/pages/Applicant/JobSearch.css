@@ -4225,6 +4225,11 @@
   border-color: #2e3244 !important;
   color: #f1f5f9 !important;
 }
+[data-theme="dark"] .filter-drawer-select optgroup,
+[data-theme="dark"] .filter-drawer-select option {
+  background: #14151b !important;
+  color: #f1f5f9 !important;
+}
 
 .filter-drawer-two-col {
   display: grid;
