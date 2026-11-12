@@ -5255,6 +5255,15 @@ export default function EmployerApplicantManagement() {
                     <h3 className="view-letter-title">{viewingResponseLetterApp.job_title}</h3>
                     <p className="view-letter-company">Official Employment Offer</p>
                   </div>
+                  <button
+                    type="button"
+                    className="view-letter-close-btn"
+                    onClick={() => setViewingResponseLetterApp(null)}
+                    title="Close"
+                    aria-label="Close"
+                  >
+                    ✕
+                  </button>
                 </div>
 
                 <div className="view-letter-body-content">

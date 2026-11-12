@@ -2649,17 +2649,15 @@ export default function EmployerApplicantDetailsModal({
                   <h3 className="view-letter-title">{viewLetterModalTarget.title}</h3>
                   <p className="view-letter-company">{viewLetterModalTarget.company}</p>
                 </div>
-                {!viewLetterModalTarget.decision && (
-                  <button
-                    type="button"
-                    className="view-letter-close-btn"
-                    onClick={() => setViewLetterModalTarget(null)}
-                    title="Close"
-                    aria-label="Close"
-                  >
-                    ✕
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className="view-letter-close-btn"
+                  onClick={() => setViewLetterModalTarget(null)}
+                  title="Close"
+                  aria-label="Close"
+                >
+                  ✕
+                </button>
               </div>
 
               <div className="view-letter-body-content">
