@@ -5289,11 +5289,11 @@ export default function EmployerApplicantManagement() {
 
               {/* ── RIGHT MODAL: USERS RESPONSE ── */}
               <div className="view-letter-modal-card view-letter-response-modal">
-                <div className="view-letter-header">
+                <div className="view-letter-header" style={{ alignItems: "center" }}>
                   <div>
-                    <span className="view-letter-eyebrow">FORMAL CANDIDATE RESPONSE</span>
-                    <h3 className="view-letter-title">{viewingResponseLetterApp.job_title}</h3>
-                    <p className="view-letter-company">Response from {viewingResponseLetterApp.applicant_name}</p>
+                    <h3 className="view-letter-title" style={{ fontSize: "1.15rem" }}>
+                      Response Letter ({viewingResponseLetterApp.response_decision === "accepted" ? "Accepted" : "Denied"})
+                    </h3>
                   </div>
                   <button
                     type="button"
@@ -5307,21 +5307,20 @@ export default function EmployerApplicantManagement() {
                 </div>
 
                 <div className="view-letter-body-content">
-                  <div className="view-letter-meta-row">
-                    <span className={`view-letter-badge ${viewingResponseLetterApp.response_decision === "declined" ? "declined" : "accepted"}`}>
-                      {viewingResponseLetterApp.response_decision === "declined" ? "✕ Offer Declined" : "✓ Offer Accepted"}
-                    </span>
-                    {viewingResponseLetterApp.start_date && (
-                      <span className="view-letter-start-date">
-                        📅 Target Start Date: <strong>{new Date(viewingResponseLetterApp.start_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</strong>
-                      </span>
-                    )}
-                    {viewingResponseLetterApp.responded_at && (
-                      <span className="view-letter-timestamp">
-                        Responded: {new Date(viewingResponseLetterApp.responded_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                      </span>
-                    )}
-                  </div>
+                  {(viewingResponseLetterApp.start_date || viewingResponseLetterApp.responded_at) && (
+                    <div className="view-letter-meta-row" style={{ marginBottom: "12px" }}>
+                      {viewingResponseLetterApp.start_date && (
+                        <span className="view-letter-start-date">
+                          📅 Target Start Date: <strong>{new Date(viewingResponseLetterApp.start_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</strong>
+                        </span>
+                      )}
+                      {viewingResponseLetterApp.responded_at && (
+                        <span className="view-letter-timestamp">
+                          Responded: {new Date(viewingResponseLetterApp.responded_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                   <div className="view-letter-body-box">
                     <div className="view-letter-box-header">

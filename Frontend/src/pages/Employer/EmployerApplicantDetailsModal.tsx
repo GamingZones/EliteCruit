@@ -2761,34 +2761,36 @@ export default function EmployerApplicantDetailsModal({
             {/* ── RIGHT MODAL: USERS RESPONSE ── */}
             {(viewLetterModalTarget.decision === "accepted" || viewLetterModalTarget.decision === "declined") && (
               <div className="view-letter-modal-card view-letter-response-modal">
-                <div className="view-letter-header">
-                  <div>
-                    <span className="view-letter-eyebrow">FORMAL CANDIDATE RESPONSE</span>
-                    <h3 className="view-letter-title">{viewLetterModalTarget.title}</h3>
-                    <p className="view-letter-company">Response to {viewLetterModalTarget.company}</p>
+                  <div className="view-letter-header" style={{ alignItems: "center" }}>
+                    <div>
+                      <h3 className="view-letter-title" style={{ fontSize: "1.15rem" }}>
+                        Response Letter ({viewLetterModalTarget.decision === "accepted" ? "Accepted" : "Denied"})
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      className="view-letter-close-btn"
+                      onClick={() => setViewLetterModalTarget(null)}
+                      title="Close"
+                      aria-label="Close"
+                    >
+                      ✕
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    className="view-letter-close-btn"
-                    onClick={() => setViewLetterModalTarget(null)}
-                    title="Close"
-                    aria-label="Close"
-                  >
-                    ✕
-                  </button>
-                </div>
 
-                <div className="view-letter-body-content">
-                  <div className="view-letter-meta-row">
-                    <span className={`view-letter-badge ${viewLetterModalTarget.decision === "accepted" ? "accepted" : "declined"}`}>
-                      {viewLetterModalTarget.decision === "accepted" ? "✓ Offer Accepted" : "✕ Offer Declined"}
-                    </span>
+                  <div className="view-letter-body-content">
                     {viewLetterModalTarget.startDate && (
-                      <span className="view-letter-start-date">
-                        📅 Target Start Date: <strong>{viewLetterModalTarget.startDate}</strong>
-                      </span>
+                      <div className="view-letter-meta-row" style={{ marginBottom: "12px" }}>
+                        <span className="view-letter-start-date-tag">
+                          📅 Target Start Date: <strong>{viewLetterModalTarget.startDate}</strong>
+                        </span>
+                        {viewLetterModalTarget.respondedAt && (
+                          <span className="view-letter-timestamp-tag">
+                            Submitted: {typeof formatDate === "function" ? formatDate(viewLetterModalTarget.respondedAt) : String(viewLetterModalTarget.respondedAt)}
+                          </span>
+                        )}
+                      </div>
                     )}
-                  </div>
 
                   <div className="view-letter-body-box">
                     <div className="view-letter-box-header">
