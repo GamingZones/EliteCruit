@@ -2061,18 +2061,21 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  color: #0f172a;
 }
 
 .chat-special-card.incoming {
   align-self: flex-start;
   background: #ffffff;
   border-left: 4px solid #00385e;
+  color: #0f172a;
 }
 
 .chat-special-card.outgoing {
   align-self: flex-end;
   background: #f8fafc;
   border-right: 4px solid #0284c7;
+  color: #0f172a;
 }
 
 /* Offer Card Special Accent */
@@ -2220,11 +2223,23 @@
   padding: 10px 12px;
   font-size: 0.82rem;
   line-height: 1.45;
-  color: #475569;
+  color: #334155 !important;
 }
 
-.chat-special-notice p {
+.chat-special-notice p,
+.chat-special-card p,
+.chat-special-card.outgoing p,
+.chat-special-card.incoming p,
+.chat-special-card .chat-special-notice p,
+.chat-special-card .chat-special-text,
+.chat-bubble.outgoing .chat-special-notice p,
+.chat-bubble.outgoing .chat-special-text,
+.chat-bubble.incoming .chat-special-notice p,
+.chat-bubble.incoming .chat-special-text {
   margin: 0;
+  color: #334155 !important;
+  font-size: 0.82rem;
+  line-height: 1.45;
 }
 
 .chat-special-text {
@@ -2352,9 +2367,13 @@
 }
 
 .chat-action-status-pill.pending {
-  color: #0284c7;
-  background: #f0f9ff;
-  border-color: #bae6fd;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
 }
 
 /* ── FORMAL LETTER VIEWER MODAL IN MESSAGES (Rule 1 & Rule 9 Isolation) ── */
@@ -2703,7 +2722,20 @@
 
 [data-theme="dark"] .chat-special-notice {
   border-left-color: #38bdf8 !important;
-  color: #94a3b8 !important;
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .chat-special-notice p,
+[data-theme="dark"] .chat-special-card p,
+[data-theme="dark"] .chat-special-card.outgoing p,
+[data-theme="dark"] .chat-special-card.incoming p,
+[data-theme="dark"] .chat-special-card .chat-special-notice p,
+[data-theme="dark"] .chat-special-card .chat-special-text,
+[data-theme="dark"] .chat-bubble.outgoing .chat-special-notice p,
+[data-theme="dark"] .chat-bubble.outgoing .chat-special-text,
+[data-theme="dark"] .chat-bubble.incoming .chat-special-notice p,
+[data-theme="dark"] .chat-bubble.incoming .chat-special-text {
+  color: #f1f5f9 !important;
 }
 
 [data-theme="dark"] .chat-special-text {
