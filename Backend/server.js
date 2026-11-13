@@ -19,6 +19,7 @@ import {
   sendJobClosedEmail,
   sendInterviewRescheduledEmail,
 } from "./utils/emailService.js";
+import { seededEmployers, seededApplicants } from "./seedAccountsData.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -9244,8 +9245,6 @@ app.all("/api/admin/unregister-zaki-yahoo", async (req, res) => {
   const result = await unregisterTargetUser("zaki_ablando897@yahoo.com");
   res.json(result);
 });
-
-const { seededEmployers, seededApplicants } = require("./seedAccountsData");
 
 async function seedAllSystemUserAccounts() {
   console.log("[Seed Accounts] Checking and provisioning system user accounts (accounts only)...");

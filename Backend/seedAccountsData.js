@@ -655,7 +655,12 @@ const seededApplicants = [
   }
 ];
 
-module.exports = {
+export {
+  seededEmployers,
+  seededApplicants
+};
+
+export default {
   seededEmployers,
   seededApplicants
 };
