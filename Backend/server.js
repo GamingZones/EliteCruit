@@ -9245,6 +9245,119 @@ app.all("/api/admin/unregister-zaki-yahoo", async (req, res) => {
   res.json(result);
 });
 
+const { seededEmployers, seededApplicants } = require("./seedAccountsData");
+
+async function seedAllSystemUserAccounts() {
+  console.log("[Seed Accounts] Checking and provisioning system user accounts (accounts only)...");
+  let createdCount = 0;
+  let existingCount = 0;
+
+  // 1. Seed Employers
+  for (const emp of seededEmployers) {
+    const email = String(emp.email || "").trim().toLowerCase();
+    if (!email) continue;
+    try {
+      const existingUser = await get("SELECT id FROM users WHERE lower(email) = ?", [email]);
+      let userId;
+      if (!existingUser) {
+        const hash = await bcrypt.hash(emp.password, 10);
+        const res = await run(
+          "INSERT INTO users (email, password_hash, role, is_active, is_email_verified, two_factor_enabled) VALUES (?, ?, 'employer', true, true, false)",
+          [email, hash]
+        );
+        userId = res.lastID;
+        createdCount++;
+        console.log(`[Seed Accounts] Created employer: ${email} (ID: ${userId})`);
+      } else {
+        userId = existingUser.id;
+        await run("UPDATE users SET is_active = true, is_email_verified = true WHERE id = ?", [userId]).catch(() => {});
+        existingCount++;
+      }
+
+      if (userId) {
+        const existingProf = await get("SELECT user_id FROM employer_profiles WHERE user_id = ?", [userId]);
+        if (!existingProf) {
+          await run(
+            `INSERT INTO employer_profiles (
+              user_id, business_name, industry, city, province, company_address, contact_number, company_size, company_description, terms_accepted, terms_accepted_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, true, CURRENT_TIMESTAMP)`,
+            [
+              userId,
+              emp.businessName,
+              emp.industry || "Corporate & Commercial Services",
+              emp.city || "Cavite",
+              emp.province || "Cavite",
+              emp.companyAddress || `${emp.city}, ${emp.province}`,
+              emp.contactNumber || "+63 917 000 0000",
+              emp.companySize || "51-200",
+              emp.companyDescription || `${emp.businessName} - Official corporate employer partner on EliteCruit.`
+            ]
+          ).catch((e) => console.error(`[Seed Accounts] Profile insert error for employer ${email}:`, e.message));
+        }
+      }
+    } catch (err) {
+      console.error(`[Seed Accounts] Error seeding employer ${email}:`, err.message);
+    }
+  }
+
+  // 2. Seed Applicants
+  for (const app of seededApplicants) {
+    const email = String(app.email || "").trim().toLowerCase();
+    if (!email || email === "zaki_ablando897@yahoo.com") continue; // Exclude unregister target
+
+    try {
+      const existingUser = await get("SELECT id FROM users WHERE lower(email) = ?", [email]);
+      let userId;
+      if (!existingUser) {
+        const hash = await bcrypt.hash(app.password, 10);
+        const res = await run(
+          "INSERT INTO users (email, password_hash, role, is_active, is_email_verified, two_factor_enabled) VALUES (?, ?, 'applicant', true, true, false)",
+          [email, hash]
+        );
+        userId = res.lastID;
+        createdCount++;
+        console.log(`[Seed Accounts] Created applicant: ${email} (ID: ${userId})`);
+      } else {
+        userId = existingUser.id;
+        await run("UPDATE users SET is_active = true, is_email_verified = true WHERE id = ?", [userId]).catch(() => {});
+        existingCount++;
+      }
+
+      if (userId) {
+        const existingProf = await get("SELECT user_id FROM applicant_profiles WHERE user_id = ?", [userId]);
+        if (!existingProf) {
+          await run(
+            `INSERT INTO applicant_profiles (
+              user_id, first_name, middle_name, last_name, desired_job_title, city, province, address, phone, gender, terms_accepted, terms_accepted_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Prefer not to say', true, CURRENT_TIMESTAMP)`,
+            [
+              userId,
+              app.firstName,
+              app.middleName || null,
+              app.lastName,
+              app.desiredJobTitle || "Professional",
+              app.city || "Cavite",
+              app.province || "Cavite",
+              app.address || `${app.city}, ${app.province}`,
+              app.phone || "+63 917 000 0000"
+            ]
+          ).catch((e) => console.error(`[Seed Accounts] Profile insert error for applicant ${email}:`, e.message));
+        }
+      }
+    } catch (err) {
+      console.error(`[Seed Accounts] Error seeding applicant ${email}:`, err.message);
+    }
+  }
+
+  console.log(`[Seed Accounts] Seeding completed. Created: ${createdCount}, Verified/Active: ${existingCount}.`);
+  return { success: true, createdCount, existingCount };
+}
+
+app.all("/api/system/seed-users", async (req, res) => {
+  const result = await seedAllSystemUserAccounts();
+  res.json(result);
+});
+
 // In production or full-stack deployment, serve built Frontend files if dist exists
 const distPath = path.resolve(__dirname, "../Frontend/dist");
 if (fs.existsSync(distPath)) {
@@ -9281,6 +9394,7 @@ Promise.resolve()
   .then(() => syncHistoricalInvitations())
   .then(() => ensureAdminUser())
   .then(() => ensureMeetingsForZakiAccounts())
+  .then(() => seedAllSystemUserAccounts())
   .then(() => unregisterTargetUser("zaki_ablando897@yahoo.com"))
   .then(() => app.listen(PORT, () => {
     console.log(`EliteCruit backend running at http://localhost:${PORT}`);
