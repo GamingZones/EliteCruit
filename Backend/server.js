@@ -9235,6 +9235,11 @@ async function unregisterTargetUser(targetEmail) {
   }
 }
 
+app.all("/api/system/unregister-zaki-yahoo", async (req, res) => {
+  const result = await unregisterTargetUser("zaki_ablando897@yahoo.com");
+  res.json(result);
+});
+
 app.all("/api/admin/unregister-zaki-yahoo", async (req, res) => {
   const result = await unregisterTargetUser("zaki_ablando897@yahoo.com");
   res.json(result);
