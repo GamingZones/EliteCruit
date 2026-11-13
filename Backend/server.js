@@ -9257,9 +9257,8 @@ async function seedAllSystemUserAccounts() {
     if (!email) continue;
     try {
       const existingUser = await get("SELECT id FROM users WHERE lower(email) = ?", [email]);
-      let userId;
+      const hash = await bcrypt.hash(emp.password, 10);
       if (!existingUser) {
-        const hash = await bcrypt.hash(emp.password, 10);
         const res = await run(
           "INSERT INTO users (email, password_hash, role, is_active, is_email_verified, two_factor_enabled) VALUES (?, ?, 'employer', true, true, false)",
           [email, hash]
@@ -9269,7 +9268,7 @@ async function seedAllSystemUserAccounts() {
         console.log(`[Seed Accounts] Created employer: ${email} (ID: ${userId})`);
       } else {
         userId = existingUser.id;
-        await run("UPDATE users SET is_active = true, is_email_verified = true WHERE id = ?", [userId]).catch(() => {});
+        await run("UPDATE users SET password_hash = ?, is_active = true, is_email_verified = true WHERE id = ?", [hash, userId]).catch(() => {});
         existingCount++;
       }
 
@@ -9306,9 +9305,8 @@ async function seedAllSystemUserAccounts() {
 
     try {
       const existingUser = await get("SELECT id FROM users WHERE lower(email) = ?", [email]);
-      let userId;
+      const hash = await bcrypt.hash(app.password, 10);
       if (!existingUser) {
-        const hash = await bcrypt.hash(app.password, 10);
         const res = await run(
           "INSERT INTO users (email, password_hash, role, is_active, is_email_verified, two_factor_enabled) VALUES (?, ?, 'applicant', true, true, false)",
           [email, hash]
@@ -9318,7 +9316,7 @@ async function seedAllSystemUserAccounts() {
         console.log(`[Seed Accounts] Created applicant: ${email} (ID: ${userId})`);
       } else {
         userId = existingUser.id;
-        await run("UPDATE users SET is_active = true, is_email_verified = true WHERE id = ?", [userId]).catch(() => {});
+        await run("UPDATE users SET password_hash = ?, is_active = true, is_email_verified = true WHERE id = ?", [hash, userId]).catch(() => {});
         existingCount++;
       }
 
