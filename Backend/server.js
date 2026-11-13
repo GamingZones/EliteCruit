@@ -8163,7 +8163,7 @@ async function ensureAdminUser() {
 
 async function resetAndSeedZakiAccounts() {
   const employerEmail = "zakiablando897@gmail.com";
-  const applicantEmail = "zaki_ablando897@yahoo.com";
+  const applicantEmail = "demo_applicant@elitecruit.ph";
 
   try {
     await run("CREATE TABLE IF NOT EXISTS system_migrations (name TEXT PRIMARY KEY, executed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP)");
@@ -8461,7 +8461,7 @@ app.post("/api/admin/reset-zaki-accounts", async (req, res) => {
 
 async function ensureMeetingsForZakiAccounts() {
   const employerEmail = "zakiablando897@gmail.com";
-  const applicantEmail = "zaki_ablando897@yahoo.com";
+  const applicantEmail = "demo_applicant@elitecruit.ph";
 
   try {
     const defaultPassword = "Password123!";
@@ -9192,6 +9192,54 @@ app.get("/api/admin/seed-messages-demo", async (req, res) => {
   }
 });
 
+async function unregisterTargetUser(targetEmail) {
+  const cleanEmail = String(targetEmail || "").trim().toLowerCase();
+  if (!cleanEmail) return { success: false, message: "No email specified." };
+
+  try {
+    const user = await get("SELECT id FROM users WHERE lower(email) = ?", [cleanEmail]);
+    if (!user) {
+      console.log(`[Unregister] User ${cleanEmail} is not registered in the database.`);
+      await run("DELETE FROM registration_email_otps WHERE lower(email) = ?", [cleanEmail]).catch(() => {});
+      return { success: true, message: `User ${cleanEmail} is already unregistered.` };
+    }
+
+    const uid = user.id;
+    console.log(`[Unregister] Found user ID ${uid} for ${cleanEmail}. Deleting all associated records...`);
+
+    // Clean up all related tables in foreign-key safe order
+    await run("DELETE FROM two_factor_codes WHERE user_id = ?", [uid]).catch(() => {});
+    await run("DELETE FROM notifications WHERE user_id = ? OR related_user_id = ?", [uid, uid]).catch(() => {});
+    await run("DELETE FROM company_ratings WHERE employer_user_id = ? OR applicant_user_id = ?", [uid, uid]).catch(() => {});
+    await run("DELETE FROM candidate_ratings WHERE employer_user_id = ? OR applicant_user_id = ?", [uid, uid]).catch(() => {});
+    await run("DELETE FROM scheduled_interviews WHERE employer_user_id = ? OR applicant_user_id = ?", [uid, uid]).catch(() => {});
+    await run("DELETE FROM job_invitations WHERE employer_user_id = ? OR applicant_user_id = ?", [uid, uid]).catch(() => {});
+    await run("DELETE FROM applications WHERE applicant_user_id = ? OR job_post_id IN (SELECT id FROM job_posts WHERE employer_user_id = ?)", [uid, uid]).catch(() => {});
+    await run("DELETE FROM job_posts WHERE employer_user_id = ?", [uid]).catch(() => {});
+    await run("DELETE FROM company_faq WHERE employer_user_id = ?", [uid]).catch(() => {});
+    await run("DELETE FROM messages WHERE sender_user_id = ?", [uid]).catch(() => {});
+    await run("DELETE FROM message_participants WHERE user_id = ?", [uid]).catch(() => {});
+    await run("DELETE FROM applicant_documents WHERE user_id = ?", [uid]).catch(() => {});
+    await run("DELETE FROM applicant_profiles WHERE user_id = ?", [uid]).catch(() => {});
+    await run("DELETE FROM employer_profiles WHERE user_id = ?", [uid]).catch(() => {});
+    await run("DELETE FROM users WHERE id = ?", [uid]);
+
+    await run("DELETE FROM message_threads WHERE id NOT IN (SELECT DISTINCT thread_id FROM message_participants)").catch(() => {});
+    await run("DELETE FROM registration_email_otps WHERE lower(email) = ?", [cleanEmail]).catch(() => {});
+
+    console.log(`[Unregister] Successfully unregistered ${cleanEmail} from database.`);
+    return { success: true, message: `Successfully unregistered ${cleanEmail} from database.` };
+  } catch (err) {
+    console.error(`[Unregister] Error unregistering ${cleanEmail}:`, err);
+    return { success: false, message: err.message || "Failed to unregister user." };
+  }
+}
+
+app.all("/api/admin/unregister-zaki-yahoo", async (req, res) => {
+  const result = await unregisterTargetUser("zaki_ablando897@yahoo.com");
+  res.json(result);
+});
+
 // In production or full-stack deployment, serve built Frontend files if dist exists
 const distPath = path.resolve(__dirname, "../Frontend/dist");
 if (fs.existsSync(distPath)) {
@@ -9228,6 +9276,7 @@ Promise.resolve()
   .then(() => syncHistoricalInvitations())
   .then(() => ensureAdminUser())
   .then(() => ensureMeetingsForZakiAccounts())
+  .then(() => unregisterTargetUser("zaki_ablando897@yahoo.com"))
   .then(() => app.listen(PORT, () => {
     console.log(`EliteCruit backend running at http://localhost:${PORT}`);
   }))
