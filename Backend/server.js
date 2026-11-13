@@ -7782,7 +7782,7 @@ app.patch("/api/interviews/:id/status", async (req, res) => {
     return res.status(400).json({ success: false, message: "Invalid interview ID." });
   }
 
-  const validStatuses = ["pending", "accepted", "declined", "rescheduled", "completed", "cancelled"];
+  const validStatuses = ["pending", "accepted", "declined", "rescheduled", "completed", "cancelled", "reschedule_requested"];
   const targetStatus = String(status || "").toLowerCase().trim();
   if (!validStatuses.includes(targetStatus)) {
     return res.status(400).json({ success: false, message: "Invalid interview status." });
@@ -7794,7 +7794,10 @@ app.patch("/api/interviews/:id/status", async (req, res) => {
       return res.status(404).json({ success: false, message: "Interview not found." });
     }
 
-    const finalNotes = cancellation_reason
+    const rescheduleReason = req.body.reschedule_reason || cancellation_reason;
+    const finalNotes = targetStatus === "reschedule_requested"
+      ? (rescheduleReason ? `Reschedule Requested: ${rescheduleReason}` : (notes || existing.notes))
+      : cancellation_reason
       ? `Cancellation Reason: ${cancellation_reason}${notes ? ` | ${notes}` : ""}`
       : notes !== undefined ? notes : null;
 
@@ -7910,6 +7913,9 @@ app.patch("/api/interviews/:id/status", async (req, res) => {
     } else if (targetStatus === "rescheduled") {
       notifTitle = `Interview Rescheduled`;
       notifBody = `The interview has been rescheduled to ${finalNewDate || existing.interview_date} at ${finalNewStartTime || existing.start_time}.`;
+    } else if (targetStatus === "reschedule_requested") {
+      notifTitle = `Interview Reschedule Requested`;
+      notifBody = `The candidate has requested to reschedule the interview for "${existing.interview_title}".${rescheduleReason ? ` Reason: "${rescheduleReason}".` : ""}`;
     }
 
     for (const rUid of recipientsToNotify) {
@@ -7982,10 +7988,12 @@ app.patch("/api/interviews/:id/status", async (req, res) => {
             await run(`INSERT INTO message_participants (thread_id, user_id) VALUES (?, ?)`, [threadId, candId]).catch(() => {});
           }
 
-          if (targetStatus === "cancelled" || targetStatus === "rescheduled") {
+          if (targetStatus === "cancelled" || targetStatus === "rescheduled" || targetStatus === "reschedule_requested") {
             const chatText = targetStatus === "cancelled"
               ? `[Interview Cancelled]: ${existing.interview_title || "Interview"}\nOriginal Schedule: ${existing.interview_date} at ${existing.start_time}${cancellation_reason ? `\nReason: "${cancellation_reason}".` : ""}`
-              : `[Interview Rescheduled]: ${existing.interview_title || "Interview"}\nNew Schedule: ${finalNewDate || existing.interview_date} at ${finalNewStartTime || existing.start_time}\nOriginal Schedule: ${existing.interview_date} at ${existing.start_time}`;
+              : targetStatus === "rescheduled"
+              ? `[Interview Rescheduled]: ${existing.interview_title || "Interview"}\nNew Schedule: ${finalNewDate || existing.interview_date} at ${finalNewStartTime || existing.start_time}\nOriginal Schedule: ${existing.interview_date} at ${existing.start_time}`
+              : `[Meeting Reschedule Request]: ${existing.interview_title || "Interview"}\nInterview ID: ${existing.id}\nDate: ${existing.interview_date}\nTime: ${existing.start_time}\nReason: ${rescheduleReason || "Candidate requested to reschedule this meeting."}`;
 
             await run(
               `INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`,

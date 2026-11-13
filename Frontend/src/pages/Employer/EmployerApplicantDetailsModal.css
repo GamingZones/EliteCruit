@@ -2487,6 +2487,16 @@
   background: #f8fafc;
 }
 
+.chat-reschedule-req-card.incoming {
+  border-left: 4px solid #f59e0b;
+  background: #fffdfa;
+}
+
+.chat-reschedule-req-card.outgoing {
+  border-right: 4px solid #f59e0b;
+  background: #fffdfa;
+}
+
 .chat-special-header {
   display: flex;
   flex-direction: column;
@@ -2530,6 +2540,11 @@
 .chat-special-badge.badge-interview-sched {
   background: #e0f2fe;
   color: #0284c7;
+}
+
+.chat-special-badge.badge-interview-resched-req {
+  background: #fef3c7;
+  color: #b45309;
 }
 
 .chat-special-time {
@@ -2642,6 +2657,20 @@
 
 .chat-btn-view:hover {
   background: #0369a1;
+}
+
+.chat-btn-reschedule-meeting {
+  background: #00385e;
+  color: #ffffff;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.chat-btn-reschedule-meeting:hover {
+  background: #0284c7;
+  color: #ffffff;
+  transform: translateY(-1px);
 }
 
 .chat-action-btn.chat-btn-accepted,
@@ -2979,6 +3008,17 @@
   background: #171b26 !important;
 }
 
+[data-theme="dark"] .chat-reschedule-req-card.incoming,
+[data-theme="dark"] .chat-reschedule-req-card.outgoing {
+  border-color: #f59e0b !important;
+  background: #1e1b14 !important;
+}
+
+[data-theme="dark"] .chat-special-badge.badge-interview-resched-req {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #fbbf24 !important;
+}
+
 [data-theme="dark"] .chat-special-title {
   color: #f1f5f9 !important;
 }
@@ -3124,6 +3164,19 @@
   background: #047857 !important;
   border: none !important;
   outline: none !important;
+}
+
+[data-theme="dark"] .chat-action-btn.chat-btn-reschedule-meeting,
+[data-theme="dark"] .chat-btn-reschedule-meeting {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+[data-theme="dark"] .chat-action-btn.chat-btn-reschedule-meeting:hover,
+[data-theme="dark"] .chat-btn-reschedule-meeting:hover {
+  background: #38bdf8 !important;
+  color: #0f172a !important;
 }
 
 [data-theme="dark"] .chat-action-btn.chat-btn-declined,

@@ -753,6 +753,16 @@
   background: rgba(2, 132, 199, 0.1);
 }
 
+.int-btn-reschedule-req {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  color: #b45309;
+}
+
+.int-btn-reschedule-req:hover {
+  background: #fde68a;
+}
+
 .int-btn-cancel {
   background: #fee2e2;
   border: 1px solid #ef4444;
@@ -796,6 +806,16 @@
 
 [data-theme="dark"] .int-btn-reschedule:hover {
   background: rgba(56, 189, 248, 0.15) !important;
+}
+
+[data-theme="dark"] .int-btn-reschedule-req {
+  background: rgba(245, 158, 11, 0.18) !important;
+  border: 1px solid #f59e0b !important;
+  color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .int-btn-reschedule-req:hover {
+  background: rgba(245, 158, 11, 0.28) !important;
 }
 
 [data-theme="dark"] .int-btn-cancel {
@@ -2838,6 +2858,18 @@
   background: #fef2f2;
   color: #dc2626;
   border: 1px solid #fecaca;
+}
+
+.applicant-meeting-pill.reschedule-req {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+}
+
+[data-theme="dark"] .applicant-meeting-pill.reschedule-req {
+  background: rgba(245, 158, 11, 0.18) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.4) !important;
 }
 
 .applicant-pill-pulse-dot {

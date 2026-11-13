@@ -5,8 +5,10 @@ export interface ParsedSpecialMessage {
     | "interview_scheduled"
     | "interview_rescheduled"
     | "interview_cancelled"
+    | "interview_reschedule_request"
     | "plain";
   jobTitle?: string;
+  interviewId?: number;
   companyName?: string;
   isAccepted?: boolean;
   startDate?: string;
@@ -205,6 +207,44 @@ export function parseSpecialMessage(text: string): ParsedSpecialMessage {
       interviewType: type || "On-Site",
       location: loc,
       notes,
+      cleanBody: text,
+    };
+  }
+
+  // 6. Interview Reschedule Request
+  if (
+    text.startsWith("[Meeting Reschedule Request]:") ||
+    text.startsWith("[Interview Reschedule Request]:") ||
+    (text.includes("[System Notice]:") && text.toLowerCase().includes("wants to reschedule the meeting"))
+  ) {
+    let title = "";
+    let interviewId: number | undefined;
+    let date = "";
+    let time = "";
+    let reason = "";
+
+    const titleMatch = text.match(/\[(?:Meeting|Interview) Reschedule Request\]:\s*(.*?)(?:\n|$)/i);
+    if (titleMatch) title = titleMatch[1].trim();
+
+    const idMatch = text.match(/Interview ID:\s*(\d+)/i);
+    if (idMatch) interviewId = parseInt(idMatch[1], 10);
+
+    const dateMatch = text.match(/Date:\s*(.*?)(?:\n|$)/i);
+    if (dateMatch) date = dateMatch[1].trim();
+
+    const timeMatch = text.match(/Time:\s*(.*?)(?:\n|$)/i);
+    if (timeMatch) time = timeMatch[1].trim();
+
+    const reasonMatch = text.match(/Reason:\s*["']?(.*?)["']?\.?$/im);
+    if (reasonMatch) reason = reasonMatch[1].trim();
+
+    return {
+      type: "interview_reschedule_request",
+      jobTitle: title || "Interview",
+      interviewId,
+      date,
+      time,
+      reason: reason || "The candidate requested to reschedule this meeting.",
       cleanBody: text,
     };
   }

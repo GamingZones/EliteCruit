@@ -404,9 +404,24 @@ export default function CalendarDrawer({
     const handleScheduleCandidateEvent = (e: Event) => {
       const customDetail = (e as CustomEvent)?.detail;
       setInternalOpen(true);
-      setActiveTab("schedule");
-      if (customDetail?.candidateUserId) {
-        setSelectedCandidateUserIds([Number(customDetail.candidateUserId)]);
+      if (customDetail?.action === "reschedule" && customDetail?.interviewId) {
+        const targetId = Number(customDetail.interviewId);
+        setActiveTab("all");
+        const found = interviews.find((i) => i.id === targetId);
+        if (found) {
+          if (isEmployer) {
+            handleOpenRescheduleModal(found);
+          } else {
+            handleOpenApplicantRescheduleModal(found);
+          }
+        } else {
+          setPendingRescheduleId(targetId);
+        }
+      } else {
+        setActiveTab("schedule");
+        if (customDetail?.candidateUserId) {
+          setSelectedCandidateUserIds([Number(customDetail.candidateUserId)]);
+        }
       }
     };
 
@@ -578,6 +593,75 @@ export default function CalendarDrawer({
   const [rescheduleReason, setRescheduleReason] = useState(
     "I have a prior commitment at the original interview time. I'm available at either suggested time."
   );
+
+  // Applicant Reschedule Request Modal state
+  const [applicantRescheduleModalItem, setApplicantRescheduleModalItem] = useState<ScheduledInterview | null>(null);
+  const [applicantRescheduleReason, setApplicantRescheduleReason] = useState("");
+  const [isSubmittingRescheduleRequest, setIsSubmittingRescheduleRequest] = useState(false);
+  const [pendingRescheduleId, setPendingRescheduleId] = useState<number | null>(null);
+
+  const handleOpenApplicantRescheduleModal = (item: ScheduledInterview) => {
+    setApplicantRescheduleModalItem(item);
+    setApplicantRescheduleReason("");
+  };
+
+  const handleSendRescheduleRequest = async () => {
+    if (!applicantRescheduleModalItem || !applicantRescheduleReason.trim()) return;
+    setIsSubmittingRescheduleRequest(true);
+
+    const interviewId = applicantRescheduleModalItem.id;
+    const reasonText = applicantRescheduleReason.trim();
+
+    setInterviews((prev) =>
+      prev.map((it) =>
+        it.id === interviewId
+          ? {
+              ...it,
+              status: "reschedule_requested",
+              notes: `Reschedule Requested: ${reasonText}`,
+            }
+          : it
+      )
+    );
+
+    try {
+      await fetch(`/api/interviews/${interviewId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "reschedule_requested",
+          reschedule_reason: reasonText,
+          cancellation_reason: reasonText,
+          updated_by_user_id: currentUserId,
+          notes: `Reschedule Requested: ${reasonText}`,
+        }),
+      });
+
+      loadInterviewsFromApi();
+      window.dispatchEvent(new Event("elitecruit_interviews_update"));
+      window.dispatchEvent(new CustomEvent("elitecruit-interviews-updated"));
+    } catch (err) {
+      console.error("Failed to submit reschedule request:", err);
+    } finally {
+      setIsSubmittingRescheduleRequest(false);
+      setApplicantRescheduleModalItem(null);
+      setApplicantRescheduleReason("");
+    }
+  };
+
+  useEffect(() => {
+    if (pendingRescheduleId && interviews.length > 0) {
+      const found = interviews.find((i) => i.id === pendingRescheduleId);
+      if (found) {
+        if (isEmployer) {
+          handleOpenRescheduleModal(found);
+        } else {
+          handleOpenApplicantRescheduleModal(found);
+        }
+        setPendingRescheduleId(null);
+      }
+    }
+  }, [interviews, pendingRescheduleId, isEmployer]);
 
   const handleOpenRescheduleModal = (item: ScheduledInterview) => {
     setInterviewToReschedule(item);
@@ -1373,6 +1457,7 @@ export default function CalendarDrawer({
                       onOpenMeetingCandidatesModal={handleOpenMeetingCandidatesModal}
                       onOpenCancelModal={handleOpenCancelModal}
                       onOpenRescheduleModal={handleOpenRescheduleModal}
+                      onOpenApplicantRescheduleModal={handleOpenApplicantRescheduleModal}
                       onOpenCompleteModal={(targetItem) => setInterviewToComplete(targetItem)}
                     />
                   ))
@@ -1416,6 +1501,7 @@ export default function CalendarDrawer({
                     onOpenMeetingCandidatesModal={handleOpenMeetingCandidatesModal}
                     onOpenCancelModal={handleOpenCancelModal}
                     onOpenRescheduleModal={handleOpenRescheduleModal}
+                    onOpenApplicantRescheduleModal={handleOpenApplicantRescheduleModal}
                     onOpenCompleteModal={(targetItem) => setInterviewToComplete(targetItem)}
                   />
                 ))
@@ -3478,6 +3564,99 @@ export default function CalendarDrawer({
         </div>,
         document.body
       )}
+
+      {/* ── APPLICANT RESCHEDULE REQUEST MODAL (CENTERED POPUP) ── */}
+      {typeof document !== "undefined" && applicantRescheduleModalItem && createPortal(
+        <div
+          className="applicant-modal-backdrop"
+          onClick={() => !isSubmittingRescheduleRequest && setApplicantRescheduleModalItem(null)}
+        >
+          <div
+            className="applicant-modal-container reschedule-modal-container cal-modal-container"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: "480px", width: "100%", padding: "24px", borderRadius: "16px", maxHeight: "90vh", overflowY: "auto" }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+              <div>
+                <h3 className="cal-modal-title">
+                  Request Rescheduling
+                </h3>
+                <p className="cal-modal-subtitle">
+                  Your current interview remains confirmed until the employer approves and reschedules the meeting.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="applicant-modal-close-btn"
+                onClick={() => !isSubmittingRescheduleRequest && setApplicantRescheduleModalItem(null)}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div
+              style={{
+                marginTop: "12px",
+                marginBottom: "16px",
+                padding: "12px 14px",
+                borderRadius: "10px",
+                background: "var(--cal-card-bg, #f8fafc)",
+                border: "1px solid var(--cal-border, #e2e8f0)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "4px",
+              }}
+            >
+              <strong style={{ fontSize: "0.95rem", color: "var(--cal-text, #0f172a)" }}>
+                {applicantRescheduleModalItem.interview_title || applicantRescheduleModalItem.interview_stage || "Interview"}
+              </strong>
+              <div style={{ fontSize: "0.82rem", color: "var(--cal-subtext, #64748b)", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                <span>📅 {applicantRescheduleModalItem.interview_date}</span>
+                <span>•</span>
+                <span>⏰ {formatDisplayTime(applicantRescheduleModalItem.start_time)} {applicantRescheduleModalItem.end_time ? `- ${formatDisplayTime(applicantRescheduleModalItem.end_time)}` : ""}</span>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              <div>
+                <label className="cal-modal-label">
+                  Reason for Rescheduling <span style={{ color: "#ef4444" }}>*</span>
+                </label>
+                <textarea
+                  rows={4}
+                  value={applicantRescheduleReason}
+                  onChange={(e) => setApplicantRescheduleReason(e.target.value)}
+                  placeholder="State your reason for rescheduling (e.g. scheduling conflict, emergency, academic commitment)..."
+                  className="cal-modal-textarea"
+                  required
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="cal-modal-actions" style={{ marginTop: "18px" }}>
+              <button
+                type="button"
+                className="cal-modal-btn secondary"
+                onClick={() => setApplicantRescheduleModalItem(null)}
+                disabled={isSubmittingRescheduleRequest}
+              >
+                Keep Current Schedule
+              </button>
+              <button
+                type="button"
+                className="cal-modal-btn primary"
+                onClick={handleSendRescheduleRequest}
+                disabled={!applicantRescheduleReason.trim() || isSubmittingRescheduleRequest}
+              >
+                {isSubmittingRescheduleRequest ? "Sending Request..." : "Send Request"}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
@@ -3494,6 +3673,7 @@ function InterviewItemCard({
   onOpenMeetingCandidatesModal,
   onOpenCancelModal,
   onOpenRescheduleModal,
+  onOpenApplicantRescheduleModal,
   onOpenCompleteModal,
 }: {
   item: ScheduledInterview;
@@ -3505,6 +3685,7 @@ function InterviewItemCard({
   onOpenMeetingCandidatesModal: (item: ScheduledInterview, candidates: SchedulableCandidate[]) => void;
   onOpenCancelModal: (item: ScheduledInterview) => void;
   onOpenRescheduleModal: (item: ScheduledInterview) => void;
+  onOpenApplicantRescheduleModal?: (item: ScheduledInterview) => void;
   onOpenCompleteModal?: (item: ScheduledInterview) => void;
 }) {
   const isPending = item.status === "pending";
@@ -3549,12 +3730,17 @@ function InterviewItemCard({
         <div className="interview-card-title-row">
           <h4 className="interview-card-title">{item.interview_title || item.interview_stage || "Interview"}</h4>
           {!isEmployer && (
-            <span className={`applicant-meeting-pill ${applicantStatus}`}>
-              {applicantStatus === "ongoing" && <span className="applicant-pill-pulse-dot" />}
-              {applicantStatus === "scheduled" && "Scheduled"}
-              {applicantStatus === "ongoing" && "Ongoing"}
-              {applicantStatus === "concluded" && "Concluded"}
-              {applicantStatus === "cancelled" && "Cancelled"}
+            <span className={`applicant-meeting-pill ${item.status === "reschedule_requested" ? "reschedule-req" : applicantStatus}`}>
+              {applicantStatus === "ongoing" && item.status !== "reschedule_requested" && <span className="applicant-pill-pulse-dot" />}
+              {item.status === "reschedule_requested"
+                ? "Reschedule Requested"
+                : applicantStatus === "scheduled"
+                ? "Scheduled"
+                : applicantStatus === "ongoing"
+                ? "Ongoing"
+                : applicantStatus === "concluded"
+                ? "Concluded"
+                : "Cancelled"}
             </span>
           )}
         </div>
@@ -3626,143 +3812,157 @@ function InterviewItemCard({
         </div>
       )}
 
-      {/* Action Buttons & Candidate List Row (Employer only) */}
-      {isEmployer && (
-        <div className="interview-card-actions">
-          {/* Left side: Candidate List trigger button (directly opens popup modal - employer only) */}
+      {/* Action Buttons & Candidate List Row */}
+      <div className="interview-card-actions">
+        {/* Left side: Candidate List trigger button (directly opens popup modal - employer only) */}
+        {isEmployer && (
           <div className="interview-card-left-actions">
-            {isEmployer && (
-              <button
-                type="button"
-                className="int-card-btn int-candidate-list-btn"
-                onClick={() => onOpenMeetingCandidatesModal(item, meetingCandidates)}
-                title="Show list of applicants for this meeting"
+            <button
+              type="button"
+              className="int-card-btn int-candidate-list-btn"
+              onClick={() => onOpenMeetingCandidatesModal(item, meetingCandidates)}
+              title="Show list of applicants for this meeting"
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-                <span>Candidate list</span>
-              </button>
-            )}
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              <span>Candidate list</span>
+            </button>
           </div>
+        )}
 
-          {/* Right side: Action buttons */}
-          <div className="interview-card-right-actions">
-            {/* Action buttons (Reschedule & Cancel with Reason) */}
-            {(isPending || isAccepted || applicantStatus === "scheduled") && (
-              <div style={{ display: "flex", gap: "5px", alignItems: "center", flexWrap: "wrap" }}>
+        {/* Right side: Action buttons */}
+        <div className="interview-card-right-actions">
+          {/* Action buttons (Reschedule & Cancel with Reason) */}
+          {(isPending || isAccepted || applicantStatus === "scheduled" || applicantStatus === "ongoing" || item.status === "reschedule_requested") && !isConcluded && (
+            <div style={{ display: "flex", gap: "5px", alignItems: "center", flexWrap: "wrap" }}>
+              {isEmployer ? (
                 <button
                   type="button"
-                  className="int-card-btn int-btn-reschedule"
+                  className={`int-card-btn int-btn-reschedule ${item.status === "reschedule_requested" ? "int-btn-reschedule-req" : ""}`}
                   onClick={() => onOpenRescheduleModal(item)}
                 >
-                  Reschedule
+                  {item.status === "reschedule_requested" ? "Reschedule (Requested)" : "Reschedule"}
                 </button>
+              ) : (
                 <button
                   type="button"
-                  className="int-card-btn int-btn-cancel"
-                  onClick={() => onOpenCancelModal(item)}
+                  className={`int-card-btn int-btn-reschedule ${item.status === "reschedule_requested" ? "int-btn-reschedule-req" : ""}`}
+                  onClick={() => {
+                    if (onOpenApplicantRescheduleModal) {
+                      onOpenApplicantRescheduleModal(item);
+                    } else {
+                      onOpenRescheduleModal(item);
+                    }
+                  }}
                 >
-                  Cancel
+                  {item.status === "reschedule_requested" ? "Reschedule Requested" : "Request Rescheduling"}
                 </button>
-                {isEmployer && (
-                  <button
-                    type="button"
-                    className="int-card-btn int-btn-completed"
-                    onClick={() => {
-                      if (onOpenCompleteModal) {
-                        onOpenCompleteModal(item);
-                      } else {
-                        onUpdateStatus(item.id, "completed");
-                      }
-                    }}
-                  >
-                    Mark Completed
-                  </button>
-                )}
-              </div>
-            )}
+              )}
+              <button
+                type="button"
+                className="int-card-btn int-btn-cancel"
+                onClick={() => onOpenCancelModal(item)}
+              >
+                Cancel
+              </button>
+              {isEmployer && (
+                <button
+                  type="button"
+                  className="int-card-btn int-btn-completed"
+                  onClick={() => {
+                    if (onOpenCompleteModal) {
+                      onOpenCompleteModal(item);
+                    } else {
+                      onUpdateStatus(item.id, "completed");
+                    }
+                  }}
+                >
+                  Mark Completed
+                </button>
+              )}
+            </div>
+          )}
 
-            {isCompleted && (
-              <div className="interview-status-action-wrap">
-                <span style={{ fontSize: "0.76rem", fontWeight: 700, color: "#64748b" }}>
-                  ✓ Interview Completed
-                </span>
-                {isEmployer && (
-                  <button
-                    type="button"
-                    className="int-card-delete-btn"
-                    onClick={() => onDeleteInterview?.(item)}
-                    title="Delete this interview from your calendar"
-                    aria-label="Delete interview"
+          {isCompleted && (
+            <div className="interview-status-action-wrap">
+              <span style={{ fontSize: "0.76rem", fontWeight: 700, color: "#64748b" }}>
+                ✓ Interview Completed
+              </span>
+              {isEmployer && (
+                <button
+                  type="button"
+                  className="int-card-delete-btn"
+                  onClick={() => onDeleteInterview?.(item)}
+                  title="Delete this interview from your calendar"
+                  aria-label="Delete interview"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="13"
+                    height="13"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="13"
-                      height="13"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                      <line x1="10" y1="11" x2="10" y2="17" />
-                      <line x1="14" y1="11" x2="14" y2="17" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            )}
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    <line x1="10" y1="11" x2="10" y2="17" />
+                    <line x1="14" y1="11" x2="14" y2="17" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          )}
 
-            {item.status === "cancelled" && (
-              <div className="interview-status-action-wrap">
-                <span style={{ fontSize: "0.76rem", fontWeight: 700, color: "#dc2626" }}>
-                  ✕ Interview Cancelled
-                </span>
-                {isEmployer && (
-                  <button
-                    type="button"
-                    className="int-card-delete-btn"
-                    onClick={() => onDeleteInterview?.(item)}
-                    title="Delete this interview from your calendar"
-                    aria-label="Delete interview"
+          {item.status === "cancelled" && (
+            <div className="interview-status-action-wrap">
+              <span style={{ fontSize: "0.76rem", fontWeight: 700, color: "#dc2626" }}>
+                ✕ Interview Cancelled
+              </span>
+              {isEmployer && (
+                <button
+                  type="button"
+                  className="int-card-delete-btn"
+                  onClick={() => onDeleteInterview?.(item)}
+                  title="Delete this interview from your calendar"
+                  aria-label="Delete interview"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="13"
+                    height="13"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="13"
-                      height="13"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                      <line x1="10" y1="11" x2="10" y2="17" />
-                      <line x1="14" y1="11" x2="14" y2="17" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    <line x1="10" y1="11" x2="10" y2="17" />
+                    <line x1="14" y1="11" x2="14" y2="17" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
