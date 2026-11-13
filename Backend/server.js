@@ -9250,6 +9250,7 @@ async function seedAllSystemUserAccounts() {
   console.log("[Seed Accounts] Checking and provisioning system user accounts (accounts only)...");
   let createdCount = 0;
   let existingCount = 0;
+  const errors = [];
 
   // 1. Seed Employers
   for (const emp of seededEmployers) {
@@ -9258,6 +9259,7 @@ async function seedAllSystemUserAccounts() {
     try {
       const existingUser = await get("SELECT id FROM users WHERE lower(email) = ?", [email]);
       const hash = await bcrypt.hash(emp.password, 10);
+      let userId;
       if (!existingUser) {
         const res = await run(
           "INSERT INTO users (email, password_hash, role, is_active, is_email_verified, two_factor_enabled) VALUES (?, ?, 'employer', true, true, false)",
@@ -9295,6 +9297,7 @@ async function seedAllSystemUserAccounts() {
       }
     } catch (err) {
       console.error(`[Seed Accounts] Error seeding employer ${email}:`, err.message);
+      errors.push(`Employer ${email}: ${err.message}`);
     }
   }
 
@@ -9306,6 +9309,7 @@ async function seedAllSystemUserAccounts() {
     try {
       const existingUser = await get("SELECT id FROM users WHERE lower(email) = ?", [email]);
       const hash = await bcrypt.hash(app.password, 10);
+      let userId;
       if (!existingUser) {
         const res = await run(
           "INSERT INTO users (email, password_hash, role, is_active, is_email_verified, two_factor_enabled) VALUES (?, ?, 'applicant', true, true, false)",
@@ -9343,11 +9347,12 @@ async function seedAllSystemUserAccounts() {
       }
     } catch (err) {
       console.error(`[Seed Accounts] Error seeding applicant ${email}:`, err.message);
+      errors.push(`Applicant ${email}: ${err.message}`);
     }
   }
 
   console.log(`[Seed Accounts] Seeding completed. Created: ${createdCount}, Verified/Active: ${existingCount}.`);
-  return { success: true, createdCount, existingCount };
+  return { success: true, createdCount, existingCount, errors };
 }
 
 app.all("/api/system/seed-users", async (req, res) => {
