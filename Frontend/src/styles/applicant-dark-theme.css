@@ -1731,16 +1731,22 @@
 }
 
 [data-theme="dark"] .chat-bubble.outgoing:not(.chat-special-card) {
-  background: #0284c7 !important;
+  background: #0e4166 !important;
   color: #ffffff !important;
+  border: 1px solid #1e527d !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
 }
 
 [data-theme="dark"] .chat-bubble.outgoing:not(.chat-special-card) p {
   color: #ffffff !important;
 }
 
+[data-theme="dark"] .chat-bubble.outgoing:not(.chat-special-card) small {
+  color: #38bdf8 !important;
+}
+
 [data-theme="dark"] .chat-bubble.outgoing:not(.chat-special-card) time {
-  color: #e0f2fe !important;
+  color: #94a3b8 !important;
 }
 
 /* ── Option 1: Executive Dark Navy / Slate Cards for Special Letters & Messages (Rule 9) ── */
@@ -9569,9 +9575,10 @@
 }
 
 [data-theme="dark"] .cand-msg-bubble.outgoing {
-  background: #0284c7 !important;
+  background: #0e4166 !important;
   color: #ffffff !important;
-  border: none !important;
+  border: 1px solid #1e527d !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
 }
 
 [data-theme="dark"] .cand-msg-compose-bar {

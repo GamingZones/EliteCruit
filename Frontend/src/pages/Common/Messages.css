@@ -2707,6 +2707,45 @@
 }
 
 /* ── STRICT THEME ISOLATION: DARK MODE (Rule 9 - Option 1: Executive Dark Navy/Slate) ── */
+
+/* Standard Message Bubbles in Dark Mode */
+[data-theme="dark"] .chat-bubble.incoming:not(.chat-special-card) {
+  background: #242735 !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .chat-bubble.incoming:not(.chat-special-card) p {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .chat-bubble.incoming:not(.chat-special-card) small {
+  color: #f6be45 !important;
+}
+
+[data-theme="dark"] .chat-bubble.incoming:not(.chat-special-card) time {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .chat-bubble.outgoing:not(.chat-special-card) {
+  background: #0e4166 !important;
+  color: #ffffff !important;
+  border: 1px solid #1e527d !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+}
+
+[data-theme="dark"] .chat-bubble.outgoing:not(.chat-special-card) p {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .chat-bubble.outgoing:not(.chat-special-card) small {
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .chat-bubble.outgoing:not(.chat-special-card) time {
+  color: #94a3b8 !important;
+}
+
 [data-theme="dark"] .chat-special-card.incoming,
 [data-theme="dark"] .chat-special-card.outgoing,
 [data-theme="dark"] .chat-bubble.chat-special-card.incoming,
