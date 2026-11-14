@@ -16,6 +16,7 @@ export default function CreateAccount() {
 
   // Email OTP Verification Modal States
   const [verifiedEmail, setVerifiedEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
   const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
   const [otpCodeInput, setOtpCodeInput] = useState("");
   const [otpError, setOtpError] = useState("");
@@ -100,6 +101,9 @@ export default function CreateAccount() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    if (e.target.name === "email" && emailError) {
+      setEmailError("");
+    }
     setFormData((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
@@ -111,6 +115,7 @@ export default function CreateAccount() {
     setRole(newRole);
     setSubmitError("");
     setSubmitSuccess("");
+    setEmailError("");
     // Clear role-specific fields and sensitive inputs when toggling roles (Task 5.2)
     setFormData((prev) => ({
       ...prev,
@@ -129,11 +134,14 @@ export default function CreateAccount() {
 
   const handleSendEmailOtp = async () => {
     const targetEmail = formData.email.trim();
+    setEmailError("");
     setSubmitError("");
     setSubmitSuccess("");
 
     if (!targetEmail || !targetEmail.includes("@")) {
-      setSubmitError("Please enter a valid email address before clicking Verify.");
+      const msg = "Please enter a valid email address before clicking Verify.";
+      setEmailError(msg);
+      setSubmitError(msg);
       return;
     }
 
@@ -156,7 +164,9 @@ export default function CreateAccount() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setSubmitError(data?.message || "Failed to send verification code.");
+        const msg = data?.message || "Failed to send verification code.";
+        setEmailError(msg);
+        setSubmitError(msg);
         return;
       }
 
@@ -167,7 +177,9 @@ export default function CreateAccount() {
       setOtpCodeInput("");
       setOtpCooldown(45);
     } catch {
-      setSubmitError("Unable to send verification code. Please try again.");
+      const msg = "Unable to send verification code. Please try again.";
+      setEmailError(msg);
+      setSubmitError(msg);
     } finally {
       setIsSendingOtp(false);
     }
@@ -544,6 +556,11 @@ export default function CreateAccount() {
                       </button>
                     )}
                   </div>
+                  {emailError && (
+                    <p className="email-inline-error" style={{ color: "#ef4444", fontSize: "0.82rem", marginTop: "6px", fontWeight: 600 }}>
+                      {emailError}
+                    </p>
+                  )}
                 </div>
               </div>
             </>
@@ -646,6 +663,11 @@ export default function CreateAccount() {
                       </button>
                     )}
                   </div>
+                  {emailError && (
+                    <p className="email-inline-error" style={{ color: "#ef4444", fontSize: "0.82rem", marginTop: "6px", fontWeight: 600 }}>
+                      {emailError}
+                    </p>
+                  )}
                 </div>
               </div>
             </>

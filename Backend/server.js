@@ -1020,7 +1020,8 @@ app.post("/api/auth/send-registration-email-otp", async (req, res) => {
     const codeHash = await bcrypt.hash(code, 10);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    await run("DELETE FROM registration_email_otps WHERE lower(email) = ?", [cleanEmail]);
+    // Clean up expired or already verified codes, keeping recent unexpired codes valid as a grace period
+    await run("DELETE FROM registration_email_otps WHERE lower(email) = ? AND (expires_at < CURRENT_TIMESTAMP OR is_verified = TRUE)", [cleanEmail]).catch(() => {});
     await run(
       `INSERT INTO registration_email_otps (email, code_hash, is_verified, expires_at)
        VALUES (?, ?, false, ?)`,
@@ -1055,29 +1056,29 @@ app.post("/api/auth/verify-registration-email-otp", async (req, res) => {
 
   try {
     const cleanEmail = email.trim().toLowerCase();
-    const record = await get(
-      "SELECT * FROM registration_email_otps WHERE lower(email) = ? ORDER BY id DESC LIMIT 1",
+    const activeRecords = await all(
+      "SELECT * FROM registration_email_otps WHERE lower(email) = ? AND is_verified = FALSE AND expires_at > CURRENT_TIMESTAMP ORDER BY id DESC LIMIT 5",
       [cleanEmail]
     );
 
-    if (!record) {
-      return res.status(400).json({ message: "No active verification code found. Please click Verify again." });
+    if (!activeRecords || activeRecords.length === 0) {
+      return res.status(400).json({ message: "No active verification code found or code has expired. Please click Verify again." });
     }
 
-    if (new Date(record.expires_at).getTime() < Date.now()) {
-      await run("DELETE FROM registration_email_otps WHERE id = ?", [record.id]);
-      return res.status(400).json({ message: "Verification code has expired. Please request a new code." });
+    let matchedRecord = null;
+    for (const record of activeRecords) {
+      if (record.attempts >= 5) continue;
+      const isMatch = await bcrypt.compare(cleanCode, record.code_hash);
+      if (isMatch) {
+        matchedRecord = record;
+        break;
+      }
     }
 
-    if (record.attempts >= 5) {
-      await run("DELETE FROM registration_email_otps WHERE id = ?", [record.id]);
-      return res.status(400).json({ message: "Too many failed attempts. Please request a new code." });
-    }
-
-    const matches = await bcrypt.compare(cleanCode, record.code_hash);
-    if (!matches) {
-      await run("UPDATE registration_email_otps SET attempts = attempts + 1 WHERE id = ?", [record.id]);
-      const remaining = 5 - (record.attempts + 1);
+    if (!matchedRecord) {
+      const latest = activeRecords[0];
+      await run("UPDATE registration_email_otps SET attempts = attempts + 1 WHERE id = ?", [latest.id]).catch(() => {});
+      const remaining = 5 - (latest.attempts + 1);
       return res.status(400).json({
         message: remaining > 0
           ? `Invalid verification code. ${remaining} attempt${remaining === 1 ? "" : "s"} remaining.`
@@ -1088,7 +1089,7 @@ app.post("/api/auth/verify-registration-email-otp", async (req, res) => {
     const extendedExpiresAt = new Date(Date.now() + 30 * 60 * 1000);
     await run(
       "UPDATE registration_email_otps SET is_verified = TRUE, expires_at = ? WHERE id = ?",
-      [extendedExpiresAt, record.id]
+      [extendedExpiresAt, matchedRecord.id]
     );
 
     return res.status(200).json({

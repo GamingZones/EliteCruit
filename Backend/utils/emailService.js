@@ -125,13 +125,46 @@ function buildEliteCruitEmailTemplate({
 }
 
 /**
- * Internal dispatcher that sends via Brevo HTTPS API, SMTP fallback, or console log.
+ * Internal dispatcher that sends via Resend (Primary), Brevo (Secondary/Failover), SMTP, or console log.
  */
 async function dispatchEmail({ toEmail, recipientName = "User", subject, htmlContent, textContent, logTag = "EMAIL" }) {
+  const resendApiKey = process.env.RESEND_API_KEY;
   const brevoApiKey = process.env.BREVO_API_KEY;
   const transporter = getTransporter();
 
-  // 1. Primary Production Method: Brevo HTTPS REST API (Port 443)
+  // 1. Primary Method: Resend HTTPS REST API (Sub-second delivery over Port 443)
+  if (resendApiKey) {
+    try {
+      const fromAddress = process.env.RESEND_FROM || "EliteCruit Security <onboarding@resend.dev>";
+      const resendResponse = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendApiKey.trim()}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: fromAddress,
+          to: [toEmail.trim()],
+          subject,
+          html: htmlContent,
+          text: textContent,
+        }),
+      });
+
+      if (resendResponse.ok) {
+        const resendData = await resendResponse.json();
+        console.log(`[${logTag} Success] Sent via Resend API to ${toEmail} (ID: ${resendData?.id || "ok"})`);
+        return { success: true, method: "resend", id: resendData?.id };
+      }
+
+      const errorText = await resendResponse.text();
+      console.warn(`[${logTag} Resend API Fallback] Status ${resendResponse.status}: ${errorText}. Falling back to Brevo...`);
+    } catch (resendErr) {
+      console.warn(`[${logTag} Resend Network Error]:`, resendErr?.message || resendErr, ". Falling back to Brevo...");
+    }
+  }
+
+  // 2. Secondary / Failover Method: Brevo HTTPS REST API (Port 443 with Priority Headers)
   if (brevoApiKey) {
     try {
       const senderEmail = process.env.BREVO_SENDER_EMAIL || process.env.SMTP_FROM || "zakiablando897@gmail.com";
@@ -150,6 +183,11 @@ async function dispatchEmail({ toEmail, recipientName = "User", subject, htmlCon
           subject,
           htmlContent,
           textContent,
+          headers: {
+            "X-Mailin-Priority": "high",
+            "X-Priority": "1",
+          },
+          tags: ["transactional_otp"],
         }),
       });
 
@@ -166,7 +204,7 @@ async function dispatchEmail({ toEmail, recipientName = "User", subject, htmlCon
     }
   }
 
-  // 2. Secondary Method: Standard SMTP Transport (Nodemailer)
+  // 3. Fallback Method: Standard SMTP Transport (Nodemailer)
   if (transporter) {
     const fromAddress = process.env.SMTP_FROM || `"EliteCruit Security" <noreply@elitecruit.com>`;
 
