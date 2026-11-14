@@ -2706,59 +2706,196 @@
   border: none !important;
 }
 
-/* ── STRICT THEME ISOLATION: DARK MODE (Rule 9) ── */
+/* ── STRICT THEME ISOLATION: DARK MODE (Rule 9 - Option 1: Executive Dark Navy/Slate) ── */
 [data-theme="dark"] .chat-special-card.incoming,
-[data-theme="dark"] .chat-special-card.outgoing {
-  background: #1c1e27 !important;
-  border-color: #2e3244 !important;
+[data-theme="dark"] .chat-special-card.outgoing,
+[data-theme="dark"] .chat-bubble.chat-special-card.incoming,
+[data-theme="dark"] .chat-bubble.chat-special-card.outgoing {
+  background: #1c202d !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #2e3446 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
 }
 
+/* Formal Offer / Pending Offer Cards: Sky Blue Accent Border */
 [data-theme="dark"] .chat-offer-card.incoming,
-[data-theme="dark"] .chat-offer-card.outgoing {
-  border-color: #0284c7 !important;
-  background: #171b26 !important;
+[data-theme="dark"] .chat-bubble.chat-offer-card.incoming {
+  border-left: 4px solid #38bdf8 !important;
+  border-right: 1px solid #2e3446 !important;
+  border-top: 1px solid #2e3446 !important;
+  border-bottom: 1px solid #2e3446 !important;
+  background: #1c202d !important;
 }
 
-[data-theme="dark"] .chat-response-card.incoming,
+[data-theme="dark"] .chat-offer-card.outgoing,
+[data-theme="dark"] .chat-bubble.chat-offer-card.outgoing {
+  border-right: 4px solid #38bdf8 !important;
+  border-left: 1px solid #2e3446 !important;
+  border-top: 1px solid #2e3446 !important;
+  border-bottom: 1px solid #2e3446 !important;
+  background: #1c202d !important;
+}
+
+/* Offer Accepted Cards: Emerald Green Accent Border */
+[data-theme="dark"] .chat-offer-card.offer-card-accepted.incoming,
+[data-theme="dark"] .chat-bubble.chat-offer-card.offer-card-accepted.incoming,
+[data-theme="dark"] .chat-response-card.incoming {
+  border-left: 4px solid #10b981 !important;
+  border-right: 1px solid #2e3446 !important;
+  border-top: 1px solid #2e3446 !important;
+  border-bottom: 1px solid #2e3446 !important;
+  background: #1c202d !important;
+}
+
+[data-theme="dark"] .chat-offer-card.offer-card-accepted.outgoing,
+[data-theme="dark"] .chat-bubble.chat-offer-card.offer-card-accepted.outgoing,
 [data-theme="dark"] .chat-response-card.outgoing {
-  border-color: #16a34a !important;
-  background: #17211e !important;
+  border-right: 4px solid #10b981 !important;
+  border-left: 1px solid #2e3446 !important;
+  border-top: 1px solid #2e3446 !important;
+  border-bottom: 1px solid #2e3446 !important;
+  background: #1c202d !important;
 }
 
+/* Offer Declined Cards: Rose Red Accent Border */
+[data-theme="dark"] .chat-offer-card.offer-card-declined.incoming,
+[data-theme="dark"] .chat-bubble.chat-offer-card.offer-card-declined.incoming {
+  border-left: 4px solid #f43f5e !important;
+  border-right: 1px solid #2e3446 !important;
+  border-top: 1px solid #2e3446 !important;
+  border-bottom: 1px solid #2e3446 !important;
+  background: #1c202d !important;
+}
+
+[data-theme="dark"] .chat-offer-card.offer-card-declined.outgoing,
+[data-theme="dark"] .chat-bubble.chat-offer-card.offer-card-declined.outgoing {
+  border-right: 4px solid #f43f5e !important;
+  border-left: 1px solid #2e3446 !important;
+  border-top: 1px solid #2e3446 !important;
+  border-bottom: 1px solid #2e3446 !important;
+  background: #1c202d !important;
+}
+
+/* Interview Cards */
 [data-theme="dark"] .chat-interview-card.incoming,
-[data-theme="dark"] .chat-interview-card.outgoing {
-  border-color: #0284c7 !important;
-  background: #171b26 !important;
+[data-theme="dark"] .chat-bubble.chat-interview-card.incoming {
+  border-left: 4px solid #38bdf8 !important;
+  border-right: 1px solid #2e3446 !important;
+  border-top: 1px solid #2e3446 !important;
+  border-bottom: 1px solid #2e3446 !important;
+  background: #1c202d !important;
+}
+
+[data-theme="dark"] .chat-interview-card.outgoing,
+[data-theme="dark"] .chat-bubble.chat-interview-card.outgoing {
+  border-right: 4px solid #38bdf8 !important;
+  border-left: 1px solid #2e3446 !important;
+  border-top: 1px solid #2e3446 !important;
+  border-bottom: 1px solid #2e3446 !important;
+  background: #1c202d !important;
 }
 
 [data-theme="dark"] .chat-cancelled-card.incoming,
-[data-theme="dark"] .chat-cancelled-card.outgoing {
-  border-color: #dc2626 !important;
-  background: #23171a !important;
+[data-theme="dark"] .chat-bubble.chat-cancelled-card.incoming {
+  border-left: 4px solid #ef4444 !important;
+  border-right: 1px solid #2e3446 !important;
+  border-top: 1px solid #2e3446 !important;
+  border-bottom: 1px solid #2e3446 !important;
+  background: #1c202d !important;
+}
+
+[data-theme="dark"] .chat-cancelled-card.outgoing,
+[data-theme="dark"] .chat-bubble.chat-cancelled-card.outgoing {
+  border-right: 4px solid #ef4444 !important;
+  border-left: 1px solid #2e3446 !important;
+  border-top: 1px solid #2e3446 !important;
+  border-bottom: 1px solid #2e3446 !important;
+  background: #1c202d !important;
 }
 
 [data-theme="dark"] .chat-rescheduled-card.incoming,
-[data-theme="dark"] .chat-rescheduled-card.outgoing {
-  border-color: #d97706 !important;
-  background: #231e17 !important;
+[data-theme="dark"] .chat-bubble.chat-rescheduled-card.incoming {
+  border-left: 4px solid #f59e0b !important;
+  border-right: 1px solid #2e3446 !important;
+  border-top: 1px solid #2e3446 !important;
+  border-bottom: 1px solid #2e3446 !important;
+  background: #1c202d !important;
+}
+
+[data-theme="dark"] .chat-rescheduled-card.outgoing,
+[data-theme="dark"] .chat-bubble.chat-rescheduled-card.outgoing {
+  border-right: 4px solid #f59e0b !important;
+  border-left: 1px solid #2e3446 !important;
+  border-top: 1px solid #2e3446 !important;
+  border-bottom: 1px solid #2e3446 !important;
+  background: #1c202d !important;
 }
 
 [data-theme="dark"] .chat-reschedule-req-card.incoming,
-[data-theme="dark"] .chat-reschedule-req-card.outgoing {
-  border-color: #f59e0b !important;
-  background: #1e1b14 !important;
+[data-theme="dark"] .chat-bubble.chat-reschedule-req-card.incoming {
+  border-left: 4px solid #f59e0b !important;
+  border-right: 1px solid #2e3446 !important;
+  border-top: 1px solid #2e3446 !important;
+  border-bottom: 1px solid #2e3446 !important;
+  background: #1c202d !important;
+}
+
+[data-theme="dark"] .chat-reschedule-req-card.outgoing,
+[data-theme="dark"] .chat-bubble.chat-reschedule-req-card.outgoing {
+  border-right: 4px solid #f59e0b !important;
+  border-left: 1px solid #2e3446 !important;
+  border-top: 1px solid #2e3446 !important;
+  border-bottom: 1px solid #2e3446 !important;
+  background: #1c202d !important;
+}
+
+/* Translucent Soft Badges in Dark Mode */
+[data-theme="dark"] .chat-special-badge.badge-formal-offer {
+  background: rgba(56, 189, 248, 0.14) !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(56, 189, 248, 0.28) !important;
+}
+
+[data-theme="dark"] .chat-special-badge.badge-accepted {
+  background: rgba(16, 185, 129, 0.14) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.28) !important;
+}
+
+[data-theme="dark"] .chat-special-badge.badge-declined {
+  background: rgba(244, 63, 94, 0.14) !important;
+  color: #fb7185 !important;
+  border: 1px solid rgba(244, 63, 94, 0.28) !important;
+}
+
+[data-theme="dark"] .chat-special-badge.badge-interview-sched {
+  background: rgba(56, 189, 248, 0.14) !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(56, 189, 248, 0.28) !important;
+}
+
+[data-theme="dark"] .chat-special-badge.badge-interview-resched {
+  background: rgba(245, 158, 11, 0.14) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.28) !important;
 }
 
 [data-theme="dark"] .chat-special-badge.badge-interview-resched-req {
-  background: rgba(245, 158, 11, 0.2) !important;
+  background: rgba(245, 158, 11, 0.14) !important;
   color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.28) !important;
 }
 
 [data-theme="dark"] .chat-special-title {
-  color: #f1f5f9 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
 }
 
 [data-theme="dark"] .chat-special-subtitle {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .chat-special-time {
   color: #94a3b8 !important;
 }
 
@@ -2766,16 +2903,26 @@
   color: #cbd5e1 !important;
 }
 
+/* Recessed Dark Description / Details Container */
 [data-theme="dark"] .chat-special-body,
 [data-theme="dark"] .chat-special-grid,
 [data-theme="dark"] .chat-special-notice {
-  background: #14151b !important;
-  border-color: #2e3244 !important;
+  background: #12141c !important;
+  border: 1px solid #2a2e3d !important;
+  border-radius: 8px !important;
 }
 
 [data-theme="dark"] .chat-special-notice {
-  border-left-color: #38bdf8 !important;
-  color: #f1f5f9 !important;
+  border-left: 3px solid #38bdf8 !important;
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .offer-card-accepted .chat-special-notice {
+  border-left: 3px solid #10b981 !important;
+}
+
+[data-theme="dark"] .offer-card-declined .chat-special-notice {
+  border-left: 3px solid #f43f5e !important;
 }
 
 [data-theme="dark"] .chat-special-notice p,
@@ -2788,7 +2935,7 @@
 [data-theme="dark"] .chat-bubble.outgoing .chat-special-text,
 [data-theme="dark"] .chat-bubble.incoming .chat-special-notice p,
 [data-theme="dark"] .chat-bubble.incoming .chat-special-text {
-  color: #f1f5f9 !important;
+  color: #e2e8f0 !important;
 }
 
 [data-theme="dark"] .chat-special-text {
@@ -2872,16 +3019,28 @@
   border-top-color: #2e3244 !important;
 }
 
+[data-theme="dark"] .chat-action-btn.chat-btn-view {
+  background: #252938 !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #373d52 !important;
+}
+
+[data-theme="dark"] .chat-action-btn.chat-btn-view:hover {
+  background: #2f3448 !important;
+  color: #38bdf8 !important;
+  border-color: #38bdf8 !important;
+}
+
 [data-theme="dark"] .chat-action-status-pill {
   background: #14151b !important;
   color: #94a3b8 !important;
-  border-color: #2e3244 !important;
+  border: 1px solid #2e3244 !important;
 }
 
 [data-theme="dark"] .chat-action-status-pill.pending {
-  background: rgba(2, 132, 199, 0.15) !important;
-  color: #38bdf8 !important;
-  border-color: rgba(2, 132, 199, 0.3) !important;
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
 }
 
 [data-theme="dark"] .chat-action-btn.chat-btn-accepted,
