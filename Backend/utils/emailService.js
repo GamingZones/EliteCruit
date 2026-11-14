@@ -139,7 +139,7 @@ async function dispatchEmail({ toEmail, recipientName = "User", subject, htmlCon
       const resendResponse = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${resendApiKey.trim()}`,
+          Authorization: `Bearer ${resendApiKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -174,7 +174,7 @@ async function dispatchEmail({ toEmail, recipientName = "User", subject, htmlCon
         method: "POST",
         headers: {
           accept: "application/json",
-          "api-key": brevoApiKey.trim(),
+          "api-key": brevoApiKey,
           "content-type": "application/json",
         },
         body: JSON.stringify({
@@ -186,6 +186,8 @@ async function dispatchEmail({ toEmail, recipientName = "User", subject, htmlCon
           headers: {
             "X-Mailin-Priority": "high",
             "X-Priority": "1",
+            "Importance": "high",
+            "X-MSMail-Priority": "High",
           },
           tags: ["transactional_otp"],
         }),

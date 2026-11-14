@@ -167,6 +167,9 @@ export default function CreateAccount() {
         const msg = data?.message || "Failed to send verification code.";
         setEmailError(msg);
         setSubmitError(msg);
+        if (data?.retryAfter) {
+          setOtpCooldown(data.retryAfter);
+        }
         return;
       }
 

@@ -1016,6 +1016,22 @@ app.post("/api/auth/send-registration-email-otp", async (req, res) => {
       return res.status(409).json({ message: "An account with this email address already exists." });
     }
 
+    // Rate limiting: prevent spamming OTP requests within 30s
+    const recentOtp = await get(
+      "SELECT created_at FROM registration_email_otps WHERE lower(email) = ? AND is_verified = FALSE ORDER BY id DESC LIMIT 1",
+      [cleanEmail]
+    );
+    if (recentOtp && recentOtp.created_at) {
+      const elapsedSeconds = (Date.now() - new Date(recentOtp.created_at).getTime()) / 1000;
+      if (elapsedSeconds < 30) {
+        const remaining = Math.ceil(30 - elapsedSeconds);
+        return res.status(429).json({
+          message: `Please wait ${remaining} seconds before requesting another code.`,
+          retryAfter: remaining,
+        });
+      }
+    }
+
     const code = generateOTP();
     const codeHash = await bcrypt.hash(code, 10);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
