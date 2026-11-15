@@ -289,6 +289,9 @@ export type CandidateModalData = {
   applied_date?: string | null;
   status?: string | null;
   response_letter?: string | null;
+  is_recruited?: boolean | number | null;
+  applied_jobs?: Array<{ job_post_id: number; status: string }> | string | null;
+  latest_application_status?: string | null;
 };
 
 function formatDate(iso?: string | null): string {
@@ -1326,6 +1329,14 @@ export default function ApplicantDetailsModal({
                     <span>{candidate.rating ? Number(candidate.rating).toFixed(1) : "0.0"}</span>
                   </div>
                   <strong className="cand-details-name" style={{ margin: 0 }}>{displayName}</strong>
+                  {Boolean(
+                    candidate.is_recruited === 1 ||
+                    candidate.is_recruited === true ||
+                    (candidate.status && ["recruited", "accepted", "approved"].includes(String(candidate.status).toLowerCase())) ||
+                    (candidate.latest_application_status && ["recruited", "accepted", "approved"].includes(String(candidate.latest_application_status).toLowerCase()))
+                  ) && (
+                    <span className="cand-recruited-badge">Recruited</span>
+                  )}
                 </div>
 
                 {/* ROW 1: Location and Gender on top */}

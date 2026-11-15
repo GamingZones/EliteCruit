@@ -599,6 +599,30 @@
   border: 1px solid rgba(56, 189, 248, 0.35);
 }
 
+.finder-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.finder-recruited-pill {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+[data-theme="dark"] .finder-recruited-pill {
+  background: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
 .finder-card-job-badge {
   display: inline-flex;
   align-items: center;
@@ -923,6 +947,98 @@
   background: rgba(100, 116, 139, 0.2) !important;
   color: #94a3b8 !important;
   border: 1px solid rgba(100, 116, 139, 0.35) !important;
+}
+
+.finder-card-btn.btn-recruited {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1px solid #a7f3d0 !important;
+  cursor: pointer !important;
+}
+
+.finder-card-btn.btn-recruited:hover {
+  background: #d1fae5 !important;
+  border-color: #6ee7b7 !important;
+}
+
+[data-theme="dark"] .finder-card-btn.btn-recruited {
+  background: rgba(16, 185, 129, 0.14) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+}
+
+[data-theme="dark"] .finder-card-btn.btn-recruited:hover {
+  background: rgba(16, 185, 129, 0.24) !important;
+  border-color: rgba(16, 185, 129, 0.5) !important;
+}
+
+.finder-btn.finder-btn-recruited {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1px solid #a7f3d0 !important;
+}
+
+.finder-btn.finder-btn-recruited:hover {
+  background: #d1fae5 !important;
+  border-color: #6ee7b7 !important;
+}
+
+[data-theme="dark"] .finder-btn.finder-btn-recruited {
+  background: rgba(16, 185, 129, 0.16) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+}
+
+.jd-other-job-invite-btn.status-recruited {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1px solid #a7f3d0 !important;
+  cursor: default !important;
+  box-shadow: none !important;
+}
+
+.jd-other-job-invite-btn.status-interviewing,
+.jd-other-job-invite-btn.status-shortlisted,
+.jd-other-job-invite-btn.status-applied {
+  background: #f0f9ff !important;
+  color: #0284c7 !important;
+  border: 1px solid #bae6fd !important;
+  cursor: default !important;
+  box-shadow: none !important;
+}
+
+.jd-other-job-invite-btn.status-denied {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+  border: 1px solid #cbd5e1 !important;
+  cursor: default !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .jd-other-job-invite-btn.status-recruited {
+  background: rgba(16, 185, 129, 0.16) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+  cursor: default !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .jd-other-job-invite-btn.status-interviewing,
+[data-theme="dark"] .jd-other-job-invite-btn.status-shortlisted,
+[data-theme="dark"] .jd-other-job-invite-btn.status-applied {
+  background: rgba(2, 132, 199, 0.16) !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(2, 132, 199, 0.35) !important;
+  cursor: default !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .jd-other-job-invite-btn.status-denied {
+  background: rgba(100, 116, 139, 0.2) !important;
+  color: #94a3b8 !important;
+  border: 1px solid rgba(100, 116, 139, 0.35) !important;
+  cursor: default !important;
+  box-shadow: none !important;
 }
 
 .jd-other-job-invite-btn {

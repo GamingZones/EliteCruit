@@ -5361,7 +5361,15 @@ app.get("/api/talent-pool", async (req, res) => {
           ${ratingCol} AS rating,
           u.created_at,
           0 AS applied_count,
-          NULL AS latest_application_status
+          NULL AS latest_application_status,
+          (
+            SELECT 1
+            FROM applications a
+            WHERE a.applicant_user_id = u.id
+              AND (lower(a.status) IN ('recruited', 'accepted', 'approved') OR a.response_decision = 'accept')
+            LIMIT 1
+          ) AS is_recruited,
+          '[]'::json AS applied_jobs
        FROM users u
        LEFT JOIN applicant_profiles ap ON ap.user_id = u.id
        WHERE u.role = 'applicant'
@@ -5463,12 +5471,18 @@ app.get("/api/employers/:userId/talent-pool", async (req, res) => {
             WHERE a.applicant_user_id = u.id AND jp.employer_user_id = ?
               AND (lower(a.status) IN ('recruited', 'accepted', 'approved') OR a.response_decision = 'accept')
             LIMIT 1
-          ) AS is_recruited
+          ) AS is_recruited,
+          (
+            SELECT COALESCE(json_agg(json_build_object('job_post_id', a.job_post_id, 'status', a.status)), '[]'::json)
+            FROM applications a
+            JOIN job_posts jp ON jp.id = a.job_post_id
+            WHERE a.applicant_user_id = u.id AND jp.employer_user_id = ?
+          ) AS applied_jobs
        FROM users u
        LEFT JOIN applicant_profiles ap ON ap.user_id = u.id
        WHERE u.role = 'applicant'
        ORDER BY u.created_at DESC`,
-      [userId, userId, userId, userId, userId, userId]
+      [userId, userId, userId, userId, userId, userId, userId]
     );
 
     res.json({ candidates });
