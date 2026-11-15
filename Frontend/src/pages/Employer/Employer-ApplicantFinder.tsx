@@ -2275,47 +2275,71 @@ export default function EmployerApplicantFinder() {
 
     setIsLoading(true);
     try {
-      // 1. Fetch Employer Profile to determine Company Starting Location
+      const talentEndpoint = userId ? `/api/employers/${userId}/talent-pool` : `/api/talent-pool`;
+      const empEndpoint = userId ? `/api/employers/${userId}/profile` : null;
+      const jobsEndpoint = userId ? `/api/employers/${userId}/active-job-posts` : null;
+
+      // 1. Fetch Employer Profile, Talent Pool, and Active Jobs simultaneously in parallel
+      const [empRes, talentRes, jobsRes] = await Promise.all([
+        empEndpoint ? fetch(empEndpoint).catch(() => null) : Promise.resolve(null),
+        fetch(talentEndpoint).catch(() => null),
+        jobsEndpoint ? fetch(jobsEndpoint).catch(() => null) : Promise.resolve(null),
+      ]);
+
+      // Resolve Employer Profile and starting location
       let resolvedEmpCoords = { lat: 14.1953, lng: 120.8769 }; // Default: Indang, Cavite
-      if (userId) {
+      if (empRes && empRes.ok) {
         try {
-          const empRes = await fetch(`/api/employers/${userId}/profile`);
-          if (empRes.ok) {
-            const empData = await empRes.json();
-            if (empData?.profile) {
-              setEmployerProfile(empData.profile);
-              const p = empData.profile;
-              // Base employer location on the registered profile city / address
-              if (p.city || p.company_address) {
-                resolvedEmpCoords = resolveLocalGeocode(p.company_address, p.city || p.province || "Cavite");
-              } else if (p.latitude && p.longitude) {
-                resolvedEmpCoords = { lat: Number(p.latitude), lng: Number(p.longitude) };
-              }
-              setEmployerCoords(resolvedEmpCoords);
+          const empData = await empRes.json();
+          if (empData?.profile) {
+            setEmployerProfile(empData.profile);
+            const p = empData.profile;
+            if (p.city || p.company_address) {
+              resolvedEmpCoords = resolveLocalGeocode(p.company_address, p.city || p.province || "Cavite");
+            } else if (p.latitude && p.longitude) {
+              resolvedEmpCoords = { lat: Number(p.latitude), lng: Number(p.longitude) };
             }
+            setEmployerCoords(resolvedEmpCoords);
           }
         } catch {}
       }
 
-      // 2. Fetch Candidates
-      let loadedCandidates: Candidate[] = [];
-      const talentEndpoint = userId ? `/api/employers/${userId}/talent-pool` : `/api/talent-pool`;
+      // Resolve Active Jobs
+      if (jobsRes && jobsRes.ok) {
+        try {
+          const jdata = await jobsRes.json();
+          if (Array.isArray(jdata?.jobs)) {
+            setActiveJobs(jdata.jobs);
+          }
+        } catch {}
+      } else if (userId) {
+        // Fallback for active jobs
+        fetch(`/api/employers/${userId}/job-posts`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((ajData) => {
+            if (Array.isArray(ajData?.jobPosts)) {
+              setActiveJobs(ajData.jobPosts);
+            }
+          })
+          .catch(() => {});
+      }
 
-      try {
-        const talentRes = await fetch(talentEndpoint);
-        if (talentRes.ok) {
+      // Resolve Candidates
+      let loadedCandidates: Candidate[] = [];
+      if (talentRes && talentRes.ok) {
+        try {
           const data = await talentRes.json();
           if (Array.isArray(data?.candidates)) {
             loadedCandidates = data.candidates;
           }
-        }
-      } catch {}
+        } catch {}
+      }
 
-      // Fallback: Employer applications API
+      // Fallback: Employer applications API only if talent pool returned empty
       if (loadedCandidates.length === 0 && userId) {
         try {
           const appRes = await fetch(`/api/employers/${userId}/applications`);
-          if (appRes.ok) {
+          if (appRes && appRes.ok) {
             const data = await appRes.json();
             if (Array.isArray(data?.applications)) {
               const seen = new Set<number>();
@@ -2350,48 +2374,8 @@ export default function EmployerApplicantFinder() {
         } catch {}
       }
 
-      // Ensure address, email, resume_path & work_arrangement are present and compute distance from Company
+      // Instantaneous in-memory distance calculation (Zero network requests)
       for (const c of loadedCandidates) {
-        if ((!c.address || !c.email || !c.resume_path || !c.work_arrangement || !c.expected_salary || !c.phone || !c.gender) && c.user_id) {
-          try {
-            const pRes = await fetch(`/api/applicants/${c.user_id}/profile`);
-            if (pRes.ok) {
-              const pData = await pRes.json();
-              if (pData?.profile) {
-                if (pData.profile.gender) c.gender = pData.profile.gender;
-                if (pData.profile.phone) c.phone = pData.profile.phone;
-                if (pData.profile.address) c.address = pData.profile.address;
-                if (pData.profile.city) c.city = pData.profile.city;
-                if (pData.profile.province) c.province = pData.profile.province;
-                if (pData.profile.email) c.email = pData.profile.email;
-                if (pData.profile.resume_path) c.resume_path = pData.profile.resume_path;
-                if (pData.profile.work_arrangement) c.work_arrangement = pData.profile.work_arrangement;
-                if (pData.profile.expected_salary) c.expected_salary = pData.profile.expected_salary;
-                if (pData.profile.desired_job_title) c.desired_job_title = pData.profile.desired_job_title;
-                if (pData.profile.target_roles_json) c.target_roles_json = pData.profile.target_roles_json;
-                if (pData.profile.summary) c.summary = pData.profile.summary;
-                if (pData.profile.languages) c.languages = pData.profile.languages;
-                if (pData.profile.skills) c.skills = pData.profile.skills;
-                if (pData.profile.qualifications) c.qualifications = pData.profile.qualifications;
-                if (pData.profile.certifications) c.certifications = pData.profile.certifications;
-                if (pData.profile.years_of_experience) c.years_of_experience = pData.profile.years_of_experience;
-                if (pData.profile.work_experience_json) c.work_experience_json = pData.profile.work_experience_json;
-                if (pData.profile.preferred_locations) c.preferred_locations = pData.profile.preferred_locations;
-                if (pData.profile.preferred_cities_json) c.preferred_cities_json = pData.profile.preferred_cities_json;
-                if (pData.profile.nearby_location) c.nearby_location = pData.profile.nearby_location;
-                if (pData.profile.latitude) c.latitude = pData.profile.latitude;
-                if (pData.profile.longitude) c.longitude = pData.profile.longitude;
-                if (pData.profile.shs_strand) c.shs_strand = pData.profile.shs_strand;
-                if (pData.profile.shs_school) c.shs_school = pData.profile.shs_school;
-                if (pData.profile.shs_grad_year) c.shs_grad_year = pData.profile.shs_grad_year;
-                if (pData.profile.college_grad_year) c.college_grad_year = pData.profile.college_grad_year;
-                if (pData.profile.vocational_grad_year) c.vocational_grad_year = pData.profile.vocational_grad_year;
-              }
-            }
-          } catch {}
-        }
-
-        // Calculate distance from company
         const candCoords = (c.latitude && c.longitude && !isNaN(Number(c.latitude)) && Number(c.latitude) !== 0)
           ? { lat: Number(c.latitude), lng: Number(c.longitude) }
           : resolveLocalGeocode(c.nearby_location || c.address || c.city, c.province || "Cavite");
@@ -2405,27 +2389,6 @@ export default function EmployerApplicantFinder() {
       }
 
       setCandidates(loadedCandidates);
-
-      // Fetch Active Job Posts
-      if (userId) {
-        try {
-          const jobsRes = await fetch(`/api/employers/${userId}/active-job-posts`);
-          if (jobsRes.ok) {
-            const jdata = await jobsRes.json();
-            if (Array.isArray(jdata?.jobs)) {
-              setActiveJobs(jdata.jobs);
-            }
-          } else {
-            const allJobsRes = await fetch(`/api/employers/${userId}/job-posts`);
-            if (allJobsRes.ok) {
-              const ajData = await allJobsRes.json();
-              if (Array.isArray(ajData?.jobPosts)) {
-                setActiveJobs(ajData.jobPosts);
-              }
-            }
-          }
-        } catch {}
-      }
     } catch (err) {
       console.error("Failed to load talent pool:", err);
     } finally {
