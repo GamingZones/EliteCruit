@@ -879,13 +879,10 @@ app.post("/api/auth/register", async (req, res) => {
 
   try {
     const cleanEmail = email.trim().toLowerCase();
-    const existing = await get("SELECT id, is_email_verified FROM users WHERE lower(email) = ?", [cleanEmail]);
+    const existing = await get("SELECT id FROM users WHERE lower(email) = ?", [cleanEmail]);
     if (existing) {
-      if (existing.is_email_verified !== false) {
-        res.status(409).json({ message: "An account with this email already exists." });
-        return;
-      }
-      await run("DELETE FROM users WHERE id = ?", [existing.id]);
+      res.status(409).json({ message: "An account with this email already exists." });
+      return;
     }
 
     const verifiedOtp = await get(
@@ -8214,7 +8211,6 @@ async function resetAndSeedZakiAccounts() {
         await run("DELETE FROM applicant_documents WHERE user_id = ?", [uid]).catch(() => {});
         await run("DELETE FROM applicant_profiles WHERE user_id = ?", [uid]).catch(() => {});
         await run("DELETE FROM employer_profiles WHERE user_id = ?", [uid]).catch(() => {});
-        await run("DELETE FROM users WHERE id = ?", [uid]).catch(() => {});
       }
       await run("DELETE FROM message_threads WHERE id NOT IN (SELECT DISTINCT thread_id FROM message_participants)").catch(() => {});
       await run("DELETE FROM registration_email_otps WHERE lower(email) IN (?, ?)", [employerEmail.toLowerCase(), applicantEmail.toLowerCase()]).catch(() => {});
@@ -8224,18 +8220,35 @@ async function resetAndSeedZakiAccounts() {
     const defaultPassword = "Password123!";
     const passHash = await bcrypt.hash(defaultPassword, 10);
 
-    // Create Employer: Cebuana Lhuillier
-    const empUserRes = await run(
-      "INSERT INTO users (email, password_hash, role, is_active, is_email_verified, two_factor_enabled) VALUES (?, ?, 'employer', true, true, false)",
-      [employerEmail.toLowerCase(), passHash]
-    );
-    const employerId = empUserRes.lastID;
+    // Create or update Employer: Cebuana Lhuillier
+    let employer = await get("SELECT id FROM users WHERE lower(email) = ?", [employerEmail.toLowerCase()]);
+    let employerId;
+    if (!employer) {
+      const empUserRes = await run(
+        "INSERT INTO users (email, password_hash, role, is_active, is_email_verified, two_factor_enabled) VALUES (?, ?, 'employer', true, true, false)",
+        [employerEmail.toLowerCase(), passHash]
+      );
+      employerId = empUserRes.lastID;
+    } else {
+      employerId = employer.id;
+      await run("UPDATE users SET password_hash = ?, role = 'employer', is_active = true, is_email_verified = true WHERE id = ?", [passHash, employerId]);
+    }
 
     await run(
       `INSERT INTO employer_profiles (
         user_id, business_name, industry, company_size, company_description, contact_number,
         province, city, company_address, terms_accepted, terms_accepted_at, branches_json
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, true, CURRENT_TIMESTAMP, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, true, CURRENT_TIMESTAMP, ?)
+       ON CONFLICT (user_id) DO UPDATE SET
+        business_name = EXCLUDED.business_name,
+        industry = EXCLUDED.industry,
+        company_size = EXCLUDED.company_size,
+        company_description = EXCLUDED.company_description,
+        contact_number = EXCLUDED.contact_number,
+        province = EXCLUDED.province,
+        city = EXCLUDED.city,
+        company_address = EXCLUDED.company_address,
+        branches_json = EXCLUDED.branches_json`,
       [
         employerId,
         "Cebuana Lhuillier",
@@ -8253,12 +8266,19 @@ async function resetAndSeedZakiAccounts() {
       ]
     );
 
-    // Create Applicant: Zaki Ablando
-    const appUserRes = await run(
-      "INSERT INTO users (email, password_hash, role, is_active, is_email_verified, two_factor_enabled) VALUES (?, ?, 'applicant', true, true, false)",
-      [applicantEmail.toLowerCase(), passHash]
-    );
-    const applicantId = appUserRes.lastID;
+    // Create or update Applicant: Zaki Ablando
+    let applicant = await get("SELECT id FROM users WHERE lower(email) = ?", [applicantEmail.toLowerCase()]);
+    let applicantId;
+    if (!applicant) {
+      const appUserRes = await run(
+        "INSERT INTO users (email, password_hash, role, is_active, is_email_verified, two_factor_enabled) VALUES (?, ?, 'applicant', true, true, false)",
+        [applicantEmail.toLowerCase(), passHash]
+      );
+      applicantId = appUserRes.lastID;
+    } else {
+      applicantId = applicant.id;
+      await run("UPDATE users SET password_hash = ?, role = 'applicant', is_active = true, is_email_verified = true WHERE id = ?", [passHash, applicantId]);
+    }
 
     await run(
       `INSERT INTO applicant_profiles (
@@ -8266,7 +8286,21 @@ async function resetAndSeedZakiAccounts() {
         desired_job_title, expected_salary, expected_salary_min, expected_salary_max,
         work_arrangement, skills, certifications, qualifications,
         summary, languages, preferred_locations, terms_accepted, terms_accepted_at
-      ) VALUES (?, ?, ?, ?, 'Prefer not to say', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, true, CURRENT_TIMESTAMP)`,
+      ) VALUES (?, ?, ?, ?, 'Prefer not to say', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, true, CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id) DO UPDATE SET
+        first_name = EXCLUDED.first_name,
+        middle_name = EXCLUDED.middle_name,
+        last_name = EXCLUDED.last_name,
+        phone = EXCLUDED.phone,
+        city = EXCLUDED.city,
+        address = EXCLUDED.address,
+        desired_job_title = EXCLUDED.desired_job_title,
+        expected_salary = EXCLUDED.expected_salary,
+        expected_salary_min = EXCLUDED.expected_salary_min,
+        expected_salary_max = EXCLUDED.expected_salary_max,
+        work_arrangement = EXCLUDED.work_arrangement,
+        skills = EXCLUDED.skills,
+        summary = EXCLUDED.summary`,
       [
         applicantId,
         "Zaki",
@@ -9268,7 +9302,7 @@ async function seedAllSystemUserAccounts() {
   // 2. Seed Applicants
   for (const app of seededApplicants) {
     const email = String(app.email || "").trim().toLowerCase();
-    if (!email || email === "zaki_ablando897@yahoo.com") continue; // Exclude unregister target
+    if (!email) continue;
 
     try {
       const existingUser = await get("SELECT id FROM users WHERE lower(email) = ?", [email]);
