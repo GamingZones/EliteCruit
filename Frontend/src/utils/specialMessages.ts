@@ -148,6 +148,7 @@ export function parseSpecialMessage(text: string): ParsedSpecialMessage {
   // 4. Interview Cancelled
   if (
     text.startsWith("[Interview Cancelled]:") ||
+    text.includes("[Interview Cancelled]:") ||
     (text.includes("[System Notice]:") && text.toLowerCase().includes("was cancelled"))
   ) {
     let title = "";
@@ -162,8 +163,12 @@ export function parseSpecialMessage(text: string): ParsedSpecialMessage {
       text.match(/scheduled for\s*(.*?)\s*was cancelled/i);
     if (schedMatch) origSchedule = schedMatch[1].trim();
 
-    const reasonMatch = text.match(/Reason:\s*["']?(.*?)["']?\.?$/im);
-    if (reasonMatch) reason = reasonMatch[1].trim();
+    const reasonMatch =
+      text.match(/Reason:\s*["']?(.*?)["']?\.?$/im) ||
+      text.match(/Reason:\s*(.*?)$/im);
+    if (reasonMatch) {
+      reason = reasonMatch[1].trim().replace(/^["']|["']\.?$/g, "").trim();
+    }
 
     return {
       type: "interview_cancelled",
@@ -177,6 +182,7 @@ export function parseSpecialMessage(text: string): ParsedSpecialMessage {
   // 5. Interview Rescheduled
   if (
     text.startsWith("[Interview Rescheduled]:") ||
+    text.includes("[Interview Rescheduled]:") ||
     (text.includes("[System Notice]:") && text.toLowerCase().includes("has been rescheduled"))
   ) {
     let title = "";
@@ -188,7 +194,9 @@ export function parseSpecialMessage(text: string): ParsedSpecialMessage {
     const titleMatch = text.match(/\[Interview Rescheduled\]:\s*(.*?)(?:\n|$)/i);
     if (titleMatch) title = titleMatch[1].trim();
 
-    const schedMatch = text.match(/New Schedule:\s*(.*?)(?:\n|$)/i);
+    const schedMatch =
+      text.match(/New Schedule:\s*(.*?)(?:\n|$)/i) ||
+      text.match(/rescheduled to\s*(.*?)\./i);
     if (schedMatch) newSched = schedMatch[1].trim();
 
     const typeMatch = text.match(/Type:\s*(.*?)(?:\n|$)/i);
@@ -197,8 +205,13 @@ export function parseSpecialMessage(text: string): ParsedSpecialMessage {
     const locMatch = text.match(/(?:Location\/Link|Location):\s*(.*?)(?:\n|$)/i);
     if (locMatch) loc = locMatch[1].trim();
 
-    const notesMatch = text.match(/Notes:\s*(.*?)$/i);
-    if (notesMatch) notes = notesMatch[1].trim();
+    const notesMatch =
+      text.match(/(?:Reason|Notes|Reason for rescheduling):\s*["']?(.*?)["']?\.?$/im) ||
+      text.match(/(?:Reason|Notes|Reason for rescheduling):\s*["']?(.*?)["']?(?:\n|$)/im) ||
+      text.match(/Notes:\s*(.*?)$/i);
+    if (notesMatch) {
+      notes = notesMatch[1].trim().replace(/^["']|["']\.?$/g, "").trim();
+    }
 
     return {
       type: "interview_rescheduled",
@@ -206,7 +219,8 @@ export function parseSpecialMessage(text: string): ParsedSpecialMessage {
       date: newSched,
       interviewType: type || "On-Site",
       location: loc,
-      notes,
+      notes: notes || "I have a prior commitment at the original interview time. Requested schedule adjustment.",
+      reason: notes || "I have a prior commitment at the original interview time. Requested schedule adjustment.",
       cleanBody: text,
     };
   }

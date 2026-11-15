@@ -71,7 +71,7 @@
   background: rgba(10, 25, 45, 0.45);
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
-  z-index: 99998;
+  z-index: 220000;
   animation: calBackdropFadeIn 0.22s ease forwards;
 }
 
@@ -91,7 +91,7 @@
   height: 100vh;
   background: #ffffff;
   box-shadow: -10px 0 40px rgba(0, 20, 45, 0.3);
-  z-index: 99999;
+  z-index: 220001;
   display: flex;
   flex-direction: column;
   transform: translateX(100%);
@@ -3530,5 +3530,10 @@
 .cand-details-overlay,
 [data-theme="dark"] .cand-details-overlay {
   z-index: 200000 !important;
+}
+
+.cal-drawer-details-modal-portal .cand-details-overlay,
+[data-theme="dark"] .cal-drawer-details-modal-portal .cand-details-overlay {
+  z-index: 230000 !important;
 }
 

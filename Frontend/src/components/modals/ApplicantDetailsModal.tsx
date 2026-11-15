@@ -912,7 +912,7 @@ export default function ApplicantDetailsModal({
           width: "fit-content",
           display: "flex",
           gap: "16px",
-          alignItems: "flex-start",
+          alignItems: "stretch",
           justifyContent: "center",
           position: "relative",
           margin: "auto",
@@ -932,6 +932,7 @@ export default function ApplicantDetailsModal({
             flexShrink: 0,
             display: "flex",
             flexDirection: "column",
+            alignSelf: "stretch",
             background: "transparent",
             border: "none",
           }}
@@ -1455,7 +1456,9 @@ export default function ApplicantDetailsModal({
             maxWidth: "min(480px, calc(100vw - 976px))",
             minWidth: "320px",
             flex: "1 1 440px",
-            height: "700px",
+            alignSelf: "stretch",
+            height: "auto",
+            minHeight: "0",
             maxHeight: "88vh",
             boxShadow: "0 25px 60px rgba(0, 0, 0, 0.35)",
             display: "flex",
@@ -1743,7 +1746,9 @@ export default function ApplicantDetailsModal({
             maxWidth: "min(480px, calc(100vw - 976px))",
             minWidth: "320px",
             flex: "1 1 440px",
-            height: "700px",
+            alignSelf: "stretch",
+            height: "auto",
+            minHeight: "0",
             maxHeight: "88vh",
             boxShadow: "0 25px 60px rgba(0, 0, 0, 0.35)",
             display: "flex",
@@ -2015,24 +2020,129 @@ export default function ApplicantDetailsModal({
                                 <span className="chat-grid-val">{special.date} {special.time ? `at ${special.time}` : ""}</span>
                               </div>
                             )}
-                            {special.interviewType && (
-                              <div className="chat-grid-row">
-                                <span className="chat-grid-lbl">Format:</span>
-                                <span className="chat-grid-val">{special.interviewType}</span>
-                              </div>
-                            )}
-                            {special.location && (
-                              <div className="chat-grid-row">
-                                <span className="chat-grid-lbl">Venue / Link:</span>
-                                <span className="chat-grid-val">{special.location}</span>
-                              </div>
-                            )}
                             {special.notes && (
                               <div className="chat-grid-row">
                                 <span className="chat-grid-lbl">Notes:</span>
                                 <span className="chat-grid-val">{special.notes}</span>
                               </div>
                             )}
+                          </div>
+
+                          <div className="chat-special-actions">
+                            <button
+                              type="button"
+                              className="chat-action-btn chat-btn-open-cal"
+                              onClick={() => window.dispatchEvent(new CustomEvent("elitecruit-open-calendar", { detail: { tab: "all", date: special.date } }))}
+                            >
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                <line x1="16" y1="2" x2="16" y2="6" />
+                                <line x1="8" y1="2" x2="8" y2="6" />
+                                <line x1="3" y1="10" x2="21" y2="10" />
+                              </svg>
+                              <span>Open Meeting Calendar</span>
+                            </button>
+                          </div>
+                        </article>
+                      );
+                    }
+
+                    if (special.type === "interview_cancelled") {
+                      return (
+                        <article
+                          key={msg.id}
+                          className={`chat-bubble chat-special-card chat-cancelled-card ${isMe ? "outgoing" : "incoming"}`}
+                        >
+                          <div className="chat-special-header">
+                            <div className="chat-special-badge-row">
+                              <span className="chat-special-badge badge-interview-cancelled">
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                                  <circle cx="12" cy="12" r="10" />
+                                  <line x1="15" y1="9" x2="9" y2="15" />
+                                  <line x1="9" y1="9" x2="15" y2="15" />
+                                </svg>
+                                <span>Interview Cancelled</span>
+                              </span>
+                              <time className="chat-special-time">{timeStr}</time>
+                            </div>
+                            <h4 className="chat-special-title">{special.jobTitle}</h4>
+                            {special.date && <div className="chat-special-subtitle">Schedule: {special.date}</div>}
+                          </div>
+
+                          {special.reason && (
+                            <div className="chat-special-alert-box">
+                              <strong>Reason:</strong> {special.reason}
+                            </div>
+                          )}
+
+                          <div className="chat-special-actions">
+                            <button
+                              type="button"
+                              className="chat-action-btn chat-btn-open-cal"
+                              onClick={() => window.dispatchEvent(new CustomEvent("elitecruit-open-calendar", { detail: { tab: "all" } }))}
+                            >
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                <line x1="16" y1="2" x2="16" y2="6" />
+                                <line x1="8" y1="2" x2="8" y2="6" />
+                                <line x1="3" y1="10" x2="21" y2="10" />
+                              </svg>
+                              <span>Open Meeting Calendar</span>
+                            </button>
+                          </div>
+                        </article>
+                      );
+                    }
+
+                    if (special.type === "interview_rescheduled") {
+                      return (
+                        <article
+                          key={msg.id}
+                          className={`chat-bubble chat-special-card chat-rescheduled-card ${isMe ? "outgoing" : "incoming"}`}
+                        >
+                          <div className="chat-special-header">
+                            <div className="chat-special-badge-row">
+                              <span className="chat-special-badge badge-interview-resched">
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <circle cx="12" cy="12" r="10" />
+                                  <polyline points="12 6 12 12 14 14" />
+                                </svg>
+                                <span>Interview Rescheduled</span>
+                              </span>
+                              <time className="chat-special-time">{timeStr}</time>
+                            </div>
+                            <h4 className="chat-special-title">{special.jobTitle}</h4>
+                          </div>
+
+                          <div className="chat-special-grid">
+                            {special.date && (
+                              <div className="chat-grid-row">
+                                <span className="chat-grid-lbl">New Schedule:</span>
+                                <span className="chat-grid-val">{special.date}</span>
+                              </div>
+                            )}
+                            {(special.notes || special.reason) && (
+                              <div className="chat-grid-row">
+                                <span className="chat-grid-lbl">Notes:</span>
+                                <span className="chat-grid-val">{special.notes || special.reason}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="chat-special-actions">
+                            <button
+                              type="button"
+                              className="chat-action-btn chat-btn-open-cal"
+                              onClick={() => window.dispatchEvent(new CustomEvent("elitecruit-open-calendar", { detail: { tab: "all", date: special.date } }))}
+                            >
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                <line x1="16" y1="2" x2="16" y2="6" />
+                                <line x1="8" y1="2" x2="8" y2="6" />
+                                <line x1="3" y1="10" x2="21" y2="10" />
+                              </svg>
+                              <span>Open Meeting Calendar</span>
+                            </button>
                           </div>
                         </article>
                       );

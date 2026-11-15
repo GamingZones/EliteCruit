@@ -1840,6 +1840,10 @@
   flex-grow: 0 !important;
 }
 
+.cand-details-overlay .cand-details-modal-container {
+  align-items: stretch !important;
+}
+
 .cand-details-overlay .applicant-side-comparison-panel,
 .cand-details-overlay .jd-side-comparison-panel,
 [data-theme="dark"] .cand-details-overlay .applicant-side-comparison-panel,
@@ -1849,6 +1853,9 @@
   min-width: 320px !important;
   flex: 1 1 440px !important;
   flex-shrink: 1 !important;
+  align-self: stretch !important;
+  height: auto !important;
+  min-height: 0 !important;
 }
 
 .jd-body-wrapper {

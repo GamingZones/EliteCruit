@@ -855,6 +855,10 @@
 }
 
 /* ── 2nd Container (Adjusts dynamically to remaining space) ── */
+.cand-details-overlay .cand-details-modal-container {
+  align-items: stretch !important;
+}
+
 .cand-details-overlay .applicant-side-comparison-panel,
 .cand-details-overlay .jd-side-comparison-panel,
 [data-theme="dark"] .cand-details-overlay .applicant-side-comparison-panel,
@@ -864,6 +868,9 @@
   min-width: 320px !important;
   flex: 1 1 440px !important;
   flex-shrink: 1 !important;
+  align-self: stretch !important;
+  height: auto !important;
+  min-height: 0 !important;
 }
 
 /* ── Base (Light Theme) Side Comparison Panel Styles ── */
@@ -2077,6 +2084,26 @@
   background: #f8fafc;
 }
 
+.chat-cancelled-card.incoming {
+  border-left: 4px solid #dc2626;
+  background: #fffafa;
+}
+
+.chat-cancelled-card.outgoing {
+  border-right: 4px solid #dc2626;
+  background: #fffafa;
+}
+
+.chat-rescheduled-card.incoming {
+  border-left: 4px solid #d97706;
+  background: #fffdfa;
+}
+
+.chat-rescheduled-card.outgoing {
+  border-right: 4px solid #d97706;
+  background: #fffdfa;
+}
+
 .chat-reschedule-req-card.incoming {
   border-left: 4px solid #f59e0b;
   background: #fffdfa;
@@ -2130,6 +2157,16 @@
 .chat-special-badge.badge-interview-sched {
   background: #e0f2fe;
   color: #0284c7;
+}
+
+.chat-special-badge.badge-interview-cancelled {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.chat-special-badge.badge-interview-resched {
+  background: #fef3c7;
+  color: #b45309;
 }
 
 .chat-special-badge.badge-interview-resched-req {
@@ -2261,6 +2298,26 @@
 
 .chat-btn-view:hover {
   background: #0369a1;
+}
+
+.chat-action-btn.chat-btn-open-cal {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+.chat-action-btn.chat-btn-open-cal:hover {
+  background: #0369a1;
+}
+
+.chat-special-alert-box {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  color: #991b1b;
+  line-height: 1.4;
+  margin: 6px 0;
 }
 
 .chat-action-btn.chat-btn-accepted,
@@ -2596,6 +2653,69 @@
 [data-theme="dark"] .chat-interview-card.outgoing {
   border-color: #0284c7 !important;
   background: #171b26 !important;
+}
+
+[data-theme="dark"] .chat-cancelled-card.incoming,
+[data-theme="dark"] .chat-bubble.chat-cancelled-card.incoming {
+  border-left: 4px solid #ef4444 !important;
+  border-right: 1px solid #2e3446 !important;
+  border-top: 1px solid #2e3446 !important;
+  border-bottom: 1px solid #2e3446 !important;
+  background: #1c202d !important;
+}
+
+[data-theme="dark"] .chat-cancelled-card.outgoing,
+[data-theme="dark"] .chat-bubble.chat-cancelled-card.outgoing {
+  border-right: 4px solid #ef4444 !important;
+  border-left: 1px solid #2e3446 !important;
+  border-top: 1px solid #2e3446 !important;
+  border-bottom: 1px solid #2e3446 !important;
+  background: #1c202d !important;
+}
+
+[data-theme="dark"] .chat-rescheduled-card.incoming,
+[data-theme="dark"] .chat-bubble.chat-rescheduled-card.incoming {
+  border-left: 4px solid #f59e0b !important;
+  border-right: 1px solid #2e3446 !important;
+  border-top: 1px solid #2e3446 !important;
+  border-bottom: 1px solid #2e3446 !important;
+  background: #1c202d !important;
+}
+
+[data-theme="dark"] .chat-rescheduled-card.outgoing,
+[data-theme="dark"] .chat-bubble.chat-rescheduled-card.outgoing {
+  border-right: 4px solid #f59e0b !important;
+  border-left: 1px solid #2e3446 !important;
+  border-top: 1px solid #2e3446 !important;
+  border-bottom: 1px solid #2e3446 !important;
+  background: #1c202d !important;
+}
+
+[data-theme="dark"] .chat-special-badge.badge-interview-cancelled {
+  background: rgba(239, 68, 68, 0.16) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+[data-theme="dark"] .chat-special-badge.badge-interview-resched {
+  background: rgba(245, 158, 11, 0.14) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.28) !important;
+}
+
+[data-theme="dark"] .chat-special-alert-box {
+  background: rgba(220, 38, 38, 0.15) !important;
+  border-color: rgba(220, 38, 38, 0.35) !important;
+  color: #fca5a5 !important;
+}
+
+[data-theme="dark"] .chat-action-btn.chat-btn-open-cal {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .chat-action-btn.chat-btn-open-cal:hover {
+  background: #0369a1 !important;
 }
 
 [data-theme="dark"] .chat-reschedule-req-card.incoming,

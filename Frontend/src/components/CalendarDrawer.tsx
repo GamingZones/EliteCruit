@@ -3234,16 +3234,18 @@ export default function CalendarDrawer({
 
       {/* ── STANDALONE APPLICANT DETAILS MODAL (ApplicantDetailsModal.tsx) ── */}
       {typeof document !== "undefined" && isDetailsModalOpen && createPortal(
-        <ApplicantDetailsModal
-          isOpen={isDetailsModalOpen}
-          onClose={() => {
-            setIsDetailsModalOpen(false);
-            setDetailsCandidate(null);
-          }}
-          candidate={detailsCandidate}
-          employerJobs={employerJobs}
-          currentEmployerUserId={currentUserId}
-        />,
+        <div className="cal-drawer-details-modal-portal">
+          <ApplicantDetailsModal
+            isOpen={isDetailsModalOpen}
+            onClose={() => {
+              setIsDetailsModalOpen(false);
+              setDetailsCandidate(null);
+            }}
+            candidate={detailsCandidate}
+            employerJobs={employerJobs}
+            currentEmployerUserId={currentUserId}
+          />
+        </div>,
         document.body
       )}
 
