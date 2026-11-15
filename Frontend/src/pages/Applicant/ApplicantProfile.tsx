@@ -3636,22 +3636,16 @@ export default function ApplicantProfile() {
   const isRoleSalaryDirty = isRoleDirty;
 
   const checkHasUnsavedSection2 = () => {
-    const isJobTitleDirty = (draft.desired_job_title || "").trim() !== (profile.desired_job_title || "").trim();
-    const isArrangementDirty = (draft.work_arrangement || "").trim() !== (profile.work_arrangement || "").trim();
-    const isMinSalaryDirty = parseSalaryInteger(draft.expected_salary_min) !== parseSalaryInteger(profile.expected_salary_min);
-    const isMaxSalaryDirty = parseSalaryInteger(draft.expected_salary_max) !== parseSalaryInteger(profile.expected_salary_max);
-    const isTargetRoleInputDirty = Boolean(targetRoleInput.trim());
-    const isNewRoleDraftDirty = isAddingRole && Boolean(newRoleTitle.trim());
-    const hasUnsavedRoles = targetRoles.some((r) => isRoleDirty(r.id));
-    return Boolean(
-      isJobTitleDirty ||
-      isArrangementDirty ||
-      isMinSalaryDirty ||
-      isMaxSalaryDirty ||
-      isTargetRoleInputDirty ||
-      isNewRoleDraftDirty ||
-      hasUnsavedRoles
-    );
+    if (isAddingRole && Boolean(newRoleTitle.trim())) {
+      return true;
+    }
+    if (editingRoleId !== null && isRoleDirty(editingRoleId)) {
+      return true;
+    }
+    if (Boolean(targetRoleInput.trim())) {
+      return true;
+    }
+    return false;
   };
 
   const salaryMinError = useMemo(() => {
@@ -3681,7 +3675,13 @@ export default function ApplicantProfile() {
   }, [draft.expected_salary_min, draft.expected_salary_max]);
 
   const checkHasUnsavedProfile = () => {
-    return checkHasUnsavedSection1() || checkHasUnsavedSection2();
+    if (activeSection === "personal") {
+      return checkHasUnsavedSection1();
+    }
+    if (activeSection === "preferences") {
+      return checkHasUnsavedSection2();
+    }
+    return false;
   };
 
   const handleInlineCancelClick = (fieldName: keyof ApplicantProfileData) => {
@@ -3710,34 +3710,29 @@ export default function ApplicantProfile() {
     if (shouldEdit && !isEditing) setIsEditing(true);
   };
 
+  const checkHasUnsavedExpRef = useRef(checkHasUnsavedExp);
+  checkHasUnsavedExpRef.current = checkHasUnsavedExp;
+
+  const checkHasUnsavedProfileRef = useRef(checkHasUnsavedProfile);
+  checkHasUnsavedProfileRef.current = checkHasUnsavedProfile;
+
+  const activeSectionRef = useRef(activeSection);
+  activeSectionRef.current = activeSection;
+
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if ((activeSection === "experience" && checkHasUnsavedExp()) || checkHasUnsavedProfile()) {
+      const hasUnsaved =
+        (activeSectionRef.current === "experience" && checkHasUnsavedExpRef.current()) ||
+        checkHasUnsavedProfileRef.current();
+
+      if (hasUnsaved) {
         e.preventDefault();
         e.returnValue = "";
       }
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [
-    activeSection,
-    isAddingExp,
-    editingExpId,
-    expTitle,
-    expCompany,
-    expResponsibilities,
-    expSkills,
-    expSkillInput,
-    expCity,
-    expIsCurrent,
-    expEndMonth,
-    expEndYear,
-    expEmploymentType,
-    profile,
-    draft,
-    targetRoleInput,
-    isEditing,
-  ]);
+  }, []);
 
   const handleSaveWorkExperienceEntry = async () => {
     if (!expTitle.trim() || !expCompany.trim()) {
