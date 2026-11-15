@@ -2121,6 +2121,7 @@ export default function CalendarDrawer({
               setIsDetailsModalOpen(false);
               setDetailsCandidate(null);
             }}
+            hideOtherJobsTab={true}
             candidate={detailsCandidate}
             employerJobs={employerJobs}
             currentEmployerUserId={currentUserId}
