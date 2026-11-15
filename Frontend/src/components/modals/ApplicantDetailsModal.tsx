@@ -1417,34 +1417,34 @@ export default function ApplicantDetailsModal({
             <nav className="profile-section-nav cand-modal-tabs" aria-label="Profile Sections">
               <button
                 type="button"
-                className={`cand-modal-tab-btn ${candDetailTab === "personal" ? "active" : ""}`}
+                className={`cand-modal-tab-btn section-nav-btn ${candDetailTab === "personal" ? "active" : ""}`}
                 onClick={() => { setCandDetailTab("personal"); setIsDocsDrawerOpen(false); setPreviewDoc(null); }}
               >
-                <span className="tab-num">1</span>
+                <span className="tab-num nav-num">1</span>
                 <span>Personal & Contact</span>
               </button>
               <button
                 type="button"
-                className={`cand-modal-tab-btn ${candDetailTab === "preferences" ? "active" : ""}`}
+                className={`cand-modal-tab-btn section-nav-btn ${candDetailTab === "preferences" ? "active" : ""}`}
                 onClick={() => { setCandDetailTab("preferences"); setIsDocsDrawerOpen(false); setPreviewDoc(null); }}
               >
-                <span className="tab-num">2</span>
+                <span className="tab-num nav-num">2</span>
                 <span>Career Preferences</span>
               </button>
               <button
                 type="button"
-                className={`cand-modal-tab-btn ${candDetailTab === "competencies" ? "active" : ""}`}
+                className={`cand-modal-tab-btn section-nav-btn ${candDetailTab === "competencies" ? "active" : ""}`}
                 onClick={() => { setCandDetailTab("competencies"); setIsDocsDrawerOpen(false); setPreviewDoc(null); }}
               >
-                <span className="tab-num">3</span>
+                <span className="tab-num nav-num">3</span>
                 <span>Skills & Credentials</span>
               </button>
               <button
                 type="button"
-                className={`cand-modal-tab-btn ${candDetailTab === "experience" ? "active" : ""}`}
+                className={`cand-modal-tab-btn section-nav-btn ${candDetailTab === "experience" ? "active" : ""}`}
                 onClick={() => { setCandDetailTab("experience"); setIsDocsDrawerOpen(false); setPreviewDoc(null); }}
               >
-                <span className="tab-num">4</span>
+                <span className="tab-num nav-num">4</span>
                 <span>Work Experience</span>
               </button>
             </nav>

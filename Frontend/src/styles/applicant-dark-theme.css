@@ -4444,33 +4444,51 @@
 [data-theme="dark"] .cand-modal-nav-wrap {
   background: #14151B !important;
   border-bottom: 1px solid #2e3244 !important;
+  padding: 10px 20px !important;
 }
 
 [data-theme="dark"] .profile-section-nav.cand-modal-tabs {
-  background: #242735 !important;
+  background: #1c1e27 !important;
   border: 1px solid #2e3244 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  margin: 0 !important;
 }
 
-[data-theme="dark"] .cand-modal-tabs .section-nav-btn {
+[data-theme="dark"] .cand-modal-tabs .section-nav-btn,
+[data-theme="dark"] .cand-modal-tabs .cand-modal-tab-btn {
   color: #94a3b8 !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-bottom: none !important;
 }
 
-[data-theme="dark"] .cand-modal-tabs .section-nav-btn:hover {
-  background: #2b2f40 !important;
+[data-theme="dark"] .cand-modal-tabs .section-nav-btn:hover,
+[data-theme="dark"] .cand-modal-tabs .cand-modal-tab-btn:hover {
+  background: #252836 !important;
   color: #ffffff !important;
 }
 
-[data-theme="dark"] .cand-modal-tabs .section-nav-btn.active {
-  background: #0284c7 !important;
+[data-theme="dark"] .cand-modal-tabs .section-nav-btn.active,
+[data-theme="dark"] .cand-modal-tabs .cand-modal-tab-btn.active {
+  background: #00385e !important;
   color: #ffffff !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+  border-bottom: none !important;
 }
 
-[data-theme="dark"] .cand-modal-tabs .section-nav-btn .nav-num {
-  background: #2e3244 !important;
+[data-theme="dark"] .cand-modal-tabs .section-nav-btn .nav-num,
+[data-theme="dark"] .cand-modal-tabs .section-nav-btn .tab-num,
+[data-theme="dark"] .cand-modal-tabs .cand-modal-tab-btn .nav-num,
+[data-theme="dark"] .cand-modal-tabs .cand-modal-tab-btn .tab-num {
+  background: #252836 !important;
   color: #cbd5e1 !important;
 }
 
-[data-theme="dark"] .cand-modal-tabs .section-nav-btn.active .nav-num {
+[data-theme="dark"] .cand-modal-tabs .section-nav-btn.active .nav-num,
+[data-theme="dark"] .cand-modal-tabs .section-nav-btn.active .tab-num,
+[data-theme="dark"] .cand-modal-tabs .cand-modal-tab-btn.active .nav-num,
+[data-theme="dark"] .cand-modal-tabs .cand-modal-tab-btn.active .tab-num {
   background: #f6be45 !important;
   color: #0c2a47 !important;
 }
@@ -7237,7 +7255,7 @@
 /* 3. Candidate Review Modal Tabs - Prevent Tab 4 (Work Experience) Clipping (Pic 2) */
 .cand-modal-nav-wrap,
 [data-theme="dark"] .cand-modal-nav-wrap {
-  padding: 10px 14px 0 14px !important;
+  padding: 10px 14px !important;
 }
 
 .profile-section-nav.cand-modal-tabs,
@@ -7246,26 +7264,38 @@
   grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   gap: 4px !important;
   padding: 4px 6px !important;
+  margin: 0 !important;
 }
 
 .cand-modal-tabs .section-nav-btn,
-[data-theme="dark"] .cand-modal-tabs .section-nav-btn {
+.cand-modal-tabs .cand-modal-tab-btn,
+[data-theme="dark"] .cand-modal-tabs .section-nav-btn,
+[data-theme="dark"] .cand-modal-tabs .cand-modal-tab-btn {
   padding: 6px 4px !important;
   gap: 5px !important;
   font-size: 0.74rem !important;
   min-width: 0 !important;
   overflow: hidden !important;
+  border-bottom: none !important;
 }
 
 .cand-modal-tabs .section-nav-btn span:last-child,
-[data-theme="dark"] .cand-modal-tabs .section-nav-btn span:last-child {
+.cand-modal-tabs .cand-modal-tab-btn span:last-child,
+[data-theme="dark"] .cand-modal-tabs .section-nav-btn span:last-child,
+[data-theme="dark"] .cand-modal-tabs .cand-modal-tab-btn span:last-child {
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
 }
 
 .cand-modal-tabs .section-nav-btn .nav-num,
-[data-theme="dark"] .cand-modal-tabs .section-nav-btn .nav-num {
+.cand-modal-tabs .section-nav-btn .tab-num,
+.cand-modal-tabs .cand-modal-tab-btn .nav-num,
+.cand-modal-tabs .cand-modal-tab-btn .tab-num,
+[data-theme="dark"] .cand-modal-tabs .section-nav-btn .nav-num,
+[data-theme="dark"] .cand-modal-tabs .section-nav-btn .tab-num,
+[data-theme="dark"] .cand-modal-tabs .cand-modal-tab-btn .nav-num,
+[data-theme="dark"] .cand-modal-tabs .cand-modal-tab-btn .tab-num {
   width: 20px !important;
   height: 20px !important;
   font-size: 0.68rem !important;
@@ -7710,32 +7740,46 @@
 [data-theme="dark"] .cand-modal-nav-wrap {
   background: #14151B !important;
   border-bottom: 1px solid #2e3244 !important;
+  padding: 10px 20px !important;
 }
 
-[data-theme="dark"] .cand-modal-tabs .section-nav-btn {
+[data-theme="dark"] .cand-modal-tabs .section-nav-btn,
+[data-theme="dark"] .cand-modal-tabs .cand-modal-tab-btn {
   color: #94a3b8 !important;
+  background: transparent !important;
   border: 1px solid transparent !important;
+  border-bottom: none !important;
 }
 
-[data-theme="dark"] .cand-modal-tabs .section-nav-btn:hover {
-  background: #242735 !important;
+[data-theme="dark"] .cand-modal-tabs .section-nav-btn:hover,
+[data-theme="dark"] .cand-modal-tabs .cand-modal-tab-btn:hover {
+  background: #252836 !important;
   color: #f1f5f9 !important;
 }
 
-[data-theme="dark"] .cand-modal-tabs .section-nav-btn.active {
-  background: #242735 !important;
-  color: #38bdf8 !important;
-  border-color: #0284c7 !important;
+[data-theme="dark"] .cand-modal-tabs .section-nav-btn.active,
+[data-theme="dark"] .cand-modal-tabs .cand-modal-tab-btn.active {
+  background: #00385e !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+  border-bottom: none !important;
 }
 
-[data-theme="dark"] .cand-modal-tabs .section-nav-btn .nav-num {
-  background: #2e3244 !important;
+[data-theme="dark"] .cand-modal-tabs .section-nav-btn .nav-num,
+[data-theme="dark"] .cand-modal-tabs .section-nav-btn .tab-num,
+[data-theme="dark"] .cand-modal-tabs .cand-modal-tab-btn .nav-num,
+[data-theme="dark"] .cand-modal-tabs .cand-modal-tab-btn .tab-num {
+  background: #252836 !important;
   color: #cbd5e1 !important;
 }
 
-[data-theme="dark"] .cand-modal-tabs .section-nav-btn.active .nav-num {
-  background: #0284c7 !important;
-  color: #ffffff !important;
+[data-theme="dark"] .cand-modal-tabs .section-nav-btn.active .nav-num,
+[data-theme="dark"] .cand-modal-tabs .section-nav-btn.active .tab-num,
+[data-theme="dark"] .cand-modal-tabs .cand-modal-tab-btn.active .nav-num,
+[data-theme="dark"] .cand-modal-tabs .cand-modal-tab-btn.active .tab-num {
+  background: #f6be45 !important;
+  color: #0c2a47 !important;
 }
 
 [data-theme="dark"] .cand-details-body {
