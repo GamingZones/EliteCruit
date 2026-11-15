@@ -1343,20 +1343,18 @@ export default function EmployerApplicantDetailsModal({
 
             <div className="cand-details-header-right">
               <div className="rating-score-box" title="Applicant rating">
-                <span className="star-icon">★</span>
+                <span className="star-icon">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                  </svg>
+                </span>
                 <span>{candidate.rating ? Number(candidate.rating).toFixed(1) : "0.0"}</span>
               </div>
               {(() => {
                 const scoreToShow = candidate.match_percentage != null ? Number(candidate.match_percentage) : matchDetails.score;
                 return (
                   <div
-                    className={`match-score-box ${
-                      scoreToShow >= 75
-                        ? "green"
-                        : scoreToShow >= 50
-                        ? "yellow"
-                        : "orange"
-                    }`}
+                    className={`match-score-box ${getMatchColorClass(scoreToShow)}`}
                     title="Match score"
                   >
                     <small>MATCH</small>

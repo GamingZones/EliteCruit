@@ -3923,8 +3923,12 @@ export default function EmployerApplicantManagement() {
                     </div>
                     <div className="preview-head-badges" style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0, marginLeft: "auto" }}>
                       <div className="preview-rating-badge">
-                        <span className="preview-rating-star" style={{ color: "#f59e0b" }}>★</span>
-                        <span className="preview-rating-num">{(currentApp as any).rating ? Number((currentApp as any).rating).toFixed(1) : "0.0"}</span>
+                        <span className="preview-rating-star" style={{ color: "#f59e0b", display: "inline-flex", alignItems: "center", lineHeight: 1 }}>
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style={{ display: "block" }}>
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                          </svg>
+                        </span>
+                        <span className="preview-rating-num" style={{ display: "inline-flex", alignItems: "center", lineHeight: 1 }}>{(currentApp as any).rating ? Number((currentApp as any).rating).toFixed(1) : "0.0"}</span>
                       </div>
                       <div
                         className={`preview-match-badge-box ${matchColorClass}`}

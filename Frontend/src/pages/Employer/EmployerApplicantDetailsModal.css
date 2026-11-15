@@ -131,15 +131,29 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 5px;
   font-weight: 700;
   font-size: 0.95rem;
   box-sizing: border-box;
+  line-height: 1;
 }
 
 .rating-score-box .star-icon {
   color: #e39d1f;
-  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.rating-score-box .star-icon svg {
+  display: block;
+}
+
+.rating-score-box span {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
 }
 
 .match-score-box {
@@ -187,6 +201,12 @@
   background: #fff7ed;
   color: #9a3412;
   border-color: #fed7aa;
+}
+
+.match-score-box.red {
+  background: #fef2f2;
+  color: #991b1b;
+  border-color: #fecaca;
 }
 
 .cand-details-docs-btn {
@@ -3318,4 +3338,60 @@
 [data-theme="dark"] .view-letter-badge.accepted,
 [data-theme="dark"] .view-letter-badge.declined {
   border: none !important;
+}
+
+/* Rating & Match Badges Dark Theme */
+[data-theme="dark"] .rating-score-box {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.4) !important;
+}
+
+[data-theme="dark"] .rating-score-box .star-icon {
+  color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .rating-score-box span {
+  color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .match-score-box {
+  border-width: 1px !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .match-score-box.green {
+  background: rgba(16, 185, 129, 0.18) !important;
+  color: #34d399 !important;
+  border-color: rgba(16, 185, 129, 0.45) !important;
+}
+
+[data-theme="dark"] .match-score-box.green small,
+[data-theme="dark"] .match-score-box.green b {
+  color: #34d399 !important;
+}
+
+[data-theme="dark"] .match-score-box.yellow,
+[data-theme="dark"] .match-score-box.orange {
+  background: rgba(245, 158, 11, 0.18) !important;
+  color: #fbbf24 !important;
+  border-color: rgba(245, 158, 11, 0.45) !important;
+}
+
+[data-theme="dark"] .match-score-box.yellow small,
+[data-theme="dark"] .match-score-box.yellow b,
+[data-theme="dark"] .match-score-box.orange small,
+[data-theme="dark"] .match-score-box.orange b {
+  color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .match-score-box.red {
+  background: rgba(239, 68, 68, 0.18) !important;
+  color: #f87171 !important;
+  border-color: rgba(239, 68, 68, 0.45) !important;
+}
+
+[data-theme="dark"] .match-score-box.red small,
+[data-theme="dark"] .match-score-box.red b {
+  color: #f87171 !important;
 }

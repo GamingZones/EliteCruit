@@ -1048,6 +1048,13 @@
   font-size: 1.1rem !important;
   line-height: 1;
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-rating-star svg {
+  display: block;
 }
 
 .preview-rating-num {
