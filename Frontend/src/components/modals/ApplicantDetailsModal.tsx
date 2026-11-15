@@ -324,6 +324,9 @@ export type ApplicantDetailsModalProps = {
   initialSideTab?: "breakdown" | "messages" | "other-jobs" | null;
   onViewJobDetails?: (job: any) => void;
   hideFloatingTabs?: boolean;
+  hideBreakdownTab?: boolean;
+  hideOtherJobsTab?: boolean;
+  hideMessagesTab?: boolean;
 };
 
 export type EmployerApplicantDetailsModalProps = ApplicantDetailsModalProps;
@@ -338,6 +341,9 @@ export default function ApplicantDetailsModal({
   initialSideTab = null,
   onViewJobDetails,
   hideFloatingTabs = false,
+  hideBreakdownTab = false,
+  hideOtherJobsTab = false,
+  hideMessagesTab = false,
 }: ApplicantDetailsModalProps) {
   const [candDetailTab, setCandDetailTab] = useState<"personal" | "preferences" | "competencies" | "experience">("personal");
   const [isDocsDrawerOpen, setIsDocsDrawerOpen] = useState(false);
@@ -1259,29 +1265,35 @@ export default function ApplicantDetailsModal({
           }}
         >
           {/* ── FLOATING ACTION TABS ABOVE: Match Breakdown | Other Jobs | Messages ── */}
-          {!hideFloatingTabs && (
+          {!hideFloatingTabs && (!hideBreakdownTab || !hideOtherJobsTab || !hideMessagesTab) && (
             <div className="cal-modal-floating-tabs-container jd-floating-tabs-container">
-              <button
-                type="button"
-                className={`cal-modal-floating-tab jd-floating-breakdown-tab ${activeSideTab === "breakdown" ? "active" : ""}`}
-                onClick={() => setActiveSideTab((prev) => (prev === "breakdown" ? null : "breakdown"))}
-              >
-                <span>{activeSideTab === "breakdown" ? "Hide Breakdown" : "Match Breakdown"}</span>
-              </button>
-              <button
-                type="button"
-                className={`cal-modal-floating-tab jd-floating-breakdown-tab ${activeSideTab === "other-jobs" ? "active" : ""}`}
-                onClick={() => setActiveSideTab((prev) => (prev === "other-jobs" ? null : "other-jobs"))}
-              >
-                <span>{activeSideTab === "other-jobs" ? "Hide Other Jobs" : "Other Jobs"}</span>
-              </button>
-              <button
-                type="button"
-                className={`cal-modal-floating-tab jd-floating-breakdown-tab ${activeSideTab === "messages" ? "active" : ""}`}
-                onClick={() => setActiveSideTab((prev) => (prev === "messages" ? null : "messages"))}
-              >
-                <span>{activeSideTab === "messages" ? "Hide Message" : "Messages"}</span>
-              </button>
+              {!hideBreakdownTab && (
+                <button
+                  type="button"
+                  className={`cal-modal-floating-tab jd-floating-breakdown-tab ${activeSideTab === "breakdown" ? "active" : ""}`}
+                  onClick={() => setActiveSideTab((prev) => (prev === "breakdown" ? null : "breakdown"))}
+                >
+                  <span>{activeSideTab === "breakdown" ? "Hide Breakdown" : "Match Breakdown"}</span>
+                </button>
+              )}
+              {!hideOtherJobsTab && (
+                <button
+                  type="button"
+                  className={`cal-modal-floating-tab jd-floating-breakdown-tab ${activeSideTab === "other-jobs" ? "active" : ""}`}
+                  onClick={() => setActiveSideTab((prev) => (prev === "other-jobs" ? null : "other-jobs"))}
+                >
+                  <span>{activeSideTab === "other-jobs" ? "Hide Other Jobs" : "Other Jobs"}</span>
+                </button>
+              )}
+              {!hideMessagesTab && (
+                <button
+                  type="button"
+                  className={`cal-modal-floating-tab jd-floating-breakdown-tab ${activeSideTab === "messages" ? "active" : ""}`}
+                  onClick={() => setActiveSideTab((prev) => (prev === "messages" ? null : "messages"))}
+                >
+                  <span>{activeSideTab === "messages" ? "Hide Message" : "Messages"}</span>
+                </button>
+              )}
             </div>
           )}
 

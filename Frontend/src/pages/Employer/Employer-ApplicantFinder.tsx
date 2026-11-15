@@ -1923,7 +1923,7 @@ export default function EmployerApplicantFinder() {
     }
   };
 
-  const openCandidateRecruit = (cand: Candidate) => {
+  const openCandidateRecruit = (cand: Candidate, keepCandidateModal = false) => {
     if (activeJobs.length === 0 && currentEmployerId) {
       fetch(`/api/employers/${currentEmployerId}/job-posts`)
         .then((r) => (r.ok ? r.json() : null))
@@ -1943,9 +1943,11 @@ export default function EmployerApplicantFinder() {
       return;
     }
 
-    // Open ONLY the standalone Other Employer Jobs modal (Image 1)
+    // Open the standalone Other Employer Jobs modal (Image 2)
     setInviteJobsCandidate(cand);
-    setSelectedCandidate(null);
+    if (!keepCandidateModal) {
+      setSelectedCandidate(null);
+    }
     setIsOtherJobsOpen(false);
     setIsOtherJobsClosing(false);
     setIsDocsDrawerOpen(false);
@@ -4095,7 +4097,7 @@ export default function EmployerApplicantFinder() {
                                 className="finder-card-btn btn-invite"
                                 onClick={() => openCandidateRecruit(cand)}
                               >
-                                Invite
+                                Offer Job
                               </button>
                             </div>
                           </div>
@@ -4482,7 +4484,7 @@ export default function EmployerApplicantFinder() {
                               className="finder-card-btn btn-invite"
                               onClick={() => openCandidateRecruit(cand)}
                             >
-                              Invite
+                              Offer Job
                             </button>
                           </div>
                         </div>
@@ -4503,19 +4505,19 @@ export default function EmployerApplicantFinder() {
             candidate={selectedCandidate}
             employerJobs={activeJobs}
             currentEmployerUserId={currentEmployerId}
+            hideBreakdownTab={true}
+            hideOtherJobsTab={true}
             customFooterActions={
               <button
                 type="button"
                 className="finder-btn finder-btn-green"
                 onClick={() => {
                   if (selectedCandidate) {
-                    const cand = selectedCandidate;
-                    setSelectedCandidate(null);
-                    openCandidateRecruit(cand);
+                    openCandidateRecruit(selectedCandidate, true);
                   }
                 }}
               >
-                Invite
+                Offer Job
               </button>
             }
           />
@@ -4679,7 +4681,7 @@ export default function EmployerApplicantFinder() {
                                   }
                                 }}
                               >
-                                {isJobInvited ? "✓ Invite Sent" : "Send Invite"}
+                                {isJobInvited ? "✓ Job Offered" : "Offer Job"}
                               </button>
                             </div>
                           );
@@ -4695,10 +4697,10 @@ export default function EmployerApplicantFinder() {
 
         {/* INVITE / RECRUIT CONFIRMATION MODAL */}
         {inviteCandidate && (
-          <div className="cand-details-overlay" style={{ zIndex: 12000 }} onClick={() => setInviteCandidate(null)}>
+          <div className="cand-details-overlay" style={{ zIndex: 52000 }} onClick={() => setInviteCandidate(null)}>
             <div className="cand-details-panel cand-invite-panel" style={{ maxWidth: "560px", width: "94%", boxSizing: "border-box" }} onClick={(e) => e.stopPropagation()}>
               <div className="cand-details-docs-header">
-                <h3>Invite Candidate to Apply</h3>
+                <h3>Offer Job to Candidate</h3>
                 <button type="button" className="cand-details-docs-back" onClick={() => setInviteCandidate(null)}>
                   ✕
                 </button>
@@ -4821,7 +4823,7 @@ export default function EmployerApplicantFinder() {
                       opacity: isSendingInvite ? 0.7 : 1,
                     }}
                   >
-                    {isSendingInvite ? "Sending..." : "Send Invitation"}
+                    {isSendingInvite ? "Sending..." : "Offer Job"}
                   </button>
                 </div>
               </form>
@@ -4904,7 +4906,7 @@ export default function EmployerApplicantFinder() {
                         }
                       }}
                     >
-                      {isJobInvited ? "✓ Invite Sent" : "Send Invite"}
+                      {isJobInvited ? "✓ Job Offered" : "Offer Job"}
                     </button>
                   );
                 })()
