@@ -251,6 +251,29 @@ function computeNextArrangements(current: string[] = [], clickedArr: string): st
     : [...current, clickedArr];
 }
 
+function getArrangementSelectValue(arrs: string[] = []): string {
+  if (!arrs || arrs.length === 0) return "On-Site";
+  if (
+    arrs.length >= 3 ||
+    (arrs.includes("On-Site") && arrs.includes("Hybrid") && arrs.includes("Remote")) ||
+    arrs.includes("All")
+  ) {
+    return "All";
+  }
+  if (arrs.includes("On-Site") && arrs.includes("Hybrid")) return "On-Site, Hybrid";
+  if (arrs.includes("Hybrid") && arrs.includes("Remote")) return "Hybrid, Remote";
+  if (arrs.includes("On-Site") && arrs.includes("Remote")) return "On-Site, Remote";
+  if (arrs.includes("Hybrid")) return "Hybrid";
+  if (arrs.includes("Remote")) return "Remote";
+  return "On-Site";
+}
+
+function parseArrangementSelectValue(val: string): string[] {
+  if (val === "All") return ["On-Site", "Hybrid", "Remote"];
+  if (val.includes(",")) return val.split(",").map((s) => s.trim()).filter(Boolean);
+  return [val];
+}
+
 function getSalaryRangeError(
   minVal?: string | number | null,
   maxVal?: string | number | null,
@@ -5822,24 +5845,22 @@ export default function ApplicantProfile() {
                                 <div className="role-pref-col role-pref-col-arrangement">
                                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
                                     <label className="role-pref-sublabel">WORK ARRANGEMENT PREFERENCES *</label>
-                                    <small style={{ color: "#64748b", fontSize: "0.8rem" }}>Select 1 or more</small>
                                   </div>
-                                  <div className="work-arrangement-pill-group" style={{ margin: 0 }}>
-                                    {["On-Site", "Hybrid", "Remote"].map((arr) => {
-                                      const isSelected = newRoleArrangements.includes(arr);
-                                      return (
-                                        <button
-                                          key={arr}
-                                          type="button"
-                                          className={`arr-toggle-pill ${isSelected ? "selected" : ""}`}
-                                          onClick={() => handleToggleNewRoleArrangement(arr)}
-                                          disabled={isSavingNewRole}
-                                          aria-label={`Toggle ${arr}`}
-                                        >
-                                          {isSelected ? "✓ " : "+ "}{arr}
-                                        </button>
-                                      );
-                                    })}
+                                  <div className="role-work-arrangement-select-wrap">
+                                    <select
+                                      className="role-work-arrangement-select"
+                                      value={getArrangementSelectValue(newRoleArrangements)}
+                                      onChange={(e) => setNewRoleArrangements(parseArrangementSelectValue(e.target.value))}
+                                      disabled={isSavingNewRole}
+                                      aria-label="Work arrangement preference"
+                                    >
+                                      <option value="On-Site">On-Site</option>
+                                      <option value="Hybrid">Hybrid</option>
+                                      <option value="Remote">Remote</option>
+                                      <option value="On-Site, Hybrid">On-Site & Hybrid</option>
+                                      <option value="Hybrid, Remote">Hybrid & Remote</option>
+                                      <option value="All">All Work Arrangements (Flexible)</option>
+                                    </select>
                                   </div>
                                 </div>
 
@@ -6180,24 +6201,27 @@ export default function ApplicantProfile() {
                                   <div className="role-pref-col role-pref-col-arrangement">
                                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
                                       <label className="role-pref-sublabel">WORK ARRANGEMENT PREFERENCES *</label>
-                                      <small style={{ color: "#64748b", fontSize: "0.8rem" }}>Select 1 or more</small>
                                     </div>
-                                    <div className="work-arrangement-pill-group" style={{ margin: 0 }}>
-                                      {["On-Site", "Hybrid", "Remote"].map((arr) => {
-                                        const isSelected = (roleItem.work_arrangements || []).includes(arr);
-                                        return (
-                                          <button
-                                            key={arr}
-                                            type="button"
-                                            className={`arr-toggle-pill ${isSelected ? "selected" : ""}`}
-                                            onClick={() => handleToggleRoleArrangement(roleItem.id, arr)}
-                                            disabled={isSavingThisRole}
-                                            aria-label={`Toggle ${arr}`}
-                                          >
-                                            {isSelected ? "✓ " : "+ "}{arr}
-                                          </button>
-                                        );
-                                      })}
+                                    <div className="role-work-arrangement-select-wrap">
+                                      <select
+                                        className="role-work-arrangement-select"
+                                        value={getArrangementSelectValue(roleItem.work_arrangements || [])}
+                                        onChange={(e) => {
+                                          const nextArr = parseArrangementSelectValue(e.target.value);
+                                          setTargetRoles((prev) =>
+                                            prev.map((r) => (r.id === roleItem.id ? { ...r, work_arrangements: nextArr } : r))
+                                          );
+                                        }}
+                                        disabled={isSavingThisRole}
+                                        aria-label="Work arrangement preference"
+                                      >
+                                        <option value="On-Site">On-Site</option>
+                                        <option value="Hybrid">Hybrid</option>
+                                        <option value="Remote">Remote</option>
+                                        <option value="On-Site, Hybrid">On-Site & Hybrid</option>
+                                        <option value="Hybrid, Remote">Hybrid & Remote</option>
+                                        <option value="All">All Work Arrangements (Flexible)</option>
+                                      </select>
                                     </div>
                                   </div>
 
