@@ -1252,7 +1252,17 @@ export default function ApplicantDashboard() {
 
   const sortedSmartMatches = useMemo(() => {
     const unappliedJobs = jobs.filter((job) => !appliedJobIds.includes(job.id));
-    return [...unappliedJobs].sort((a, b) => calculateJobMatch(b, applicantMatchProfile) - calculateJobMatch(a, applicantMatchProfile));
+    return unappliedJobs
+      .map((job) => ({
+        job,
+        score: calculateJobMatch(job, applicantMatchProfile),
+      }))
+      .filter(({ score }) => {
+        const rec = getApplicantRecommendation(score);
+        return rec?.label === "Recommended";
+      })
+      .sort((a, b) => b.score - a.score)
+      .map(({ job }) => job);
   }, [jobs, appliedJobIds, applicantMatchProfile]);
 
   const dashboardStats: StatCard[] = useMemo(() => [
@@ -1270,7 +1280,7 @@ export default function ApplicantDashboard() {
     },
     {
       label: "Smart Matches",
-      value: String(sortedSmartMatches.filter((job) => calculateJobMatch(job, applicantMatchProfile) > 0).length),
+      value: String(sortedSmartMatches.length),
       hint: "High compatibility",
       icon: "search",
     },
