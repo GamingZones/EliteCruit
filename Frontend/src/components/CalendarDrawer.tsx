@@ -398,6 +398,13 @@ export default function CalendarDrawer({
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"calendar" | "all" | "schedule">("calendar");
 
+  // Guard: if non-employer is on "schedule" tab, automatically redirect to "all"
+  useEffect(() => {
+    if (!isEmployer && activeTab === "schedule") {
+      setActiveTab("all");
+    }
+  }, [isEmployer, activeTab]);
+
   // Load interviews from backend database API
   const loadInterviewsFromApi = async () => {
     try {
@@ -427,6 +434,21 @@ export default function CalendarDrawer({
     const handleScheduleCandidateEvent = (e: Event) => {
       const customDetail = (e as CustomEvent)?.detail;
       setInternalOpen(true);
+      if (isEmployer) {
+        setActiveTab("schedule");
+        if (customDetail?.candidateUserId) {
+          setSelectedCandidateUserIds([Number(customDetail.candidateUserId)]);
+        }
+      } else {
+        setActiveTab("all");
+      }
+    };
+
+    const handleOpenCalendarEvent = (e: Event) => {
+      const customDetail = (e as CustomEvent)?.detail;
+      setInternalOpen(true);
+      loadInterviewsFromApi();
+
       if (customDetail?.action === "reschedule" && customDetail?.interviewId) {
         const targetId = Number(customDetail.interviewId);
         setActiveTab("all");
@@ -440,21 +462,23 @@ export default function CalendarDrawer({
         } else {
           setPendingRescheduleId(targetId);
         }
+      } else if (customDetail?.tab) {
+        setActiveTab(customDetail.tab === "schedule" && !isEmployer ? "all" : customDetail.tab);
+      } else if (customDetail?.date) {
+        setSelectedDate(customDetail.date);
+        setActiveTab("calendar");
       } else {
-        setActiveTab("schedule");
-        if (customDetail?.candidateUserId) {
-          setSelectedCandidateUserIds([Number(customDetail.candidateUserId)]);
-        }
+        setActiveTab("all");
       }
     };
 
     window.addEventListener("elitecruit-interviews-updated", handleSync);
     window.addEventListener("elitecruit-schedule-candidate", handleScheduleCandidateEvent);
-    window.addEventListener("elitecruit-open-calendar", handleScheduleCandidateEvent);
+    window.addEventListener("elitecruit-open-calendar", handleOpenCalendarEvent);
     return () => {
       window.removeEventListener("elitecruit-interviews-updated", handleSync);
       window.removeEventListener("elitecruit-schedule-candidate", handleScheduleCandidateEvent);
-      window.removeEventListener("elitecruit-open-calendar", handleScheduleCandidateEvent);
+      window.removeEventListener("elitecruit-open-calendar", handleOpenCalendarEvent);
     };
   }, [currentUserId, currentRole]);
 

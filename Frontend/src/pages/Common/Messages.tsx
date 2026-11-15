@@ -2526,7 +2526,7 @@ export default function Messages() {
                                 <button
                                   type="button"
                                   className="chat-action-btn chat-btn-open-cal"
-                                  onClick={() => window.dispatchEvent(new CustomEvent("elitecruit-open-calendar"))}
+                                  onClick={() => window.dispatchEvent(new CustomEvent("elitecruit-open-calendar", { detail: { tab: "all", date: special.date } }))}
                                 >
                                   <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -2566,7 +2566,7 @@ export default function Messages() {
                                 <button
                                   type="button"
                                   className="chat-action-btn chat-btn-open-cal"
-                                  onClick={() => window.dispatchEvent(new CustomEvent("elitecruit-open-calendar"))}
+                                  onClick={() => window.dispatchEvent(new CustomEvent("elitecruit-open-calendar", { detail: { tab: "all" } }))}
                                 >
                                   <span>Open Meeting Calendar</span>
                                 </button>
@@ -2607,7 +2607,7 @@ export default function Messages() {
                                 <button
                                   type="button"
                                   className="chat-action-btn chat-btn-open-cal"
-                                  onClick={() => window.dispatchEvent(new CustomEvent("elitecruit-open-calendar"))}
+                                  onClick={() => window.dispatchEvent(new CustomEvent("elitecruit-open-calendar", { detail: { tab: "all", date: special.date } }))}
                                 >
                                   <span>Open Meeting Calendar</span>
                                 </button>
