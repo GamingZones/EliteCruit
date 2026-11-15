@@ -1021,7 +1021,7 @@
   bottom: 0;
   background-color: rgba(15, 23, 42, 0.55);
   backdrop-filter: blur(4px);
-  z-index: 99999;
+  z-index: 500000 !important;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -14,6 +14,10 @@
   animation: systemPopupFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+[data-theme="dark"] .system-popup-overlay {
+  z-index: 500000 !important;
+}
+
 .system-popup-card {
   background: #ffffff;
   border: 1px solid #cbd5e1;

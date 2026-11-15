@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { ChevronIcon, MapPinIcon, mapPinSvgString, SideIcon } from "../../components/Icons";
@@ -5080,7 +5081,7 @@ export default function EmployerApplicantFinder() {
         )}
 
         {/* MODAL WARNING POPUP NOTIFICATION (Rule 6 compliant) */}
-        {warningPopup && (
+        {typeof document !== "undefined" && warningPopup && createPortal(
           <div className="system-popup-overlay" onClick={() => setWarningPopup("")}>
             <div className="system-popup-card" onClick={(e) => e.stopPropagation()}>
               <div className="system-popup-icon-wrap warning">
@@ -5098,7 +5099,8 @@ export default function EmployerApplicantFinder() {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </main>
     </div>

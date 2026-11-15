@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import L from "leaflet";
@@ -7437,7 +7438,7 @@ export default function ApplicantProfile() {
       )}
 
       {/* EMAIL OTP VERIFICATION POPUP MODAL */}
-      {isOtpModalOpen && (
+      {typeof document !== "undefined" && isOtpModalOpen && createPortal(
         <div className="system-popup-overlay" onClick={() => !isVerifyingOtp && setIsOtpModalOpen(false)}>
           <div className="system-popup-card" onClick={(e) => e.stopPropagation()}>
             <div className="system-popup-icon-wrap info">
@@ -7515,11 +7516,12 @@ export default function ApplicantProfile() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* UNSAVED WORK EXPERIENCE WARNING MODAL (Rule 6 Compliant) */}
-      {isUnsavedExpWarningOpen && (
+      {typeof document !== "undefined" && isUnsavedExpWarningOpen && createPortal(
         <div
           className="system-popup-overlay"
           onClick={() => {
@@ -7575,11 +7577,12 @@ export default function ApplicantProfile() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* UNSAVED PROFILE WARNING MODAL (Rule 6 Compliant) */}
-      {isUnsavedProfileWarningOpen && (
+      {typeof document !== "undefined" && isUnsavedProfileWarningOpen && createPortal(
         <div
           className="system-popup-overlay"
           onClick={() => {
@@ -7643,11 +7646,12 @@ export default function ApplicantProfile() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* MANDATORY PROFILE SETUP WARNING POPUP MODAL (Rule 6 Compliant) */}
-      {setupWarningModalMsg && (
+      {typeof document !== "undefined" && setupWarningModalMsg && createPortal(
         <div className="system-popup-overlay" onClick={() => setSetupWarningModalMsg("")}>
           <div className="system-popup-card" onClick={(e) => e.stopPropagation()}>
             <div className="system-popup-icon-wrap warning" style={{ background: "#fef9c3" }}>
@@ -7669,7 +7673,8 @@ export default function ApplicantProfile() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

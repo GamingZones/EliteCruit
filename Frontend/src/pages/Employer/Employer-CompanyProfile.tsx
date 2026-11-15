@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ChevronIcon, SideIcon } from "../../components/Icons";
 import { useEmployerCompanyLabel } from "../../hooks/useEmployerCompanyLabel";
 import { useUnreadNotificationsCount } from "../../hooks/useUnreadNotificationsCount";
@@ -1231,7 +1232,7 @@ export default function EmployerCompanyProfile() {
         {pageMessage && <p className="profile-message" style={{ margin: "0 10px 12px" }}>{pageMessage}</p>}
 
         {/* MODAL WARNING POPUP NOTIFICATION (Stays open until user clicks OK) */}
-        {warningPopup && (
+        {typeof document !== "undefined" && warningPopup && createPortal(
           <div className="system-popup-overlay" onClick={() => setWarningPopup("")}>
             <div className="system-popup-card" onClick={(e) => e.stopPropagation()}>
               <div className="system-popup-icon-wrap warning">
@@ -1249,11 +1250,12 @@ export default function EmployerCompanyProfile() {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* MODAL CONFIRMATION DIALOG (In-app System Confirmation) */}
-        {confirmDialog.isOpen && (
+        {typeof document !== "undefined" && confirmDialog.isOpen && createPortal(
           <div className="system-popup-overlay" onClick={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}>
             <div className="system-popup-card" onClick={(e) => e.stopPropagation()}>
               <div className="system-popup-icon-wrap danger">
@@ -1287,7 +1289,8 @@ export default function EmployerCompanyProfile() {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* TAB 1: COMPANY & BRANDING */}
@@ -2279,7 +2282,7 @@ export default function EmployerCompanyProfile() {
       />
 
       {/* EMAIL OTP VERIFICATION MODAL */}
-      {isOtpModalOpen && (
+      {typeof document !== "undefined" && isOtpModalOpen && createPortal(
         <div className="system-popup-overlay" onClick={() => setIsOtpModalOpen(false)}>
           <div className="system-popup-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "420px" }}>
             <div className="system-popup-icon-wrap info" style={{ background: "#e0f2fe", border: "1px solid #bae6fd" }}>
@@ -2357,11 +2360,12 @@ export default function EmployerCompanyProfile() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* UNSAVED COMPANY PROFILE WARNING MODAL (Rule 6 Compliant) */}
-      {isUnsavedWarningOpen && (
+      {typeof document !== "undefined" && isUnsavedWarningOpen && createPortal(
         <div
           className="system-popup-overlay"
           onClick={() => {
@@ -2414,7 +2418,8 @@ export default function EmployerCompanyProfile() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import ApplicantChatbotDrawer from "../../components/ApplicantChatbotDrawer";
 import CalendarDrawer from "../../components/CalendarDrawer";
 import ConfirmationModal from "../../components/ConfirmationModal";
@@ -2771,7 +2772,7 @@ export default function ApplicantDashboard() {
       />
 
       {/* WITHDRAW FEEDBACK ALERT MODAL */}
-      {withdrawMessage && (
+      {typeof document !== "undefined" && withdrawMessage && createPortal(
         <div className="system-popup-overlay" onClick={() => setWithdrawMessage(null)} role="dialog" aria-modal="true">
           <div className="system-popup-card" onClick={(e) => e.stopPropagation()}>
             <div className="system-popup-icon-wrap success">
@@ -2796,7 +2797,8 @@ export default function ApplicantDashboard() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
