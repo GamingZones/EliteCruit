@@ -327,6 +327,7 @@ export type ApplicantDetailsModalProps = {
   hideBreakdownTab?: boolean;
   hideOtherJobsTab?: boolean;
   hideMessagesTab?: boolean;
+  hideCloseButton?: boolean;
 };
 
 export type EmployerApplicantDetailsModalProps = ApplicantDetailsModalProps;
@@ -344,6 +345,7 @@ export default function ApplicantDetailsModal({
   hideBreakdownTab = false,
   hideOtherJobsTab = false,
   hideMessagesTab = false,
+  hideCloseButton = false,
 }: ApplicantDetailsModalProps) {
   const [candDetailTab, setCandDetailTab] = useState<"personal" | "preferences" | "competencies" | "experience">("personal");
   const [isDocsDrawerOpen, setIsDocsDrawerOpen] = useState(false);
@@ -1732,20 +1734,22 @@ export default function ApplicantDetailsModal({
           </div>
 
           {/* Modal Footer (Target Job removed for Applicant Management) */}
-          <div className="cand-details-footer" style={{ display: "flex", justifyContent: (candidate.submitted_at || candidate.applied_date) ? "space-between" : "flex-end", alignItems: "center", width: "100%", gap: "10px" }}>
-            <div className="cand-footer-meta jd-footer-meta" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div className="cand-details-footer" style={{ display: "flex", justifyContent: (candidate.submitted_at || candidate.applied_date) ? "space-between" : "flex-end", alignItems: "center", width: "100%", gap: "14px" }}>
+            <div className="cand-footer-meta jd-footer-meta" style={{ display: "flex", alignItems: "center", gap: "12px", whiteSpace: "nowrap", flexShrink: 0 }}>
               {(candidate.submitted_at || candidate.applied_date) && (
-                <span><strong>Applied On:</strong> {formatDate(candidate.submitted_at || candidate.applied_date)}</span>
+                <span style={{ whiteSpace: "nowrap" }}><strong>Applied On:</strong> {formatDate(candidate.submitted_at || candidate.applied_date)}</span>
               )}
             </div>
-            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-              <button
-                type="button"
-                className="cand-details-cancel-btn"
-                onClick={onClose}
-              >
-                Close
-              </button>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "nowrap" }}>
+              {!hideCloseButton && !customFooterActions && (
+                <button
+                  type="button"
+                  className="cand-details-cancel-btn"
+                  onClick={onClose}
+                >
+                  Close
+                </button>
+              )}
               {customFooterActions}
             </div>
           </div>

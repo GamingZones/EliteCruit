@@ -2804,18 +2804,18 @@ export default function EmployerApplicantManagement() {
             aria-label={isInterviewing ? "Reschedule Interview" : "Schedule Interview"}
             onClick={() => handleOpenDirectScheduleModal(reviewModalApp)}
           >
-            <span>{isInterviewing ? "Reschedule Interview" : "Schedule Interview"}</span>
+            <span>{isInterviewing ? "Reschedule" : "Schedule"}</span>
           </button>
         )}
 
         <button
           type="button"
           className="modal-status-word-btn modal-approve-btn"
-          title="Approve & Extend Formal Offer"
-          aria-label="Approve & Extend Formal Offer"
+          title="Approve & Offer"
+          aria-label="Approve & Offer"
           onClick={() => handleInitiateStatusChange(reviewModalApp, "approved")}
         >
-          <span>Approve & Extend Offer</span>
+          <span>Approve & Offer</span>
         </button>
 
         <button
@@ -4565,6 +4565,7 @@ export default function EmployerApplicantManagement() {
             employerJobs={employerJobsList}
             currentEmployerUserId={currentEmployerUserId}
             initialSideTab={modalInitialSideTab}
+            hideCloseButton={true}
             customFooterActions={renderModalFooterActions()}
           />,
           document.body
