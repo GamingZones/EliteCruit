@@ -1,0 +1,445 @@
+================================================================================
+               ELITECRUIT - SEEDED ACCOUNTS CREDENTIALS LIST
+                   Deployed URL: https://elitecruit.onrender.com
+================================================================================
+
+--------------------------------------------------------------------------------
+1. SYSTEM ADMINISTRATOR
+--------------------------------------------------------------------------------
+Role:        System Admin
+Email:       admin@elitecruit
+Password:    Admin123!
+Permissions: Full administrative & dashboard management access
+
+--------------------------------------------------------------------------------
+2. PRIMARY DEMO WORKSPACE ACCOUNTS
+--------------------------------------------------------------------------------
+Demo Employer:
+  Company:   Cebuana Lhuillier
+  Email:     zakiablando897@gmail.com
+  Password:  Password123!
+  Role:      Employer (Recruiter / Hiring Manager)
+
+Demo Applicant:
+  Name:      Zaki Ablando
+  Email:     demo_applicant@elitecruit.ph
+  Password:  Password123!
+  Role:      Applicant (Job Seeker)
+
+--------------------------------------------------------------------------------
+3. SEEDED EMPLOYER ACCOUNTS (27 Verified Companies)
+--------------------------------------------------------------------------------
+1. Cavite Precision Semiconductor Corp.
+   Email:        careers@cavite-semicon.com.ph
+   Password:     Employer#Semicon2026
+   Industry:     Semiconductor & High-Tech Manufacturing
+   Location:     Rosario, Cavite
+   Company Size: 501-1000
+   Phone:        +63 46 416 8800
+
+2. SM Prime Holdings, Inc.
+   Email:        careers@smprime.com.ph
+   Password:     Employer#SMP12026
+   Industry:     Real Estate & Commercial Development
+   Location:     Pasay, Metro Manila
+   Company Size: 1000+
+   Phone:        +63 2 8831 1000
+
+3. Ayala Land, Inc.
+   Email:        recruitment@ayalaland.com.ph
+   Password:     Employer#Ayala2026
+   Industry:     Property Development & Construction
+   Location:     Makati, Metro Manila
+   Company Size: 1000+
+   Phone:        +63 2 7908 3000
+
+4. BDO Unibank, Inc.
+   Email:        talent@bdo.com.ph
+   Password:     Employer#BDO2026
+   Industry:     Banking & Financial Services
+   Location:     Makati, Metro Manila
+   Company Size: 1000+
+   Phone:        +63 2 8840 7000
+
+5. San Miguel Corporation
+   Email:        careers@sanmiguel.com.ph
+   Password:     Employer#SMC2026
+   Industry:     Food, Beverage & Infrastructure
+   Location:     Mandaluyong, Metro Manila
+   Company Size: 1000+
+   Phone:        +63 2 8632 3000
+
+6. Jollibee Foods Corporation
+   Email:        careers@jollibee.com.ph
+   Password:     Employer#Jollibee2026
+   Industry:     Food Service & Hospitality
+   Location:     Pasig, Metro Manila
+   Company Size: 1000+
+   Phone:        +63 2 8634 1111
+
+7. Accenture Philippines
+   Email:        ph.recruitment@accenture.com
+   Password:     Employer#Accenture2026
+   Industry:     Information Technology & Consulting
+   Location:     Taguig, Metro Manila
+   Company Size: 1000+
+   Phone:        +63 2 8841 0111
+
+8. TaskUs Philippines
+   Email:        hiring@taskus.com
+   Password:     Employer#TaskUs2026
+   Industry:     BPO, AI Solutions & Digital Support
+   Location:     Imus, Cavite
+   Company Size: 1000+
+   Phone:        +63 46 477 0800
+
+9. Teleperformance Philippines
+   Email:        careers@teleperformance.ph
+   Password:     Employer#TP2026
+   Industry:     BPO & Customer Experience Management
+   Location:     Dasmariñas, Cavite
+   Company Size: 1000+
+   Phone:        +63 46 416 9000
+
+10. Globe Telecom, Inc.
+   Email:        recruitment@globe.com.ph
+   Password:     Employer#Globe2026
+   Industry:     Telecommunications & Digital Solutions
+   Location:     Taguig, Metro Manila
+   Company Size: 1000+
+   Phone:        +63 2 7730 2000
+
+11. First Cavite Industrial Estate Logistics Corp.
+   Email:        admin@fcie-logistics.ph
+   Password:     Employer#FCIE2026
+   Industry:     Supply Chain & Industrial Warehousing
+   Location:     Dasmariñas, Cavite
+   Company Size: 101-250
+   Phone:        +63 46 402 1100
+
+12. Analog Devices Philippines
+   Email:        careers@analogdevices.ph
+   Password:     Employer#ADI2026
+   Industry:     Electronics & Microchip Design
+   Location:     General Trias, Cavite
+   Company Size: 501-1000
+   Phone:        +63 46 433 0200
+
+13. Schneider Electric Philippines
+   Email:        hr.philippines@se.com
+   Password:     Employer#Schneider2026
+   Industry:     Energy Management & Industrial Automation
+   Location:     Rosario, Cavite
+   Company Size: 501-1000
+   Phone:        +63 46 437 6000
+
+14. JG Summit Olefins Corporation
+   Email:        careers@jgsummit.com.ph
+   Password:     Employer#JGSummit2026
+   Industry:     Chemicals, Petrochemicals & Polymers
+   Location:     Pasig, Metro Manila
+   Company Size: 501-1000
+   Phone:        +63 2 8395 2000
+
+15. Megaworld Corporation
+   Email:        talent@megaworldcorp.com
+   Password:     Employer#Megaworld2026
+   Industry:     Township & Commercial Real Estate
+   Location:     Taguig, Metro Manila
+   Company Size: 1000+
+   Phone:        +63 2 8984 8000
+
+16. Mercury Drug Corporation
+   Email:        hr@mercurydrug.com
+   Password:     Employer#Mercury2026
+   Industry:     Pharmaceutical & Healthcare Retail
+   Location:     Quezon City, Metro Manila
+   Company Size: 1000+
+   Phone:        +63 2 8911 5071
+
+17. Universal Robina Corporation
+   Email:        careers@urc.com.ph
+   Password:     Employer#URC2026
+   Industry:     Consumer Goods & Food Manufacturing
+   Location:     Pasig, Metro Manila
+   Company Size: 1000+
+   Phone:        +63 2 8633 7631
+
+18. Monde Nissin Corporation
+   Email:        careers@mondenissin.com
+   Password:     Employer#Monde2026
+   Industry:     FMCG Food & Beverage Manufacturing
+   Location:     Santa Rosa, Laguna
+   Company Size: 1000+
+   Phone:        +63 49 534 1100
+
+19. Tagaytay Summit Vista Resorts & Spa
+   Email:        hr@tagaytayhighlandsresort.ph
+   Password:     Employer#Highlands2026
+   Industry:     Hospitality & Tourism
+   Location:     Tagaytay, Cavite
+   Company Size: 201-500
+   Phone:        +63 46 483 1200
+
+20. SouthPeak Innovations Software Labs
+   Email:        talent@southpeak-tech.io
+   Password:     Employer#SouthPeak2026
+   Industry:     Information Technology
+   Location:     Dasmariñas, Cavite
+   Company Size: 51-200
+   Phone:        +63 46 884 9210
+
+21. Metro Cavite Express Freight & Logistics
+   Email:        recruitment@metro-cavite-logistics.com
+   Password:     Employer#MetroLogistics2026
+   Industry:     Logistics & Supply Chain
+   Location:     Carmona, Cavite
+   Company Size: 101-250
+   Phone:        +63 46 512 7700
+
+22. HealthFirst Regional Medical Center
+   Email:        careers@imus-healthfirst.org
+   Password:     Employer#HealthFirst2026
+   Industry:     Healthcare & Pharmaceuticals
+   Location:     Imus, Cavite
+   Company Size: 201-500
+   Phone:        +63 46 471 3300
+
+23. Bacoor NexGen BPO Solutions
+   Email:        hiring@bacoor-digitalbpo.com
+   Password:     Employer#BacoorBPO2026
+   Industry:     BPO & Customer Operations
+   Location:     Bacoor, Cavite
+   Company Size: 501-1000
+   Phone:        +63 46 686 4500
+
+24. GenTri Advanced Tooling & Die Works
+   Email:        hr@trias-precisionmold.com
+   Password:     Employer#TriasMold2026
+   Industry:     Manufacturing & Industrial
+   Location:     General Trias, Cavite
+   Company Size: 101-250
+   Phone:        +63 46 402 3344
+
+25. Silang BioOrganics Agro-Tech Corp.
+   Email:        careers@silang-agribio.com
+   Password:     Employer#AgriBio2026
+   Industry:     Agriculture & Biotechnology
+   Location:     Silang, Cavite
+   Company Size: 51-200
+   Phone:        +63 46 414 2200
+
+26. Trece Metro Build & Structural Design
+   Email:        info@trece-civildesign.ph
+   Password:     Employer#TreceCivil2026
+   Industry:     Construction & Real Estate
+   Location:     Trece Martires, Cavite
+   Company Size: 51-200
+   Phone:        +63 46 419 5566
+
+27. Horizon Retail Distribution Networks
+   Email:        careers@kawit-retailcorp.ph
+   Password:     Employer#KawitRetail2026
+   Industry:     Retail & E-Commerce
+   Location:     Kawit, Cavite
+   Company Size: 101-250
+   Phone:        +63 46 484 7799
+
+--------------------------------------------------------------------------------
+4. SEEDED APPLICANT ACCOUNTS (27 Verified Candidates)
+--------------------------------------------------------------------------------
+1. Maria Clarissa Dela Cruz Santos
+   Email:        maria.santos@applicant.elitecruit.ph
+   Password:     Applicant#Maria2026
+   Desired Role: Senior Frontend Developer
+   Location:     Dasmariñas, Cavite
+   Phone:        +63 917 112 3401
+
+2. Juan Carlos Bautista Reyes
+   Email:        juan.reyes@applicant.elitecruit.ph
+   Password:     Applicant#Juan2026
+   Desired Role: Industrial Maintenance Electrician
+   Location:     Imus, Cavite
+   Phone:        +63 920 223 4512
+
+3. Alyssa Mae Fernandez Mendoza
+   Email:        alyssa.mendoza@applicant.elitecruit.ph
+   Password:     Applicant#Alyssa2026
+   Desired Role: Customer Success Specialist
+   Location:     Bacoor, Cavite
+   Phone:        +63 918 334 5623
+
+4. Kenneth Brian G. Ramos
+   Email:        kenneth.ramos@applicant.elitecruit.ph
+   Password:     Applicant#Kenneth2026
+   Desired Role: Full Stack Software Engineer
+   Location:     Taguig, Metro Manila
+   Phone:        +63 919 445 6734
+
+5. Stephanie Joy M. Cruz
+   Email:        stephanie.cruz@applicant.elitecruit.ph
+   Password:     Applicant#Steph2026
+   Desired Role: Corporate Financial & Audit Analyst
+   Location:     Makati, Metro Manila
+   Phone:        +63 921 556 7845
+
+6. Mark Daniel S. Aquino
+   Email:        mark.aquino@applicant.elitecruit.ph
+   Password:     Applicant#Mark2026
+   Desired Role: Quality Assurance & Industrial Safety Engineer
+   Location:     General Trias, Cavite
+   Phone:        +63 922 667 8956
+
+7. Patricia Nicole R. Bautista
+   Email:        patricia.bautista@applicant.elitecruit.ph
+   Password:     Applicant#Patty2026
+   Desired Role: Digital Marketing & SEO Lead
+   Location:     Mandaluyong, Metro Manila
+   Phone:        +63 923 778 9067
+
+8. Joshua Emmanuel Dela Cruz
+   Email:        joshua.delacruz@applicant.elitecruit.ph
+   Password:     Applicant#Josh2026
+   Desired Role: Supply Chain & Logistics Officer
+   Location:     Carmona, Cavite
+   Phone:        +63 924 889 0178
+
+9. Katrina Angela L. Navarro
+   Email:        katrina.navarro@applicant.elitecruit.ph
+   Password:     Applicant#Kat2026
+   Desired Role: Human Resources & Talent Acquisition Specialist
+   Location:     Pasig, Metro Manila
+   Phone:        +63 925 990 1289
+
+10. Gabriel Miguel T. Lim
+   Email:        gabriel.lim@applicant.elitecruit.ph
+   Password:     Applicant#Gabe2026
+   Desired Role: Data Scientist & Python Specialist
+   Location:     Quezon City, Metro Manila
+   Phone:        +63 926 101 2390
+
+11. Danica Rose C. Villanueva
+   Email:        danica.villanueva@applicant.elitecruit.ph
+   Password:     Applicant#Danica2026
+   Desired Role: Occupational Health & Industrial Nurse
+   Location:     Santa Rosa, Laguna
+   Phone:        +63 927 212 3401
+
+12. Christian Paul B. Ocampo
+   Email:        christian.ocampo@applicant.elitecruit.ph
+   Password:     Applicant#Chris2026
+   Desired Role: Mechanical Design & Tooling Engineer
+   Location:     Calamba, Laguna
+   Phone:        +63 928 323 4512
+
+13. Bea Bianca D. Alcantara
+   Email:        bea.alcantara@applicant.elitecruit.ph
+   Password:     Applicant#Bea2026
+   Desired Role: UI/UX Product Designer
+   Location:     Cebu City, Cebu
+   Phone:        +63 929 434 5623
+
+14. Angelo Miguel P. Soriano
+   Email:        angelo.soriano@applicant.elitecruit.ph
+   Password:     Applicant#Angelo2026
+   Desired Role: Agro-Tech & Farm Operations Supervisor
+   Location:     Silang, Cavite
+   Phone:        +63 930 545 6734
+
+15. Rachelle Anne V. Tolentino
+   Email:        rachelle.tolentino@applicant.elitecruit.ph
+   Password:     Applicant#Rachelle2026
+   Desired Role: Senior Technical Recruiter
+   Location:     Davao City, Davao del Sur
+   Phone:        +63 931 656 7845
+
+16. Erickson James K. Flores
+   Email:        erickson.flores@applicant.elitecruit.ph
+   Password:     Applicant#Erick2026
+   Desired Role: Electronics PCB Assembly Technician
+   Location:     Biñan, Laguna
+   Phone:        +63 932 767 8956
+
+17. Kristine Joyce M. Castillo
+   Email:        kristine.castillo@applicant.elitecruit.ph
+   Password:     Applicant#Kristine2026
+   Desired Role: General Ledger & Tax Accountant
+   Location:     Manila, Metro Manila
+   Phone:        +63 933 878 9067
+
+18. Arvin Dale N. Salazar
+   Email:        arvin.salazar@applicant.elitecruit.ph
+   Password:     Applicant#Arvin2026
+   Desired Role: Warehouse & Inventory Specialist
+   Location:     Trece Martires, Cavite
+   Phone:        +63 934 989 0178
+
+19. Camille Frances G. Dizon
+   Email:        camille.dizon@applicant.elitecruit.ph
+   Password:     Applicant#Camille2026
+   Desired Role: Bilingual Customer Support Representative
+   Location:     San Fernando, Pampanga
+   Phone:        +63 935 090 1289
+
+20. Jerome Patrick E. Valenzuela
+   Email:        jerome.valenzuela@applicant.elitecruit.ph
+   Password:     Applicant#Jerome2026
+   Desired Role: Network & Systems Security Administrator
+   Location:     Antipolo, Rizal
+   Phone:        +63 936 101 2390
+
+21. Mark Anthony L. Dela Torre
+   Email:        mark.delatorre@applicant.elitecruit.ph
+   Password:     Applicant#Mark2026
+   Desired Role: Quality Assurance Engineer
+   Location:     General Trias, Cavite
+   Phone:        +63 917 445 6712
+
+22. Kristine Joy S. Lim
+   Email:        kristine.lim@applicant.elitecruit.ph
+   Password:     Applicant#Kristine2026
+   Desired Role: Hospitality & Guest Relations Manager
+   Location:     Tagaytay, Cavite
+   Phone:        +63 918 556 7823
+
+23. Angelo Rafael V. Castro
+   Email:        angelo.castro@applicant.elitecruit.ph
+   Password:     Applicant#Angelo2026
+   Desired Role: Junior Financial Analyst
+   Location:     Silang, Cavite
+   Phone:        +63 919 667 8934
+
+24. Patricia Louise M. Aquino
+   Email:        patricia.aquino@applicant.elitecruit.ph
+   Password:     Applicant#Patricia2026
+   Desired Role: Human Resources Generalist
+   Location:     Trece Martires, Cavite
+   Phone:        +63 920 778 9045
+
+25. Dexter B. Villanueva
+   Email:        dexter.villanueva@applicant.elitecruit.ph
+   Password:     Applicant#Dexter2026
+   Desired Role: Warehouse & Logistics Coordinator
+   Location:     Rosario, Cavite
+   Phone:        +63 921 889 0156
+
+26. Beatrice Elena D. Soriano
+   Email:        beatrice.soriano@applicant.elitecruit.ph
+   Password:     Applicant#Beatrice2026
+   Desired Role: Digital Content & Marketing Specialist
+   Location:     Kawit, Cavite
+   Phone:        +63 922 990 1267
+
+27. Ronald Christian T. Macaraeg
+   Email:        ronald.macaraeg@applicant.elitecruit.ph
+   Password:     Applicant#Ronald2026
+   Desired Role: Mechanical Maintenance Technician
+   Location:     Carmona, Cavite
+   Phone:        +63 923 101 2378
+
+================================================================================
+STATUS VERIFICATION:
+• All accounts above are permanently seeded on https://elitecruit.onrender.com
+• Email verification status: is_email_verified = TRUE (No OTP required for sign in)
+• Account status: is_active = TRUE
+================================================================================
