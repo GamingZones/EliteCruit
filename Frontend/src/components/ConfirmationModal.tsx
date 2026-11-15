@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import "./ConfirmationModal.css";
 
 export type ConfirmationModalType = "danger" | "warning" | "info" | "success";
@@ -71,7 +72,7 @@ export default function ConfirmationModal({
     );
   };
 
-  return (
+  const content = (
     <div
       className="system-popup-overlay"
       onClick={() => {
@@ -111,4 +112,10 @@ export default function ConfirmationModal({
       </div>
     </div>
   );
+
+  if (typeof document !== "undefined") {
+    return createPortal(content, document.body);
+  }
+
+  return content;
 }

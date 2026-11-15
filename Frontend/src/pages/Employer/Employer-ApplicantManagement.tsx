@@ -5618,7 +5618,7 @@ export default function EmployerApplicantManagement() {
         )}
 
         {/* ── RULE 6 COMPLIANT INTERVIEW STAGE REQUIRED POPUP MODAL ── */}
-        {interviewRequiredApp && (
+        {typeof document !== "undefined" && interviewRequiredApp && createPortal(
           <div className="system-popup-overlay" onClick={() => setInterviewRequiredApp(null)}>
             <div className="system-popup-card" onClick={(e) => e.stopPropagation()}>
               <div className="system-popup-icon-wrap warning">
@@ -5654,11 +5654,12 @@ export default function EmployerApplicantManagement() {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* ── RULE 6 COMPLIANT WARNING POPUP MODAL ── */}
-        {warningPopup && (
+        {typeof document !== "undefined" && warningPopup && createPortal(
           <div className="system-popup-overlay" onClick={() => setWarningPopup("")}>
             <div className="system-popup-card" onClick={(e) => e.stopPropagation()}>
               <div className="system-popup-icon-wrap warning">
@@ -5676,7 +5677,8 @@ export default function EmployerApplicantManagement() {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </main>
 
