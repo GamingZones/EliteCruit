@@ -2980,17 +2980,11 @@ export default function Messages() {
                             }
 
                             // Applicant View
-                            const appMatchScore = myApplicantMatchInput ? calculateCandidateMatch(myApplicantMatchInput, job) : 75;
-                            const appMatchColor = getMatchColorClass(appMatchScore);
-
                             return (
                               <div key={`side-recruited-${job.id}`} className="chat-info-job-item applicant-recruited">
                                 <div className="chat-info-job-head">
                                   <span className="chat-info-job-title">{job.title}</span>
                                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                    <span className={`chat-info-match-badge ${appMatchColor}`}>
-                                      {appMatchScore}% Match
-                                    </span>
                                     <span className={`cjm-status-chip ${invStatus === "accepted" ? "accepted" : invStatus === "declined" ? "declined" : "invited"}`}>
                                       {invStatus === "accepted" ? "Accepted" : invStatus === "declined" ? "Declined" : "Invited"}
                                     </span>
@@ -3168,17 +3162,11 @@ export default function Messages() {
                             }
 
                             // Applicant View
-                            const appMatchScore = myApplicantMatchInput ? calculateCandidateMatch(myApplicantMatchInput, job) : 75;
-                            const appMatchColor = getMatchColorClass(appMatchScore);
-
                             return (
                               <div key={`side-other-${job.id}`} className="chat-info-job-item applicant-other">
                                 <div className="chat-info-job-head">
                                   <span className="chat-info-job-title">{job.title}</span>
                                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                    <span className={`chat-info-match-badge ${appMatchColor}`}>
-                                      {appMatchScore}% Match
-                                    </span>
                                     <span className="cjm-status-chip open">Open</span>
                                   </div>
                                 </div>

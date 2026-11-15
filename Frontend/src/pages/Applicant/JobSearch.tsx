@@ -3843,25 +3843,6 @@ export default function JobSearch() {
                         </optgroup>
                       ))}
                     </select>
-                    {/* Role Quick Chips: Prioritize Applicant's Profile Target Roles, fallback to popular roles */}
-                    <div className="filter-role-quick-chips">
-                      {(() => {
-                        const profileRoles = (applicantMatchProfile?.targetRoles || []).filter(Boolean);
-                        const quickChips = profileRoles.length > 0
-                          ? profileRoles
-                          : ["Software Engineer", "Web Developer", "Data Analyst", "Cybersecurity Analyst", "UI/UX Designer"];
-                        return quickChips.map((r) => (
-                          <button
-                            key={r}
-                            type="button"
-                            className={`filter-quick-chip ${selectedRole === r ? "active" : ""}`}
-                            onClick={() => setSelectedRole(selectedRole === r ? "All roles" : r)}
-                          >
-                            {r}
-                          </button>
-                        ));
-                      })()}
-                    </div>
                   </div>
 
                   {/* Work Location Cascading */}

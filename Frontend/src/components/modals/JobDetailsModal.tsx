@@ -93,6 +93,8 @@ export type JobDetailsModalProps = {
   hideEmployerHeader?: boolean;
   initialOpenMessage?: boolean;
   isApplicantView?: boolean;
+  hideMatchScore?: boolean;
+  hideBreakdownTab?: boolean;
 };
 
 type BreakdownCourseSkillItem = {
@@ -357,6 +359,8 @@ export default function JobDetailsModal({
   hideEmployerHeader = false,
   initialOpenMessage = false,
   isApplicantView = false,
+  hideMatchScore = false,
+  hideBreakdownTab = false,
 }: JobDetailsModalProps) {
   const [internalFaqOpen, setInternalFaqOpen] = useState(false);
   const isFaqOpen = isFaqOpenProp !== undefined ? isFaqOpenProp : internalFaqOpen;
@@ -1873,7 +1877,7 @@ export default function JobDetailsModal({
   const renderFloatingTabs = () => {
     if (topFloatingActions !== undefined) return topFloatingActions;
 
-    const hasBreakdown = !isApplicantView && Boolean(applicantProfile || job.matchScore !== undefined);
+    const hasBreakdown = !hideBreakdownTab && !isApplicantView && Boolean(applicantProfile || job.matchScore !== undefined);
     const canMessage = Boolean(empUserId && currentUserId && !hideEmployerHeader);
     const canShowEmployerDetails = Boolean(empUserId && onEmployerClick && !hideEmployerHeader);
 
@@ -2006,7 +2010,7 @@ export default function JobDetailsModal({
           </div>
 
           <div className="jd-header-right-actions">
-            {matchScore !== undefined && (
+            {!hideMatchScore && matchScore !== undefined && (
               isApplicantView ? (
                 (() => {
                   const rec = getApplicantRecommendation(matchScore);
@@ -2051,7 +2055,7 @@ export default function JobDetailsModal({
               style={hideEmployerHeader ? { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px", flexWrap: "nowrap" } : undefined}
             >
               <h2 className="jd-title-h2" style={hideEmployerHeader ? { flex: 1, minWidth: 0, margin: 0 } : undefined}>{jobTitle}</h2>
-              {hideEmployerHeader && matchScore !== undefined && (
+              {!hideMatchScore && hideEmployerHeader && matchScore !== undefined && (
                 isApplicantView ? (
                   (() => {
                     const rec = getApplicantRecommendation(matchScore);

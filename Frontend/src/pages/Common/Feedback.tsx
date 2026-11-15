@@ -521,20 +521,6 @@ export default function Feedback() {
   const jobModalData: JobModalData | null = useMemo(() => {
     if (!detailsJob || role === "employer") return null;
 
-    const detailsMatchInfo = calculateJobMatchDetails(
-      {
-        id: typeof detailsJob.id === "number" ? detailsJob.id : 0,
-        title: detailsJob.jobTitle || "Job",
-        salaryMin: Number(detailsJob.salary_min || 0),
-        location: detailsJob.location,
-        setup: detailsJob.workSetup,
-        skillTags: detailsJob.requiredSkills || [],
-        qualTags: detailsJob.qualifications || [],
-        certTags: detailsJob.certifications || [],
-      },
-      applicantMatchProfile as any
-    );
-
     const isSalaryHidden = Boolean(
       detailsJob.hide_salary === 1 ||
       detailsJob.hide_salary === "1" ||
@@ -551,7 +537,6 @@ export default function Feedback() {
       companyCoverPath: detailsJob.companyCoverPath,
       location: detailsJob.location,
       rating: detailsJob.rating,
-      matchScore: detailsMatchInfo.score,
       status: "open",
       setup: detailsJob.workSetup,
       salary: detailsJob.salary,
@@ -568,7 +553,7 @@ export default function Feedback() {
       applicationLimit: detailsJob.applicationLimit,
       applicantCount: detailsJob.applicantCount,
     };
-  }, [detailsJob, role, applicantMatchProfile]);
+  }, [detailsJob, role]);
 
   const renderMessageSidePanel = () => {
     if (!detailsJob) return null;
@@ -2381,7 +2366,9 @@ export default function Feedback() {
             }}
             job={jobModalData}
             currentUserId={userId}
-            applicantProfile={applicantMatchProfile}
+            isApplicantView={role === "applicant"}
+            hideMatchScore={true}
+            hideBreakdownTab={true}
             onEmployerClick={(empId) => {
               const targetEmpId = empId || detailsJob.employerUserId;
               if (targetEmpId) handleOpenEmployerDetails(targetEmpId);
