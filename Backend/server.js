@@ -684,7 +684,11 @@ async function ensureScheduledInterviewColumns() {
                  applicant_province = COALESCE(NULLIF(i.applicant_province, ''), ap.province, 'Cavite')
              FROM applicant_profiles ap
              WHERE i.applicant_user_id = ap.user_id`).catch(() => {});
-  await run("UPDATE scheduled_interviews SET applicant_province = 'Cavite' WHERE applicant_province IS NULL OR applicant_province = ''").catch(() => {});
+  await run(`UPDATE messages
+             SET message_text = message_text || E'\nNotes: Prior commitment at original interview time. Requested schedule adjustment.'
+             WHERE message_text LIKE '[Interview Rescheduled]%'
+               AND message_text NOT LIKE '%Notes:%'
+               AND message_text NOT LIKE '%Reason:%'`).catch(() => {});
 }
 
 async function ensureJobPostColumns() {
@@ -8015,10 +8019,12 @@ app.patch("/api/interviews/:id/status", async (req, res) => {
           }
 
           if (targetStatus === "cancelled" || targetStatus === "rescheduled" || targetStatus === "reschedule_requested") {
+            const reschedNote = rescheduleReason || notes || existing.notes || "Candidate schedule adjustment.";
+            const cleanReschedNote = typeof reschedNote === "string" ? reschedNote.replace(/^Rescheduled:\s*/i, "") : reschedNote;
             const chatText = targetStatus === "cancelled"
               ? `[Interview Cancelled]: ${existing.interview_title || "Interview"}\nOriginal Schedule: ${existing.interview_date} at ${existing.start_time}${cancellation_reason ? `\nReason: "${cancellation_reason}".` : ""}`
               : targetStatus === "rescheduled"
-              ? `[Interview Rescheduled]: ${existing.interview_title || "Interview"}\nNew Schedule: ${finalNewDate || existing.interview_date} at ${finalNewStartTime || existing.start_time}\nOriginal Schedule: ${existing.interview_date} at ${existing.start_time}`
+              ? `[Interview Rescheduled]: ${existing.interview_title || "Interview"}\nNew Schedule: ${finalNewDate || existing.interview_date} at ${finalNewStartTime || existing.start_time}\nOriginal Schedule: ${existing.interview_date} at ${existing.start_time}\nNotes: ${cleanReschedNote}`
               : `[Meeting Reschedule Request]: ${existing.interview_title || "Interview"}\nInterview ID: ${existing.id}\nDate: ${existing.interview_date}\nTime: ${existing.start_time}\nReason: ${rescheduleReason || "Candidate requested to reschedule this meeting."}`;
 
             await run(

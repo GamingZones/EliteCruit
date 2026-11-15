@@ -561,6 +561,7 @@ function parseSpecialMessage(text: string): ParsedSpecialMessage {
   ) {
     let title = "";
     let newSched = "";
+    let reason = "";
 
     const titleMatch = text.match(/\[Interview Rescheduled\]:\s*(.*?)(?:\n|$)/i);
     if (titleMatch) title = titleMatch[1].trim();
@@ -568,10 +569,15 @@ function parseSpecialMessage(text: string): ParsedSpecialMessage {
     const newMatch = text.match(/New Schedule:\s*(.*?)(?:\n|$)/i) || text.match(/rescheduled to\s*(.*?)\./i);
     if (newMatch) newSched = newMatch[1].trim();
 
+    const reasonMatch = text.match(/(?:Reason|Notes|Reason for rescheduling):\s*["']?(.*?)["']?(?:\n|$)/im);
+    if (reasonMatch) reason = reasonMatch[1].trim();
+
     return {
       type: "interview_rescheduled",
       jobTitle: title || "Interview",
       date: newSched,
+      notes: reason || "I have a prior commitment at the original interview time. Requested schedule adjustment.",
+      reason: reason || "I have a prior commitment at the original interview time. Requested schedule adjustment.",
       cleanBody: text,
     };
   }
@@ -2508,18 +2514,6 @@ export default function Messages() {
                                     <span className="chat-grid-val">{special.date} {special.time ? `at ${special.time}` : ""}</span>
                                   </div>
                                 )}
-                                {special.interviewType && (
-                                  <div className="chat-grid-row">
-                                    <span className="chat-grid-lbl">Format:</span>
-                                    <span className="chat-grid-val">{special.interviewType}</span>
-                                  </div>
-                                )}
-                                {special.location && (
-                                  <div className="chat-grid-row">
-                                    <span className="chat-grid-lbl">Venue / Link:</span>
-                                    <span className="chat-grid-val">{special.location}</span>
-                                  </div>
-                                )}
                                 {special.notes && (
                                   <div className="chat-grid-row">
                                     <span className="chat-grid-lbl">Notes:</span>
@@ -2592,7 +2586,21 @@ export default function Messages() {
                                   <time className="chat-special-time">{msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}</time>
                                 </div>
                                 <h4 className="chat-special-title">{special.jobTitle}</h4>
-                                {special.date && <div className="chat-special-meta-pill">New Schedule: <strong>{special.date}</strong></div>}
+                              </div>
+
+                              <div className="chat-special-grid">
+                                {special.date && (
+                                  <div className="chat-grid-row">
+                                    <span className="chat-grid-lbl">New Schedule:</span>
+                                    <span className="chat-grid-val">{special.date}</span>
+                                  </div>
+                                )}
+                                {(special.notes || special.reason) && (
+                                  <div className="chat-grid-row">
+                                    <span className="chat-grid-lbl">Notes:</span>
+                                    <span className="chat-grid-val">{special.notes || special.reason}</span>
+                                  </div>
+                                )}
                               </div>
 
                               <div className="chat-special-actions">

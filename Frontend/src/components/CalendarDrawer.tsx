@@ -739,6 +739,7 @@ export default function CalendarDrawer({
             start_time: normalizedStartTime,
             end_time: normalizedEndTime,
             updated_by_user_id: currentUserId,
+            reschedule_reason: rescheduleReason || undefined,
             notes: rescheduleReason ? `Rescheduled: ${rescheduleReason}` : undefined,
           }),
         })
