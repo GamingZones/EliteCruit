@@ -673,11 +673,18 @@ async function ensureScheduledInterviewColumns() {
   await run("ALTER TABLE scheduled_interviews ADD COLUMN IF NOT EXISTS applicant_name TEXT");
   await run("ALTER TABLE scheduled_interviews ADD COLUMN IF NOT EXISTS applicant_phone TEXT");
   await run("ALTER TABLE scheduled_interviews ADD COLUMN IF NOT EXISTS applicant_city TEXT");
+  await run("ALTER TABLE scheduled_interviews ADD COLUMN IF NOT EXISTS applicant_province TEXT");
   await run("ALTER TABLE scheduled_interviews ADD COLUMN IF NOT EXISTS applicant_email TEXT");
   await run("ALTER TABLE scheduled_interviews ADD COLUMN IF NOT EXISTS employer_company_name TEXT");
   await run("ALTER TABLE scheduled_interviews ADD COLUMN IF NOT EXISTS employer_phone TEXT");
   await run("ALTER TABLE scheduled_interviews ADD COLUMN IF NOT EXISTS employer_address TEXT");
   await run("ALTER TABLE scheduled_interviews ADD COLUMN IF NOT EXISTS employer_email TEXT");
+  await run(`UPDATE scheduled_interviews i
+             SET applicant_city = COALESCE(NULLIF(i.applicant_city, ''), ap.city, 'Alfonso'),
+                 applicant_province = COALESCE(NULLIF(i.applicant_province, ''), ap.province, 'Cavite')
+             FROM applicant_profiles ap
+             WHERE i.applicant_user_id = ap.user_id`).catch(() => {});
+  await run("UPDATE scheduled_interviews SET applicant_province = 'Cavite' WHERE applicant_province IS NULL OR applicant_province = ''").catch(() => {});
 }
 
 async function ensureJobPostColumns() {
@@ -7409,6 +7416,7 @@ app.get("/api/interviews", async (req, res) => {
                 COALESCE(i.applicant_name, NULLIF(TRIM(CONCAT_WS(' ', ap.first_name, ap.middle_name, ap.last_name)), ''), u_app.email, 'Candidate') AS applicant_name,
                 COALESCE(i.applicant_phone, ap.phone, '') AS applicant_phone,
                 COALESCE(i.applicant_city, ap.city, '') AS applicant_city,
+                COALESCE(i.applicant_province, ap.province, 'Cavite') AS applicant_province,
                 COALESCE(i.applicant_email, u_app.email, '') AS applicant_email,
                 ap.profile_picture_path AS applicant_profile_picture_path,
                 ep.company_logo_path AS employer_logo_path,
@@ -7446,6 +7454,7 @@ app.get("/api/interviews", async (req, res) => {
                 COALESCE(i.applicant_name, NULLIF(TRIM(CONCAT_WS(' ', ap.first_name, ap.middle_name, ap.last_name)), ''), u_app.email, 'Candidate') AS applicant_name,
                 COALESCE(i.applicant_phone, ap.phone, '') AS applicant_phone,
                 COALESCE(i.applicant_city, ap.city, '') AS applicant_city,
+                COALESCE(i.applicant_province, ap.province, 'Cavite') AS applicant_province,
                 COALESCE(i.applicant_email, u_app.email, '') AS applicant_email,
                 ap.profile_picture_path AS applicant_profile_picture_path
          FROM scheduled_interviews i
@@ -7528,6 +7537,7 @@ app.post("/api/interviews", async (req, res) => {
     applicant_name,
     applicant_phone,
     applicant_city,
+    applicant_province,
     applicant_email,
   } = req.body ?? {};
 
@@ -7560,9 +7570,9 @@ app.post("/api/interviews", async (req, res) => {
          job_post_id, interview_title, interview_stage, interview_type,
          meeting_link_or_address, interview_date, start_time, end_time,
          notes, status, job_title, applicant_name, applicant_phone,
-         applicant_city, applicant_email, employer_company_name,
+         applicant_city, applicant_province, applicant_email, employer_company_name,
          deleted_by_employer, deleted_by_applicant
-       ) VALUES (?, ?, ?::jsonb, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, FALSE, FALSE)`,
+       ) VALUES (?, ?, ?::jsonb, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, FALSE, FALSE)`,
       [
         employerId,
         primaryApplicantId,
@@ -7580,6 +7590,7 @@ app.post("/api/interviews", async (req, res) => {
         applicant_name?.trim() || null,
         applicant_phone?.trim() || null,
         applicant_city?.trim() || null,
+        applicant_province?.trim() || "Cavite",
         applicant_email?.trim() || null,
         empName,
       ]
@@ -8048,7 +8059,9 @@ app.get("/api/employers/:id/schedulable-candidates", async (req, res) => {
        )
        SELECT DISTINCT c.user_id,
               COALESCE(NULLIF(TRIM(CONCAT_WS(' ', ap.first_name, ap.middle_name, ap.last_name)), ''), u.email, 'Candidate') AS full_name,
-              ap.first_name, ap.last_name, ap.gender, ap.desired_job_title, ap.target_roles_json, ap.phone, ap.city,
+              ap.first_name, ap.last_name, ap.gender, ap.desired_job_title, ap.target_roles_json, ap.phone,
+              ap.city,
+              COALESCE(ap.province, 'Cavite') AS province,
               u.email,
               c.job_post_id,
               jp.title AS job_title,
@@ -8378,14 +8391,18 @@ async function resetAndSeedZakiAccounts() {
     );
 
     // 6. Scheduled Interview for Job 1
+    const appProf = await get("SELECT city, province FROM applicant_profiles WHERE user_id = ?", [applicantId]);
+    const zakiCity = appProf?.city || "Alfonso";
+    const zakiProvince = appProf?.province || "Cavite";
+
     await run(
       `INSERT INTO scheduled_interviews (
         employer_user_id, applicant_user_id, candidate_user_ids, job_post_id,
         interview_title, interview_stage, interview_type, meeting_link_or_address,
         interview_date, start_time, end_time, notes, status,
-        job_title, applicant_name, applicant_phone, applicant_city, applicant_email,
+        job_title, applicant_name, applicant_phone, applicant_city, applicant_province, applicant_email,
         employer_company_name, employer_phone, employer_address, employer_email
-      ) VALUES (?, ?, ?, ?, ?, 'Final Technical Evaluation', 'Video Conference', 'https://meet.google.com/zaki-interview-cebuana', '2026-11-05', '10:00 AM', '11:00 AM', ?, 'completed', ?, 'Zaki Ablando', '+63 918 987 6543', 'Dasmarinas', ?, 'Cebuana Lhuillier', '+63 917 123 4567', 'Indang - Dasmarinas Tech Hub, Cavite', ?)`,
+      ) VALUES (?, ?, ?, ?, ?, 'Final Technical Evaluation', 'Video Conference', 'https://meet.google.com/zaki-interview-cebuana', '2026-11-05', '10:00 AM', '11:00 AM', ?, 'completed', ?, 'Zaki Ablando', '+63 918 987 6543', ?, ?, ?, 'Cebuana Lhuillier', '+63 917 123 4567', 'Indang - Dasmarinas Tech Hub, Cavite', ?)`,
       [
         employerId,
         applicantId,
@@ -8394,6 +8411,8 @@ async function resetAndSeedZakiAccounts() {
         "Technical Interview - Full Stack Software Engineer",
         "Candidate demonstrated strong competency in TypeScript, full stack architecture, and system design.",
         "Full Stack Software Engineer",
+        zakiCity,
+        zakiProvince,
         applicantEmail,
         employerEmail,
       ]

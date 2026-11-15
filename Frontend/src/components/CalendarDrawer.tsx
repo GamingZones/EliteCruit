@@ -117,6 +117,7 @@ export type SchedulableCandidate = {
   email?: string;
   phone?: string;
   city?: string;
+  province?: string;
   desired_job_title?: string;
   job_post_id?: number;
   job_title?: string;
@@ -162,6 +163,7 @@ export type ScheduledInterview = {
   applicant_name?: string;
   applicant_phone?: string;
   applicant_city?: string;
+  applicant_province?: string;
   applicant_email?: string;
   applicant_profile_picture_path?: string | null;
   employer_company_name?: string;
@@ -198,12 +200,33 @@ export function getCandidatesForInterview(
       email: item.applicant_email,
       phone: item.applicant_phone,
       city: item.applicant_city || "Cavite",
+      province: item.applicant_province || "Cavite",
       job_title: item.job_title,
       job_post_id: item.job_post_id || undefined,
       match_percentage: 96,
       profile_picture_path: item.applicant_profile_picture_path,
     },
   ];
+}
+
+export function formatCandidateLocation(cand?: {
+  city?: string | null;
+  province?: string | null;
+  applicant_city?: string | null;
+  applicant_province?: string | null;
+}): string {
+  if (!cand) return "";
+  const city = (cand.city || cand.applicant_city || "").trim();
+  const province = (cand.province || cand.applicant_province || "").trim();
+
+  if (city && province) {
+    if (city.toLowerCase().includes(province.toLowerCase())) return city;
+    return `${city}, ${province}`;
+  }
+  if (city) {
+    return `${city}, Cavite`;
+  }
+  return province || "Cavite";
 }
 
 type EmployerActiveJob = {
@@ -794,6 +817,7 @@ export default function CalendarDrawer({
             email: data.profile.email || prev?.email,
             phone: data.profile.phone || prev?.phone,
             city: data.profile.city || prev?.city,
+            province: data.profile.province || cand.province || prev?.province,
             profile_picture_path: data.profile.profile_picture_path || prev?.profile_picture_path,
             summary: data.profile.summary || prev?.summary,
             languages: data.profile.languages || prev?.languages,
@@ -945,6 +969,7 @@ export default function CalendarDrawer({
           : `${singleCand?.full_name || "Candidate"} (+${selectedCands.length - 1} more)`,
       applicant_phone: singleCand?.phone || "",
       applicant_city: singleCand?.city || "",
+      applicant_province: singleCand?.province || "Cavite",
       applicant_email: singleCand?.email || "",
       employer_company_name: employerCompanyName,
       created_at: new Date().toISOString(),
@@ -983,6 +1008,7 @@ export default function CalendarDrawer({
               : `${singleCand?.full_name || "Candidate"} (+${selectedCands.length - 1} more)`,
           applicant_phone: singleCand?.phone || "",
           applicant_city: singleCand?.city || "",
+          applicant_province: singleCand?.province || "Cavite",
           applicant_email: singleCand?.email || "",
           employer_company_name: employerCompanyName,
         }),
@@ -1846,13 +1872,13 @@ export default function CalendarDrawer({
                               </div>
                             </div>
                             <div className="candidate-card-meta-row">
-                              {c.city && (
+                              {formatCandidateLocation(c) && (
                                 <span className="candidate-meta-chip">
                                   <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" />
                                     <circle cx="12" cy="10" r="2.5" />
                                   </svg>
-                                  {c.city}
+                                  {formatCandidateLocation(c)}
                                 </span>
                               )}
                             </div>
@@ -3128,22 +3154,13 @@ export default function CalendarDrawer({
                           </div>
                         </div>
                         <div className="candidate-card-meta-row">
-                          {c.job_title && (
-                            <span className="candidate-meta-chip">
-                              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-                                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-                              </svg>
-                              {c.job_title}
-                            </span>
-                          )}
-                          {c.city && (
+                          {formatCandidateLocation(c) && (
                             <span className="candidate-meta-chip">
                               <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" />
                                 <circle cx="12" cy="10" r="2.5" />
                               </svg>
-                              {c.city}
+                              {formatCandidateLocation(c)}
                             </span>
                           )}
                         </div>
