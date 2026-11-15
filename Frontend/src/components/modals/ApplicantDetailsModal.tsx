@@ -332,6 +332,7 @@ export type ApplicantDetailsModalProps = {
   hideMessagesTab?: boolean;
   hideCloseButton?: boolean;
   selectedJobId?: number | string | null;
+  hideMatchScore?: boolean;
 };
 
 export type EmployerApplicantDetailsModalProps = ApplicantDetailsModalProps;
@@ -351,6 +352,7 @@ export default function ApplicantDetailsModal({
   hideMessagesTab = false,
   hideCloseButton = false,
   selectedJobId = null,
+  hideMatchScore = false,
 }: ApplicantDetailsModalProps) {
   const [candDetailTab, setCandDetailTab] = useState<"personal" | "preferences" | "competencies" | "experience">("personal");
   const [isDocsDrawerOpen, setIsDocsDrawerOpen] = useState(false);
@@ -855,7 +857,7 @@ export default function ApplicantDetailsModal({
   }
 
   const targetJobTitle = candidate.job_title || candidate.desired_job_title || "Job Position";
-  const candidateJobId = (candidate as any).job_id ?? (candidate as any).job_post_id;
+  const candidateJobId = selectedJobId ?? (candidate as any).job_id ?? (candidate as any).job_post_id;
   const targetJob =
     (employerJobs || []).find((j) => candidateJobId && Number(j.id) === Number(candidateJobId)) ||
     (employerJobs || []).find((j) => j.title && targetJobTitle && j.title.toLowerCase().trim() === targetJobTitle.toLowerCase().trim()) ||
@@ -1402,7 +1404,7 @@ export default function ApplicantDetailsModal({
             </div>
 
             <div className="cand-details-header-right">
-              {(() => {
+              {!hideMatchScore && (() => {
                 const scoreToShow = candidate.match_percentage != null ? Number(candidate.match_percentage) : matchDetails.score;
                 return (
                   <div

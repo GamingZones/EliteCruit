@@ -4038,15 +4038,15 @@ export default function EmployerApplicantFinder() {
                               </div>
                               <div className="finder-candidate-info">
                                 <div className="finder-name-row">
+                                  <span className="finder-star-pill">
+                                    <span className="star-icon">★</span> {cand.rating ? Number(cand.rating).toFixed(1) : "0.0"}
+                                  </span>
                                   <h3 className="finder-candidate-name">{cand.applicant_name}</h3>
                                   {currentActiveJob && isCandidateRecruitedForJob(cand, currentActiveJob.id) && (
                                     <span className="finder-status-pill finder-recruited-pill" title={`Candidate was recruited for ${currentActiveJob.title}`}>
                                       Recruited
                                     </span>
                                   )}
-                                  <span className="finder-star-pill">
-                                    <span className="star-icon">★</span> {cand.rating ? Number(cand.rating).toFixed(1) : "0.0"}
-                                  </span>
                                   {(() => {
                                     const roles = getCandidateTargetRoles(cand);
                                     if (roles.length === 0) return null;
@@ -4436,15 +4436,15 @@ export default function EmployerApplicantFinder() {
                             </div>
                             <div className="finder-candidate-info">
                               <div className="finder-name-row">
+                                <span className="finder-star-pill">
+                                  <span className="star-icon">★</span> {cand.rating ? Number(cand.rating).toFixed(1) : "0.0"}
+                                </span>
                                 <h3 className="finder-candidate-name">{cand.applicant_name}</h3>
                                 {currentActiveJob && isCandidateRecruitedForJob(cand, currentActiveJob.id) && (
                                   <span className="finder-status-pill finder-recruited-pill" title={`Candidate was recruited for ${currentActiveJob.title}`}>
                                     Recruited
                                   </span>
                                 )}
-                                <span className="finder-star-pill">
-                                  <span className="star-icon">★</span> {cand.rating ? Number(cand.rating).toFixed(1) : "0.0"}
-                                </span>
                                 {(() => {
                                   const roles = getCandidateTargetRoles(cand);
                                   if (roles.length === 0) return null;
@@ -4573,6 +4573,7 @@ export default function EmployerApplicantFinder() {
             employerJobs={activeJobs}
             currentEmployerUserId={currentEmployerId}
             selectedJobId={selectedJobId || null}
+            hideMatchScore={!selectedJobId}
             hideBreakdownTab={true}
             hideOtherJobsTab={true}
             customFooterActions={
