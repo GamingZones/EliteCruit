@@ -2728,6 +2728,99 @@
   color: #ffffff !important;
 }
 
+/* Symmetrical Dark Theme Modal Status Buttons */
+[data-theme="dark"] .modal-status-word-btn.modal-shortlist-btn {
+  background: rgba(245, 158, 11, 0.2) !important;
+  border: 1px solid rgba(245, 158, 11, 0.4) !important;
+  color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .modal-status-word-btn.modal-shortlist-btn:hover {
+  background: rgba(245, 158, 11, 0.35) !important;
+  border-color: #f59e0b !important;
+  color: #fef08a !important;
+}
+
+[data-theme="dark"] .modal-status-word-btn.modal-shortlist-btn.active-shortlisted,
+[data-theme="dark"] .modal-status-word-btn.modal-shortlist-btn.active {
+  background: #eab308 !important;
+  border: 1px solid #ca8a04 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .modal-status-word-btn.modal-shortlist-btn.active-shortlisted:hover,
+[data-theme="dark"] .modal-status-word-btn.modal-shortlist-btn.active:hover {
+  background: #d97706 !important;
+  border-color: #b45309 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .modal-status-word-btn.modal-schedule-btn {
+  background: rgba(2, 132, 199, 0.2) !important;
+  border: 1px solid rgba(2, 132, 199, 0.4) !important;
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .modal-status-word-btn.modal-schedule-btn:hover {
+  background: rgba(2, 132, 199, 0.35) !important;
+  border-color: #38bdf8 !important;
+  color: #7dd3fc !important;
+}
+
+[data-theme="dark"] .modal-status-word-btn.modal-schedule-btn.active-interviewing {
+  background: #0284c7 !important;
+  border: 1px solid #0369a1 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .modal-status-word-btn.modal-schedule-btn.active-interviewing:hover {
+  background: #0369a1 !important;
+  border-color: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .modal-status-word-btn.modal-approve-btn {
+  background: rgba(16, 185, 129, 0.2) !important;
+  border: 1px solid rgba(16, 185, 129, 0.4) !important;
+  color: #34d399 !important;
+}
+
+[data-theme="dark"] .modal-status-word-btn.modal-approve-btn:hover {
+  background: #16a34a !important;
+  border-color: #34d399 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .modal-status-word-btn.modal-approve-btn.active-approved,
+[data-theme="dark"] .modal-status-word-btn.modal-approve-btn.finalized-approved {
+  background: #16a34a !important;
+  border: 1px solid #15803d !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .modal-status-word-btn.modal-deny-btn,
+[data-theme="dark"] .modal-status-word-btn.modal-reject-btn {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border: 1px solid rgba(239, 68, 68, 0.4) !important;
+  color: #f87171 !important;
+}
+
+[data-theme="dark"] .modal-status-word-btn.modal-deny-btn:hover,
+[data-theme="dark"] .modal-status-word-btn.modal-reject-btn:hover {
+  background: #dc2626 !important;
+  border-color: #f87171 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .modal-status-word-btn.modal-deny-btn.active-denied,
+[data-theme="dark"] .modal-status-word-btn.modal-deny-btn.finalized-denied,
+[data-theme="dark"] .modal-status-word-btn.modal-reject-btn.active-denied,
+[data-theme="dark"] .modal-status-word-btn.modal-reject-btn.finalized-denied {
+  background: #dc2626 !important;
+  border: 1px solid #b91c1c !important;
+  color: #ffffff !important;
+}
+
 /* Disabled finalized status buttons */
 .modal-status-word-btn.disabled-finalized {
   opacity: 0.35 !important;
