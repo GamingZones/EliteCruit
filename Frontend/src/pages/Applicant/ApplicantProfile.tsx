@@ -3269,23 +3269,23 @@ export default function ApplicantProfile() {
   const missingFieldItems = useMemo(() => {
     const p = draft;
     const list: { key: string; label: string; section: "preferences" | "competencies"; sectionName: string }[] = [];
-    if (!p.desired_job_title || !String(p.desired_job_title).trim()) {
-      list.push({ key: "jobTitle", label: "Job / Target Role", section: "preferences", sectionName: "Career Preferences" });
-    }
-    if (!p.work_arrangement || !String(p.work_arrangement).trim()) {
-      list.push({ key: "workArrangement", label: "Work Arrangement", section: "preferences", sectionName: "Career Preferences" });
-    }
-    const hasSalaryMin =
-      (p.expected_salary_min !== null && p.expected_salary_min !== undefined && String(p.expected_salary_min).trim() !== "") ||
-      Boolean(p.expected_salary && String(p.expected_salary).trim());
-    const hasSalaryMax =
-      (p.expected_salary_max !== null && p.expected_salary_max !== undefined && String(p.expected_salary_max).trim() !== "") ||
-      Boolean(p.expected_salary && String(p.expected_salary).trim());
-    if (!hasSalaryMin) {
-      list.push({ key: "salaryMin", label: "Minimum Salary", section: "preferences", sectionName: "Career Preferences" });
-    }
-    if (!hasSalaryMax) {
-      list.push({ key: "salaryMax", label: "Maximum Salary", section: "preferences", sectionName: "Career Preferences" });
+
+    // Role & Employment Targeting: at least one role configured is required
+    const hasTargetRole =
+      (targetRoles && targetRoles.length > 0 && targetRoles.some((r) => r.title && String(r.title).trim())) ||
+      Boolean(p.desired_job_title && String(p.desired_job_title).trim()) ||
+      (() => {
+        if (!p.target_roles_json) return false;
+        try {
+          const arr = JSON.parse(p.target_roles_json);
+          return Array.isArray(arr) && arr.length > 0 && arr.some((r: any) => r.title && String(r.title).trim());
+        } catch {
+          return false;
+        }
+      })();
+
+    if (!hasTargetRole) {
+      list.push({ key: "targetRoles", label: "Role & Employment Targeting", section: "preferences", sectionName: "Career Preferences" });
     }
     if (!p.qualifications || !String(p.qualifications).trim()) {
       list.push({ key: "education", label: "Qualifications / Education", section: "competencies", sectionName: "Skills & Credentials" });
@@ -3294,39 +3294,40 @@ export default function ApplicantProfile() {
       list.push({ key: "skills", label: "Technical Skills", section: "competencies", sectionName: "Skills & Credentials" });
     }
     return list;
-  }, [profile, draft]);
+  }, [profile, draft, targetRoles]);
 
   const missingMandatedFields = useMemo(() => missingFieldItems.map((item) => item.label), [missingFieldItems]);
 
   const completionChecks = useMemo(() => {
     const p = draft;
-    const hasJobTitle = Boolean(p.desired_job_title && String(p.desired_job_title).trim());
-    const hasWorkArrangement = Boolean(p.work_arrangement && String(p.work_arrangement).trim());
-    const hasSalaryMin =
-      (p.expected_salary_min !== null && p.expected_salary_min !== undefined && String(p.expected_salary_min).trim() !== "") ||
-      Boolean(p.expected_salary && String(p.expected_salary).trim());
-    const hasSalaryMax =
-      (p.expected_salary_max !== null && p.expected_salary_max !== undefined && String(p.expected_salary_max).trim() !== "") ||
-      Boolean(p.expected_salary && String(p.expected_salary).trim());
+    const hasTargetRole =
+      (targetRoles && targetRoles.length > 0 && targetRoles.some((r) => r.title && String(r.title).trim())) ||
+      Boolean(p.desired_job_title && String(p.desired_job_title).trim()) ||
+      (() => {
+        if (!p.target_roles_json) return false;
+        try {
+          const arr = JSON.parse(p.target_roles_json);
+          return Array.isArray(arr) && arr.length > 0 && arr.some((r: any) => r.title && String(r.title).trim());
+        } catch {
+          return false;
+        }
+      })();
     const hasEducation = Boolean(p.qualifications && String(p.qualifications).trim());
     const hasSkills = Boolean(p.skills && String(p.skills).trim());
 
-    const allChecks = [hasJobTitle, hasWorkArrangement, hasSalaryMin, hasSalaryMax, hasEducation, hasSkills];
+    const allChecks = [hasTargetRole, hasEducation, hasSkills];
     const done = allChecks.filter(Boolean).length;
     const percent = Math.round((done / allChecks.length) * 100);
     const colorBand = percent <= 50 ? "red" : percent <= 80 ? "yellow" : "green";
 
     return {
-      hasJobTitle,
-      hasWorkArrangement,
-      hasSalaryMin,
-      hasSalaryMax,
+      hasTargetRole,
       hasEducation,
       hasSkills,
       percent,
       colorBand,
     };
-  }, [profile, draft]);
+  }, [profile, draft, targetRoles]);
 
   const isProfileComplete = hasLoadedProfile && (completionChecks.percent >= 100 || missingFieldItems.length === 0);
   const isProfileSetupIncomplete = hasLoadedProfile && !isProfileComplete;

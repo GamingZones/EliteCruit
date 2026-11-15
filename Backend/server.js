@@ -1183,22 +1183,21 @@ async function checkUserProfileCompleteness(user) {
   try {
     if (user.role === "applicant") {
       const p = await get(
-        `SELECT desired_job_title, expected_salary, expected_salary_min, expected_salary_max, work_arrangement, qualifications, skills
+        `SELECT desired_job_title, expected_salary, expected_salary_min, expected_salary_max, work_arrangement, qualifications, skills, target_roles_json
          FROM applicant_profiles WHERE user_id = ?`,
         [user.id]
       );
-      if (!p?.desired_job_title || !String(p.desired_job_title).trim()) {
-        missingProfileFields.push("Desired Job Title");
+      let hasTargetRole = Boolean(p?.desired_job_title && String(p.desired_job_title).trim());
+      if (!hasTargetRole && p?.target_roles_json) {
+        try {
+          const arr = JSON.parse(p.target_roles_json);
+          if (Array.isArray(arr) && arr.length > 0 && arr.some(r => r.title && String(r.title).trim())) {
+            hasTargetRole = true;
+          }
+        } catch {}
       }
-      const hasSalary =
-        (p?.expected_salary_min !== null && p?.expected_salary_min !== undefined && String(p.expected_salary_min).trim() !== "") ||
-        (p?.expected_salary_max !== null && p?.expected_salary_max !== undefined && String(p.expected_salary_max).trim() !== "") ||
-        (p?.expected_salary && String(p.expected_salary).trim() !== "");
-      if (!hasSalary) {
-        missingProfileFields.push("Expected Salary Range");
-      }
-      if (!p?.work_arrangement || !String(p.work_arrangement).trim()) {
-        missingProfileFields.push("Preferred Work Arrangement");
+      if (!hasTargetRole) {
+        missingProfileFields.push("Role & Employment Targeting");
       }
       if (!p?.qualifications || !String(p.qualifications).trim()) {
         missingProfileFields.push("At least 1 Education Entry");
