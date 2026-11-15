@@ -1819,12 +1819,12 @@
   max-height: calc(88vh - 46px) !important;
 }
 
-/* ── Ensure ApplicantDetailsModal (cand-details-overlay) 1st container NEVER changes length (stays 920px) ── */
+/* ── Ensure ApplicantDetailsModal (cand-details-overlay) 1st container NEVER changes length (stays 750px) ── */
 .cand-details-overlay .jd-modal-container.with-side-panel,
 [data-theme="dark"] .cand-details-overlay .jd-modal-container.with-side-panel,
 .cand-details-overlay .cand-details-modal-container,
 [data-theme="dark"] .cand-details-overlay .cand-details-modal-container {
-  max-width: min(1480px, calc(100vw - 32px)) !important;
+  max-width: min(1180px, calc(100vw - 32px)) !important;
   width: fit-content !important;
 }
 
@@ -1840,9 +1840,12 @@
 .cand-details-overlay .jd-modal-container.with-side-panel .cand-details-panel,
 [data-theme="dark"] .cand-details-overlay .cand-details-panel,
 [data-theme="dark"] .cand-details-overlay .jd-modal-container.with-side-panel .cand-details-panel {
-  width: 920px !important;
-  min-width: min(920px, calc(100vw - 40px)) !important;
-  max-width: min(920px, calc(100vw - 40px)) !important;
+  width: 750px !important;
+  min-width: min(750px, calc(100vw - 40px)) !important;
+  max-width: min(750px, calc(100vw - 40px)) !important;
+  height: 580px !important;
+  max-height: 84vh !important;
+  min-height: 460px !important;
   flex-shrink: 0 !important;
   flex-grow: 0 !important;
 }
@@ -1855,15 +1858,15 @@
 .cand-details-overlay .jd-side-comparison-panel,
 [data-theme="dark"] .cand-details-overlay .applicant-side-comparison-panel,
 [data-theme="dark"] .cand-details-overlay .jd-side-comparison-panel {
-  width: 480px !important;
-  max-width: min(480px, calc(100vw - 976px)) !important;
-  min-width: 320px !important;
-  flex: 1 1 440px !important;
+  width: 380px !important;
+  max-width: min(380px, calc(100vw - 800px)) !important;
+  min-width: 300px !important;
+  flex: 1 1 360px !important;
   flex-shrink: 1 !important;
   align-self: stretch !important;
-  height: 700px !important;
-  max-height: 88vh !important;
-  min-height: 520px !important;
+  height: 580px !important;
+  max-height: 84vh !important;
+  min-height: 460px !important;
 }
 
 .jd-body-wrapper {

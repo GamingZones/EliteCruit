@@ -1336,11 +1336,11 @@
 }
 
 .cand-details-panel {
-  width: 920px;
+  width: 750px;
   max-width: 94vw;
-  height: 700px;
-  max-height: 88vh;
-  min-height: 520px;
+  height: 580px;
+  max-height: 84vh;
+  min-height: 460px;
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 16px 40px rgba(1, 41, 74, 0.2);

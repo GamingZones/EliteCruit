@@ -1235,10 +1235,10 @@ export default function ApplicantDetailsModal({
       <div
         className={`cand-details-modal-container jd-modal-container ${activeSideTab ? "with-side-panel" : ""}`}
         style={{
-          maxWidth: activeSideTab ? "min(1480px, calc(100vw - 32px))" : "920px",
+          maxWidth: activeSideTab ? "min(1180px, calc(100vw - 32px))" : "750px",
           width: "fit-content",
           display: "flex",
-          gap: "16px",
+          gap: "14px",
           alignItems: "stretch",
           justifyContent: "center",
           position: "relative",
@@ -1253,9 +1253,9 @@ export default function ApplicantDetailsModal({
           className="cand-details-panel-wrap jd-panel-outer-wrap"
           style={{
             position: "relative",
-            width: "920px",
-            maxWidth: "min(920px, calc(100vw - 40px))",
-            minWidth: "min(920px, calc(100vw - 40px))",
+            width: "750px",
+            maxWidth: "min(750px, calc(100vw - 40px))",
+            minWidth: "min(750px, calc(100vw - 40px))",
             flexShrink: 0,
             display: "flex",
             flexDirection: "column",
@@ -1299,7 +1299,7 @@ export default function ApplicantDetailsModal({
 
           <div className="cand-details-panel jd-panel">
           {/* Candidate Strip */}
-          <div className="cand-details-strip" style={{ paddingTop: "20px" }}>
+          <div className="cand-details-strip" style={{ paddingTop: "14px" }}>
             <div className="cand-details-logo-info">
               <div className="cand-details-logo" aria-label="Candidate initials">
                 {profilePicSrc && !imgFailed ? (
@@ -1757,14 +1757,14 @@ export default function ApplicantDetailsModal({
         <aside
           className="applicant-side-comparison-panel jd-side-comparison-panel"
           style={{
-            width: "480px",
-            maxWidth: "min(480px, calc(100vw - 976px))",
-            minWidth: "320px",
-            flex: "1 1 440px",
+            width: "380px",
+            maxWidth: "min(380px, calc(100vw - 800px))",
+            minWidth: "300px",
+            flex: "1 1 360px",
             alignSelf: "stretch",
-            height: "700px",
-            minHeight: "520px",
-            maxHeight: "88vh",
+            height: "580px",
+            minHeight: "460px",
+            maxHeight: "84vh",
             boxShadow: "0 25px 60px rgba(0, 0, 0, 0.35)",
             display: "flex",
             flexDirection: "column",
@@ -2047,14 +2047,14 @@ export default function ApplicantDetailsModal({
         <aside
           className="applicant-side-comparison-panel cand-message-side-panel jd-side-comparison-panel"
           style={{
-            width: "480px",
-            maxWidth: "min(480px, calc(100vw - 976px))",
-            minWidth: "320px",
-            flex: "1 1 440px",
+            width: "380px",
+            maxWidth: "min(380px, calc(100vw - 800px))",
+            minWidth: "300px",
+            flex: "1 1 360px",
             alignSelf: "stretch",
-            height: "700px",
-            minHeight: "520px",
-            maxHeight: "88vh",
+            height: "580px",
+            minHeight: "460px",
+            maxHeight: "84vh",
             boxShadow: "0 25px 60px rgba(0, 0, 0, 0.35)",
             display: "flex",
             flexDirection: "column",
@@ -2591,14 +2591,14 @@ export default function ApplicantDetailsModal({
         <aside
           className="applicant-side-comparison-panel jd-side-comparison-panel"
           style={{
-            width: "480px",
-            maxWidth: "min(480px, calc(100vw - 976px))",
-            minWidth: "320px",
-            flex: "1 1 440px",
+            width: "380px",
+            maxWidth: "min(380px, calc(100vw - 800px))",
+            minWidth: "300px",
+            flex: "1 1 360px",
             alignSelf: "stretch",
-            height: "700px",
-            minHeight: "520px",
-            maxHeight: "88vh",
+            height: "580px",
+            minHeight: "460px",
+            maxHeight: "84vh",
             boxShadow: "0 25px 60px rgba(0, 0, 0, 0.35)",
             display: "flex",
             flexDirection: "column",
