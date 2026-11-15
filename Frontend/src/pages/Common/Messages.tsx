@@ -3246,6 +3246,7 @@ export default function Messages() {
           }}
           candidate={selectedCandidateDetails}
           employerJobs={employerJobs}
+          hideFloatingTabs={true}
         />
       )}
 

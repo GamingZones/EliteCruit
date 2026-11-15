@@ -120,6 +120,37 @@
 }
 
 /* ── BADGES & BUTTONS IN STRIP ── */
+.cand-name-rating-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #fff8e6;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1;
+  height: 22px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.cand-name-rating-badge .star-icon {
+  color: #f59e0b;
+  font-size: 0.85rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+}
+
+.cand-name-rating-badge span {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
 .rating-score-box {
   border-radius: 8px;
   padding: 4px 10px;
@@ -3350,6 +3381,20 @@
 }
 
 /* Rating & Match Badges Dark Theme */
+[data-theme="dark"] .cand-name-rating-badge {
+  background: rgba(245, 158, 11, 0.18) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+}
+
+[data-theme="dark"] .cand-name-rating-badge .star-icon {
+  color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .cand-name-rating-badge span {
+  color: #fbbf24 !important;
+}
+
 [data-theme="dark"] .rating-score-box {
   background: rgba(245, 158, 11, 0.2) !important;
   color: #fbbf24 !important;

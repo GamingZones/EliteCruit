@@ -323,6 +323,7 @@ export type ApplicantDetailsModalProps = {
   currentEmployerUserId?: number | string | null;
   initialSideTab?: "breakdown" | "messages" | "other-jobs" | null;
   onViewJobDetails?: (job: any) => void;
+  hideFloatingTabs?: boolean;
 };
 
 export type EmployerApplicantDetailsModalProps = ApplicantDetailsModalProps;
@@ -336,12 +337,14 @@ export default function ApplicantDetailsModal({
   currentEmployerUserId = null,
   initialSideTab = null,
   onViewJobDetails,
+  hideFloatingTabs = false,
 }: ApplicantDetailsModalProps) {
   const [candDetailTab, setCandDetailTab] = useState<"personal" | "preferences" | "competencies" | "experience">("personal");
   const [isDocsDrawerOpen, setIsDocsDrawerOpen] = useState(false);
   const [docsList, setDocsList] = useState<Array<{ id: string | number; file_name: string; url?: string }>>([]);
   const [isDocsLoading, setIsDocsLoading] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<{ file_name: string; url: string } | null>(null);
+  const [imgFailed, setImgFailed] = useState(false);
 
   // Side Panel Tabs state: "breakdown" | "messages" | "other-jobs" | null
   const [activeSideTab, setActiveSideTab] = useState<"breakdown" | "messages" | "other-jobs" | null>(initialSideTab || null);
@@ -1256,42 +1259,44 @@ export default function ApplicantDetailsModal({
           }}
         >
           {/* ── FLOATING ACTION TABS ABOVE: Match Breakdown | Other Jobs | Messages ── */}
-          <div className="cal-modal-floating-tabs-container jd-floating-tabs-container">
-            <button
-              type="button"
-              className={`cal-modal-floating-tab jd-floating-breakdown-tab ${activeSideTab === "breakdown" ? "active" : ""}`}
-              onClick={() => setActiveSideTab((prev) => (prev === "breakdown" ? null : "breakdown"))}
-            >
-              <span>{activeSideTab === "breakdown" ? "Hide Breakdown" : "Match Breakdown"}</span>
-            </button>
-            <button
-              type="button"
-              className={`cal-modal-floating-tab jd-floating-breakdown-tab ${activeSideTab === "other-jobs" ? "active" : ""}`}
-              onClick={() => setActiveSideTab((prev) => (prev === "other-jobs" ? null : "other-jobs"))}
-            >
-              <span>{activeSideTab === "other-jobs" ? "Hide Other Jobs" : "Other Jobs"}</span>
-            </button>
-            <button
-              type="button"
-              className={`cal-modal-floating-tab jd-floating-breakdown-tab ${activeSideTab === "messages" ? "active" : ""}`}
-              onClick={() => setActiveSideTab((prev) => (prev === "messages" ? null : "messages"))}
-            >
-              <span>{activeSideTab === "messages" ? "Hide Message" : "Messages"}</span>
-            </button>
-          </div>
+          {!hideFloatingTabs && (
+            <div className="cal-modal-floating-tabs-container jd-floating-tabs-container">
+              <button
+                type="button"
+                className={`cal-modal-floating-tab jd-floating-breakdown-tab ${activeSideTab === "breakdown" ? "active" : ""}`}
+                onClick={() => setActiveSideTab((prev) => (prev === "breakdown" ? null : "breakdown"))}
+              >
+                <span>{activeSideTab === "breakdown" ? "Hide Breakdown" : "Match Breakdown"}</span>
+              </button>
+              <button
+                type="button"
+                className={`cal-modal-floating-tab jd-floating-breakdown-tab ${activeSideTab === "other-jobs" ? "active" : ""}`}
+                onClick={() => setActiveSideTab((prev) => (prev === "other-jobs" ? null : "other-jobs"))}
+              >
+                <span>{activeSideTab === "other-jobs" ? "Hide Other Jobs" : "Other Jobs"}</span>
+              </button>
+              <button
+                type="button"
+                className={`cal-modal-floating-tab jd-floating-breakdown-tab ${activeSideTab === "messages" ? "active" : ""}`}
+                onClick={() => setActiveSideTab((prev) => (prev === "messages" ? null : "messages"))}
+              >
+                <span>{activeSideTab === "messages" ? "Hide Message" : "Messages"}</span>
+              </button>
+            </div>
+          )}
 
           <div className="cand-details-panel jd-panel">
           {/* Candidate Strip */}
           <div className="cand-details-strip" style={{ paddingTop: "20px" }}>
             <div className="cand-details-logo-info">
               <div className="cand-details-logo" aria-label="Candidate initials">
-                {profilePicSrc ? (
+                {profilePicSrc && !imgFailed ? (
                   <img
                     src={profilePicSrc}
                     alt={displayName}
                     style={{ width: "100%", height: "100%", borderRadius: "12px", objectFit: "cover" }}
-                    onError={(e) => {
-                      (e.currentTarget as HTMLElement).style.display = "none";
+                    onError={() => {
+                      setImgFailed(true);
                     }}
                   />
                 ) : (
@@ -1301,13 +1306,9 @@ export default function ApplicantDetailsModal({
                 )}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}>
-                  <div className="rating-score-box" title="Applicant rating">
-                    <span className="star-icon">
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                      </svg>
-                    </span>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                  <div className="cand-name-rating-badge" title="Applicant rating">
+                    <span className="star-icon">★</span>
                     <span>{candidate.rating ? Number(candidate.rating).toFixed(1) : "0.0"}</span>
                   </div>
                   <strong className="cand-details-name" style={{ margin: 0 }}>{displayName}</strong>
