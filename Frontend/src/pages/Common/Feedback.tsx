@@ -9,7 +9,7 @@ import ApplicantChatbotDrawer, { ApplicantFAQItem as FAQItem } from "../../compo
 import EmployerChatbotDrawer, { EmployerFAQItem } from "../../components/EmployerChatbotDrawer";
 import CalendarDrawer from "../../components/CalendarDrawer";
 import ConfirmationModal from "../../components/ConfirmationModal";
-import { JobDetailsModal, EmployerDetailsModal } from "../../components/modals";
+import { JobDetailsModal, EmployerDetailsModal, ApplicantDetailsModal } from "../../components/modals";
 import type { JobModalData, EmployerModalData } from "../../components/modals";
 import {
   formatLocationWithCavite,
@@ -2321,269 +2321,56 @@ export default function Feedback() {
       {/* ── DETAILS MODAL OVERLAY ── */}
       {detailsJob && (
         isEmployerRole ? (
-          /* ── CANDIDATE DETAILS MODAL (1:1 Copy from Applicant Finder) ── */
-          <div
-            className="jd-overlay"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Candidate Details"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setDetailsJob(null);
-                setIsMsgPanelOpen(false);
-                setIsMsgPanelClosing(false);
-              }
+          /* ── CANDIDATE DETAILS MODAL (ApplicantDetailsModal.tsx) ── */
+          <ApplicantDetailsModal
+            isOpen={Boolean(detailsJob)}
+            onClose={() => {
+              setDetailsJob(null);
+              setIsMsgPanelOpen(false);
+              setIsMsgPanelClosing(false);
             }}
-          >
-            <div
-              className={`jd-modal-container ${isMsgPanelOpen || isMsgPanelClosing ? "with-side-panel" : ""}`}
-              style={!(isMsgPanelOpen || isMsgPanelClosing) ? { maxWidth: "820px" } : undefined}
-            >
-              <div className="jd-panel-outer-wrap">
-                <div className="jd-floating-tabs-container">
+            candidate={{
+              user_id: detailsJob.applicantUserId || detailsJob.id,
+              applicant_name: detailsJob.name,
+              name: detailsJob.name,
+              email: detailsJob.email,
+              phone: detailsJob.phone,
+              city: detailsJob.location,
+              address: detailsJob.location,
+              rating: detailsJob.rating,
+              job_title: detailsJob.jobTitle,
+              desired_job_title: detailsJob.jobTitle,
+              work_arrangement: detailsJob.workSetup,
+              skills: detailsJob.skills,
+              qualifications: detailsJob.qualifications,
+              certifications: detailsJob.certifications,
+              profile_picture_path: detailsJob.profilePicturePath,
+            }}
+            customFooterActions={
+              (() => {
+                const isAccepted = (detailsJob.status || "").toLowerCase().includes("accept") || (detailsJob.status || "").toLowerCase().includes("recruit") || (detailsJob.status || "").toLowerCase().includes("approved");
+                return (
                   <button
                     type="button"
-                    className={`jd-floating-breakdown-tab ${isMsgPanelOpen && !isMsgPanelClosing ? "active" : ""}`}
-                    onClick={handleToggleMsgPanel}
+                    className="solid-btn"
+                    disabled
+                    style={{
+                      background: isAccepted ? "#10b981" : "#ef4444",
+                      color: "#ffffff",
+                      borderColor: isAccepted ? "#059669" : "#dc2626",
+                      padding: "8px 20px",
+                      fontSize: "0.88rem",
+                      fontWeight: 700,
+                      borderRadius: "8px",
+                      cursor: "default",
+                    }}
                   >
-                    <span>{isMsgPanelOpen && !isMsgPanelClosing ? "Hide Message" : "Message"}</span>
+                    {isAccepted ? "Recruited" : "Denied"}
                   </button>
-                </div>
-
-                <div className="jd-panel" onClick={(e) => e.stopPropagation()}>
-                  <div className="jd-employer-strip" style={{ paddingTop: "20px" }}>
-                    <div className="jd-employer-logo-info">
-                      <div className="jd-employer-logo" aria-label="Candidate initials" style={{ overflow: "hidden", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        {(() => {
-                          const pic = detailsJob.profilePicturePath;
-                          const picUrl = pic
-                            ? (pic.startsWith("http") || pic.startsWith("/api") ? pic : `/api/applicants/${detailsJob.applicantUserId}/profile-picture`)
-                            : (detailsJob.applicantUserId ? `/api/applicants/${detailsJob.applicantUserId}/profile-picture` : null);
-                          return (
-                            <>
-                              {picUrl && (
-                                <img
-                                  src={picUrl}
-                                  alt={detailsJob.name}
-                                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                                  onError={(e) => {
-                                    (e.currentTarget as HTMLElement).style.display = "none";
-                                    if (e.currentTarget.nextElementSibling) {
-                                      (e.currentTarget.nextElementSibling as HTMLElement).style.display = "flex";
-                                    }
-                                  }}
-                                />
-                              )}
-                              <span style={{ fontWeight: 700, color: "#ffffff", fontSize: "1.05rem", display: picUrl ? "none" : "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
-                                {initialsFrom(detailsJob.name)}
-                              </span>
-                            </>
-                          );
-                        })()}
-                      </div>
-                      <div>
-                        <strong className="jd-employer-name">{detailsJob.name}</strong>
-                        <span className="jd-employer-location" style={{ display: "inline-flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginTop: "3px" }}>
-                          {detailsJob.location && (
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" />
-                                <circle cx="12" cy="10" r="2.5" />
-                              </svg>
-                              {detailsJob.location}
-                            </span>
-                          )}
-                          {detailsJob.email && (
-                            <>
-                              {detailsJob.location && <span style={{ color: "#cbd5e1" }}>•</span>}
-                              <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                                  <polyline points="22,6 12,13 2,6" />
-                                </svg>
-                                {detailsJob.email}
-                              </span>
-                            </>
-                          )}
-                          {detailsJob.phone && (
-                            <>
-                              {(detailsJob.location || detailsJob.email) && <span style={{ color: "#cbd5e1" }}>•</span>}
-                              <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                                </svg>
-                                {detailsJob.phone}
-                              </span>
-                            </>
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="jd-header-right-actions">
-                      <div className="rating-score-box" title="Applicant rating">
-                        <span className="star-icon">★</span>
-                        <span>{detailsJob.rating ? Number(detailsJob.rating).toFixed(1) : "0.0"}</span>
-                      </div>
-                      <button
-                        type="button"
-                        className={`jd-faq-btn ${isDocsOpen ? "active" : ""}`}
-                        onClick={() => setIsDocsOpen((prev) => !prev)}
-                      >
-                        Docs
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="jd-body-wrapper">
-                    <div className="jd-body">
-                      <div className="jd-top-section">
-                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                          <span style={{ fontSize: "0.68rem", fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                            Desired Job Title
-                          </span>
-                          <div className="jd-title-row">
-                            <h2 className="jd-title-h2">{detailsJob.jobTitle}</h2>
-                          </div>
-                        </div>
-                        <div className="jd-chips-inline">
-                          <span className="setup-pill">{detailsJob.workSetup || "On-Site"}</span>
-                          <span className="salary-pill">{detailsJob.salary && detailsJob.salary !== "—" ? detailsJob.salary : "Salary Confidential"}</span>
-                        </div>
-                      </div>
-
-                      <div className="jd-section">
-                        <h3>SKILLS</h3>
-                        <div className="jd-tags-wrap">
-                          {detailsJob.requiredSkills && detailsJob.requiredSkills.length > 0 ? (
-                            detailsJob.requiredSkills.map((s, idx) => (
-                              <span key={idx} className="js-tag-chip js-tag-skill">{s}</span>
-                            ))
-                          ) : (
-                            <span style={{ fontSize: "0.82rem", color: "#64748b" }}>None listed</span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="jd-section">
-                        <h3>QUALIFICATIONS</h3>
-                        <div className="jd-tags-wrap">
-                          {detailsJob.qualifications && detailsJob.qualifications.length > 0 ? (
-                            detailsJob.qualifications.map((q, idx) => (
-                              <span key={idx} className="js-tag-chip js-tag-qualification">{q}</span>
-                            ))
-                          ) : (
-                            <span style={{ fontSize: "0.82rem", color: "#64748b" }}>None listed</span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="jd-section">
-                        <h3>CERTIFICATIONS</h3>
-                        <div className="jd-tags-wrap">
-                          {detailsJob.certifications && detailsJob.certifications.length > 0 ? (
-                            detailsJob.certifications.map((c, idx) => (
-                              <span key={idx} className="js-tag-chip" style={{ background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a" }}>
-                                {c}
-                              </span>
-                            ))
-                          ) : (
-                            <span style={{ fontSize: "0.82rem", color: "#64748b" }}>None listed</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className={`jd-faq-drawer ${isDocsOpen ? "open" : ""}`}>
-                      <div className="jd-faq-header">
-                        <h3>Saved Documents</h3>
-                        <button type="button" className="jd-faq-back-btn" onClick={() => setIsDocsOpen(false)}>←</button>
-                      </div>
-                      <div className="jd-faq-body" style={{ padding: "16px", display: "flex", flexDirection: "column", height: "calc(100% - 60px)" }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", border: "1px solid #cbd5e1", borderRadius: "10px", background: "#f8fafc" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                            <div style={{ width: "38px", height: "38px", borderRadius: "8px", background: "#e0f2fe", color: "#0369a1", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                <polyline points="14 2 14 8 20 8" />
-                              </svg>
-                            </div>
-                            <div>
-                              <strong style={{ display: "block", fontSize: "0.9rem", color: "#0f172a" }}>
-                                {detailsJob.name.replace(/\s+/g, "_")}_Resume.pdf
-                              </strong>
-                              <small style={{ color: "#64748b" }}>Primary Resume / CV</small>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="jd-panel-footer" style={{ justifyContent: "flex-end" }}>
-                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                      <button
-                        type="button"
-                        className="jd-cancel-btn"
-                        onClick={() => {
-                          setDetailsJob(null);
-                          setIsMsgPanelOpen(false);
-                          setIsMsgPanelClosing(false);
-                        }}
-                      >
-                        Close
-                      </button>
-                      <button
-                        type="button"
-                        className={`solid-btn ${isMsgPanelOpen && !isMsgPanelClosing ? "active" : ""}`}
-                        onClick={handleToggleMsgPanel}
-                        style={{
-                          padding: "8px 16px",
-                          fontSize: "0.85rem",
-                          borderRadius: "6px",
-                          background: isMsgPanelOpen ? "#0284c7" : "#01294a",
-                          color: "#ffffff",
-                          border: "none",
-                          cursor: "pointer",
-                          fontWeight: 700,
-                        }}
-                      >
-                        {isMsgPanelOpen && !isMsgPanelClosing ? "Hide Message" : "Message"}
-                      </button>
-                      {(() => {
-                        const isAccepted = detailsJob.status.toLowerCase().includes("accept") || detailsJob.status.toLowerCase().includes("recruit") || detailsJob.status.toLowerCase().includes("approved");
-                        return (
-                          <button
-                            type="button"
-                            className="solid-btn"
-                            disabled
-                            style={{
-                              background: isAccepted ? "#10b981" : "#ef4444",
-                              color: "#ffffff",
-                              borderColor: isAccepted ? "#059669" : "#dc2626",
-                              padding: "8px 20px",
-                              fontSize: "0.88rem",
-                              fontWeight: 700,
-                              borderRadius: "8px",
-                              cursor: "default",
-                            }}
-                          >
-                            {isAccepted ? "Recruited" : "Denied"}
-                          </button>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Side Docked Message Panel Slot */}
-              {(isMsgPanelOpen || isMsgPanelClosing) && (
-                <div className="jd-side-panel-slot">
-                  {renderMessageSidePanel()}
-                </div>
-              )}
-            </div>
-          </div>
+                );
+              })()
+            }
+          />
         ) : (
           <JobDetailsModal
             isOpen={Boolean(detailsJob)}

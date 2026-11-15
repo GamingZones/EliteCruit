@@ -4496,28 +4496,30 @@ export default function EmployerApplicantFinder() {
         )}
 
         {/* CANDIDATE DETAILS MODAL (ApplicantDetailsModal.tsx) */}
-        <ApplicantDetailsModal
-          isOpen={Boolean(selectedCandidate)}
-          onClose={handleCloseCandidateModal}
-          candidate={selectedCandidate}
-          employerJobs={activeJobs}
-          currentEmployerUserId={currentEmployerId}
-          customFooterActions={
-            <button
-              type="button"
-              className="finder-btn finder-btn-green"
-              onClick={() => {
-                if (selectedCandidate) {
-                  const cand = selectedCandidate;
-                  setSelectedCandidate(null);
-                  openCandidateRecruit(cand);
-                }
-              }}
-            >
-              Invite
-            </button>
-          }
-        />
+        {selectedCandidate && (
+          <ApplicantDetailsModal
+            isOpen={Boolean(selectedCandidate)}
+            onClose={handleCloseCandidateModal}
+            candidate={selectedCandidate}
+            employerJobs={activeJobs}
+            currentEmployerUserId={currentEmployerId}
+            customFooterActions={
+              <button
+                type="button"
+                className="finder-btn finder-btn-green"
+                onClick={() => {
+                  if (selectedCandidate) {
+                    const cand = selectedCandidate;
+                    setSelectedCandidate(null);
+                    openCandidateRecruit(cand);
+                  }
+                }}
+              >
+                Invite
+              </button>
+            }
+          />
+        )}
 
         {/* ── STANDALONE OTHER EMPLOYER JOBS MODAL (Image 1 - triggered by clicking Invite on candidate card) ── */}
         {inviteJobsCandidate && !viewingJobDetails && !inviteCandidate && (

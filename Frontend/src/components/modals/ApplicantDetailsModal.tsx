@@ -196,7 +196,7 @@ function parseBreakdownCertItems(raw?: string | null, fallbackTags: string[] = [
     } catch {}
 
     if (items.length === 0) {
-      const rawTokens = raw.split(/[\n,;â€¢|]+/);
+      const rawTokens = raw.split(/[\n,;•|]+/);
       rawTokens.forEach((tok) => {
         const item = parseToken(tok);
         if (item) items.push(item);
@@ -292,7 +292,7 @@ export type CandidateModalData = {
 };
 
 function formatDate(iso?: string | null): string {
-  if (!iso) return "â€”";
+  if (!iso) return "—";
   try {
     const d = new Date(iso);
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -689,7 +689,7 @@ export default function ApplicantDetailsModal({
     } catch {}
     return String(data)
       .replace(/^[\[\(\{]+|[\]\)\}]+$/g, "")
-      .split(/[,;\nâ€¢|]+/)
+      .split(/[,;\n•|]+/)
       .map((t) => t.trim().replace(/^["']+|["']+$/g, "").trim())
       .filter(Boolean);
   };
@@ -865,19 +865,15 @@ export default function ApplicantDetailsModal({
       )
     : [];
 
-  const groupedBreakdownSkills = useMemo(() => {
-    return parseBreakdownSkillItems(
-      typeof candidate.skills === "string" ? candidate.skills : null,
-      candSkills
-    );
-  }, [candidate.skills, candSkills]);
+  const groupedBreakdownSkills = parseBreakdownSkillItems(
+    typeof candidate.skills === "string" ? candidate.skills : null,
+    candSkills
+  );
 
-  const groupedBreakdownCerts = useMemo(() => {
-    return parseBreakdownCertItems(
-      typeof candidate.certifications === "string" ? candidate.certifications : null,
-      candCerts
-    );
-  }, [candidate.certifications, candCerts]);
+  const groupedBreakdownCerts = parseBreakdownCertItems(
+    typeof candidate.certifications === "string" ? candidate.certifications : null,
+    candCerts
+  );
 
   const matchDetails = calculateJobMatchDetails(
     {
@@ -952,7 +948,7 @@ export default function ApplicantDetailsModal({
               onClick={() => setActiveBreakdownPopup(null)}
               aria-label="Close popup"
             >
-              âœ•
+              ✕
             </button>
           </div>
 
@@ -997,7 +993,7 @@ export default function ApplicantDetailsModal({
                         )}
                         {isRel && (
                           <span className="jd-match-status-pill matched">
-                            <span className="status-icon">âœ“</span> Matched with Job
+                            <span className="status-icon">✓</span> Matched with Job
                           </span>
                         )}
                       </div>
@@ -1095,7 +1091,7 @@ export default function ApplicantDetailsModal({
                 lineHeight: 1,
               }}
             >
-              âœ•
+              ✕
             </button>
           </div>
 
@@ -1132,7 +1128,7 @@ export default function ApplicantDetailsModal({
             <div className="recruit-target-job-box" style={{ padding: "12px 14px", background: "#eff6ff", borderRadius: "10px", border: "1px solid #bfdbfe", display: "flex", flexDirection: "column", gap: "4px" }}>
               <span className="recruit-target-job-badge" style={{ fontSize: "0.75rem", fontWeight: 700, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: "0.5px" }}>Target Job Opening</span>
               <h4 className="recruit-target-job-title" style={{ margin: 0, fontSize: "0.98rem", fontWeight: 800, color: "#01294a" }}>{targetTitle}</h4>
-              <span className="recruit-target-job-meta" style={{ fontSize: "0.8rem", color: "#475569" }}>{targetLoc} â€¢ {targetArrangement}</span>
+              <span className="recruit-target-job-meta" style={{ fontSize: "0.8rem", color: "#475569" }}>{targetLoc} • {targetArrangement}</span>
             </div>
 
             {/* Invitation Message Field */}
@@ -1259,7 +1255,7 @@ export default function ApplicantDetailsModal({
             border: "none",
           }}
         >
-          {/* â”€â”€ FLOATING ACTION TABS ABOVE: Match Breakdown | Other Jobs | Messages â”€â”€ */}
+          {/* ── FLOATING ACTION TABS ABOVE: Match Breakdown | Other Jobs | Messages ── */}
           <div className="cal-modal-floating-tabs-container jd-floating-tabs-container">
             <button
               type="button"
@@ -1328,7 +1324,7 @@ export default function ApplicantDetailsModal({
                   </span>
                   {candidate.gender && (
                     <>
-                      <span style={{ color: "#cbd5e1" }}>â€¢</span>
+                      <span style={{ color: "#cbd5e1" }}>•</span>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
                         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                           <circle cx="12" cy="8" r="4" />
@@ -1353,7 +1349,7 @@ export default function ApplicantDetailsModal({
                       </span>
                     )}
                     {candidate.email && candidate.phone && (
-                      <span style={{ color: "#cbd5e1" }}>â€¢</span>
+                      <span style={{ color: "#cbd5e1" }}>•</span>
                     )}
                     {candidate.phone && (
                       <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
@@ -1396,7 +1392,7 @@ export default function ApplicantDetailsModal({
                 aria-label="Close"
                 title="Close"
               >
-                âœ•
+                ✕
               </button>
             </div>
           </div>
@@ -1631,7 +1627,7 @@ export default function ApplicantDetailsModal({
                               <h4 className="cand-exp-title">{exp.title}</h4>
                               <span className="cand-exp-company">{exp.company}</span>
                               {(exp.city || exp.province) && (
-                                <span className="cand-exp-loc"> â€¢ {[exp.city, exp.province].filter(Boolean).join(", ")}</span>
+                                <span className="cand-exp-loc"> • {[exp.city, exp.province].filter(Boolean).join(", ")}</span>
                               )}
                             </div>
                             <div className="cand-exp-date">
@@ -1677,7 +1673,7 @@ export default function ApplicantDetailsModal({
                     else setIsDocsDrawerOpen(false);
                   }}
                 >
-                  â†
+                  ←
                 </button>
               </div>
               <div className="jd-faq-body">
@@ -1743,7 +1739,7 @@ export default function ApplicantDetailsModal({
         </div>
       </div>
 
-      {/* â”€â”€ SIDE PANEL 1: MATCH BREAKDOWN (COMPETENCIES & REQUIREMENTS) â”€â”€ */}
+      {/* ── SIDE PANEL 1: MATCH BREAKDOWN (COMPETENCIES & REQUIREMENTS) ── */}
       {activeSideTab === "breakdown" && (
         <aside
           className="applicant-side-comparison-panel jd-side-comparison-panel"
@@ -1783,7 +1779,7 @@ export default function ApplicantDetailsModal({
                 onClick={() => setActiveSideTab(null)}
                 aria-label="Close panel"
               >
-                âœ•
+                ✕
               </button>
             </div>
           </div>
@@ -1873,10 +1869,10 @@ export default function ApplicantDetailsModal({
                           : "tag-missing-red";
                       const icon =
                         evalResult.status === "matched"
-                          ? "âœ“"
+                          ? "✓"
                           : evalResult.status === "partial"
-                          ? "â–²"
-                          : "âœ—";
+                          ? "▲"
+                          : "✗";
                       const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
                       const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "skills" && isSkillMatch(item, hoveredCompareTag.item));
                       return (
@@ -1916,7 +1912,7 @@ export default function ApplicantDetailsModal({
                           onMouseEnter={() => setHoveredCompareTag({ item, side: "applicant", category: "qualifications" })}
                           onMouseLeave={() => setHoveredCompareTag(null)}
                         >
-                          {isRel && <span className="tag-check">âœ“ </span>}
+                          {isRel && <span className="tag-check">✓ </span>}
                           <span className="tag-text">{item}</span>
                         </span>
                       );
@@ -1945,7 +1941,7 @@ export default function ApplicantDetailsModal({
                           onMouseEnter={() => setHoveredCompareTag({ item: jQual, side: "employer", category: "qualifications" })}
                           onMouseLeave={() => setHoveredCompareTag(null)}
                         >
-                          <span className="tag-icon">{isMatched ? "âœ“" : "âœ—"}</span>
+                          <span className="tag-icon">{isMatched ? "✓" : "✗"}</span>
                           <span className="tag-text">{jQual}</span>
                         </span>
                       );
@@ -2016,7 +2012,7 @@ export default function ApplicantDetailsModal({
                           onMouseEnter={() => setHoveredCompareTag({ item: jCert, side: "employer", category: "certifications" })}
                           onMouseLeave={() => setHoveredCompareTag(null)}
                         >
-                          <span className="tag-icon">{isMatched ? "âœ“" : "âœ—"}</span>
+                          <span className="tag-icon">{isMatched ? "✓" : "✗"}</span>
                           <span className="tag-text">{jCert}</span>
                         </span>
                       );
@@ -2033,7 +2029,7 @@ export default function ApplicantDetailsModal({
         </aside>
       )}
 
-      {/* â”€â”€ SIDE PANEL 2: MESSAGES â”€â”€ */}
+      {/* ── SIDE PANEL 2: MESSAGES ── */}
       {activeSideTab === "messages" && (
         <aside
           className="applicant-side-comparison-panel cand-message-side-panel jd-side-comparison-panel"
@@ -2078,7 +2074,7 @@ export default function ApplicantDetailsModal({
               onClick={() => setActiveSideTab(null)}
               aria-label="Close panel"
             >
-              âœ•
+              ✕
             </button>
           </div>
 
@@ -2577,7 +2573,7 @@ export default function ApplicantDetailsModal({
         </aside>
       )}
 
-      {/* â”€â”€ SIDE PANEL 3: OTHER EMPLOYER JOBS â”€â”€ */}
+      {/* ── SIDE PANEL 3: OTHER EMPLOYER JOBS ── */}
       {activeSideTab === "other-jobs" && (
         <aside
           className="applicant-side-comparison-panel jd-side-comparison-panel"
@@ -2614,7 +2610,7 @@ export default function ApplicantDetailsModal({
                 onClick={() => setActiveSideTab(null)}
                 aria-label="Close panel"
               >
-                âœ•
+                ✕
               </button>
             </div>
           </div>
@@ -2719,7 +2715,7 @@ export default function ApplicantDetailsModal({
       )}
     </div>
     {renderBreakdownPopupModal()}
-    {/* â”€â”€ Standardized Job Details Modal (from JobDetailsModal.tsx) â”€â”€ */}
+    {/* ── Standardized Job Details Modal (from JobDetailsModal.tsx) ── */}
     <JobDetailsModal
       isOpen={Boolean(selectedPreviewJob)}
       onClose={() => setSelectedPreviewJob(null)}
@@ -2786,7 +2782,7 @@ export default function ApplicantDetailsModal({
       hideEmployerHeader={true}
       zIndex={45000}
     />
-      {/* â”€â”€ FORMAL LETTER VIEWER MODAL â”€â”€ */}
+      {/* ── FORMAL LETTER VIEWER MODAL ── */}
       {viewLetterModalTarget && (
         <div
           className="view-letter-backdrop"
@@ -2797,7 +2793,7 @@ export default function ApplicantDetailsModal({
             className="view-letter-pair-row"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* â”€â”€ LEFT MODAL: THE LETTER FROM THE SENDER (Employer Offer Letter) â”€â”€ */}
+            {/* ── LEFT MODAL: THE LETTER FROM THE SENDER (Employer Offer Letter) ── */}
             <div className="view-letter-modal-card">
               <div className="view-letter-header">
                 <div>
@@ -2812,7 +2808,7 @@ export default function ApplicantDetailsModal({
                   title="Close"
                   aria-label="Close"
                 >
-                  âœ•
+                  ✕
                 </button>
               </div>
 
@@ -2848,7 +2844,7 @@ export default function ApplicantDetailsModal({
               </div>
             </div>
 
-            {/* â”€â”€ RIGHT MODAL: USERS RESPONSE â”€â”€ */}
+            {/* ── RIGHT MODAL: USERS RESPONSE ── */}
             {(viewLetterModalTarget.decision === "accepted" || viewLetterModalTarget.decision === "declined") && (
               <div className="view-letter-modal-card view-letter-response-modal">
                   <div className="view-letter-header" style={{ alignItems: "center" }}>
@@ -2864,7 +2860,7 @@ export default function ApplicantDetailsModal({
                       title="Close"
                       aria-label="Close"
                     >
-                      âœ•
+                      ✕
                     </button>
                   </div>
 

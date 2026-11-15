@@ -3234,18 +3234,20 @@ export default function Messages() {
       />
 
       {/* Candidate Profile Details Modal (Employer View - Standardized ApplicantDetailsModal) */}
-      <ApplicantDetailsModal
-        isOpen={Boolean(selectedCandidateDetails)}
-        onClose={() => {
-          setSelectedCandidateDetails(null);
-          setIsDocsDrawerOpen(false);
-          setIsPreviewingDoc(false);
-          setCandidateDocuments([]);
-          setPreviewDoc(null);
-        }}
-        candidate={selectedCandidateDetails}
-        employerJobs={employerJobs}
-      />
+      {selectedCandidateDetails && (
+        <ApplicantDetailsModal
+          isOpen={Boolean(selectedCandidateDetails)}
+          onClose={() => {
+            setSelectedCandidateDetails(null);
+            setIsDocsDrawerOpen(false);
+            setIsPreviewingDoc(false);
+            setCandidateDocuments([]);
+            setPreviewDoc(null);
+          }}
+          candidate={selectedCandidateDetails}
+          employerJobs={employerJobs}
+        />
+      )}
 
       {/* ── Standardized Job Details Modal (Applicant View - Clean Base Modal) ── */}
       <JobDetailsModal

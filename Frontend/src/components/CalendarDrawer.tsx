@@ -2113,7 +2113,7 @@ export default function CalendarDrawer({
       )}
 
       {/* ── STANDALONE APPLICANT DETAILS MODAL (ApplicantDetailsModal.tsx) ── */}
-      {typeof document !== "undefined" && isDetailsModalOpen && createPortal(
+      {typeof document !== "undefined" && isDetailsModalOpen && detailsCandidate && createPortal(
         <div className="cal-drawer-details-modal-portal">
           <ApplicantDetailsModal
             isOpen={isDetailsModalOpen}
