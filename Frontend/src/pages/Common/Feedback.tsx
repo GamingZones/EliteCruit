@@ -2329,6 +2329,7 @@ export default function Feedback() {
               setIsMsgPanelOpen(false);
               setIsMsgPanelClosing(false);
             }}
+            hideOtherJobsTab={true}
             candidate={{
               user_id: detailsJob.applicantUserId || detailsJob.id,
               applicant_name: detailsJob.name,
