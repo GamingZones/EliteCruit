@@ -4,6 +4,7 @@ import { JobDetailsModal, type JobModalData } from "../../components/modals";
 import { authFetch } from "../../utils/auth";
 import { ParsedSpecialMessage, parseSpecialMessage } from "../../utils/specialMessages";
 import {
+  formatLocationWithCavite,
   isSkillMatch,
   isCertificationMatch,
   evaluateSkillRequirementMatch,
@@ -646,8 +647,16 @@ export default function EmployerApplicantDetailsModal({
       ? `${candidate.first_name || ""} ${candidate.last_name || ""}`.trim()
       : "Applicant Details");
 
-  const locationStr =
-    candidate.city || candidate.province || candidate.address || "Cavite";
+  const locationStr = (() => {
+    if (candidate.city && candidate.province) {
+      const c = candidate.city.trim();
+      const p = candidate.province.trim();
+      if (c.toLowerCase().includes(p.toLowerCase())) return c;
+      return `${c}, ${p}`;
+    }
+    const raw = candidate.city || candidate.province || candidate.address;
+    return formatLocationWithCavite(raw);
+  })();
 
   const parseItemList = (data: any, fallback: string[] = []): string[] => {
     if (!data) return fallback;
@@ -1292,9 +1301,21 @@ export default function EmployerApplicantDetailsModal({
                   </span>
                 )}
               </div>
-              <div>
-                <strong className="cand-details-name">{displayName}</strong>
-                <span className="cand-details-location" style={{ display: "inline-flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginTop: "3px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}>
+                  <div className="rating-score-box" title="Applicant rating">
+                    <span className="star-icon">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                      </svg>
+                    </span>
+                    <span>{candidate.rating ? Number(candidate.rating).toFixed(1) : "0.0"}</span>
+                  </div>
+                  <strong className="cand-details-name" style={{ margin: 0 }}>{displayName}</strong>
+                </div>
+
+                {/* ROW 1: Location and Gender on top */}
+                <span className="cand-details-location" style={{ display: "inline-flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginTop: "2px" }}>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
                     <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" />
@@ -1314,9 +1335,12 @@ export default function EmployerApplicantDetailsModal({
                       </span>
                     </>
                   )}
-                  {candidate.email && (
-                    <>
-                      <span style={{ color: "#cbd5e1" }}>•</span>
+                </span>
+
+                {/* ROW 2: Email and Phone number below */}
+                {(candidate.email || candidate.phone) && (
+                  <span className="cand-details-contact" style={{ display: "inline-flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginTop: "1px" }}>
+                    {candidate.email && (
                       <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
                         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                           <rect x="2" y="4" width="20" height="16" rx="2" />
@@ -1324,32 +1348,24 @@ export default function EmployerApplicantDetailsModal({
                         </svg>
                         {candidate.email}
                       </span>
-                    </>
-                  )}
-                  {candidate.phone && (
-                    <>
+                    )}
+                    {candidate.email && candidate.phone && (
                       <span style={{ color: "#cbd5e1" }}>•</span>
+                    )}
+                    {candidate.phone && (
                       <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
                         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                         </svg>
                         {candidate.phone}
                       </span>
-                    </>
-                  )}
-                </span>
+                    )}
+                  </span>
+                )}
               </div>
             </div>
 
             <div className="cand-details-header-right">
-              <div className="rating-score-box" title="Applicant rating">
-                <span className="star-icon">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                  </svg>
-                </span>
-                <span>{candidate.rating ? Number(candidate.rating).toFixed(1) : "0.0"}</span>
-              </div>
               {(() => {
                 const scoreToShow = candidate.match_percentage != null ? Number(candidate.match_percentage) : matchDetails.score;
                 return (
@@ -1425,42 +1441,6 @@ export default function EmployerApplicantDetailsModal({
               {/* TAB 1: PERSONAL & CONTACT */}
               {candDetailTab === "personal" && (
                 <div className="cand-tab-content">
-                  <div className="cand-details-card">
-                    <h4 className="cand-details-card-title">
-                      Personal Details
-                    </h4>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
-                      <div className="company-info-card">
-                        <small className="company-info-card-label">Gender</small>
-                        <span className="company-info-card-val" style={{ fontWeight: 600 }}>
-                          {candidate.gender || "Prefer not to say"}
-                        </span>
-                      </div>
-                      <div className="company-info-card">
-                        <small className="company-info-card-label">Location</small>
-                        <span className="company-info-card-val">
-                          {locationStr}
-                        </span>
-                      </div>
-                      {candidate.phone && (
-                        <div className="company-info-card">
-                          <small className="company-info-card-label">Phone Number</small>
-                          <span className="company-info-card-val">
-                            {candidate.phone}
-                          </span>
-                        </div>
-                      )}
-                      {candidate.email && (
-                        <div className="company-info-card">
-                          <small className="company-info-card-label">Email Address</small>
-                          <span className="company-info-card-val">
-                            {candidate.email}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
                   <div className="cand-details-card">
                     <h4 className="cand-details-card-title">
                       Professional Summary

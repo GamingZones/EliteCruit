@@ -2051,54 +2051,83 @@ export default function CalendarDrawer({
                           );
                         })()}
                       </div>
-                      <div className="applicant-details-names-col">
-                        <strong className="applicant-details-candidate-name">
-                          {viewingApplicantDetails.full_name}
-                        </strong>
-                        <span className="applicant-details-sub-meta">
-                          <span>
+                      <div className="applicant-details-names-col" style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}>
+                          <div className="rating-score-box" title="Applicant rating">
+                            <span className="star-icon">
+                              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                              </svg>
+                            </span>
+                            <span>{viewingApplicantProfile?.rating ? Number(viewingApplicantProfile.rating).toFixed(1) : (viewingApplicantDetails.rating ? Number(viewingApplicantDetails.rating).toFixed(1) : "0.0")}</span>
+                          </div>
+                          <strong className="applicant-details-candidate-name" style={{ margin: 0 }}>
+                            {viewingApplicantDetails.full_name}
+                          </strong>
+                        </div>
+
+                        {/* ROW 1: Location and Gender on top */}
+                        <span className="applicant-details-sub-meta" style={{ display: "inline-flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginTop: "2px" }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
                             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" />
                               <circle cx="12" cy="10" r="2.5" />
                             </svg>
-                            {formatLocationWithCavite(viewingApplicantProfile?.city || viewingApplicantDetails.city || "Cavite")}
+                            {(() => {
+                              const city = viewingApplicantProfile?.city || viewingApplicantDetails.city;
+                              const prov = viewingApplicantProfile?.province || viewingApplicantDetails.province;
+                              if (city && prov) {
+                                const c = city.trim();
+                                const p = prov.trim();
+                                if (c.toLowerCase().includes(p.toLowerCase())) return c;
+                                return `${c}, ${p}`;
+                              }
+                              return formatLocationWithCavite(city || prov || "Cavite");
+                            })()}
                           </span>
-                          {(viewingApplicantProfile?.email || viewingApplicantDetails.email) && (
+                          {(viewingApplicantProfile?.gender || viewingApplicantDetails.gender) && (
                             <>
                               <span style={{ color: "#cbd5e1" }}>•</span>
-                              <span>
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
                                 <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                                  <polyline points="22,6 12,13 2,6" />
+                                  <circle cx="12" cy="8" r="4" />
+                                  <path d="M6 21v-2a6 6 0 0 1 12 0v2" />
                                 </svg>
-                                {viewingApplicantProfile?.email || viewingApplicantDetails.email}
+                                {viewingApplicantProfile?.gender || viewingApplicantDetails.gender}
                               </span>
                             </>
                           )}
-                          {(viewingApplicantProfile?.phone || viewingApplicantDetails.phone) && (
-                            <>
+                        </span>
+
+                        {/* ROW 2: Email and Phone number below */}
+                        {((viewingApplicantProfile?.email || viewingApplicantDetails.email) || (viewingApplicantProfile?.phone || viewingApplicantDetails.phone)) && (
+                          <span className="applicant-details-sub-meta" style={{ display: "inline-flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginTop: "1px" }}>
+                            {(viewingApplicantProfile?.email || viewingApplicantDetails.email) && (
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <rect x="2" y="4" width="20" height="16" rx="2" />
+                                  <path d="m22 7-10 7L2 7" />
+                                </svg>
+                                {viewingApplicantProfile?.email || viewingApplicantDetails.email}
+                              </span>
+                            )}
+                            {(viewingApplicantProfile?.email || viewingApplicantDetails.email) && (viewingApplicantProfile?.phone || viewingApplicantDetails.phone) && (
                               <span style={{ color: "#cbd5e1" }}>•</span>
-                              <span>
+                            )}
+                            {(viewingApplicantProfile?.phone || viewingApplicantDetails.phone) && (
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
                                 <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                   <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                                 </svg>
                                 {viewingApplicantProfile?.phone || viewingApplicantDetails.phone}
                               </span>
-                            </>
-                          )}
-                        </span>
+                            )}
+                          </span>
+                        )}
                       </div>
                     </div>
 
                     <div className="applicant-details-header-actions">
-                      <div className="rating-score-box" title="Applicant rating">
-                        <span className="star-icon">
-                          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                          </svg>
-                        </span>
-                        <span>{viewingApplicantProfile?.rating ? Number(viewingApplicantProfile.rating).toFixed(1) : (viewingApplicantDetails.rating ? Number(viewingApplicantDetails.rating).toFixed(1) : "0.0")}</span>
-                      </div>
                       <div className={`match-score-box ${getMatchColorClass(viewingApplicantDetails.match_percentage || 95)}`} title="Match score">
                         <small>MATCH</small>
                         <b>{viewingApplicantDetails.match_percentage || 95}%</b>

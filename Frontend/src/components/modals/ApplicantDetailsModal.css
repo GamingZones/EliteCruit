@@ -101,12 +101,13 @@
   line-height: 1.2;
 }
 
-.cand-details-location {
+.cand-details-location,
+.cand-details-contact {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  margin-top: 4px;
+  margin-top: 2px;
   font-size: 0.84rem;
   color: #64748b;
 }
@@ -522,7 +523,8 @@
   color: #f8fafc !important;
 }
 
-[data-theme="dark"] .cand-details-location {
+[data-theme="dark"] .cand-details-location,
+[data-theme="dark"] .cand-details-contact {
   color: #94a3b8 !important;
 }
 
