@@ -253,24 +253,16 @@ function computeNextArrangements(current: string[] = [], clickedArr: string): st
 
 function getArrangementSelectValue(arrs: string[] = []): string {
   if (!arrs || arrs.length === 0) return "On-Site";
-  if (
-    arrs.length >= 3 ||
-    (arrs.includes("On-Site") && arrs.includes("Hybrid") && arrs.includes("Remote")) ||
-    arrs.includes("All")
-  ) {
-    return "All";
+  const first = arrs[0];
+  if (first === "Remote" || first === "Hybrid" || first === "On-Site") {
+    return first;
   }
-  if (arrs.includes("On-Site") && arrs.includes("Hybrid")) return "On-Site, Hybrid";
-  if (arrs.includes("Hybrid") && arrs.includes("Remote")) return "Hybrid, Remote";
-  if (arrs.includes("On-Site") && arrs.includes("Remote")) return "On-Site, Remote";
-  if (arrs.includes("Hybrid")) return "Hybrid";
   if (arrs.includes("Remote")) return "Remote";
+  if (arrs.includes("Hybrid")) return "Hybrid";
   return "On-Site";
 }
 
 function parseArrangementSelectValue(val: string): string[] {
-  if (val === "All") return ["On-Site", "Hybrid", "Remote"];
-  if (val.includes(",")) return val.split(",").map((s) => s.trim()).filter(Boolean);
   return [val];
 }
 
@@ -5855,11 +5847,8 @@ export default function ApplicantProfile() {
                                       aria-label="Work arrangement preference"
                                     >
                                       <option value="On-Site">On-Site</option>
-                                      <option value="Hybrid">Hybrid</option>
                                       <option value="Remote">Remote</option>
-                                      <option value="On-Site, Hybrid">On-Site & Hybrid</option>
-                                      <option value="Hybrid, Remote">Hybrid & Remote</option>
-                                      <option value="All">All Work Arrangements (Flexible)</option>
+                                      <option value="Hybrid">Hybrid</option>
                                     </select>
                                   </div>
                                 </div>
@@ -6216,11 +6205,8 @@ export default function ApplicantProfile() {
                                         aria-label="Work arrangement preference"
                                       >
                                         <option value="On-Site">On-Site</option>
-                                        <option value="Hybrid">Hybrid</option>
                                         <option value="Remote">Remote</option>
-                                        <option value="On-Site, Hybrid">On-Site & Hybrid</option>
-                                        <option value="Hybrid, Remote">Hybrid & Remote</option>
-                                        <option value="All">All Work Arrangements (Flexible)</option>
+                                        <option value="Hybrid">Hybrid</option>
                                       </select>
                                     </div>
                                   </div>
