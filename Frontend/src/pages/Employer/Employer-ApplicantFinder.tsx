@@ -4527,6 +4527,7 @@ export default function EmployerApplicantFinder() {
         {inviteJobsCandidate && !viewingJobDetails && !inviteCandidate && (
           <div
             className="standalone-other-jobs-overlay"
+            style={{ zIndex: 250000 }}
             onClick={() => setInviteJobsCandidate(null)}
           >
             <div
@@ -4697,7 +4698,7 @@ export default function EmployerApplicantFinder() {
 
         {/* INVITE / RECRUIT CONFIRMATION MODAL */}
         {inviteCandidate && (
-          <div className="cand-details-overlay" style={{ zIndex: 52000 }} onClick={() => setInviteCandidate(null)}>
+          <div className="cand-details-overlay" style={{ zIndex: 270000 }} onClick={() => setInviteCandidate(null)}>
             <div className="cand-details-panel cand-invite-panel" style={{ maxWidth: "560px", width: "94%", boxSizing: "border-box" }} onClick={(e) => e.stopPropagation()}>
               <div className="cand-details-docs-header">
                 <h3>Offer Job to Candidate</h3>
@@ -4912,7 +4913,7 @@ export default function EmployerApplicantFinder() {
                 })()
               }
               hideEmployerHeader={true}
-              zIndex={50000}
+              zIndex={260000}
             />
           );
         })()}

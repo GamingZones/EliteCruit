@@ -3832,7 +3832,7 @@
 .standalone-other-jobs-overlay {
   position: fixed;
   inset: 0;
-  z-index: 45000;
+  z-index: 250000 !important;
   display: flex;
   align-items: center;
   justify-content: center;
