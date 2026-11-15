@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import EmployerApplicantDetailsModal, { CandidateModalData } from "./EmployerApplicantDetailsModal";
+import ApplicantDetailsModal, { CandidateModalData } from "../../components/modals/ApplicantDetailsModal";
 import { ChevronIcon, SideIcon } from "../../components/Icons";
 import { useEmployerCompanyLabel } from "../../hooks/useEmployerCompanyLabel";
 import { useUnreadNotificationsCount } from "../../hooks/useUnreadNotificationsCount";
@@ -4552,9 +4552,9 @@ export default function EmployerApplicantManagement() {
           </section>
         )}
 
-        {/* CANDIDATE DETAILS MODAL (EmployerApplicantDetailsModal.tsx) */}
+        {/* CANDIDATE DETAILS MODAL (ApplicantDetailsModal.tsx) */}
         {typeof document !== "undefined" && reviewModalApp && createPortal(
-          <EmployerApplicantDetailsModal
+          <ApplicantDetailsModal
             isOpen={!!reviewModalApp}
             onClose={() => {
               setReviewModalApp(null);

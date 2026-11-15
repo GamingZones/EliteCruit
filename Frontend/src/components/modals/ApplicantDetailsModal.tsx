@@ -1,5 +1,7 @@
-import React, { useState, useMemo } from "react";
+﻿import React, { useState, useMemo } from "react";
 import "./ApplicantDetailsModal.css";
+import JobDetailsModal, { type JobModalData } from "./JobDetailsModal";
+import { authFetch } from "../../utils/auth";
 import { ParsedSpecialMessage, parseSpecialMessage } from "../../utils/specialMessages";
 import {
   formatLocationWithCavite,
@@ -7,7 +9,11 @@ import {
   isCertificationMatch,
   evaluateSkillRequirementMatch,
   calculateJobMatchDetails,
+  calculateCandidateMatch,
   getMatchColorClass,
+  parseCompetencyDisplayTags,
+  parseExpectedSalary,
+  parseItemList,
   CATEGORIZED_JOB_ROLES,
   splitTopLevelTokens,
   lookupCategoryForSkill,
@@ -190,7 +196,7 @@ function parseBreakdownCertItems(raw?: string | null, fallbackTags: string[] = [
     } catch {}
 
     if (items.length === 0) {
-      const rawTokens = raw.split(/[\n,;•|]+/);
+      const rawTokens = raw.split(/[\n,;â€¢|]+/);
       rawTokens.forEach((tok) => {
         const item = parseToken(tok);
         if (item) items.push(item);
@@ -236,6 +242,7 @@ export type WorkExpItem = {
 
 export type CandidateModalData = {
   user_id?: number | string;
+  applicant_user_id?: number | string;
   id?: number | string;
   applicant_name?: string;
   name?: string;
@@ -285,7 +292,7 @@ export type CandidateModalData = {
 };
 
 function formatDate(iso?: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "â€”";
   try {
     const d = new Date(iso);
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -308,10 +315,17 @@ export type ApplicantDetailsModalProps = {
     skills?: string | string[];
     qualifications?: string | string[];
     certifications?: string | string[];
+    salary_min?: number | string;
+    salary_max?: number | string;
+    description?: string;
+    [key: string]: any;
   }>;
   currentEmployerUserId?: number | string | null;
-  initialSideTab?: "breakdown" | "messages" | null;
+  initialSideTab?: "breakdown" | "messages" | "other-jobs" | null;
+  onViewJobDetails?: (job: any) => void;
 };
+
+export type EmployerApplicantDetailsModalProps = ApplicantDetailsModalProps;
 
 export default function ApplicantDetailsModal({
   isOpen,
@@ -321,6 +335,7 @@ export default function ApplicantDetailsModal({
   employerJobs = [],
   currentEmployerUserId = null,
   initialSideTab = null,
+  onViewJobDetails,
 }: ApplicantDetailsModalProps) {
   const [candDetailTab, setCandDetailTab] = useState<"personal" | "preferences" | "competencies" | "experience">("personal");
   const [isDocsDrawerOpen, setIsDocsDrawerOpen] = useState(false);
@@ -328,13 +343,105 @@ export default function ApplicantDetailsModal({
   const [isDocsLoading, setIsDocsLoading] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<{ file_name: string; url: string } | null>(null);
 
-  // Side Panel Tabs state: "breakdown" | "messages" | null
-  const [activeSideTab, setActiveSideTab] = useState<"breakdown" | "messages" | null>(initialSideTab || null);
+  // Side Panel Tabs state: "breakdown" | "messages" | "other-jobs" | null
+  const [activeSideTab, setActiveSideTab] = useState<"breakdown" | "messages" | "other-jobs" | null>(initialSideTab || null);
+  const [selectedPreviewJob, setSelectedPreviewJob] = useState<any | null>(null);
   const [activeBreakdownPopup, setActiveBreakdownPopup] = useState<{
     type: "skills" | "certifications";
     category: string;
   } | null>(null);
   const [hoveredCompareTag, setHoveredCompareTag] = useState<{ item: string; side: "applicant" | "employer"; category: string } | null>(null);
+
+  // Direct Recruitment Invitation Modal state (Invite Candidate to Apply)
+  const [isRecruitModalOpen, setIsRecruitModalOpen] = useState(false);
+  const [isRecruitModalClosing, setIsRecruitModalClosing] = useState(false);
+  const [recruitTargetJob, setRecruitTargetJob] = useState<any | null>(null);
+  const [recruitCustomMsg, setRecruitCustomMsg] = useState("");
+  const [isRecruitSending, setIsRecruitSending] = useState(false);
+  const [recruitSuccessMsg, setRecruitSuccessMsg] = useState<string | null>(null);
+  const [recruitErrorMsg, setRecruitErrorMsg] = useState<string | null>(null);
+
+  const handleOpenRecruitModal = (job: any) => {
+    if (!candidate || !job) return;
+    setRecruitTargetJob(job);
+    const candName =
+      candidate.applicant_name ||
+      candidate.name ||
+      (candidate.first_name || candidate.last_name
+        ? `${candidate.first_name || ""} ${candidate.last_name || ""}`.trim()
+        : "Candidate");
+    setRecruitCustomMsg(
+      `Hello ${candName}! We reviewed your profile and would like to invite you to apply for our open position: ${job?.title || "our open position"}.`
+    );
+    setRecruitSuccessMsg(null);
+    setRecruitErrorMsg(null);
+    setIsRecruitModalOpen(true);
+  };
+
+  const closeRecruitModal = () => {
+    setIsRecruitModalClosing(true);
+    setTimeout(() => {
+      setIsRecruitModalOpen(false);
+      setIsRecruitModalClosing(false);
+      setRecruitTargetJob(null);
+      setRecruitSuccessMsg(null);
+      setRecruitErrorMsg(null);
+    }, 200);
+  };
+
+  const handleSendRecruitmentInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!candidate || !recruitTargetJob) return;
+
+    const rawUser = localStorage.getItem("elitecruit-user");
+    let employerUserId = currentEmployerUserId;
+    if (!employerUserId && rawUser) {
+      try {
+        employerUserId = JSON.parse(rawUser)?.id;
+      } catch {}
+    }
+    if (!employerUserId) return;
+
+    const targetApplicantUserId = candidate.applicant_user_id || candidate.user_id || candidate.id;
+    if (!targetApplicantUserId) return;
+
+    setIsRecruitSending(true);
+    setRecruitSuccessMsg(null);
+    setRecruitErrorMsg(null);
+
+    try {
+      const res = await authFetch(`/api/employers/${employerUserId}/invite-candidate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          applicant_user_id: targetApplicantUserId,
+          job_post_id: recruitTargetJob.id,
+          custom_message: recruitCustomMsg,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const candName =
+          candidate.applicant_name ||
+          candidate.name ||
+          (candidate.first_name || candidate.last_name
+            ? `${candidate.first_name || ""} ${candidate.last_name || ""}`.trim()
+            : "Candidate");
+        setRecruitSuccessMsg(`Invitation successfully sent to ${candName}!`);
+        setTimeout(() => {
+          closeRecruitModal();
+          setSelectedPreviewJob(null);
+        }, 1500);
+      } else {
+        setRecruitErrorMsg(data.message || "Failed to send invitation.");
+      }
+    } catch (err) {
+      console.error("Error sending invite:", err);
+      setRecruitErrorMsg("Network error sending invitation. Please try again.");
+    } finally {
+      setIsRecruitSending(false);
+    }
+  };
 
   // Candidate Messages state & handlers
   const [candMsgThread, setCandMsgThread] = useState<any | null>(null);
@@ -399,10 +506,16 @@ export default function ApplicantDetailsModal({
       setPreviewDoc(null);
       setCandDetailTab("personal");
       setActiveSideTab(null);
+      setSelectedPreviewJob(null);
       setActiveBreakdownPopup(null);
       setCandMessages([]);
       setCandMsgThread(null);
       setCandMsgInput("");
+      setIsRecruitModalOpen(false);
+      setIsRecruitModalClosing(false);
+      setRecruitTargetJob(null);
+      setRecruitSuccessMsg(null);
+      setRecruitErrorMsg(null);
     }
   }, [isOpen, initialSideTab]);
 
@@ -576,7 +689,7 @@ export default function ApplicantDetailsModal({
     } catch {}
     return String(data)
       .replace(/^[\[\(\{]+|[\]\)\}]+$/g, "")
-      .split(/[,;\n•|]+/)
+      .split(/[,;\nâ€¢|]+/)
       .map((t) => t.trim().replace(/^["']+|["']+$/g, "").trim())
       .filter(Boolean);
   };
@@ -706,11 +819,14 @@ export default function ApplicantDetailsModal({
     .slice(0, 2)
     .toUpperCase();
 
-  const allQuals = parseItemList(candidate.qualifications, []);
+  const candSkills = parseCompetencyDisplayTags(candidate.skills, "skills");
+  const candQuals = parseCompetencyDisplayTags(candidate.qualifications, "qualifications");
+  const candCerts = parseCompetencyDisplayTags(candidate.certifications, "certifications");
+  const allQuals = candQuals;
   const shsList = allQuals.filter(isShsItem);
   const collegeList = allQuals.filter((q) => !isShsItem(q));
-  const skillsList = parseItemList(candidate.skills, []);
-  const certList = parseItemList(candidate.certifications, []);
+  const skillsList = candSkills;
+  const certList = candCerts;
   const langList = parseItemList(candidate.languages, []);
   const prefLocs = parseItemList(candidate.preferred_locations, []);
 
@@ -722,30 +838,32 @@ export default function ApplicantDetailsModal({
     } catch {}
   }
 
-  const candSkills = skillsList;
-  const candQuals = allQuals;
-  const candCerts = certList;
   const targetJobTitle = candidate.job_title || candidate.desired_job_title || "Job Position";
-  const targetJob = (employerJobs || []).find(
-    (j) => j.title.toLowerCase() === targetJobTitle.toLowerCase()
-  ) || {
-    id: 1,
-    title: targetJobTitle,
-    location: locationStr,
-    work_arrangement: candidate.work_arrangement || "On-Site",
-  };
-  const jobSkills = parseItemList(
-    (targetJob as any).required_skills || (targetJob as any).skills,
-    candSkills.length > 0 ? candSkills.slice(0, 5) : ["Frontend Development", "UI/UX Design", "React", "TypeScript", "HTML/CSS"]
-  );
-  const jobQuals = parseItemList(
-    (targetJob as any).qualifications,
-    candQuals.length > 0 ? candQuals.slice(0, 2) : ["BS in Information Technology or Computer Science"]
-  );
-  const jobCerts = parseItemList(
-    (targetJob as any).certifications,
-    []
-  );
+  const candidateJobId = (candidate as any).job_id ?? (candidate as any).job_post_id;
+  const targetJob =
+    (employerJobs || []).find((j) => candidateJobId && Number(j.id) === Number(candidateJobId)) ||
+    (employerJobs || []).find((j) => j.title && targetJobTitle && j.title.toLowerCase().trim() === targetJobTitle.toLowerCase().trim()) ||
+    (employerJobs || []).find((j) => j.title && targetJobTitle && (j.title.toLowerCase().includes(targetJobTitle.toLowerCase()) || targetJobTitle.toLowerCase().includes(j.title.toLowerCase()))) ||
+    null;
+
+  const jobSkills = targetJob
+    ? parseCompetencyDisplayTags(
+        (targetJob as any).skillTags || (targetJob as any).required_skills || (targetJob as any).skills,
+        "skills"
+      )
+    : [];
+  const jobQuals = targetJob
+    ? parseCompetencyDisplayTags(
+        (targetJob as any).qualTags || (targetJob as any).qualifications || (targetJob as any).required_qualifications,
+        "qualifications"
+      )
+    : [];
+  const jobCerts = targetJob
+    ? parseCompetencyDisplayTags(
+        (targetJob as any).certTags || (targetJob as any).certifications || (targetJob as any).required_certifications,
+        "certifications"
+      )
+    : [];
 
   const groupedBreakdownSkills = useMemo(() => {
     return parseBreakdownSkillItems(
@@ -763,11 +881,11 @@ export default function ApplicantDetailsModal({
 
   const matchDetails = calculateJobMatchDetails(
     {
-      id: Number(targetJob.id) || 1,
-      title: targetJob.title,
-      location: targetJob.location || "Cavite",
-      salaryMin: 25000,
-      setup: targetJob.work_arrangement || "On-Site",
+      id: Number(targetJob?.id) || 1,
+      title: targetJob?.title || targetJobTitle,
+      location: targetJob?.location || locationStr,
+      salaryMin: Number(targetJob?.salary_min) || 0,
+      setup: targetJob?.work_arrangement || candidate.work_arrangement || "On-Site",
       skillTags: jobSkills,
       qualTags: jobQuals,
       certTags: jobCerts,
@@ -775,7 +893,7 @@ export default function ApplicantDetailsModal({
     {
       desiredJobTitle: candidate.desired_job_title || candidate.job_title || "",
       workArrangement: candidate.work_arrangement || "On-Site",
-      expectedSalary: candidate.expected_salary ? Number(candidate.expected_salary) : 30000,
+      expectedSalary: candidate.expected_salary ? parseExpectedSalary(candidate.expected_salary) : 0,
       city: candidate.city || "Cavite",
       skills: candSkills,
       qualifications: candQuals,
@@ -834,7 +952,7 @@ export default function ApplicantDetailsModal({
               onClick={() => setActiveBreakdownPopup(null)}
               aria-label="Close popup"
             >
-              ✕
+              âœ•
             </button>
           </div>
 
@@ -867,9 +985,9 @@ export default function ApplicantDetailsModal({
                     >
                       <span className="skill-popup-item-name">{item.name}</span>
                       <div className="skill-popup-item-actions">
-                        {item.year && !isCert && (
+                        {'year' in item && (item as BreakdownCourseSkillItem).year && !isCert && (
                           <span className="skill-popup-since-label">
-                            Since {item.year}
+                            Since {(item as BreakdownCourseSkillItem).year}
                           </span>
                         )}
                         {isCert && certItem.expiry && (
@@ -879,7 +997,7 @@ export default function ApplicantDetailsModal({
                         )}
                         {isRel && (
                           <span className="jd-match-status-pill matched">
-                            <span className="status-icon">✓</span> Matched with Job
+                            <span className="status-icon">âœ“</span> Matched with Job
                           </span>
                         )}
                       </div>
@@ -899,6 +1017,201 @@ export default function ApplicantDetailsModal({
               Done
             </button>
           </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render Direct Recruitment Invitation Modal (Pic 2)
+  const renderRecruitModal = () => {
+    if (!isRecruitModalOpen || !recruitTargetJob) return null;
+
+    const pic = profilePicSrc;
+    const targetTitle = recruitTargetJob.title || "Job Opening";
+    const targetLoc = recruitTargetJob.location || "Cavite";
+    const targetArrangement = recruitTargetJob.work_arrangement || recruitTargetJob.setup || "On-Site";
+
+    return (
+      <div
+        className="recruit-invite-overlay"
+        onClick={closeRecruitModal}
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 55000,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "rgba(1, 41, 74, 0.55)",
+          backdropFilter: "blur(4px)",
+          animation: isRecruitModalClosing
+            ? "jdFadeOut 0.2s ease forwards"
+            : "jdFadeIn 0.22s ease forwards",
+        }}
+      >
+        <div
+          className="cand-details-panel recruit-invite-panel"
+          style={{
+            maxWidth: "520px",
+            height: "auto",
+            minHeight: "unset",
+            width: "90%",
+            borderRadius: "16px",
+            background: "#ffffff",
+            boxShadow: "0 24px 60px rgba(0, 0, 0, 0.3)",
+            overflow: "hidden",
+            fontFamily: '"Inter", sans-serif',
+            animation: isRecruitModalClosing
+              ? "jdPopOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards"
+              : "jdPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div
+            className="recruit-invite-header"
+            style={{
+              padding: "16px 20px",
+              background: "#f8fbff",
+              borderBottom: "1px solid #e2e8f0",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#01294a", fontFamily: '"Inter", sans-serif' }}>
+              Invite Candidate to Apply
+            </h3>
+            <button
+              type="button"
+              className="recruit-invite-close"
+              onClick={closeRecruitModal}
+              style={{
+                background: "none",
+                border: "none",
+                fontSize: "1.2rem",
+                cursor: "pointer",
+                color: "#64748b",
+                padding: "4px",
+                lineHeight: 1,
+              }}
+            >
+              âœ•
+            </button>
+          </div>
+
+          <form onSubmit={handleSendRecruitmentInvite} className="recruit-invite-form" style={{ padding: "20px", display: "grid", gap: "16px", fontFamily: '"Inter", sans-serif' }}>
+            {/* Applicant Summary */}
+            <div className="recruit-applicant-summary" style={{ display: "flex", gap: "12px", alignItems: "center", padding: "12px 14px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+              <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "#01294a", color: "#fff", display: "grid", placeItems: "center", fontWeight: 700, fontSize: "0.85rem", flexShrink: 0, overflow: "hidden", position: "relative" }}>
+                {pic && (
+                  <img
+                    src={pic}
+                    alt={displayName}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLElement).style.display = "none";
+                      if (e.currentTarget.nextElementSibling) {
+                        (e.currentTarget.nextElementSibling as HTMLElement).style.display = "inline";
+                      }
+                    }}
+                  />
+                )}
+                <span style={{ display: pic ? "none" : "inline" }}>
+                  {initials}
+                </span>
+              </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <strong style={{ fontSize: "0.95rem", color: "#0f172a", display: "block", wordBreak: "break-word" }}>{displayName}</strong>
+                <small style={{ display: "block", color: "#64748b", fontSize: "0.78rem", wordBreak: "break-word" }}>
+                  {candidate.email || "Candidate"} {candidate.phone ? `Â· ${candidate.phone}` : ""}
+                </small>
+              </div>
+            </div>
+
+            {/* Target Job Info */}
+            <div className="recruit-target-job-box" style={{ padding: "12px 14px", background: "#eff6ff", borderRadius: "10px", border: "1px solid #bfdbfe", display: "flex", flexDirection: "column", gap: "4px" }}>
+              <span className="recruit-target-job-badge" style={{ fontSize: "0.75rem", fontWeight: 700, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: "0.5px" }}>Target Job Opening</span>
+              <h4 className="recruit-target-job-title" style={{ margin: 0, fontSize: "0.98rem", fontWeight: 800, color: "#01294a" }}>{targetTitle}</h4>
+              <span className="recruit-target-job-meta" style={{ fontSize: "0.8rem", color: "#475569" }}>{targetLoc} â€¢ {targetArrangement}</span>
+            </div>
+
+            {/* Invitation Message Field */}
+            <label style={{ display: "grid", gap: "6px", fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", fontFamily: '"Inter", sans-serif' }}>
+              Invitation Message:
+              <textarea
+                className="recruit-msg-textarea"
+                value={recruitCustomMsg}
+                onChange={(e) => setRecruitCustomMsg(e.target.value)}
+                rows={4}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #cbd5e1",
+                  fontSize: "0.85rem",
+                  fontFamily: '"Inter", sans-serif',
+                  boxSizing: "border-box",
+                  resize: "vertical",
+                  lineHeight: "1.5",
+                }}
+              />
+            </label>
+
+            {/* Success Banner */}
+            {recruitSuccessMsg && (
+              <div style={{ background: "#dcfce7", color: "#15803d", border: "1px solid #86efac", padding: "12px", borderRadius: "8px", fontSize: "0.85rem", fontWeight: 700 }}>
+                {recruitSuccessMsg}
+              </div>
+            )}
+
+            {/* Error Banner */}
+            {recruitErrorMsg && (
+              <div style={{ background: "#fee2e2", color: "#b91c1c", border: "1px solid #fca5a5", padding: "12px", borderRadius: "8px", fontSize: "0.85rem", fontWeight: 700 }}>
+                {recruitErrorMsg}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "4px" }}>
+              <button
+                type="button"
+                className="recruit-cancel-btn"
+                style={{
+                  padding: "9px 18px",
+                  borderRadius: "8px",
+                  border: "1px solid #cbd5e1",
+                  background: "#f8fafc",
+                  color: "#475569",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                  fontFamily: '"Inter", sans-serif',
+                }}
+                onClick={closeRecruitModal}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="recruit-send-btn"
+                disabled={isRecruitSending}
+                style={{
+                  padding: "9px 20px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "#01294a",
+                  color: "#ffffff",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                  fontFamily: '"Inter", sans-serif',
+                  opacity: isRecruitSending ? 0.7 : 1,
+                }}
+              >
+                {isRecruitSending ? "Sending..." : "Send Invitation"}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     );
@@ -946,7 +1259,7 @@ export default function ApplicantDetailsModal({
             border: "none",
           }}
         >
-          {/* ── FLOATING ACTION TABS ABOVE: Match Breakdown | Messages ── */}
+          {/* â”€â”€ FLOATING ACTION TABS ABOVE: Match Breakdown | Other Jobs | Messages â”€â”€ */}
           <div className="cal-modal-floating-tabs-container jd-floating-tabs-container">
             <button
               type="button"
@@ -954,6 +1267,13 @@ export default function ApplicantDetailsModal({
               onClick={() => setActiveSideTab((prev) => (prev === "breakdown" ? null : "breakdown"))}
             >
               <span>{activeSideTab === "breakdown" ? "Hide Breakdown" : "Match Breakdown"}</span>
+            </button>
+            <button
+              type="button"
+              className={`cal-modal-floating-tab jd-floating-breakdown-tab ${activeSideTab === "other-jobs" ? "active" : ""}`}
+              onClick={() => setActiveSideTab((prev) => (prev === "other-jobs" ? null : "other-jobs"))}
+            >
+              <span>{activeSideTab === "other-jobs" ? "Hide Other Jobs" : "Other Jobs"}</span>
             </button>
             <button
               type="button"
@@ -1008,7 +1328,7 @@ export default function ApplicantDetailsModal({
                   </span>
                   {candidate.gender && (
                     <>
-                      <span style={{ color: "#cbd5e1" }}>•</span>
+                      <span style={{ color: "#cbd5e1" }}>â€¢</span>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
                         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                           <circle cx="12" cy="8" r="4" />
@@ -1033,7 +1353,7 @@ export default function ApplicantDetailsModal({
                       </span>
                     )}
                     {candidate.email && candidate.phone && (
-                      <span style={{ color: "#cbd5e1" }}>•</span>
+                      <span style={{ color: "#cbd5e1" }}>â€¢</span>
                     )}
                     {candidate.phone && (
                       <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
@@ -1049,15 +1369,18 @@ export default function ApplicantDetailsModal({
             </div>
 
             <div className="cand-details-header-right">
-              {candidate.match_percentage != null && (
-                <div
-                  className={`match-score-box ${getMatchColorClass(Number(candidate.match_percentage))}`}
-                  title="Match score"
-                >
-                  <small>MATCH</small>
-                  <b>{candidate.match_percentage}%</b>
-                </div>
-              )}
+              {(() => {
+                const scoreToShow = candidate.match_percentage != null ? Number(candidate.match_percentage) : matchDetails.score;
+                return (
+                  <div
+                    className={`match-score-box ${getMatchColorClass(scoreToShow)}`}
+                    title="Match score"
+                  >
+                    <small>MATCH</small>
+                    <b>{scoreToShow}%</b>
+                  </div>
+                );
+              })()}
               <button
                 type="button"
                 className={`cand-details-docs-btn ${isDocsDrawerOpen ? "active" : ""}`}
@@ -1073,7 +1396,7 @@ export default function ApplicantDetailsModal({
                 aria-label="Close"
                 title="Close"
               >
-                ✕
+                âœ•
               </button>
             </div>
           </div>
@@ -1308,7 +1631,7 @@ export default function ApplicantDetailsModal({
                               <h4 className="cand-exp-title">{exp.title}</h4>
                               <span className="cand-exp-company">{exp.company}</span>
                               {(exp.city || exp.province) && (
-                                <span className="cand-exp-loc"> • {[exp.city, exp.province].filter(Boolean).join(", ")}</span>
+                                <span className="cand-exp-loc"> â€¢ {[exp.city, exp.province].filter(Boolean).join(", ")}</span>
                               )}
                             </div>
                             <div className="cand-exp-date">
@@ -1354,7 +1677,7 @@ export default function ApplicantDetailsModal({
                     else setIsDocsDrawerOpen(false);
                   }}
                 >
-                  ←
+                  â†
                 </button>
               </div>
               <div className="jd-faq-body">
@@ -1399,16 +1722,11 @@ export default function ApplicantDetailsModal({
             </div>
           </div>
 
-          {/* Modal Footer */}
-          <div className="cand-details-footer" style={{ display: "flex", justifyContent: (candidate.submitted_at || candidate.applied_date || candidate.job_title) ? "space-between" : "flex-end", alignItems: "center", width: "100%", gap: "10px" }}>
+          {/* Modal Footer (Target Job removed for Applicant Management) */}
+          <div className="cand-details-footer" style={{ display: "flex", justifyContent: (candidate.submitted_at || candidate.applied_date) ? "space-between" : "flex-end", alignItems: "center", width: "100%", gap: "10px" }}>
             <div className="cand-footer-meta jd-footer-meta" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               {(candidate.submitted_at || candidate.applied_date) && (
                 <span><strong>Applied On:</strong> {formatDate(candidate.submitted_at || candidate.applied_date)}</span>
-              )}
-              {candidate.job_title && (
-                <span className="cand-footer-target-job">
-                  Target Job: <strong>{candidate.job_title}</strong>
-                </span>
               )}
             </div>
             <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
@@ -1425,7 +1743,7 @@ export default function ApplicantDetailsModal({
         </div>
       </div>
 
-      {/* ── SIDE PANEL 1: MATCH BREAKDOWN (COMPETENCIES & REQUIREMENTS) ── */}
+      {/* â”€â”€ SIDE PANEL 1: MATCH BREAKDOWN (COMPETENCIES & REQUIREMENTS) â”€â”€ */}
       {activeSideTab === "breakdown" && (
         <aside
           className="applicant-side-comparison-panel jd-side-comparison-panel"
@@ -1465,7 +1783,7 @@ export default function ApplicantDetailsModal({
                 onClick={() => setActiveSideTab(null)}
                 aria-label="Close panel"
               >
-                ✕
+                âœ•
               </button>
             </div>
           </div>
@@ -1555,10 +1873,10 @@ export default function ApplicantDetailsModal({
                           : "tag-missing-red";
                       const icon =
                         evalResult.status === "matched"
-                          ? "✓"
+                          ? "âœ“"
                           : evalResult.status === "partial"
-                          ? "▲"
-                          : "✗";
+                          ? "â–²"
+                          : "âœ—";
                       const isSource = hoveredCompareTag?.side === "employer" && hoveredCompareTag?.item === item;
                       const isLinked = Boolean(hoveredCompareTag?.side === "applicant" && hoveredCompareTag?.category === "skills" && isSkillMatch(item, hoveredCompareTag.item));
                       return (
@@ -1598,7 +1916,7 @@ export default function ApplicantDetailsModal({
                           onMouseEnter={() => setHoveredCompareTag({ item, side: "applicant", category: "qualifications" })}
                           onMouseLeave={() => setHoveredCompareTag(null)}
                         >
-                          {isRel && <span className="tag-check">✓ </span>}
+                          {isRel && <span className="tag-check">âœ“ </span>}
                           <span className="tag-text">{item}</span>
                         </span>
                       );
@@ -1627,7 +1945,7 @@ export default function ApplicantDetailsModal({
                           onMouseEnter={() => setHoveredCompareTag({ item: jQual, side: "employer", category: "qualifications" })}
                           onMouseLeave={() => setHoveredCompareTag(null)}
                         >
-                          <span className="tag-icon">{isMatched ? "✓" : "✗"}</span>
+                          <span className="tag-icon">{isMatched ? "âœ“" : "âœ—"}</span>
                           <span className="tag-text">{jQual}</span>
                         </span>
                       );
@@ -1698,7 +2016,7 @@ export default function ApplicantDetailsModal({
                           onMouseEnter={() => setHoveredCompareTag({ item: jCert, side: "employer", category: "certifications" })}
                           onMouseLeave={() => setHoveredCompareTag(null)}
                         >
-                          <span className="tag-icon">{isMatched ? "✓" : "✗"}</span>
+                          <span className="tag-icon">{isMatched ? "âœ“" : "âœ—"}</span>
                           <span className="tag-text">{jCert}</span>
                         </span>
                       );
@@ -1715,7 +2033,7 @@ export default function ApplicantDetailsModal({
         </aside>
       )}
 
-      {/* ── SIDE PANEL 2: MESSAGES ── */}
+      {/* â”€â”€ SIDE PANEL 2: MESSAGES â”€â”€ */}
       {activeSideTab === "messages" && (
         <aside
           className="applicant-side-comparison-panel cand-message-side-panel jd-side-comparison-panel"
@@ -1760,7 +2078,7 @@ export default function ApplicantDetailsModal({
               onClick={() => setActiveSideTab(null)}
               aria-label="Close panel"
             >
-              ✕
+              âœ•
             </button>
           </div>
 
@@ -1807,7 +2125,7 @@ export default function ApplicantDetailsModal({
                       fontSize: "1.4rem",
                     }}
                   >
-                    💬
+                    ðŸ’¬
                   </div>
                   <h4 className="cand-msg-empty-title" style={{ margin: 0, fontSize: "1rem", fontWeight: 800 }}>
                     Start a conversation
@@ -1825,7 +2143,7 @@ export default function ApplicantDetailsModal({
                     const timeStr = msg.created_at
                       ? new Date(msg.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
                       : "";
-                    const employerCompanyName = (employerJobs && (employerJobs[0] as any)?.company_name) || (employerJobs && (employerJobs[0] as any)?.business_name) || "Company";
+                    const employerCompanyName = (employerJobs && employerJobs[0]?.company_name) || (employerJobs && employerJobs[0]?.business_name) || "Company";
                     const special = parseSpecialMessage(msg.message_text);
 
                     if (special.type === "formal_offer") {
@@ -2258,77 +2576,281 @@ export default function ApplicantDetailsModal({
           </div>
         </aside>
       )}
-      {/* View Letter Modal (Side-by-Side Dual Modals for Approved / Declined Offers) */}
-      {viewLetterModalTarget && (() => {
-        const hasDecision = viewLetterModalTarget.decision === "accepted" || viewLetterModalTarget.decision === "declined";
-        const offerText = viewLetterModalTarget.offerLetter || `Dear Candidate,\n\nCongratulations! On behalf of ${viewLetterModalTarget.company || "the company"}, we are thrilled to formally extend an offer of employment for the position of "${viewLetterModalTarget.title}".\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!`;
-        const isAcc = viewLetterModalTarget.decision === "accepted";
-        const responseText = viewLetterModalTarget.letterText || (isAcc
-          ? `Dear ${viewLetterModalTarget.company || "Hiring Team"},\n\nThank you for extending the offer for the position of "${viewLetterModalTarget.title}". I am pleased to accept your offer and excited to join the team.\n\nSincerely,\nCandidate`
-          : `Dear ${viewLetterModalTarget.company || "Hiring Team"},\n\nThank you for considering me for the position of "${viewLetterModalTarget.title}". After careful consideration, I regret to inform you that I must decline this offer.\n\nSincerely,\nCandidate`);
 
-        return (
-          <div
-            className="view-letter-backdrop"
-            onClick={() => setViewLetterModalTarget(null)}
-            style={{ zIndex: 100000 }}
-          >
-            <div
-              className="view-letter-pair-row"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* ── LEFT MODAL: THE LETTER FROM THE SENDER (Employer Offer Letter) ── */}
-              <div className="view-letter-modal-card">
-                <div className="view-letter-header">
-                  <div>
-                    <span className="view-letter-eyebrow">OFFICIAL CORRESPONDENCE</span>
-                    <h3 className="view-letter-title">{viewLetterModalTarget.title}</h3>
-                    <p className="view-letter-company">{viewLetterModalTarget.company}</p>
+      {/* â”€â”€ SIDE PANEL 3: OTHER EMPLOYER JOBS â”€â”€ */}
+      {activeSideTab === "other-jobs" && (
+        <aside
+          className="applicant-side-comparison-panel jd-side-comparison-panel"
+          style={{
+            width: "480px",
+            maxWidth: "min(480px, calc(100vw - 976px))",
+            minWidth: "320px",
+            flex: "1 1 440px",
+            alignSelf: "stretch",
+            height: "700px",
+            minHeight: "520px",
+            maxHeight: "88vh",
+            boxShadow: "0 25px 60px rgba(0, 0, 0, 0.35)",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            flexShrink: 1,
+            fontFamily: '"Inter", sans-serif',
+          }}
+        >
+          <div className="side-panel-header jd-side-panel-header">
+            <div className="side-title-row jd-side-title-row">
+              <h3 style={{ margin: 0, fontSize: "1.12rem", fontWeight: 800 }}>
+                Other Employer Jobs
+              </h3>
+              <span className="side-subtitle jd-side-subtitle" style={{ fontSize: "0.78rem", fontWeight: 600 }}>
+                Candidate compatibility across your active job postings
+              </span>
+            </div>
+            <div className="side-header-actions jd-side-header-actions">
+              <button
+                type="button"
+                className="side-close-btn jd-side-close-btn"
+                onClick={() => setActiveSideTab(null)}
+                aria-label="Close panel"
+              >
+                âœ•
+              </button>
+            </div>
+          </div>
+
+          <div className="side-panel-body jd-side-panel-body" style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "14px" }}>
+            {(() => {
+              const otherJobsList = (employerJobs || []).filter((j) => {
+                if (candidate.job_id && String(j.id) === String(candidate.job_id)) return false;
+                if (!candidate.job_id && candidate.job_title && j.title && j.title.trim().toLowerCase() === candidate.job_title.trim().toLowerCase()) return false;
+                return true;
+              });
+
+              if (otherJobsList.length === 0) {
+                return (
+                  <div style={{ textAlign: "center", color: "#64748b", padding: "30px 10px", fontSize: "0.9rem" }}>
+                    No other active job postings found for this employer.
                   </div>
-                  <button
-                    type="button"
-                    className="view-letter-close-btn"
-                    onClick={() => setViewLetterModalTarget(null)}
-                    title="Close"
-                    aria-label="Close"
+                );
+              }
+
+              return otherJobsList.map((otherJob) => {
+                const percent = calculateCandidateMatch(
+                  {
+                    desired_job_title: candidate.desired_job_title || candidate.job_title || "",
+                    work_arrangement: candidate.work_arrangement || "",
+                    expected_salary: candidate.expected_salary || 0,
+                    skills: candidate.skills || "",
+                    qualifications: candidate.qualifications || "",
+                    certifications: candidate.certifications || "",
+                    city: candidate.city || candidate.address || "",
+                  },
+                  {
+                    title: otherJob.title || "",
+                    work_arrangement: otherJob.work_arrangement || "",
+                    required_skills: otherJob.required_skills || otherJob.skills || "",
+                    required_qualifications: otherJob.qualifications || otherJob.required_qualifications || "",
+                    required_certifications: otherJob.certifications || otherJob.required_certifications || "",
+                    location: otherJob.location || "",
+                    salary_min: Number(otherJob.salary_min) || 0,
+                    salary_max: Number(otherJob.salary_max) || 0,
+                  }
+                );
+
+                const pillClass = percent >= 75 ? "green" : percent >= 50 ? "yellow" : "red";
+
+                return (
+                  <div
+                    key={otherJob.id}
+                    className="jd-other-job-card"
                   >
-                    ✕
-                  </button>
-                </div>
-
-                <div className="view-letter-body-content">
-                  <div className="view-letter-meta-row">
-                    {viewLetterModalTarget.decision && (
-                      <span className={`view-letter-badge ${viewLetterModalTarget.decision === "accepted" ? "accepted" : viewLetterModalTarget.decision === "declined" ? "declined" : "extended"}`}>
-                        {viewLetterModalTarget.decision === "accepted" ? "Offer Accepted" : viewLetterModalTarget.decision === "declined" ? "Offer Declined" : "Formal Offer Extended"}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="view-letter-body-box view-letter-offer-box">
-                    <div className="view-letter-box-header">
-                      <span className="view-letter-box-label offer-label">
-                        EMPLOYMENT OFFER LETTER FROM {viewLetterModalTarget.company?.toUpperCase() || "EMPLOYER"}
-                      </span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800 }}>
+                        {otherJob.title}
+                      </h4>
+                      <div className="jd-other-job-meta">
+                        <span>
+                          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" />
+                            <circle cx="12" cy="10" r="2.5" />
+                          </svg>
+                          {otherJob.location || "Cavite"}
+                        </span>
+                        <span>
+                          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                          </svg>
+                          {otherJob.work_arrangement || "On-Site"}
+                        </span>
+                        {otherJob.salary_min ? (
+                          <span>
+                            PHP {Number(otherJob.salary_min).toLocaleString()} - {Number(otherJob.salary_max).toLocaleString()}
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
-                    <pre className="view-letter-pre-text">{offerText}</pre>
+
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px", flexShrink: 0 }}>
+                      <div className={`jd-other-job-match-pill ${pillClass}`}>
+                        {percent}% Match
+                      </div>
+                      <button
+                        type="button"
+                        className="details-btn jd-other-job-details-btn"
+                        onClick={() => {
+                          if (onViewJobDetails) {
+                            onViewJobDetails(otherJob);
+                          } else {
+                            setSelectedPreviewJob(otherJob);
+                          }
+                        }}
+                      >
+                        Details
+                      </button>
+                    </div>
                   </div>
+                );
+              });
+            })()}
+          </div>
+        </aside>
+      )}
+    </div>
+    {renderBreakdownPopupModal()}
+    {/* â”€â”€ Standardized Job Details Modal (from JobDetailsModal.tsx) â”€â”€ */}
+    <JobDetailsModal
+      isOpen={Boolean(selectedPreviewJob)}
+      onClose={() => setSelectedPreviewJob(null)}
+      job={selectedPreviewJob ? {
+        id: selectedPreviewJob.id,
+        title: selectedPreviewJob.title,
+        company: selectedPreviewJob.company || selectedPreviewJob.company_name,
+        employerUserId: selectedPreviewJob.employerUserId || selectedPreviewJob.employer_user_id || currentEmployerUserId,
+        companyLogoPath: selectedPreviewJob.companyLogoPath || selectedPreviewJob.company_logo_path,
+        companyCoverPath: selectedPreviewJob.companyCoverPath || selectedPreviewJob.company_cover_path,
+        location: selectedPreviewJob.location,
+        rating: selectedPreviewJob.rating,
+        status: selectedPreviewJob.status || "open",
+        urgent: Boolean(selectedPreviewJob.urgent || selectedPreviewJob.is_urgent),
+        setup: selectedPreviewJob.work_arrangement || selectedPreviewJob.setup || "On-Site",
+        work_arrangement: selectedPreviewJob.work_arrangement,
+        salary_min: selectedPreviewJob.salary_min,
+        salary_max: selectedPreviewJob.salary_max,
+        experience_level: selectedPreviewJob.experience_level || selectedPreviewJob.experienceLevel,
+        summary: selectedPreviewJob.summary || selectedPreviewJob.description,
+        description: selectedPreviewJob.description || selectedPreviewJob.summary,
+        required_skills: selectedPreviewJob.required_skills || selectedPreviewJob.skills,
+        qualifications: selectedPreviewJob.qualifications,
+        certifications: selectedPreviewJob.certifications,
+        applicantCount: selectedPreviewJob.applicantCount ?? selectedPreviewJob.applicant_count ?? 0,
+        applicationLimit: selectedPreviewJob.applicationLimit ?? selectedPreviewJob.application_limit,
+        closeDate: selectedPreviewJob.closeDate || selectedPreviewJob.close_date,
+        faqs: selectedPreviewJob.faqs || [],
+      } : null}
+      applicantProfile={{
+        desiredJobTitle: candidate?.desired_job_title || candidate?.job_title,
+        workArrangement: candidate?.work_arrangement,
+        expectedSalary: Number(candidate?.expected_salary) || 0,
+        skills: parseItemList(candidate?.skills),
+        qualifications: parseItemList(candidate?.qualifications),
+        certifications: parseItemList(candidate?.certifications),
+        rawSkills: typeof candidate?.skills === "string" ? candidate?.skills : Array.isArray(candidate?.skills) ? candidate?.skills.join(", ") : undefined,
+        rawCertifications: typeof candidate?.certifications === "string" ? candidate?.certifications : Array.isArray(candidate?.certifications) ? candidate?.certifications.join(", ") : undefined,
+        city: candidate?.nearby_location || candidate?.city || candidate?.address,
+      }}
+      customFooterActions={
+        <button
+          type="button"
+          className="solid-btn jd-recruit-btn"
+          style={{
+            background: "#0284c7",
+            color: "#ffffff",
+            border: "none",
+            borderRadius: "8px",
+            padding: "10px 22px",
+            fontWeight: 700,
+            fontSize: "0.9rem",
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            transition: "all 0.15s ease",
+          }}
+          onClick={() => handleOpenRecruitModal(selectedPreviewJob)}
+        >
+          Invite
+        </button>
+      }
+      hideEmployerHeader={true}
+      zIndex={45000}
+    />
+      {/* â”€â”€ FORMAL LETTER VIEWER MODAL â”€â”€ */}
+      {viewLetterModalTarget && (
+        <div
+          className="view-letter-backdrop"
+          onClick={() => setViewLetterModalTarget(null)}
+          style={{ zIndex: 100000 }}
+        >
+          <div
+            className="view-letter-pair-row"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* â”€â”€ LEFT MODAL: THE LETTER FROM THE SENDER (Employer Offer Letter) â”€â”€ */}
+            <div className="view-letter-modal-card">
+              <div className="view-letter-header">
+                <div>
+                  <span className="view-letter-eyebrow">OFFICIAL CORRESPONDENCE</span>
+                  <h3 className="view-letter-title">{viewLetterModalTarget.title}</h3>
+                  <p className="view-letter-company">{viewLetterModalTarget.company}</p>
+                </div>
+                <button
+                  type="button"
+                  className="view-letter-close-btn"
+                  onClick={() => setViewLetterModalTarget(null)}
+                  title="Close"
+                  aria-label="Close"
+                >
+                  âœ•
+                </button>
+              </div>
+
+              <div className="view-letter-body-content">
+                <div className="view-letter-meta-row">
+                  {viewLetterModalTarget.decision && (
+                    <span className={`view-letter-badge ${viewLetterModalTarget.decision === "accepted" ? "accepted" : viewLetterModalTarget.decision === "declined" ? "declined" : "extended"}`}>
+                      {viewLetterModalTarget.decision === "accepted" ? "Offer Accepted" : viewLetterModalTarget.decision === "declined" ? "Offer Declined" : "Formal Offer Extended"}
+                    </span>
+                  )}
                 </div>
 
-                <div className="view-letter-footer">
-                  <button
-                    type="button"
-                    className="solid-btn view-letter-done-btn"
-                    onClick={() => setViewLetterModalTarget(null)}
-                  >
-                    Close
-                  </button>
+                <div className="view-letter-body-box view-letter-offer-box">
+                  <div className="view-letter-box-header">
+                    <span className="view-letter-box-label offer-label">
+                      EMPLOYMENT OFFER LETTER FROM {viewLetterModalTarget.company?.toUpperCase() || "EMPLOYER"}
+                    </span>
+                  </div>
+                  <pre className="view-letter-pre-text">
+                    {viewLetterModalTarget.offerLetter || `Dear Candidate,\n\nCongratulations! We are pleased to extend an offer of employment for the position of "${viewLetterModalTarget.title}".\n\nPlease review this official offer letter and submit your formal response.\n\nSincerely,\n${viewLetterModalTarget.company || "Employer"}`}
+                  </pre>
                 </div>
               </div>
 
-              {/* ── RIGHT MODAL: USERS RESPONSE (For Approved / Declined Offers) ── */}
-              {hasDecision && (
-                <div className="view-letter-modal-card view-letter-response-modal">
+              <div className="view-letter-footer">
+                <button
+                  type="button"
+                  className="solid-btn view-letter-done-btn"
+                  onClick={() => setViewLetterModalTarget(null)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+
+            {/* â”€â”€ RIGHT MODAL: USERS RESPONSE â”€â”€ */}
+            {(viewLetterModalTarget.decision === "accepted" || viewLetterModalTarget.decision === "declined") && (
+              <div className="view-letter-modal-card view-letter-response-modal">
                   <div className="view-letter-header" style={{ alignItems: "center" }}>
                     <div>
                       <h3 className="view-letter-title" style={{ fontSize: "1.15rem" }}>
@@ -2342,7 +2864,7 @@ export default function ApplicantDetailsModal({
                       title="Close"
                       aria-label="Close"
                     >
-                      ✕
+                      âœ•
                     </button>
                   </div>
 
@@ -2355,33 +2877,35 @@ export default function ApplicantDetailsModal({
                       </div>
                     )}
 
-                    <div className="view-letter-body-box">
-                      <div className="view-letter-box-header">
-                        <span className="view-letter-box-label">
-                          FORMAL RESPONSE LETTER
-                        </span>
-                      </div>
-                      <pre className="view-letter-pre-text">{responseText}</pre>
+                  <div className="view-letter-body-box">
+                    <div className="view-letter-box-header">
+                      <span className="view-letter-box-label">
+                        CANDIDATE SIGNED RESPONSE LETTER
+                      </span>
                     </div>
-                  </div>
-
-                  <div className="view-letter-footer">
-                    <button
-                      type="button"
-                      className="solid-btn view-letter-done-btn"
-                      onClick={() => setViewLetterModalTarget(null)}
-                    >
-                      Close
-                    </button>
+                    <pre className="view-letter-pre-text">
+                      {viewLetterModalTarget.letterText || (viewLetterModalTarget.decision === "declined"
+                        ? `Dear ${viewLetterModalTarget.company || "Hiring Team"},\n\nThank you for considering me for the position of "${viewLetterModalTarget.title}". After careful consideration, I regret to inform you that I must decline this offer.\n\nSincerely,\nCandidate`
+                        : `Dear ${viewLetterModalTarget.company || "Hiring Team"},\n\nThank you for extending the offer for the position of "${viewLetterModalTarget.title}". I am pleased to accept your offer and excited to join the team.\n\nSincerely,\nCandidate`)}
+                    </pre>
                   </div>
                 </div>
-              )}
-            </div>
+
+                <div className="view-letter-footer">
+                  <button
+                    type="button"
+                    className="solid-btn view-letter-done-btn"
+                    onClick={() => setViewLetterModalTarget(null)}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        );
-      })()}
-    </div>
-    {renderBreakdownPopupModal()}
+        </div>
+      )}
+    {renderRecruitModal()}
   </div>
   );
 }
