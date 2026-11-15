@@ -7430,7 +7430,7 @@ app.get("/api/interviews", async (req, res) => {
         whereClause += ` AND (
           i.applicant_user_id = ?
           OR i.candidate_user_ids @> to_jsonb(?::int)
-          OR (? IN (2, 4, 101) AND (i.applicant_user_id IN (101, 2) OR i.candidate_user_ids @> '[4]'::jsonb OR i.candidate_user_ids @> '[101]'::jsonb))
+          OR (lower(i.applicant_email) = (SELECT lower(email) FROM users WHERE id = ?))
         )`;
         params.push(userId, userId, userId);
       }
@@ -7617,7 +7617,7 @@ app.post("/api/interviews", async (req, res) => {
     }
 
     // Create notification for primary candidate if valid registered user
-    if (primaryApplicantId && primaryApplicantId < 100) {
+    if (primaryApplicantId && primaryApplicantId > 0) {
       await run(
         `INSERT INTO notifications (user_id, type, title, body, related_user_id, related_application_id)
          VALUES (?, 'interview_scheduled', ?, ?, ?, ?)`,
@@ -8513,13 +8513,13 @@ app.post("/api/admin/reset-zaki-accounts", async (req, res) => {
 
 async function ensureMeetingsForZakiAccounts() {
   const employerEmail = "zakiablando897@gmail.com";
-  const applicantEmail = "demo_applicant@elitecruit.ph";
+  const targetApplicantEmails = ["zaki_ablando897@yahoo.com", "demo_applicant@elitecruit.ph"];
 
   try {
     const defaultPassword = "Password123!";
     const passHash = await bcrypt.hash(defaultPassword, 10);
 
-    // 1. Find or create employer
+    // 1. Find or create employer: Cebuana Lhuillier
     let employer = await get("SELECT id, email FROM users WHERE lower(email) = ?", [employerEmail.toLowerCase()]);
     if (!employer) {
       const res = await run(
@@ -8541,30 +8541,6 @@ async function ensureMeetingsForZakiAccounts() {
       await run(
         "UPDATE users SET password_hash = ?, is_active = true, is_email_verified = true WHERE id = ?",
         [passHash, employer.id]
-      );
-    }
-
-    // 2. Find or create applicant
-    let applicant = await get("SELECT id, email FROM users WHERE lower(email) = ?", [applicantEmail.toLowerCase()]);
-    if (!applicant) {
-      const res = await run(
-        "INSERT INTO users (email, password_hash, role, is_active, is_email_verified, two_factor_enabled) VALUES (?, ?, 'applicant', true, true, false)",
-        [applicantEmail.toLowerCase(), passHash]
-      );
-      applicant = { id: res.lastID, email: applicantEmail };
-      await run(
-        `INSERT INTO applicant_profiles (
-          user_id, first_name, last_name, phone, city, address,
-          desired_job_title, expected_salary, work_arrangement, terms_accepted, terms_accepted_at
-        ) VALUES (?, 'Zaki', 'Ablando', '+63 918 987 6543', 'Dasmarinas', 'Dasmarinas, Cavite',
-          'Full Stack Web Developer', 'PHP 50,000', 'Hybrid', true, CURRENT_TIMESTAMP)
-         ON CONFLICT (user_id) DO NOTHING`,
-        [applicant.id]
-      );
-    } else {
-      await run(
-        "UPDATE users SET password_hash = ?, is_active = true, is_email_verified = true WHERE id = ?",
-        [passHash, applicant.id]
       );
     }
 
@@ -8591,13 +8567,15 @@ async function ensureMeetingsForZakiAccounts() {
             JSON.stringify(skills),
           ]
         );
-        jobRow = { id: jobRes.lastID, title };
+        jobRow = await get("SELECT id, title FROM job_posts WHERE employer_user_id = ? AND title = ? LIMIT 1", [employer.id, title]);
+        if (!jobRow && jobRes.lastID) {
+          jobRow = { id: jobRes.lastID, title };
+        }
       }
       return jobRow;
     }
 
-    // 3. Define the 4 jobs for the 4 recruitment test scenarios
-    // Scenario 1: Shortlisted - No interview (Employer tests "Schedule Interview" OR direct "Approve & Extend Offer")
+    // Jobs for full recruitment scenarios
     const jobA = await ensureJob(
       "Frontend UI/UX Developer",
       "Indang, Cavite",
@@ -8609,7 +8587,6 @@ async function ensureMeetingsForZakiAccounts() {
       ["React", "Tailwind CSS", "TypeScript", "Figma"]
     );
 
-    // Scenario 2: Shortlisted - Active scheduled interview (Employer tests interview completion & decision)
     const jobB = await ensureJob(
       "Cloud DevOps Engineer",
       "Dasmarinas, Cavite",
@@ -8621,7 +8598,6 @@ async function ensureMeetingsForZakiAccounts() {
       ["Docker", "Kubernetes", "PostgreSQL", "AWS"]
     );
 
-    // Scenario 3: Approved - Formal offer extended (Applicant tests receiving offer & submitting response letter)
     const jobC = await ensureJob(
       "Full Stack Web Developer",
       "Alfonso, Cavite",
@@ -8633,7 +8609,6 @@ async function ensureMeetingsForZakiAccounts() {
       ["React", "Node.js", "TypeScript", "PostgreSQL"]
     );
 
-    // Scenario 4: Accepted - Response letter submitted (Employer tests "View Response Letter")
     const jobD = await ensureJob(
       "Lead Enterprise Architect",
       "Indang - Dasmarinas Tech Hub, Cavite",
@@ -8645,144 +8620,6 @@ async function ensureMeetingsForZakiAccounts() {
       ["TypeScript", "Node.js", "PostgreSQL", "System Architecture"]
     );
 
-    // 4. Ensure Application 1 (Job A: Shortlisted, No Interview -> Ready for optional interview or direct hire)
-    let appA = await get("SELECT id FROM applications WHERE applicant_user_id = ? AND job_post_id = ?", [applicant.id, jobA.id]);
-    if (!appA) {
-      await run(
-        `INSERT INTO applications (job_post_id, applicant_user_id, status, submitted_at, was_shortlisted, had_interview, previous_status, updated_at)
-         VALUES (?, ?, 'shortlisted', CURRENT_TIMESTAMP, TRUE, FALSE, 'submitted', CURRENT_TIMESTAMP)`,
-        [jobA.id, applicant.id]
-      );
-    } else {
-      await run(
-        `UPDATE applications SET status = 'shortlisted', was_shortlisted = TRUE, had_interview = FALSE, previous_status = 'submitted',
-         decision_message = NULL, decision_message_type = NULL, response_letter = NULL, response_decision = NULL, responded_at = NULL, start_date = NULL, updated_at = CURRENT_TIMESTAMP
-         WHERE id = ?`,
-        [appA.id]
-      );
-    }
-
-    // 5. Ensure Application 2 (Job B: Interviewing with scheduled interview)
-    let appB = await get("SELECT id FROM applications WHERE applicant_user_id = ? AND job_post_id = ?", [applicant.id, jobB.id]);
-    if (!appB) {
-      await run(
-        `INSERT INTO applications (job_post_id, applicant_user_id, status, submitted_at, was_shortlisted, had_interview, previous_status, updated_at)
-         VALUES (?, ?, 'interviewing', CURRENT_TIMESTAMP, TRUE, TRUE, 'shortlisted', CURRENT_TIMESTAMP)`,
-        [jobB.id, applicant.id]
-      );
-    } else {
-      await run(
-        `UPDATE applications SET status = 'interviewing', was_shortlisted = TRUE, had_interview = TRUE, previous_status = 'shortlisted',
-         decision_message = NULL, decision_message_type = NULL, response_letter = NULL, response_decision = NULL, responded_at = NULL, start_date = NULL, updated_at = CURRENT_TIMESTAMP
-         WHERE id = ?`,
-        [appB.id]
-      );
-    }
-
-    // Ensure interviews for Job B
-    const existingInterviews = await all(
-      "SELECT id, interview_title, interview_date FROM scheduled_interviews WHERE employer_user_id = ? AND applicant_user_id = ? AND deleted_by_employer = FALSE AND deleted_by_applicant = FALSE",
-      [employer.id, applicant.id]
-    );
-
-    const hasDevOpsInterview = existingInterviews.some((i) => i.interview_title?.includes("Technical Architecture Interview") && i.interview_date === "2026-11-06");
-    const hasPanelInterview = existingInterviews.some((i) => i.interview_title?.includes("Final Panel Interview") && i.interview_date === "2026-11-10");
-
-    let createdInterviews = 0;
-
-    if (!hasDevOpsInterview) {
-      await run(
-        `INSERT INTO scheduled_interviews (
-          employer_user_id, applicant_user_id, candidate_user_ids,
-          job_post_id, interview_title, interview_stage, interview_type,
-          meeting_link_or_address, interview_date, start_time, end_time,
-          notes, status, job_title, applicant_name, applicant_phone,
-          applicant_city, applicant_email, employer_company_name,
-          deleted_by_employer, deleted_by_applicant, created_at, updated_at
-        ) VALUES (
-          ?, ?, ?::jsonb,
-          ?, 'Technical Architecture Interview - Cloud DevOps', 'Technical Evaluation', 'On-Site',
-          'Cebuana Hub, Alfonso Branch, Cavite', '2026-11-06', '10:00 AM', '10:45 AM',
-          'Review candidate expertise in cloud architecture, CI/CD, and system resiliency.', 'accepted', ?,
-          'Zaki Ablando', '+63 918 987 6543', 'Dasmarinas, Cavite', ?, 'Cebuana Lhuillier',
-          FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-        )`,
-        [
-          employer.id,
-          applicant.id,
-          JSON.stringify([applicant.id]),
-          jobB.id,
-          jobB.title,
-          applicantEmail,
-        ]
-      );
-      createdInterviews++;
-    }
-
-    if (!hasPanelInterview) {
-      await run(
-        `INSERT INTO scheduled_interviews (
-          employer_user_id, applicant_user_id, candidate_user_ids,
-          job_post_id, interview_title, interview_stage, interview_type,
-          meeting_link_or_address, interview_date, start_time, end_time,
-          notes, status, job_title, applicant_name, applicant_phone,
-          applicant_city, applicant_email, employer_company_name,
-          deleted_by_employer, deleted_by_applicant, created_at, updated_at
-        ) VALUES (
-          ?, ?, ?::jsonb,
-          ?, 'Final Panel Interview - Cloud DevOps & Infrastructure', 'Final Interview', 'On-Site',
-          'Cebuana Main Office, Trece Martires, Cavite', '2026-11-10', '02:00 PM', '03:00 PM',
-          'Final panel interview with the senior infrastructure team.', 'accepted', ?,
-          'Zaki Ablando', '+63 918 987 6543', 'Dasmarinas, Cavite', ?, 'Cebuana Lhuillier',
-          FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-        )`,
-        [
-          employer.id,
-          applicant.id,
-          JSON.stringify([applicant.id]),
-          jobB.id,
-          jobB.title,
-          applicantEmail,
-        ]
-      );
-      createdInterviews++;
-    }
-
-    // 6. Ensure Application 3 (Job C: Accepted with candidate response letter - Accepted Offer Scenario)
-    const offerLetterTextC = "Dear Zaki Ablando,\n\nCongratulations! On behalf of Cebuana Lhuillier, we are thrilled to formally extend an offer of employment for the position of \"Full Stack Web Developer\".\n\nCompensation & Benefits:\n• Monthly Base Salary: PHP 75,000.00\n• Work Arrangement: Hybrid (Dasmarinas Tech Hub / Remote)\n• Comprehensive Medical & Dental Coverage (HMO on Day 1)\n• Annual Performance Incentive & 14th Month Pay\n• Paid Time Off: 18 Vacation Days + 12 Sick Days\n\nYour proven expertise in full stack development, cloud computing, and responsive UI engineering will be instrumental in accelerating our next-generation fintech solutions.\n\nPlease review this official offer letter and submit your formal response along with your preferred start date.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\nHiring Committee\nCebuana Lhuillier";
-    const acceptLetterTextC = "Dear Hiring Team at Cebuana Lhuillier,\n\nI am thrilled and deeply honored to formally accept your employment offer for the position of \"Full Stack Web Developer\".\n\nI confirm my acceptance of this position and accept the proposed compensation package of PHP 75,000.00 monthly with the comprehensive benefits outlined.\n\nI have already begun gathering the pre-employment onboarding documents and am eager to contribute my full stack expertise to Cebuana Lhuillier's digital fintech initiatives.\n\nThank you once again for this incredible opportunity!\n\nSincerely,\nZaki Ablando";
-
-    let appC = await get("SELECT id FROM applications WHERE applicant_user_id = ? AND job_post_id = ?", [applicant.id, jobC.id]);
-    if (!appC) {
-      await run(
-        `INSERT INTO applications (
-          job_post_id, applicant_user_id, status, submitted_at, decided_at,
-          decision_message, decision_message_type, start_date, response_decision, response_letter, responded_at,
-          was_shortlisted, had_interview, previous_status, updated_at
-        ) VALUES (?, ?, 'recruited', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'formal_offer', '2026-12-01', 'accept', ?, CURRENT_TIMESTAMP, FALSE, FALSE, 'submitted', CURRENT_TIMESTAMP)`,
-        [jobC.id, applicant.id, offerLetterTextC, acceptLetterTextC]
-      );
-    } else {
-      await run(
-        `UPDATE applications SET
-          status = 'recruited',
-          decision_message = ?,
-          decision_message_type = 'formal_offer',
-          start_date = '2026-12-01',
-          decided_at = CURRENT_TIMESTAMP,
-          response_decision = 'accept',
-          response_letter = ?,
-          responded_at = CURRENT_TIMESTAMP,
-          was_shortlisted = FALSE,
-          had_interview = FALSE,
-          previous_status = 'submitted',
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?`,
-        [offerLetterTextC, acceptLetterTextC, appC.id]
-      );
-    }
-
-    // 7. Ensure Application 4 (Job Cloud: Declined with candidate response letter - Declined Offer Scenario)
     const jobCloud = await ensureJob(
       "Cloud Systems Associate",
       "Dasmarinas, Cavite",
@@ -8794,40 +8631,6 @@ async function ensureMeetingsForZakiAccounts() {
       ["AWS", "Linux", "Networking", "Security"]
     );
 
-    const offerLetterTextCloud = "Dear Zaki Ablando,\n\nWe are pleased to extend an official employment offer for the position of \"Cloud Systems Associate\" at Cebuana Lhuillier.\n\nCompensation & Benefits:\n• Monthly Base Salary: PHP 65,000.00\n• Work Arrangement: On-Site (Dasmarinas Tech Hub, Cavite)\n• Health & Dental Insurance (HMO on Day 1)\n• Performance Bonuses & Continuous Learning Stipend\n• Paid Time Off: 15 Vacation Days + 10 Sick Days\n\nPlease review this formal offer letter and submit your response through EliteCruit at your earliest convenience.\n\nSincerely,\nTalent Acquisition Team\nCebuana Lhuillier";
-    const declineLetterTextCloud = "Dear Hiring Team at Cebuana Lhuillier,\n\nThank you very much for considering my background and extending this formal employment offer for the position of \"Cloud Systems Associate\".\n\nAfter thoughtful consideration, I must respectfully decline this offer as I have decided to accept the Full Stack Web Developer position, which aligns directly with my core career focus in full-stack web engineering.\n\nI truly appreciate your time, consideration, and the opportunity to interview with your team, and I wish Cebuana Lhuillier continued success.\n\nBest regards,\nZaki Ablando";
-
-    let appCloud = await get("SELECT id FROM applications WHERE applicant_user_id = ? AND job_post_id = ?", [applicant.id, jobCloud.id]);
-    if (!appCloud) {
-      await run(
-        `INSERT INTO applications (
-          job_post_id, applicant_user_id, status, submitted_at, decided_at,
-          decision_message, decision_message_type, start_date, response_decision, response_letter, responded_at,
-          was_shortlisted, had_interview, previous_status, updated_at
-        ) VALUES (?, ?, 'rejected', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'formal_offer', NULL, 'decline', ?, CURRENT_TIMESTAMP, FALSE, FALSE, 'submitted', CURRENT_TIMESTAMP)`,
-        [jobCloud.id, applicant.id, offerLetterTextCloud, declineLetterTextCloud]
-      );
-    } else {
-      await run(
-        `UPDATE applications SET
-          status = 'rejected',
-          decision_message = ?,
-          decision_message_type = 'formal_offer',
-          start_date = NULL,
-          decided_at = CURRENT_TIMESTAMP,
-          response_decision = 'decline',
-          response_letter = ?,
-          responded_at = CURRENT_TIMESTAMP,
-          was_shortlisted = FALSE,
-          had_interview = FALSE,
-          previous_status = 'submitted',
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?`,
-        [offerLetterTextCloud, declineLetterTextCloud, appCloud.id]
-      );
-    }
-
-    // 8. Ensure Application 5 (Job Pending: Extended formal offer, no candidate response yet - Pending Offer Scenario)
     const jobPending = await ensureJob(
       "Senior Frontend Engineer",
       "Indang - Dasmarinas Tech Hub, Cavite",
@@ -8839,39 +8642,6 @@ async function ensureMeetingsForZakiAccounts() {
       ["React", "TypeScript", "Next.js", "Tailwind CSS"]
     );
 
-    const offerLetterTextPending = "Dear Zaki Ablando,\n\nCongratulations! On behalf of Cebuana Lhuillier, we are thrilled to formally extend an offer of employment for the position of \"Senior Frontend Engineer\".\n\nCompensation & Benefits:\n• Monthly Base Salary: PHP 75,000.00\n• Work Arrangement: Hybrid (Indang Tech Hub / Remote)\n• Comprehensive Medical & Dental Coverage (HMO on Day 1)\n• Performance Bonus & 14th Month Pay\n• Paid Time Off: 18 Vacation Days + 12 Sick Days\n\nYour proven expertise in frontend architecture, modern component design, and responsive web performance will play a vital role in our ongoing digital expansion.\n\nPlease review this official offer letter and submit your formal response along with your desired start date through EliteCruit.\n\nWe look forward to welcoming you to our engineering organization!\n\nWarm regards,\nTalent Acquisition Team\nCebuana Lhuillier";
-
-    let appPending = await get("SELECT id FROM applications WHERE applicant_user_id = ? AND job_post_id = ?", [applicant.id, jobPending.id]);
-    if (!appPending) {
-      await run(
-        `INSERT INTO applications (
-          job_post_id, applicant_user_id, status, submitted_at, decided_at,
-          decision_message, decision_message_type, start_date, response_decision, response_letter, responded_at,
-          was_shortlisted, had_interview, previous_status, updated_at
-        ) VALUES (?, ?, 'approved', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'formal_offer', '2026-12-15', NULL, NULL, NULL, FALSE, FALSE, 'submitted', CURRENT_TIMESTAMP)`,
-        [jobPending.id, applicant.id, offerLetterTextPending]
-      );
-    } else {
-      await run(
-        `UPDATE applications SET
-          status = 'approved',
-          decision_message = ?,
-          decision_message_type = 'formal_offer',
-          start_date = '2026-12-15',
-          decided_at = CURRENT_TIMESTAMP,
-          response_decision = NULL,
-          response_letter = NULL,
-          responded_at = NULL,
-          was_shortlisted = FALSE,
-          had_interview = FALSE,
-          previous_status = 'submitted',
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?`,
-        [offerLetterTextPending, appPending.id]
-      );
-    }
-
-    // 9. Ensure Application 6 (Job E: Declined directly during initial review - screening & interview bypassed)
     const jobE = await ensureJob(
       "Cybersecurity Analyst",
       "Imus, Cavite",
@@ -8883,39 +8653,252 @@ async function ensureMeetingsForZakiAccounts() {
       ["Cybersecurity", "Network Security", "Penetration Testing", "ISO 27001"]
     );
 
-    const declineLetterE = "Dear Zaki Ablando,\n\nThank you for taking the time to apply for the Cybersecurity Analyst position at Cebuana Lhuillier. We reviewed your resume and credentials carefully.\n\nAfter thorough consideration, we have decided to move forward with other candidates whose specialized experience in infrastructure threat intelligence more closely aligns with our current hiring requirements.\n\nWe appreciate your interest in Cebuana Lhuillier and wish you the best in your career pursuits.\n\nSincerely,\nTalent Acquisition Team\nCebuana Lhuillier";
+    // Loop through both target applicants
+    for (const applicantEmail of targetApplicantEmails) {
+      let applicant = await get("SELECT id, email FROM users WHERE lower(email) = ?", [applicantEmail.toLowerCase()]);
+      if (!applicant) {
+        const res = await run(
+          "INSERT INTO users (email, password_hash, role, is_active, is_email_verified, two_factor_enabled) VALUES (?, ?, 'applicant', true, true, false)",
+          [applicantEmail.toLowerCase(), passHash]
+        );
+        applicant = { id: res.lastID, email: applicantEmail };
+        await run(
+          `INSERT INTO applicant_profiles (
+            user_id, first_name, last_name, phone, city, address,
+            desired_job_title, expected_salary, work_arrangement, terms_accepted, terms_accepted_at
+          ) VALUES (?, 'Zaki', 'Ablando', '+63 918 987 6543', 'Dasmarinas', 'Dasmarinas, Cavite',
+            'Full Stack Web Developer', 'PHP 50,000', 'Hybrid', true, CURRENT_TIMESTAMP)
+           ON CONFLICT (user_id) DO NOTHING`,
+          [applicant.id]
+        );
+      } else {
+        // KEEP personal password intact for zaki_ablando897@yahoo.com!
+        if (applicantEmail.toLowerCase() !== "zaki_ablando897@yahoo.com") {
+          await run(
+            "UPDATE users SET password_hash = ?, is_active = true, is_email_verified = true WHERE id = ?",
+            [passHash, applicant.id]
+          );
+        } else {
+          await run(
+            "UPDATE users SET is_active = true, is_email_verified = true WHERE id = ?",
+            [applicant.id]
+          );
+        }
+      }
 
-    let appE = await get("SELECT id FROM applications WHERE applicant_user_id = ? AND job_post_id = ?", [applicant.id, jobE.id]);
-    if (!appE) {
+      // 1. Application for Job C: Full Stack Web Developer (Applied, Interviewed & Recruited with formal offer)
+      const offerLetterTextC = "Dear Zaki Ablando,\n\nCongratulations! On behalf of Cebuana Lhuillier, we are thrilled to formally extend an offer of employment for the position of \"Full Stack Web Developer\".\n\nCompensation & Benefits:\n• Monthly Base Salary: PHP 75,000.00\n• Work Arrangement: Hybrid (Dasmarinas Tech Hub / Remote)\n• Comprehensive Medical & Dental Coverage (HMO on Day 1)\n• Annual Performance Incentive & 14th Month Pay\n• Paid Time Off: 18 Vacation Days + 12 Sick Days\n\nYour proven expertise in full stack development, cloud computing, and responsive UI engineering will be instrumental in accelerating our next-generation fintech solutions.\n\nPlease review this official offer letter and submit your formal response along with your preferred start date.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\nHiring Committee\nCebuana Lhuillier";
+      const acceptLetterTextC = "Dear Hiring Team at Cebuana Lhuillier,\n\nI am thrilled and deeply honored to formally accept your employment offer for the position of \"Full Stack Web Developer\".\n\nI confirm my target start date of December 1, 2026, and accept the proposed compensation package of PHP 75,000.00 monthly with the comprehensive benefits outlined.\n\nI have already begun gathering the pre-employment onboarding documents and am eager to contribute my full stack expertise to Cebuana Lhuillier's digital fintech initiatives.\n\nThank you once again for this incredible opportunity!\n\nSincerely,\nZaki Ablando";
+
+      let appC = await get("SELECT id FROM applications WHERE applicant_user_id = ? AND job_post_id = ?", [applicant.id, jobC.id]);
+      if (!appC) {
+        await run(
+          `INSERT INTO applications (
+            job_post_id, applicant_user_id, status, submitted_at, decided_at,
+            decision_message, decision_message_type, start_date, response_decision, response_letter, responded_at, updated_at
+          ) VALUES (?, ?, 'recruited', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'formal_offer', '2026-12-01', 'accept', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+          [jobC.id, applicant.id, offerLetterTextC, acceptLetterTextC]
+        );
+      } else {
+        await run(
+          `UPDATE applications SET
+            status = 'recruited',
+            decision_message = ?,
+            decision_message_type = 'formal_offer',
+            start_date = '2026-12-01',
+            decided_at = CURRENT_TIMESTAMP,
+            response_decision = 'accept',
+            response_letter = ?,
+            responded_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?`,
+          [offerLetterTextC, acceptLetterTextC, appC.id]
+        );
+      }
+
+      // 2. Application for Job B: Cloud DevOps Engineer (Active Interviewing Status)
+      let appB = await get("SELECT id FROM applications WHERE applicant_user_id = ? AND job_post_id = ?", [applicant.id, jobB.id]);
+      if (!appB) {
+        await run(
+          `INSERT INTO applications (job_post_id, applicant_user_id, status, submitted_at, updated_at)
+           VALUES (?, ?, 'interviewing', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+          [jobB.id, applicant.id]
+        );
+      } else {
+        await run(
+          `UPDATE applications SET status = 'interviewing', updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+          [appB.id]
+        );
+      }
+
+      // 3. Application for Job A: Frontend UI/UX Developer (Shortlisted Status)
+      let appA = await get("SELECT id FROM applications WHERE applicant_user_id = ? AND job_post_id = ?", [applicant.id, jobA.id]);
+      if (!appA) {
+        await run(
+          `INSERT INTO applications (job_post_id, applicant_user_id, status, submitted_at, updated_at)
+           VALUES (?, ?, 'shortlisted', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+          [jobA.id, applicant.id]
+        );
+      } else {
+        await run(
+          `UPDATE applications SET status = 'shortlisted', updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+          [appA.id]
+        );
+      }
+
+      // 4. Ensure Scheduled Interviews (Created, Rescheduled, Cancelled)
+      await run("DELETE FROM scheduled_interviews WHERE employer_user_id = ? AND applicant_user_id = ?", [employer.id, applicant.id]);
+
+      // Interview 1: Created / Active Scheduled Interview (Full Stack Web Developer)
       await run(
-        `INSERT INTO applications (
-          job_post_id, applicant_user_id, status, submitted_at, decided_at,
-          decision_message, decision_message_type, start_date, response_decision, response_letter, responded_at,
-          was_shortlisted, had_interview, previous_status, updated_at
-        ) VALUES (?, ?, 'denied', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, 'rejection', NULL, NULL, NULL, NULL, FALSE, FALSE, 'submitted', CURRENT_TIMESTAMP)`,
-        [jobE.id, applicant.id, declineLetterE]
+        `INSERT INTO scheduled_interviews (
+          employer_user_id, applicant_user_id, candidate_user_ids,
+          job_post_id, interview_title, interview_stage, interview_type,
+          meeting_link_or_address, interview_date, start_time, end_time,
+          notes, status, job_title, applicant_name, applicant_phone,
+          applicant_city, applicant_email, employer_company_name,
+          deleted_by_employer, deleted_by_applicant, created_at, updated_at
+        ) VALUES (
+          ?, ?, ?::jsonb,
+          ?, 'Technical Interview - Full Stack Web Developer', 'Technical Evaluation', 'Video Conference',
+          'https://meet.google.com/zaki-interview-cebuana', '2026-11-20', '10:00 AM', '10:45 AM',
+          'Please prepare a walkthrough of your latest architecture and full stack portfolio projects.', 'accepted', ?,
+          'Zaki Ablando', '+63 918 987 6543', 'Dasmarinas, Cavite', ?, 'Cebuana Lhuillier',
+          FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+        )`,
+        [employer.id, applicant.id, JSON.stringify([applicant.id]), jobC.id, jobC.title, applicantEmail]
       );
-    } else {
+
+      // Interview 2: Rescheduled Interview (Cloud DevOps)
       await run(
-        `UPDATE applications SET
-          status = 'denied',
-          decision_message = ?,
-          decision_message_type = 'rejection',
-          start_date = NULL,
-          decided_at = CURRENT_TIMESTAMP,
-          response_decision = NULL,
-          response_letter = NULL,
-          responded_at = NULL,
-          was_shortlisted = FALSE,
-          had_interview = FALSE,
-          previous_status = 'submitted',
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?`,
-        [declineLetterE, appE.id]
+        `INSERT INTO scheduled_interviews (
+          employer_user_id, applicant_user_id, candidate_user_ids,
+          job_post_id, interview_title, interview_stage, interview_type,
+          meeting_link_or_address, interview_date, start_time, end_time,
+          notes, status, job_title, applicant_name, applicant_phone,
+          applicant_city, applicant_email, employer_company_name,
+          deleted_by_employer, deleted_by_applicant, created_at, updated_at
+        ) VALUES (
+          ?, ?, ?::jsonb,
+          ?, 'Technical Architecture Interview - Cloud DevOps', 'Technical Evaluation', 'Video Conference',
+          'https://meet.google.com/zaki-interview-cebuana', '2026-11-22', '02:00 PM', '03:00 PM',
+          'Rescheduled from 2026-11-20 at 10:00 AM per candidate request.', 'accepted', ?,
+          'Zaki Ablando', '+63 918 987 6543', 'Dasmarinas, Cavite', ?, 'Cebuana Lhuillier',
+          FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+        )`,
+        [employer.id, applicant.id, JSON.stringify([applicant.id]), jobB.id, jobB.title, applicantEmail]
       );
+
+      // Interview 3: Cancelled Interview (Preliminary Screen)
+      await run(
+        `INSERT INTO scheduled_interviews (
+          employer_user_id, applicant_user_id, candidate_user_ids,
+          job_post_id, interview_title, interview_stage, interview_type,
+          meeting_link_or_address, interview_date, start_time, end_time,
+          notes, status, job_title, applicant_name, applicant_phone,
+          applicant_city, applicant_email, employer_company_name,
+          deleted_by_employer, deleted_by_applicant, created_at, updated_at
+        ) VALUES (
+          ?, ?, ?::jsonb,
+          ?, 'Preliminary Screen - Full Stack Web Developer', 'Initial Screening', 'Video Conference',
+          'https://meet.google.com/zaki-interview-cebuana', '2026-11-18', '09:00 AM', '09:30 AM',
+          'Schedule consolidated directly into the technical evaluation panel.', 'cancelled', ?,
+          'Zaki Ablando', '+63 918 987 6543', 'Dasmarinas, Cavite', ?, 'Cebuana Lhuillier',
+          FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+        )`,
+        [employer.id, applicant.id, JSON.stringify([applicant.id]), jobC.id, jobC.title, applicantEmail]
+      );
+
+      // 5. Ensure In-App Notifications
+      await run("DELETE FROM notifications WHERE user_id = ? AND related_user_id = ?", [applicant.id, employer.id]);
+      await run(
+        `INSERT INTO notifications (user_id, type, title, body, related_user_id, related_application_id) VALUES
+         (?, 'interview_scheduled', 'Interview Scheduled: Technical Interview - Full Stack Web Developer', 'Cebuana Lhuillier has scheduled a Technical Interview on 2026-11-20 at 10:00 AM (Video Conference).', ?, ?),
+         (?, 'interview_rescheduled', 'Interview Rescheduled: Technical Architecture Interview - Cloud DevOps', 'Cebuana Lhuillier has rescheduled the Technical Architecture Interview to 2026-11-22 at 02:00 PM.', ?, ?),
+         (?, 'interview_cancelled', 'Interview Cancelled: Preliminary Screen - Full Stack Web Developer', 'The Preliminary Screen interview has been cancelled: "Schedule consolidated directly into the technical evaluation panel."', ?, ?),
+         (?, 'formal_offer', 'Formal Offer Extended: Full Stack Web Developer', 'Cebuana Lhuillier has extended a formal employment offer with monthly salary PHP 75,000.00.', ?, ?)`,
+        [
+          applicant.id, employer.id, jobC.id,
+          applicant.id, employer.id, jobB.id,
+          applicant.id, employer.id, jobC.id,
+          applicant.id, employer.id, jobC.id,
+        ]
+      );
+
+      // 6. Ensure Conversation Thread & Bidirectional Messages
+      let thread = await get(
+        `SELECT t.id FROM message_threads t
+         JOIN message_participants p1 ON p1.thread_id = t.id AND p1.user_id = ?
+         JOIN message_participants p2 ON p2.thread_id = t.id AND p2.user_id = ?
+         LIMIT 1`,
+        [employer.id, applicant.id]
+      );
+
+      let threadId = thread?.id;
+      if (!threadId) {
+        const createdThread = await run(
+          `INSERT INTO message_threads (created_by_user_id, title) VALUES (?, ?)`,
+          [employer.id, "Full Stack Web Developer - Zaki Ablando & Cebuana Lhuillier"]
+        );
+        threadId = createdThread.lastID;
+        if (threadId) {
+          await run(`INSERT INTO message_participants (thread_id, user_id) VALUES (?, ?)`, [threadId, employer.id]).catch(() => {});
+          await run(`INSERT INTO message_participants (thread_id, user_id) VALUES (?, ?)`, [threadId, applicant.id]).catch(() => {});
+        }
+      } else {
+        await run(
+          `UPDATE message_threads SET title = 'Full Stack Web Developer - Zaki Ablando & Cebuana Lhuillier', updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+          [threadId]
+        ).catch(() => {});
+      }
+
+      if (threadId) {
+        await run("DELETE FROM messages WHERE thread_id = ?", [threadId]);
+
+        const threadMessages = [
+          {
+            sender: employer.id,
+            text: "Hello Zaki! We were very impressed by your qualifications and software engineering background. We would like to schedule an initial technical evaluation."
+          },
+          {
+            sender: employer.id,
+            text: `[Interview Scheduled]: Technical Interview - Full Stack Web Developer\nStage: Technical Evaluation\nDate: 2026-11-20\nTime: 10:00 AM - 10:45 AM\nType: Video Conference\nLocation/Link: https://meet.google.com/zaki-interview-cebuana\nNotes: Please prepare a walkthrough of your latest architecture and full stack portfolio projects.`
+          },
+          {
+            sender: applicant.id,
+            text: "Thank you for the opportunity! I have added the technical interview to my calendar and look forward to meeting the engineering team."
+          },
+          {
+            sender: employer.id,
+            text: `[Interview Rescheduled]: Technical Architecture Interview - Cloud DevOps\nNew Schedule: 2026-11-22 at 02:00 PM\nOriginal Schedule: 2026-11-20 at 10:00 AM\nReason: Candidate schedule adjustment.`
+          },
+          {
+            sender: employer.id,
+            text: `[Interview Cancelled]: Preliminary Screen - Full Stack Web Developer\nOriginal Schedule: 2026-11-18 at 09:00 AM\nReason: "Schedule consolidated directly into the technical evaluation panel."`
+          },
+          {
+            sender: employer.id,
+            text: `[Formal Employment Offer: Full Stack Web Developer]\nCompany: Cebuana Lhuillier\n\nDear Zaki Ablando,\n\nCongratulations! On behalf of Cebuana Lhuillier, we are thrilled to formally extend an offer of employment for the position of "Full Stack Web Developer".\n\nCompensation & Benefits:\n• Monthly Base Salary: PHP 75,000.00\n• Work Arrangement: Hybrid (Dasmarinas Tech Hub / Remote)\n• Comprehensive Medical & Dental Coverage (HMO on Day 1)\n• Annual Performance Incentive & 14th Month Pay\n• Paid Time Off: 18 Vacation Days + 12 Sick Days\n\nYour proven expertise in full stack development, cloud computing, and responsive UI engineering will be instrumental in accelerating our next-generation fintech solutions.\n\nPlease review this official offer letter and submit your formal response along with your preferred start date.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\nHiring Committee\nCebuana Lhuillier`
+          },
+          {
+            sender: applicant.id,
+            text: `[Official Job Offer Response: ACCEPTED]\nPosition: Full Stack Web Developer\nTarget Start Date: 2026-12-01\n\nDear Hiring Team at Cebuana Lhuillier,\n\nI am thrilled and deeply honored to formally accept your employment offer for the position of "Full Stack Web Developer".\n\nI confirm my target start date of December 1, 2026, and accept the proposed compensation package of PHP 75,000.00 monthly with the comprehensive benefits outlined.\n\nI have already begun gathering the pre-employment onboarding documents and am eager to contribute my full stack expertise to Cebuana Lhuillier's digital fintech initiatives.\n\nThank you once again for this incredible opportunity!\n\nSincerely,\nZaki Ablando`
+          },
+          {
+            sender: employer.id,
+            text: "Wonderful! We have received your signed acceptance letter, Zaki. Our People Operations team will reach out shortly with onboarding credentials. Welcome aboard!"
+          }
+        ];
+
+        for (const m of threadMessages) {
+          await run(`INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`, [threadId, m.sender, m.text]);
+        }
+      }
+
+      console.log(`[Zaki Accounts] Fully seeded interaction for applicant: ${applicantEmail} (User ID: ${applicant.id})`);
     }
 
-    // 9. Ensure Direct Recruitment Invitations for Tab 3 Verification (Task 2.3)
+    // Direct recruitment invitations for test verification
     async function ensureApplicantUser(email, firstName, lastName, phone, city, desiredJobTitle) {
       let appRow = await get("SELECT id, email FROM users WHERE lower(email) = ?", [email.toLowerCase()]);
       if (!appRow) {
@@ -8946,7 +8929,6 @@ async function ensureMeetingsForZakiAccounts() {
     const fiveDaysAgoIso = new Date(Date.now() - 120 * 3600 * 1000).toISOString();
     const fourDaysAgoIso = new Date(Date.now() - 96 * 3600 * 1000).toISOString();
 
-    // Direct Invitation 1: Pending (John Joe -> Cybersecurity Analyst)
     const invPending = await get(
       "SELECT id FROM job_invitations WHERE employer_user_id = ? AND applicant_user_id = ? AND job_post_id = ?",
       [employer.id, johnJoe.id, jobE.id]
@@ -8965,14 +8947,8 @@ async function ensureMeetingsForZakiAccounts() {
           yesterdayIso
         ]
       );
-    } else {
-      await run(
-        "UPDATE job_invitations SET status = 'pending', custom_message = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-        ["Hello John Joe! We reviewed your profile and would like to invite you to apply for our open position: Cybersecurity Analyst.", invPending.id]
-      );
     }
 
-    // Direct Invitation 2: Accepted / Recruited (Maria Santos -> Frontend UI/UX Developer)
     const invAccepted = await get(
       "SELECT id FROM job_invitations WHERE employer_user_id = ? AND applicant_user_id = ? AND job_post_id = ?",
       [employer.id, mariaSantos.id, jobA.id]
@@ -8993,14 +8969,8 @@ async function ensureMeetingsForZakiAccounts() {
           threeDaysAgoIso
         ]
       );
-    } else {
-      await run(
-        "UPDATE job_invitations SET status = 'accepted', response_letter = ?, responded_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-        [mariaAcceptMsg, twoHoursAgoIso, invAccepted.id]
-      );
     }
 
-    // Direct Invitation 3: Declined (Juan Carlos Reyes -> Cloud DevOps Engineer)
     const invDeclined = await get(
       "SELECT id FROM job_invitations WHERE employer_user_id = ? AND applicant_user_id = ? AND job_post_id = ?",
       [employer.id, juanReyes.id, jobB.id]
@@ -9021,204 +8991,10 @@ async function ensureMeetingsForZakiAccounts() {
           fiveDaysAgoIso
         ]
       );
-    } else {
-      await run(
-        "UPDATE job_invitations SET status = 'declined', response_letter = ?, responded_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-        [juanDeclineMsg, fourDaysAgoIso, invDeclined.id]
-      );
     }
 
-    // 9. Ensure Conversation Thread & Example Formal Letters & Interview Cards for Zaki Accounts
-    try {
-      let thread = await get(
-        `SELECT t.id FROM message_threads t
-         JOIN message_participants p1 ON p1.thread_id = t.id AND p1.user_id = ?
-         JOIN message_participants p2 ON p2.thread_id = t.id AND p2.user_id = ?
-         LIMIT 1`,
-        [employer.id, applicant.id]
-      );
-      let threadId = thread?.id;
-      if (!threadId) {
-        const createdThread = await run(
-          `INSERT INTO message_threads (created_by_user_id, title) VALUES (?, ?)`,
-          [employer.id, "Full Stack Web Developer - Zaki Ablando & Cebuana Lhuillier"]
-        );
-        threadId = createdThread.lastID;
-        if (threadId) {
-          await run(`INSERT INTO message_participants (thread_id, user_id) VALUES (?, ?)`, [threadId, employer.id]).catch(() => {});
-          await run(`INSERT INTO message_participants (thread_id, user_id) VALUES (?, ?)`, [threadId, applicant.id]).catch(() => {});
-        }
-      } else {
-        await run(
-          `UPDATE message_threads SET title = 'Full Stack Web Developer - Zaki Ablando & Cebuana Lhuillier' WHERE id = ?`,
-          [threadId]
-        ).catch(() => {});
-      }
-
-      if (threadId) {
-        // 1. Ensure basic introductory messages and interview cards
-        const existingInterviewMsg = await get(
-          `SELECT id FROM messages WHERE thread_id = ? AND message_text LIKE '%[Interview Scheduled]%' LIMIT 1`,
-          [threadId]
-        );
-        if (!existingInterviewMsg) {
-          const introMessages = [
-            {
-              sender: employer.id,
-              text: "Hello Zaki! We were very impressed by your qualifications and software engineering background. We would like to schedule an initial technical evaluation."
-            },
-            {
-              sender: employer.id,
-              text: `[Interview Scheduled]: Technical Interview - Full Stack Web Developer\nStage: Technical Evaluation\nDate: 2026-11-20\nTime: 10:00 AM - 10:45 AM\nType: Video Conference\nLocation/Link: https://meet.google.com/zaki-interview-cebuana\nNotes: Please prepare a walkthrough of your latest architecture and full stack portfolio projects.`
-            },
-            {
-              sender: applicant.id,
-              text: "Thank you for the opportunity! I have added the technical interview to my calendar and look forward to meeting the engineering team."
-            },
-            {
-              sender: employer.id,
-              text: `[Interview Rescheduled]: Technical Interview - Full Stack Web Developer\nNew Schedule: 2026-11-22 at 02:00 PM\nOriginal Schedule: 2026-11-20 at 10:00 AM`
-            },
-            {
-              sender: employer.id,
-              text: `[Interview Cancelled]: Preliminary Screen - Full Stack Web Developer\nOriginal Schedule: 2026-11-18 at 09:00 AM\nReason: "Schedule consolidated directly into the technical evaluation panel."`
-            }
-          ];
-          for (const m of introMessages) {
-            await run(`INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`, [threadId, m.sender, m.text]);
-          }
-        }
-
-        // 2. Ensure Accepted Offer: Full Stack Web Developer
-        const hasAcceptedOffer = await get(
-          `SELECT id FROM messages WHERE thread_id = ? AND message_text LIKE '%Formal Employment Offer: Full Stack Web Developer%' LIMIT 1`,
-          [threadId]
-        );
-        if (!hasAcceptedOffer) {
-          await run(`INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`, [
-            threadId,
-            employer.id,
-            `[Formal Employment Offer: Full Stack Web Developer]\nCompany: Cebuana Lhuillier\n\nDear Zaki Ablando,\n\nCongratulations! On behalf of Cebuana Lhuillier, we are thrilled to formally extend an offer of employment for the position of "Full Stack Web Developer".\n\nCompensation & Benefits:\n• Monthly Base Salary: PHP 75,000.00\n• Work Arrangement: Hybrid (Dasmarinas Tech Hub / Remote)\n• Comprehensive Medical & Dental Coverage (HMO on Day 1)\n• Annual Performance Incentive & 14th Month Pay\n• Paid Time Off: 18 Vacation Days + 12 Sick Days\n\nYour proven expertise in full stack development, cloud computing, and responsive UI engineering will be instrumental in accelerating our next-generation fintech solutions.\n\nPlease review this official offer letter and submit your formal response along with your preferred start date.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\nHiring Committee\nCebuana Lhuillier`
-          ]);
-        }
-
-        const hasAcceptedResponse = await get(
-          `SELECT id FROM messages WHERE thread_id = ? AND message_text LIKE '%Official Job Offer Response: ACCEPTED%' AND message_text LIKE '%Full Stack Web Developer%' LIMIT 1`,
-          [threadId]
-        );
-        if (!hasAcceptedResponse) {
-          await run(`INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`, [
-            threadId,
-            applicant.id,
-            `[Official Job Offer Response: ACCEPTED]\nPosition: Full Stack Web Developer\n\nDear Hiring Team at Cebuana Lhuillier,\n\nI am thrilled and deeply honored to formally accept your employment offer for the position of "Full Stack Web Developer".\n\nI confirm my acceptance of the employment offer and accept the proposed compensation package of PHP 75,000.00 monthly with the comprehensive benefits outlined.\n\nI have already begun gathering the pre-employment onboarding documents and am eager to contribute my full stack expertise to Cebuana Lhuillier's digital fintech initiatives.\n\nThank you once again for this incredible opportunity!\n\nSincerely,\nZaki Ablando`
-          ]);
-        }
-
-        // 3. Ensure Declined Offer: Cloud Systems Associate
-        const hasDeclinedOffer = await get(
-          `SELECT id FROM messages WHERE thread_id = ? AND message_text LIKE '%Formal Employment Offer: Cloud Systems Associate%' LIMIT 1`,
-          [threadId]
-        );
-        if (!hasDeclinedOffer) {
-          await run(`INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`, [
-            threadId,
-            employer.id,
-            `[Formal Employment Offer: Cloud Systems Associate]\nCompany: Cebuana Lhuillier\n\nDear Zaki Ablando,\n\nWe are pleased to extend an official employment offer for the position of "Cloud Systems Associate" at Cebuana Lhuillier.\n\nCompensation & Benefits:\n• Monthly Base Salary: PHP 65,000.00\n• Work Arrangement: On-Site (Dasmarinas Tech Hub, Cavite)\n• Health & Dental Insurance (HMO on Day 1)\n• Performance Bonuses & Continuous Learning Stipend\n• Paid Time Off: 15 Vacation Days + 10 Sick Days\n\nPlease review this formal offer letter and submit your response through EliteCruit at your earliest convenience.\n\nSincerely,\nTalent Acquisition Team\nCebuana Lhuillier`
-          ]);
-        }
-
-        const hasDeclinedResponse = await get(
-          `SELECT id FROM messages WHERE thread_id = ? AND message_text LIKE '%Official Job Offer Response: DECLINED%' AND message_text LIKE '%Cloud Systems Associate%' LIMIT 1`,
-          [threadId]
-        );
-        if (!hasDeclinedResponse) {
-          await run(`DELETE FROM messages WHERE thread_id = ? AND message_text LIKE '%Formal Invitation Response: DECLINED%Cloud Systems Associate%'`, [threadId]).catch(() => {});
-          await run(`INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`, [
-            threadId,
-            applicant.id,
-            `[Official Job Offer Response: DECLINED]\nPosition: Cloud Systems Associate\n\nDear Hiring Team at Cebuana Lhuillier,\n\nThank you very much for considering my background and extending this formal employment offer for the position of "Cloud Systems Associate".\n\nAfter thoughtful consideration, I must respectfully decline this offer as I have decided to accept the Full Stack Web Developer position, which aligns directly with my core career focus in full-stack web engineering.\n\nI truly appreciate your time, consideration, and the opportunity to interview with your team, and I wish Cebuana Lhuillier continued success.\n\nBest regards,\nZaki Ablando`
-          ]);
-        }
-
-        // 4. Ensure Pending Offer: Senior Frontend Engineer (Extended, no response yet)
-        const hasPendingOffer = await get(
-          `SELECT id FROM messages WHERE thread_id = ? AND message_text LIKE '%Formal Employment Offer: Senior Frontend Engineer%' LIMIT 1`,
-          [threadId]
-        );
-        if (!hasPendingOffer) {
-          await run(`INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`, [
-            threadId,
-            employer.id,
-            `[Formal Employment Offer: Senior Frontend Engineer]\nCompany: Cebuana Lhuillier\n\nDear Zaki Ablando,\n\nCongratulations! On behalf of Cebuana Lhuillier, we are thrilled to formally extend an offer of employment for the position of "Senior Frontend Engineer".\n\nCompensation & Benefits:\n• Monthly Base Salary: PHP 75,000.00\n• Work Arrangement: Hybrid (Indang Tech Hub / Remote)\n• Comprehensive Medical & Dental Coverage (HMO on Day 1)\n• Performance Bonus & 14th Month Pay\n• Paid Time Off: 18 Vacation Days + 12 Sick Days\n\nYour proven expertise in frontend architecture, modern component design, and responsive web performance will play a vital role in our ongoing digital expansion.\n\nPlease review this official offer letter and submit your formal response along with your desired start date through EliteCruit.\n\nWe look forward to welcoming you to our engineering organization!\n\nWarm regards,\nTalent Acquisition Team\nCebuana Lhuillier`
-          ]);
-        }
-
-        await run(`UPDATE message_threads SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [threadId]);
-        console.log("[Zaki Accounts] Seeded formal offer letters (Accepted, Declined, Pending) in conversation thread.");
-      }
-    } catch (msgErr) {
-      console.error("[Zaki Accounts] Error seeding messages:", msgErr?.message || msgErr);
-    }
-
-    console.log("[Zaki Accounts] Seeded 5 recruitment workflow test scenarios + 3 direct invitation scenarios successfully!");
-    return {
-      success: true,
-      message: "Recruitment test data seeded successfully!",
-      employer: { email: employerEmail, password: defaultPassword },
-      applicant: { email: applicantEmail, password: defaultPassword },
-      scenarios: [
-        {
-          scenario: "1. Shortlisted without interview (Test 'Schedule Interview' or 'Approve & Extend Offer')",
-          job: jobA.title,
-          status: "shortlisted",
-          interview: null
-        },
-        {
-          scenario: "2. Interviewing with scheduled interview (Test candidate in 'Interviewing' stage & post-interview decision)",
-          job: jobB.title,
-          status: "interviewing",
-          interview: "Nov 6, 2026 at 10:00 AM"
-        },
-        {
-          scenario: "3. Approved with formal offer letter (Test applicant receiving offer & submitting response letter)",
-          job: jobC.title,
-          status: "approved",
-          offer: "PHP 60,000 / month, Start Date Nov 16, 2026",
-          applicantAction: "Log in as applicant and click 'Formal Offer Letter' -> Submit Response"
-        },
-        {
-          scenario: "4. Recruited with response letter (Test employer clicking 'View Response Letter' & applicant Recruited badge)",
-          job: jobD.title,
-          status: "recruited",
-          responseDecision: "accept",
-          employerAction: "Log in as employer -> Shortlisted / Hired -> Click 'View Response Letter'"
-        },
-        {
-          scenario: "5. Declined application with bypassed middle stages (Test red 4th milestone & skipped stages)",
-          job: jobE.title,
-          status: "denied",
-          was_shortlisted: false,
-          had_interview: false,
-          applicantAction: "Log in as applicant and observe 4th milestone red '✕', middle steps bypassed with '—', and no withdraw button"
-        },
-        {
-          scenario: "6. Direct Invitation: Pending (Test date label 'Invited: [Date]' and 'Pending Response' pill in Tab 3)",
-          candidate: "John Joe",
-          job: jobE.title,
-          status: "pending",
-          expectedLabel: "Invited: Nov 2, 2026",
-          expectedBadge: "Pending Response"
-        },
-        {
-          scenario: "7. Direct Invitation: Recruited (Test date label 'Recruited: [Date]' and 'Recruited' pill in Tab 3)",
-          candidate: "Maria Clarissa Santos",
-          job: jobA.title,
-          status: "accepted",
-          expectedLabel: "Recruited: Nov 3, 2026",
-          expectedBadge: "Recruited"
-        }
-      ]
-    };
+    console.log("[Zaki Accounts] All recruitment workflows and interaction scenarios ensured successfully!");
+    return { success: true };
   } catch (err) {
     console.error("[Zaki Meetings] Error ensuring meetings and test data:", err);
     return { success: false, error: err.message };
