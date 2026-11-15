@@ -71,7 +71,7 @@
   background: rgba(10, 25, 45, 0.45);
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
-  z-index: 220000;
+  z-index: 300000 !important;
   animation: calBackdropFadeIn 0.22s ease forwards;
 }
 
@@ -91,7 +91,7 @@
   height: 100vh;
   background: #ffffff;
   box-shadow: -10px 0 40px rgba(0, 20, 45, 0.3);
-  z-index: 220001;
+  z-index: 300001 !important;
   display: flex;
   flex-direction: column;
   transform: translateX(100%);
@@ -1383,7 +1383,7 @@
   background: rgba(15, 23, 42, 0.65);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  z-index: 100000;
+  z-index: 310000 !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1637,7 +1637,7 @@
   background: rgba(10, 30, 50, 0.72);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
-  z-index: 100010;
+  z-index: 310010 !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3548,6 +3548,6 @@
 
 .cal-drawer-details-modal-portal .cand-details-overlay,
 [data-theme="dark"] .cal-drawer-details-modal-portal .cand-details-overlay {
-  z-index: 230000 !important;
+  z-index: 310020 !important;
 }
 

@@ -1861,8 +1861,9 @@
   flex: 1 1 440px !important;
   flex-shrink: 1 !important;
   align-self: stretch !important;
-  height: auto !important;
-  min-height: 0 !important;
+  height: 700px !important;
+  max-height: 88vh !important;
+  min-height: 520px !important;
 }
 
 .jd-body-wrapper {

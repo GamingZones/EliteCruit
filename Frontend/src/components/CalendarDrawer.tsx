@@ -1317,11 +1317,14 @@ export default function CalendarDrawer({
         )}
       </button>
 
-      {/* ── BACKDROP OVERLAY ── */}
-      {isDrawerOpen && <div className="calendar-drawer-backdrop" onClick={handleClose} />}
+      {/* ── BACKDROP OVERLAY & SLIDE-OVER RIGHT PANEL (PORTALED TO BODY FOR PROPER Z-INDEX LAYERING) ── */}
+      {typeof document !== "undefined" &&
+        createPortal(
+          <>
+            {isDrawerOpen && <div className="calendar-drawer-backdrop" onClick={handleClose} />}
 
-      {/* ── SLIDE-OVER RIGHT PANEL (OPTION B) ── */}
-      <aside className={`calendar-drawer-slideover ${isDrawerOpen ? "open" : ""}`} aria-label="Meeting Calendar Drawer">
+            {/* ── SLIDE-OVER RIGHT PANEL (OPTION B) ── */}
+            <aside className={`calendar-drawer-slideover ${isDrawerOpen ? "open" : ""}`} aria-label="Meeting Calendar Drawer">
         {/* Header */}
         <div className="calendar-slideover-header">
           <div className="calendar-header-title-wrap">
@@ -1730,6 +1733,9 @@ export default function CalendarDrawer({
           )}
         </div>
       </aside>
+    </>,
+    document.body
+  )}
 
       {/* ── APPLICANT SELECTION POP-UP MODAL (PORTALED TO BODY FOR VIEWPORT CENTERING) ── */}
       {typeof document !== "undefined" && isApplicantModalOpen && createPortal(
