@@ -3844,9 +3844,7 @@
 .applicant-finder-main .search-bar-card,
 .applicant-mgmt-main.applicant-finder-main .search-bar-card,
 .finder-main-content .mode-toggle-card,
-.finder-main-content .search-bar-card,
-.mode-toggle-card,
-.search-bar-card {
+.finder-main-content .search-bar-card {
   width: 100% !important;
   max-width: 100% !important;
   margin: 0 !important;
@@ -3856,14 +3854,16 @@
   box-sizing: border-box !important;
 }
 
-.mode-toggle-card {
+.applicant-finder-main .mode-toggle-card,
+.finder-main-content .mode-toggle-card {
   display: flex !important;
   justify-content: space-between !important;
   align-items: center !important;
   gap: 16px !important;
 }
 
-.mode-toggle-card p {
+.applicant-finder-main .mode-toggle-card p,
+.finder-main-content .mode-toggle-card p {
   margin: 0 !important;
   font-size: 0.88rem !important;
   font-weight: 600 !important;
@@ -3871,13 +3871,15 @@
 }
 
 /* Equal size for both mode buttons (Standard Search & Nearby Finder) */
-.mode-actions {
+.applicant-finder-main .mode-actions,
+.finder-main-content .mode-actions {
   display: flex !important;
   gap: 8px !important;
   align-items: center !important;
 }
 
-.mode-actions button {
+.applicant-finder-main .mode-actions button,
+.finder-main-content .mode-actions button {
   width: 160px !important;
   min-width: 160px !important;
   max-width: 160px !important;
@@ -3895,7 +3897,8 @@
 }
 
 /* Equal height and styling for Search row elements */
-.search-input-row {
+.applicant-finder-main .search-input-row,
+.finder-main-content .search-input-row {
   display: flex !important;
   align-items: center !important;
   gap: 10px !important;
@@ -3903,8 +3906,10 @@
   box-sizing: border-box !important;
 }
 
-.search-input-row input,
-.search-input-row .search-input {
+.applicant-finder-main .search-input-row input,
+.applicant-finder-main .search-input-row .search-input,
+.finder-main-content .search-input-row input,
+.finder-main-content .search-input-row .search-input {
   height: 40px !important;
   padding: 0 14px !important;
   font-size: 0.85rem !important;
@@ -3912,8 +3917,10 @@
   box-sizing: border-box !important;
 }
 
-.search-input-row .find-jobs-btn,
-.search-input-row .filter-toggle-btn {
+.applicant-finder-main .search-input-row .find-jobs-btn,
+.applicant-finder-main .search-input-row .filter-toggle-btn,
+.finder-main-content .search-input-row .find-jobs-btn,
+.finder-main-content .search-input-row .filter-toggle-btn {
   height: 40px !important;
   padding: 0 18px !important;
   display: inline-flex !important;
