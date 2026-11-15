@@ -1611,7 +1611,6 @@ export default function EmployerApplicantFinder() {
   const [selectedExperience, setSelectedExperience] = useState("Any experience");
   const [selectedMinSalary, setSelectedMinSalary] = useState("Any salary");
   const [sortBy, setSortBy] = useState<"Best Match" | "Rating" | "Newest">("Best Match");
-  const [recruitmentFilter, setRecruitmentFilter] = useState<"all" | "available" | "recruited">("all");
   // ============================================================
   // GEOGRAPHIC LOCATION FILTER STATE (PROVINCE AND CITIES UP TO 5)
   // ============================================================
@@ -1715,6 +1714,24 @@ export default function EmployerApplicantFinder() {
     }
     if (Array.isArray(appliedList)) {
       return appliedList.some((item: any) => ["recruited", "accepted", "approved"].includes(String(item.status || "").toLowerCase()));
+    }
+    return false;
+  };
+
+  const isCandidateRecruitedForJob = (cand: Candidate | null, jobId: number | string | undefined | null): boolean => {
+    if (!cand || !jobId) return false;
+    const numJobId = Number(jobId);
+    if (isNaN(numJobId)) return false;
+
+    let appliedList = cand.applied_jobs;
+    if (typeof appliedList === "string") {
+      try { appliedList = JSON.parse(appliedList); } catch {}
+    }
+    if (Array.isArray(appliedList)) {
+      return appliedList.some((item: any) =>
+        Number(item.job_post_id) === numJobId &&
+        ["recruited", "accepted", "approved"].includes(String(item.status || "").toLowerCase())
+      );
     }
     return false;
   };
@@ -2478,7 +2495,6 @@ export default function EmployerApplicantFinder() {
     if (selectedExperience !== "Any experience") count += 1;
     if (selectedMinSalary !== "Any salary") count += 1;
     if (sortBy !== "Best Match") count += 1;
-    if (recruitmentFilter !== "all") count += 1;
     count += filterSkills.length;
     count += filterQualifications.length;
     count += filterCertifications.length;
@@ -2508,7 +2524,6 @@ export default function EmployerApplicantFinder() {
     setSelectedExperience("Any experience");
     setSelectedMinSalary("Any salary");
     setSortBy("Best Match");
-    setRecruitmentFilter("all");
     setFilterSkills([]);
     setFilterQualifications([]);
     setFilterCertifications([]);
@@ -2573,14 +2588,6 @@ export default function EmployerApplicantFinder() {
         if (!roleMatches && !skillsOverlap && candMatchScore < 40) {
           return false;
         }
-      }
-
-      // Recruitment Status Filter (Available vs Recruited)
-      if (recruitmentFilter === "available" && isCandidateRecruited(cand)) {
-        return false;
-      }
-      if (recruitmentFilter === "recruited" && !isCandidateRecruited(cand)) {
-        return false;
       }
 
       // 1. Search Query
@@ -2818,7 +2825,6 @@ export default function EmployerApplicantFinder() {
     filterQualifications,
     filterCertifications,
     sortBy,
-    recruitmentFilter,
   ]);
 
   const CANDIDATES_PER_PAGE = 10;
@@ -2848,7 +2854,6 @@ export default function EmployerApplicantFinder() {
     filterQualifications,
     filterCertifications,
     sortBy,
-    recruitmentFilter,
   ]);
 
   useEffect(() => {
@@ -3884,20 +3889,6 @@ export default function EmployerApplicantFinder() {
                       </select>
                     </div>
 
-                    {/* Recruitment Status */}
-                    <div className="filter-drawer-group">
-                      <label className="filter-group-label">Recruitment Status</label>
-                      <select
-                        className="filter-drawer-select"
-                        value={recruitmentFilter}
-                        onChange={(e) => setRecruitmentFilter(e.target.value as any)}
-                      >
-                        <option value="all">All Candidates</option>
-                        <option value="available">Available Candidates Only</option>
-                        <option value="recruited">Recruited Candidates Only</option>
-                      </select>
-                    </div>
-
                     {/* Sort By */}
                     <div className="filter-drawer-group">
                       <label className="filter-group-label">Sort By</label>
@@ -4085,8 +4076,8 @@ export default function EmployerApplicantFinder() {
                               <div className="finder-candidate-info">
                                 <div className="finder-name-row">
                                   <h3 className="finder-candidate-name">{cand.applicant_name}</h3>
-                                  {isCandidateRecruited(cand) && (
-                                    <span className="finder-status-pill finder-recruited-pill" title="Candidate has been recruited">
+                                  {currentActiveJob && isCandidateRecruitedForJob(cand, currentActiveJob.id) && (
+                                    <span className="finder-status-pill finder-recruited-pill" title={`Candidate was recruited for ${currentActiveJob.title}`}>
                                       Recruited
                                     </span>
                                   )}
@@ -4190,13 +4181,18 @@ export default function EmployerApplicantFinder() {
                                 Details
                               </button>
 
-                              <button
-                                type="button"
-                                className={`finder-card-btn ${isCandidateRecruited(cand) ? "btn-recruited" : "btn-invite"}`}
-                                onClick={() => openCandidateRecruit(cand)}
-                              >
-                                {isCandidateRecruited(cand) ? "Recruited" : "Offer Job"}
-                              </button>
+                              {(() => {
+                                const isRecruitedForThisJob = Boolean(currentActiveJob && isCandidateRecruitedForJob(cand, currentActiveJob.id));
+                                return (
+                                  <button
+                                    type="button"
+                                    className={`finder-card-btn ${isRecruitedForThisJob ? "btn-recruited" : "btn-invite"}`}
+                                    onClick={() => openCandidateRecruit(cand)}
+                                  >
+                                    {isRecruitedForThisJob ? "Recruited" : "Offer Job"}
+                                  </button>
+                                );
+                              })()}
                             </div>
                           </div>
                         </div>
@@ -4478,8 +4474,8 @@ export default function EmployerApplicantFinder() {
                             <div className="finder-candidate-info">
                               <div className="finder-name-row">
                                 <h3 className="finder-candidate-name">{cand.applicant_name}</h3>
-                                {isCandidateRecruited(cand) && (
-                                  <span className="finder-status-pill finder-recruited-pill" title="Candidate has been recruited">
+                                {currentActiveJob && isCandidateRecruitedForJob(cand, currentActiveJob.id) && (
+                                  <span className="finder-status-pill finder-recruited-pill" title={`Candidate was recruited for ${currentActiveJob.title}`}>
                                     Recruited
                                   </span>
                                 )}
@@ -4582,13 +4578,18 @@ export default function EmployerApplicantFinder() {
                               Details
                             </button>
 
-                            <button
-                              type="button"
-                              className={`finder-card-btn ${isCandidateRecruited(cand) ? "btn-recruited" : "btn-invite"}`}
-                              onClick={() => openCandidateRecruit(cand)}
-                            >
-                              {isCandidateRecruited(cand) ? "Recruited" : "Offer Job"}
-                            </button>
+                            {(() => {
+                              const isRecruitedForThisJob = Boolean(currentActiveJob && isCandidateRecruitedForJob(cand, currentActiveJob.id));
+                              return (
+                                <button
+                                  type="button"
+                                  className={`finder-card-btn ${isRecruitedForThisJob ? "btn-recruited" : "btn-invite"}`}
+                                  onClick={() => openCandidateRecruit(cand)}
+                                >
+                                  {isRecruitedForThisJob ? "Recruited" : "Offer Job"}
+                                </button>
+                              );
+                            })()}
                           </div>
                         </div>
                       </div>
@@ -4608,19 +4609,20 @@ export default function EmployerApplicantFinder() {
             candidate={selectedCandidate}
             employerJobs={activeJobs}
             currentEmployerUserId={currentEmployerId}
+            selectedJobId={selectedJobId || null}
             hideBreakdownTab={true}
             hideOtherJobsTab={true}
             customFooterActions={
               <button
                 type="button"
-                className={`finder-btn ${isCandidateRecruited(selectedCandidate) ? "finder-btn-recruited" : "finder-btn-green"}`}
+                className={`finder-btn ${selectedJobId && isCandidateRecruitedForJob(selectedCandidate, selectedJobId) ? "finder-btn-recruited" : "finder-btn-green"}`}
                 onClick={() => {
                   if (selectedCandidate) {
                     openCandidateRecruit(selectedCandidate, true);
                   }
                 }}
               >
-                {isCandidateRecruited(selectedCandidate) ? "Recruited" : "Offer Job"}
+                {selectedJobId && isCandidateRecruitedForJob(selectedCandidate, selectedJobId) ? "Recruited" : "Offer Job"}
               </button>
             }
           />

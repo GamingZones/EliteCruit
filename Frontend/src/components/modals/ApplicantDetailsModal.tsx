@@ -331,6 +331,7 @@ export type ApplicantDetailsModalProps = {
   hideOtherJobsTab?: boolean;
   hideMessagesTab?: boolean;
   hideCloseButton?: boolean;
+  selectedJobId?: number | string | null;
 };
 
 export type EmployerApplicantDetailsModalProps = ApplicantDetailsModalProps;
@@ -349,6 +350,7 @@ export default function ApplicantDetailsModal({
   hideOtherJobsTab = false,
   hideMessagesTab = false,
   hideCloseButton = false,
+  selectedJobId = null,
 }: ApplicantDetailsModalProps) {
   const [candDetailTab, setCandDetailTab] = useState<"personal" | "preferences" | "competencies" | "experience">("personal");
   const [isDocsDrawerOpen, setIsDocsDrawerOpen] = useState(false);
@@ -1330,10 +1332,19 @@ export default function ApplicantDetailsModal({
                   </div>
                   <strong className="cand-details-name" style={{ margin: 0 }}>{displayName}</strong>
                   {Boolean(
-                    candidate.is_recruited === 1 ||
-                    candidate.is_recruited === true ||
                     (candidate.status && ["recruited", "accepted", "approved"].includes(String(candidate.status).toLowerCase())) ||
-                    (candidate.latest_application_status && ["recruited", "accepted", "approved"].includes(String(candidate.latest_application_status).toLowerCase()))
+                    (candidate.latest_application_status && ["recruited", "accepted", "approved"].includes(String(candidate.latest_application_status).toLowerCase()) && candidate.job_id) ||
+                    (selectedJobId && (() => {
+                      const numJobId = Number(selectedJobId);
+                      let appliedList = candidate.applied_jobs;
+                      if (typeof appliedList === "string") {
+                        try { appliedList = JSON.parse(appliedList); } catch {}
+                      }
+                      return Array.isArray(appliedList) && appliedList.some((item: any) =>
+                        Number(item.job_post_id) === numJobId &&
+                        ["recruited", "accepted", "approved"].includes(String(item.status || "").toLowerCase())
+                      );
+                    })())
                   ) && (
                     <span className="cand-recruited-badge">Recruited</span>
                   )}
