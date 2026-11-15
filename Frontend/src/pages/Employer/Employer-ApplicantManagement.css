@@ -472,6 +472,11 @@
   border-color: #0284c7;
   color: #ffffff;
 }
+.action-btn.schedule-btn-icon.active-interviewing {
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+}
 
 /* Letter button: Indigo hover */
 .action-btn.letter-btn-icon:hover {
@@ -489,6 +494,15 @@
 .modal-status-word-btn.modal-schedule-btn:hover {
   background: #bae6fd;
   color: #0369a1;
+}
+.modal-status-word-btn.modal-schedule-btn.active-interviewing {
+  background: #0284c7;
+  color: #ffffff;
+  border: 1px solid #0369a1;
+}
+.modal-status-word-btn.modal-schedule-btn.active-interviewing:hover {
+  background: #0369a1;
+  color: #ffffff;
 }
 
 .modal-status-word-btn.modal-letter-btn {
@@ -512,6 +526,11 @@
   border-color: #38bdf8;
   color: #ffffff;
 }
+[data-theme="dark"] .action-btn.schedule-btn-icon.active-interviewing {
+  background: #0284c7;
+  border-color: #38bdf8;
+  color: #ffffff;
+}
 
 [data-theme="dark"] .action-btn.letter-btn-icon:hover {
   background: #4f46e5;
@@ -527,6 +546,15 @@
 [data-theme="dark"] .modal-status-word-btn.modal-schedule-btn:hover {
   background: rgba(2, 132, 199, 0.35);
   color: #7dd3fc;
+}
+[data-theme="dark"] .modal-status-word-btn.modal-schedule-btn.active-interviewing {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #38bdf8;
+}
+[data-theme="dark"] .modal-status-word-btn.modal-schedule-btn.active-interviewing:hover {
+  background: #0369a1;
+  color: #ffffff;
 }
 
 [data-theme="dark"] .modal-status-word-btn.modal-letter-btn {

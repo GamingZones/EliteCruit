@@ -35,6 +35,7 @@ import "../Applicant/Applicant-Dashboard.css";
 import "./Employer-Dashboard.css";
 import "./Employer-ApplicantManagement.css";
 import "../Applicant/JobSearch.css";
+import "../../components/CalendarDrawer.css";
 
 function isShsItem(item: string): boolean {
   if (!item) return false;
@@ -1329,6 +1330,15 @@ export default function EmployerApplicantManagement() {
   const [isDecisionSubmitting, setIsDecisionSubmitting] = useState(false);
   const [warningPopup, setWarningPopup] = useState<string>("");
   const [interviewRequiredApp, setInterviewRequiredApp] = useState<Application | null>(null);
+
+  // Unshortlist warning and Cancel Interview Modal state (Pic 4)
+  const [unshortlistWarningApp, setUnshortlistWarningApp] = useState<Application | null>(null);
+  const [interviewToCancelApp, setInterviewToCancelApp] = useState<Application | null>(null);
+  const [cancelInterviewReason, setCancelInterviewReason] = useState("Interviewer unavailable");
+  const [cancelInterviewMessage, setCancelInterviewMessage] = useState(
+    "We need to cancel this interview because the interviewer is unavailable. We apologize for the inconvenience."
+  );
+
   const [customDecisionTemplates, setCustomDecisionTemplates] = useState<{
     acceptance_template?: string;
     rejection_template?: string;
@@ -2265,6 +2275,107 @@ export default function EmployerApplicantManagement() {
     handleUpdateStatus(app.id, targetStatus);
   };
 
+  const handleOpenCalendarForCandidate = (app: Application) => {
+    const targetApplicantUserId = app.applicant_user_id || (app as any).user_id;
+    window.dispatchEvent(
+      new CustomEvent("elitecruit-open-calendar", {
+        detail: {
+          tab: "all",
+          candidateUserId: targetApplicantUserId,
+        },
+      })
+    );
+  };
+
+  const handleShortlistClick = (app: Application) => {
+    const appStatusLower = (app.status || "").toLowerCase();
+    const isInterviewing = appStatusLower === "interviewing" || appStatusLower === "interview";
+    const isShortlisted = appStatusLower === "shortlisted";
+
+    if (isInterviewing) {
+      setUnshortlistWarningApp(app);
+    } else if (isShortlisted) {
+      handleInitiateStatusChange(app, "pending");
+      if (reviewModalApp && reviewModalApp.id === app.id) {
+        setReviewModalApp({ ...reviewModalApp, status: "pending" });
+      }
+    } else {
+      handleInitiateStatusChange(app, "shortlisted");
+      if (reviewModalApp && reviewModalApp.id === app.id) {
+        setReviewModalApp({ ...reviewModalApp, status: "shortlisted" });
+      }
+    }
+  };
+
+  const handleOpenCancelModalForApp = (app: Application) => {
+    setInterviewToCancelApp(app);
+    setCancelInterviewReason("Interviewer unavailable");
+    setCancelInterviewMessage(
+      "We need to cancel this interview because the interviewer is unavailable. We apologize for the inconvenience."
+    );
+  };
+
+  const handleConfirmCancelInterviewAndUnshortlist = async () => {
+    if (!interviewToCancelApp) return;
+    const app = interviewToCancelApp;
+    const targetApplicantUserId = app.applicant_user_id || (app as any).user_id;
+
+    // 1. Locate and cancel interview in localStorage and API
+    try {
+      const raw = localStorage.getItem("elitecruit_scheduled_interviews");
+      if (raw) {
+        const existing = JSON.parse(raw);
+        if (Array.isArray(existing)) {
+          const found = existing.find(
+            (it: any) =>
+              (it.application_id === app.id ||
+                (targetApplicantUserId && it.applicant_user_id === targetApplicantUserId)) &&
+              it.status !== "cancelled"
+          );
+          if (found?.id) {
+            fetch(`/api/interviews/${found.id}/status`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                status: "cancelled",
+                cancellation_reason: cancelInterviewReason
+                  ? `${cancelInterviewReason}: ${cancelInterviewMessage}`
+                  : cancelInterviewMessage,
+              }),
+            }).catch(() => {});
+          }
+          const updated = existing.map((it: any) => {
+            if (
+              it.application_id === app.id ||
+              (targetApplicantUserId && it.applicant_user_id === targetApplicantUserId)
+            ) {
+              return {
+                ...it,
+                status: "cancelled",
+                cancellation_reason: cancelInterviewMessage,
+              };
+            }
+            return it;
+          });
+          localStorage.setItem("elitecruit_scheduled_interviews", JSON.stringify(updated));
+          window.dispatchEvent(new Event("elitecruit-interviews-updated"));
+        }
+      }
+    } catch (err) {
+      console.error("Error cancelling interview:", err);
+    }
+
+    // 2. Change status back to "pending" (un-shortlist)
+    handleUpdateStatus(app.id, "pending");
+
+    if (reviewModalApp && reviewModalApp.id === app.id) {
+      setReviewModalApp({ ...reviewModalApp, status: "pending" });
+    }
+
+    setInterviewToCancelApp(null);
+    setScheduleSuccessPopup(`The scheduled interview with ${app.applicant_name} has been cancelled, and the candidate was un-shortlisted.`);
+  };
+
   const handleOpenDirectScheduleModal = (app: Application) => {
     setDirectScheduleApp(app);
     setSchedTitle("");
@@ -2360,6 +2471,9 @@ export default function EmployerApplicantManagement() {
               : app
           )
         );
+        if (reviewModalApp && reviewModalApp.id === directScheduleApp.id) {
+          setReviewModalApp({ ...reviewModalApp, status: "interviewing" });
+        }
         fetchApplications();
 
         const candidateName = directScheduleApp.applicant_name;
@@ -2789,22 +2903,28 @@ export default function EmployerApplicantManagement() {
         <button
           type="button"
           className={`modal-status-word-btn modal-shortlist-btn ${isShortlisted || isInterviewing ? "active-shortlisted active" : ""}`}
-          title={isInterviewing ? "In Interviewing Stage" : isShortlisted ? "Shortlisted (click to un-shortlist)" : "Shortlist candidate"}
-          aria-label={isInterviewing ? "In Interviewing Stage" : "Shortlist candidate"}
-          onClick={() => handleInitiateStatusChange(reviewModalApp, isShortlisted || isInterviewing ? "pending" : "shortlisted")}
+          title={isShortlisted || isInterviewing ? "Shortlisted (click to un-shortlist)" : "Shortlist candidate"}
+          aria-label={isShortlisted || isInterviewing ? "Shortlisted (click to un-shortlist)" : "Shortlist candidate"}
+          onClick={() => handleShortlistClick(reviewModalApp)}
         >
-          <span>{isInterviewing ? "Interviewing" : isShortlisted ? "Shortlisted" : "Shortlist"}</span>
+          <span>{isShortlisted || isInterviewing ? "Shortlisted" : "Shortlist"}</span>
         </button>
 
         {canSchedule && (
           <button
             type="button"
-            className="modal-status-word-btn modal-schedule-btn"
-            title={isInterviewing ? "Reschedule Interview" : "Schedule Interview"}
-            aria-label={isInterviewing ? "Reschedule Interview" : "Schedule Interview"}
-            onClick={() => handleOpenDirectScheduleModal(reviewModalApp)}
+            className={`modal-status-word-btn modal-schedule-btn ${isInterviewing ? "active-interviewing" : ""}`}
+            title={isInterviewing ? "View Scheduled Interview in Calendar" : "Schedule Interview"}
+            aria-label={isInterviewing ? "View Scheduled Interview in Calendar" : "Schedule Interview"}
+            onClick={() => {
+              if (isInterviewing) {
+                handleOpenCalendarForCandidate(reviewModalApp);
+              } else {
+                handleOpenDirectScheduleModal(reviewModalApp);
+              }
+            }}
           >
-            <span>{isInterviewing ? "Reschedule" : "Schedule"}</span>
+            <span>{isInterviewing ? "Interviewing" : "Interview"}</span>
           </button>
         )}
 
@@ -3584,9 +3704,9 @@ export default function EmployerApplicantManagement() {
                                             <button
                                               type="button"
                                               className={`action-btn shortlist-action-btn shortlist-btn-icon ${isShortlisted || isInterviewing ? "active-shortlisted active" : ""}`}
-                                              title={isInterviewing ? "In Interviewing Stage" : isShortlisted ? "Shortlisted (click to un-shortlist)" : "Shortlist candidate"}
-                                              aria-label={isInterviewing ? "In Interviewing Stage" : "Shortlist candidate"}
-                                              onClick={() => handleInitiateStatusChange(app, isShortlisted || isInterviewing ? "pending" : "shortlisted")}
+                                              title={isShortlisted || isInterviewing ? "Shortlisted (click to un-shortlist)" : "Shortlist candidate"}
+                                              aria-label={isShortlisted || isInterviewing ? "Shortlisted (click to un-shortlist)" : "Shortlist candidate"}
+                                              onClick={() => handleShortlistClick(app)}
                                             >
                                               <RowActionIcon name="shortlist" />
                                             </button>
@@ -3594,10 +3714,16 @@ export default function EmployerApplicantManagement() {
                                             {canSchedule && (
                                               <button
                                                 type="button"
-                                                className="action-btn schedule-action-btn schedule-btn-icon"
-                                                title={isInterviewing ? "Reschedule Interview" : "Schedule Interview"}
-                                                aria-label={isInterviewing ? "Reschedule Interview" : "Schedule Interview"}
-                                                onClick={() => handleOpenDirectScheduleModal(app)}
+                                                className={`action-btn schedule-action-btn schedule-btn-icon ${isInterviewing ? "active-interviewing" : ""}`}
+                                                title={isInterviewing ? "View scheduled interview in Calendar" : "Schedule Interview"}
+                                                aria-label={isInterviewing ? "View scheduled interview in Calendar" : "Schedule Interview"}
+                                                onClick={() => {
+                                                  if (isInterviewing) {
+                                                    handleOpenCalendarForCandidate(app);
+                                                  } else {
+                                                    handleOpenDirectScheduleModal(app);
+                                                  }
+                                                }}
                                               >
                                                 <RowActionIcon name="schedule" />
                                               </button>
@@ -4095,11 +4221,9 @@ export default function EmployerApplicantManagement() {
                           <button
                             type="button"
                             className={`action-btn preview-action-btn shortlist-action-btn shortlist-btn-icon ${isShortlisted || isInterviewing ? "active-shortlisted active" : ""}`}
-                            title={isInterviewing ? "In Interviewing Stage" : isShortlisted ? "Shortlisted (click to un-shortlist)" : "Shortlist candidate"}
-                            aria-label={isInterviewing ? "In Interviewing Stage" : "Shortlist candidate"}
-                            onClick={() => {
-                              handleInitiateStatusChange(currentApp, isShortlisted || isInterviewing ? "pending" : "shortlisted");
-                            }}
+                            title={isShortlisted || isInterviewing ? "Shortlisted (click to un-shortlist)" : "Shortlist candidate"}
+                            aria-label={isShortlisted || isInterviewing ? "Shortlisted (click to un-shortlist)" : "Shortlist candidate"}
+                            onClick={() => handleShortlistClick(currentApp)}
                           >
                             <RowActionIcon name="shortlist" />
                           </button>
@@ -4107,10 +4231,16 @@ export default function EmployerApplicantManagement() {
                           {canSchedule && (
                             <button
                               type="button"
-                              className="action-btn preview-action-btn schedule-action-btn schedule-btn-icon"
-                              title={isInterviewing ? "Reschedule Interview" : "Schedule Interview"}
-                              aria-label={isInterviewing ? "Reschedule Interview" : "Schedule Interview"}
-                              onClick={() => handleOpenDirectScheduleModal(currentApp)}
+                              className={`action-btn preview-action-btn schedule-action-btn schedule-btn-icon ${isInterviewing ? "active-interviewing" : ""}`}
+                              title={isInterviewing ? "View scheduled interview in Calendar" : "Schedule Interview"}
+                              aria-label={isInterviewing ? "View scheduled interview in Calendar" : "Schedule Interview"}
+                              onClick={() => {
+                                if (isInterviewing) {
+                                  handleOpenCalendarForCandidate(currentApp);
+                                } else {
+                                  handleOpenDirectScheduleModal(currentApp);
+                                }
+                              }}
                             >
                               <RowActionIcon name="schedule" />
                             </button>
@@ -5118,7 +5248,11 @@ export default function EmployerApplicantManagement() {
 
         {/* ── STANDALONE SCHEDULE INTERVIEW MODAL (OPTIONAL INTERVIEW TRACK) ── */}
         {typeof document !== "undefined" && directScheduleApp && createPortal(
-          <div className="decision-modal-overlay candidate-response-overlay" onClick={() => { if (!isDecisionSubmitting) setDirectScheduleApp(null); }}>
+          <div
+            className="decision-modal-overlay candidate-response-overlay"
+            style={{ zIndex: 260000 }}
+            onClick={() => { if (!isDecisionSubmitting) setDirectScheduleApp(null); }}
+          >
             <div className="decision-modal-containers-row" onClick={(e) => e.stopPropagation()}>
               <aside className="decision-card decision-schedule-card" style={{ maxWidth: "520px", width: "100%" }}>
                 <div className="decision-card-header">
@@ -5368,6 +5502,120 @@ export default function EmployerApplicantManagement() {
           hideCancel={true}
           onConfirm={() => setScheduleSuccessPopup(null)}
         />
+
+        {/* ── UNSHORTLIST WARNING CONFIRMATION MODAL ── */}
+        <ConfirmationModal
+          isOpen={Boolean(unshortlistWarningApp)}
+          type="warning"
+          title="Cancel Scheduled Interview?"
+          message={
+            <span>
+              Removing <strong>{unshortlistWarningApp?.applicant_name}</strong> from Shortlisted will cancel their scheduled interview. Are you sure you want to proceed?
+            </span>
+          }
+          cancelLabel="Cancel"
+          confirmLabel="Yes"
+          onCancel={() => setUnshortlistWarningApp(null)}
+          onConfirm={() => {
+            const target = unshortlistWarningApp;
+            setUnshortlistWarningApp(null);
+            if (target) {
+              handleOpenCancelModalForApp(target);
+            }
+          }}
+        />
+
+        {/* ── CANCEL INTERVIEW MODAL (PORTALED TO BODY - PIC 4) ── */}
+        {typeof document !== "undefined" && interviewToCancelApp && createPortal(
+          <div
+            className="applicant-modal-backdrop"
+            style={{ zIndex: 320000 }}
+            onClick={() => setInterviewToCancelApp(null)}
+          >
+            <div
+              className="applicant-modal-container cancel-interview-modal-container"
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxWidth: "480px", width: "100%", padding: "24px", borderRadius: "16px", maxHeight: "90vh", overflowY: "auto" }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+                <div>
+                  <h3 className="cal-modal-title">Cancel interview?</h3>
+                  <p className="cal-modal-subtitle">
+                    The applicant will be notified and shown the reason.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="applicant-modal-close-btn"
+                  onClick={() => setInterviewToCancelApp(null)}
+                  aria-label="Close"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "16px" }}>
+                <div>
+                  <label className="cal-modal-label">
+                    Reason for cancellation
+                  </label>
+                  <select
+                    value={cancelInterviewReason}
+                    className="cal-modal-select"
+                    onChange={(e) => {
+                      setCancelInterviewReason(e.target.value);
+                      if (e.target.value === "Interviewer unavailable") {
+                        setCancelInterviewMessage("We need to cancel this interview because the interviewer is unavailable. We apologize for the inconvenience.");
+                      } else if (e.target.value === "Schedule conflict") {
+                        setCancelInterviewMessage("Due to an unexpected scheduling conflict, we need to cancel this interview session.");
+                      } else if (e.target.value === "Position already filled") {
+                        setCancelInterviewMessage("Thank you for your interest. This position has already been filled.");
+                      }
+                    }}
+                  >
+                    <option value="Interviewer unavailable">Interviewer unavailable</option>
+                    <option value="Schedule conflict">Schedule conflict</option>
+                    <option value="Position already filled">Position already filled</option>
+                    <option value="Candidate requested cancellation">Candidate requested cancellation</option>
+                    <option value="Technical issue">Technical issue</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="cal-modal-label">
+                    Message to applicant
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={cancelInterviewMessage}
+                    className="cal-modal-textarea"
+                    onChange={(e) => setCancelInterviewMessage(e.target.value)}
+                    style={{ resize: "vertical" }}
+                  />
+                </div>
+              </div>
+
+              <div className="cal-modal-actions" style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "20px" }}>
+                <button
+                  type="button"
+                  className="cal-modal-btn secondary"
+                  onClick={() => setInterviewToCancelApp(null)}
+                >
+                  Keep Interview
+                </button>
+                <button
+                  type="button"
+                  className="cal-modal-btn danger"
+                  onClick={handleConfirmCancelInterviewAndUnshortlist}
+                >
+                  Cancel Interview
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
 
         {/* ── RULE 6 COMPLIANT INTERVIEW STAGE REQUIRED POPUP MODAL ── */}
         {interviewRequiredApp && (
