@@ -8549,9 +8549,31 @@ app.post("/api/admin/reset-zaki-accounts", async (req, res) => {
   }
 });
 
+async function resetSpecificApplicantAccount(emailToReset) {
+  try {
+    const cleanEmail = String(emailToReset || "").trim().toLowerCase();
+    if (!cleanEmail) return;
+    const userRow = await get("SELECT id FROM users WHERE lower(email) = ?", [cleanEmail]);
+    if (userRow && userRow.id) {
+      console.log(`[Account Reset] Unregistering/resetting account for ${cleanEmail} (ID: ${userRow.id})...`);
+      await run("DELETE FROM users WHERE id = ?", [userRow.id]);
+      console.log(`[Account Reset] Successfully unregistered and removed ${cleanEmail}.`);
+    } else {
+      console.log(`[Account Reset] No user found with email ${cleanEmail}. Nothing to delete.`);
+    }
+  } catch (err) {
+    console.error(`[Account Reset] Error resetting ${emailToReset}:`, err);
+  }
+}
+
+app.all("/api/system/reset-zaki-applicant", async (req, res) => {
+  await resetSpecificApplicantAccount("zaki_ablando897@yahoo.com");
+  res.json({ success: true, message: "zaki_ablando897@yahoo.com account has been reset and unregistered." });
+});
+
 async function ensureMeetingsForZakiAccounts() {
   const employerEmail = "zakiablando897@gmail.com";
-  const targetApplicantEmails = ["zaki_ablando897@yahoo.com", "demo_applicant@elitecruit.ph"];
+  const targetApplicantEmails = ["demo_applicant@elitecruit.ph"];
 
   try {
     const defaultPassword = "Password123!";
@@ -9200,6 +9222,7 @@ if (fs.existsSync(distPath)) {
 Promise.resolve()
   .then(() => initPgDatabase())
   .then(() => ensureExtendedTables())
+  .then(() => resetSpecificApplicantAccount("zaki_ablando897@yahoo.com"))
   .then(() => migrateApplicantProfilesRemoveExperience())
   .then(() => ensureApplicantProfileColumns())
   .then(() => ensureEmployerProfileColumns())
