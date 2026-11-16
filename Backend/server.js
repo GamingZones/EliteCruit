@@ -8549,10 +8549,21 @@ app.post("/api/admin/reset-zaki-accounts", async (req, res) => {
   }
 });
 
-async function resetSpecificApplicantAccount(emailToReset) {
+async function resetSpecificApplicantAccount(emailToReset, force = false) {
   try {
     const cleanEmail = String(emailToReset || "").trim().toLowerCase();
     if (!cleanEmail) return;
+
+    const migrationKey = `one_time_reset_${cleanEmail.replace(/[^a-zA-Z0-9_]/g, "_")}`;
+    await run("CREATE TABLE IF NOT EXISTS system_migrations (name TEXT PRIMARY KEY, executed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP)").catch(() => {});
+
+    if (!force) {
+      const alreadyRun = await get("SELECT name FROM system_migrations WHERE name = ?", [migrationKey]);
+      if (alreadyRun) {
+        return; // Already executed once! Never delete again on future server restarts.
+      }
+    }
+
     const userRow = await get("SELECT id FROM users WHERE lower(email) = ?", [cleanEmail]);
     if (userRow && userRow.id) {
       console.log(`[Account Reset] Unregistering/resetting account for ${cleanEmail} (ID: ${userRow.id})...`);
@@ -8561,13 +8572,15 @@ async function resetSpecificApplicantAccount(emailToReset) {
     } else {
       console.log(`[Account Reset] No user found with email ${cleanEmail}. Nothing to delete.`);
     }
+
+    await run("INSERT INTO system_migrations (name) VALUES (?) ON CONFLICT (name) DO NOTHING", [migrationKey]).catch(() => {});
   } catch (err) {
     console.error(`[Account Reset] Error resetting ${emailToReset}:`, err);
   }
 }
 
 app.all("/api/system/reset-zaki-applicant", async (req, res) => {
-  await resetSpecificApplicantAccount("zaki_ablando897@yahoo.com");
+  await resetSpecificApplicantAccount("zaki_ablando897@yahoo.com", true);
   res.json({ success: true, message: "zaki_ablando897@yahoo.com account has been reset and unregistered." });
 });
 
