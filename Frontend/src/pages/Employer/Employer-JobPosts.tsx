@@ -9,6 +9,9 @@ import CalendarDrawer from "../../components/CalendarDrawer";
 import ConfirmationModal from "../../components/ConfirmationModal";
 import {
   BSIT_BSCS_JOB_TITLES,
+  ALL_UNIFIED_SKILLS,
+  ALL_UNIFIED_QUALIFICATIONS,
+  ALL_UNIFIED_CERTIFICATIONS,
   BSIT_BSCS_SKILLS,
   BSIT_BSCS_QUALIFICATIONS,
   BSIT_BSCS_CERTIFICATIONS,
@@ -1649,7 +1652,7 @@ export default function EmployerJobPosts() {
               <JobPostCategoryEditor
                 title="Technical Skills"
                 categoryType="skills"
-                availableOptions={BSIT_BSCS_SKILLS}
+                availableOptions={ALL_UNIFIED_SKILLS}
                 items={selectedSkills}
                 onChange={setSelectedSkills}
                 required
@@ -1659,7 +1662,7 @@ export default function EmployerJobPosts() {
               <JobPostCategoryEditor
                 title="Educational Qualifications"
                 categoryType="qualifications"
-                availableOptions={BSIT_BSCS_QUALIFICATIONS}
+                availableOptions={ALL_UNIFIED_QUALIFICATIONS}
                 items={selectedQualifications}
                 onChange={setSelectedQualifications}
                 required
@@ -1669,7 +1672,7 @@ export default function EmployerJobPosts() {
               <JobPostCategoryEditor
                 title="Professional Certifications"
                 categoryType="certifications"
-                availableOptions={BSIT_BSCS_CERTIFICATIONS}
+                availableOptions={ALL_UNIFIED_CERTIFICATIONS}
                 items={selectedCertifications}
                 onChange={setSelectedCertifications}
               />

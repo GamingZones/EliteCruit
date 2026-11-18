@@ -16,6 +16,9 @@ import { resolveLocalGeocode, resolveLocalGeocodeDetailed, CAVITE_MUNICIPALITIES
 import {
   BSIT_BSCS_JOB_TITLES,
   CATEGORIZED_JOB_ROLES,
+  ALL_UNIFIED_SKILLS,
+  ALL_UNIFIED_QUALIFICATIONS,
+  ALL_UNIFIED_CERTIFICATIONS,
   BSIT_BSCS_SKILLS,
   BSIT_BSCS_QUALIFICATIONS,
   BSIT_BSCS_CERTIFICATIONS,
@@ -3881,7 +3884,7 @@ export default function EmployerApplicantFinder() {
                     <div className="filter-drawer-group">
                       <FilterCategoryEditor
                         title="Technical Skills"
-                        availableOptions={BSIT_BSCS_SKILLS}
+                        availableOptions={ALL_UNIFIED_SKILLS}
                         items={filterSkills}
                         onChange={setFilterSkills}
                       />
@@ -3891,7 +3894,7 @@ export default function EmployerApplicantFinder() {
                     <div className="filter-drawer-group">
                       <FilterCategoryEditor
                         title="Qualifications"
-                        availableOptions={BSIT_BSCS_QUALIFICATIONS}
+                        availableOptions={ALL_UNIFIED_QUALIFICATIONS}
                         items={filterQualifications}
                         onChange={setFilterQualifications}
                       />
@@ -3901,7 +3904,7 @@ export default function EmployerApplicantFinder() {
                     <div className="filter-drawer-group">
                       <FilterCategoryEditor
                         title="Certifications"
-                        availableOptions={BSIT_BSCS_CERTIFICATIONS}
+                        availableOptions={ALL_UNIFIED_CERTIFICATIONS}
                         items={filterCertifications}
                         onChange={setFilterCertifications}
                       />

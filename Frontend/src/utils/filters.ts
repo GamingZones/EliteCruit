@@ -688,9 +688,9 @@ export const EXP_YEARS_OPTIONS = [
 ] as const;
 
 /**
- * 1. Technical Skills (Languages, Frameworks, Developer Tools & Technical Capabilities)
+ * 1. Technical Skills (Core BSIT/BSCS Foundation Skills)
  */
-export const BSIT_BSCS_SKILLS = [
+export const BSIT_BSCS_CORE_SKILLS = [
   "HTML / HTML5",
   "CSS / CSS3",
   "JavaScript",
@@ -722,8 +722,6 @@ export const BSIT_BSCS_SKILLS = [
   "WordPress / CMS Development",
   "Agile / Scrum Methodologies",
 ];
-
-export const AVAILABLE_SKILLS_LIST = BSIT_BSCS_SKILLS;
 
 /**
  * ============================================================================
@@ -1125,8 +1123,17 @@ export const SKILLS_COURSE_TAXONOMY_MAP: Record<string, string[]> = {
 };
 
 export const ALL_UNIFIED_SKILLS: string[] = Array.from(
-  new Set(Object.values(SKILLS_COURSE_TAXONOMY_MAP).flat())
+  new Set([
+    ...Object.values(SKILLS_COURSE_TAXONOMY_MAP).flat(),
+    ...BSIT_BSCS_CORE_SKILLS,
+  ])
 ).sort();
+
+/**
+ * Backward compatibility aliases: unified across all Employer and Applicant modules
+ */
+export const BSIT_BSCS_SKILLS = ALL_UNIFIED_SKILLS;
+export const AVAILABLE_SKILLS_LIST = ALL_UNIFIED_SKILLS;
 
 export const PRACTICAL_TRAINING_TAXONOMY: string[] = [
   "Capstone / Thesis Project Completion",

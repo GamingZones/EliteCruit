@@ -9,6 +9,9 @@ import EmployerChatbotDrawer, { EmployerFAQItem as FAQItem } from "../../compone
 import CalendarDrawer from "../../components/CalendarDrawer";
 import ConfirmationModal from "../../components/ConfirmationModal";
 import {
+  ALL_UNIFIED_SKILLS,
+  ALL_UNIFIED_QUALIFICATIONS,
+  ALL_UNIFIED_CERTIFICATIONS,
   BSIT_BSCS_SKILLS,
   BSIT_BSCS_QUALIFICATIONS,
   BSIT_BSCS_CERTIFICATIONS,
@@ -3279,19 +3282,19 @@ export default function EmployerApplicantManagement() {
               <div className="filter-competencies-grid">
                 <FilterCategoryEditor
                   title="Technical Skills"
-                  availableOptions={BSIT_BSCS_SKILLS}
+                  availableOptions={ALL_UNIFIED_SKILLS}
                   items={filterSkills}
                   onChange={setFilterSkills}
                 />
                 <FilterCategoryEditor
                   title="Qualifications"
-                  availableOptions={BSIT_BSCS_QUALIFICATIONS}
+                  availableOptions={ALL_UNIFIED_QUALIFICATIONS}
                   items={filterQualifications}
                   onChange={setFilterQualifications}
                 />
                 <FilterCategoryEditor
                   title="Certifications"
-                  availableOptions={BSIT_BSCS_CERTIFICATIONS}
+                  availableOptions={ALL_UNIFIED_CERTIFICATIONS}
                   items={filterCertifications}
                   onChange={setFilterCertifications}
                 />
