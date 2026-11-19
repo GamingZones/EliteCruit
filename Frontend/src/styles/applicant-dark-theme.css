@@ -6495,9 +6495,9 @@
   font-weight: 700 !important;
   letter-spacing: -0.01em !important;
   line-height: 1.2 !important;
-  background: rgba(148, 163, 184, 0.12) !important;
-  color: #cbd5e1 !important;
-  border: 1px solid rgba(148, 163, 184, 0.32) !important;
+  background: rgba(16, 185, 129, 0.16) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(52, 211, 153, 0.4) !important;
 }
 
 [data-theme="dark"] .jd-other-job-apply-btn.apply-btn-action {
@@ -7104,14 +7104,15 @@
   color: #fbbf24 !important;
 }
 
-/* Applicant Recommendation Badges (Identical neutral style in Dark Mode) */
+/* Applicant Recommendation Badges (Green Recommended style in Dark Mode) */
 [data-theme="dark"] .applicant-rec-badge,
 [data-theme="dark"] .applicant-rec-badge.green,
 [data-theme="dark"] .applicant-rec-badge.amber,
 [data-theme="dark"] .applicant-rec-badge.rec-identical {
-  background: rgba(148, 163, 184, 0.12) !important;
-  color: #cbd5e1 !important;
-  border: 1px solid rgba(148, 163, 184, 0.32) !important;
+  background: rgba(16, 185, 129, 0.16) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(52, 211, 153, 0.4) !important;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.18) !important;
 }
 
 /* Red Match (Low < 50%) */

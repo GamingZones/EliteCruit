@@ -3624,7 +3624,7 @@ export function calculateJobMatchDetails(
       `Add "${missingCerts.slice(0, 2).join('", "')}" to your profile certifications.`
     );
   }
-  if (score >= 75) {
+  if (score >= 50) {
     recommendations.push(
       "You are a top candidate for this role! We recommend submitting your application immediately."
     );
@@ -3675,29 +3675,21 @@ export function getMatchColorClass(score: number): "red" | "yellow" | "orange" |
 }
 
 export type ApplicantRecommendation = {
-  label: "Recommended" | "Good Fit";
-  colorClass: "green" | "amber";
+  label: "Recommended";
+  colorClass: "green";
   score: number;
 };
 
 /**
- * Option B Two-Tier Recommendation Badges for Applicant views:
- *   >= 75%:  Green badge "Recommended"
- *   50-74%: Amber badge "Good Fit"
- *   < 50%:   No badge (null)
+ * Recommendation Badges for Applicant views:
+ *   >= 50%: Green badge "Recommended"
+ *   < 50%:  No badge (null)
  */
 export function getApplicantRecommendation(score: number): ApplicantRecommendation | null {
-  if (score >= 75) {
-    return {
-      label: "Recommended",
-      colorClass: "rec-identical",
-      score,
-    };
-  }
   if (score >= 50) {
     return {
-      label: "Good Fit",
-      colorClass: "rec-identical",
+      label: "Recommended",
+      colorClass: "green",
       score,
     };
   }

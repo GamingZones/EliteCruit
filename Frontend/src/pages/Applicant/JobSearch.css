@@ -1241,7 +1241,7 @@
   border-color: #9fdfb9;
 }
 
-/* Recommendation Badges (Identical neutral style) */
+/* Recommendation Badges (Green Recommended style) */
 .applicant-rec-badge,
 .applicant-rec-badge.green,
 .applicant-rec-badge.amber,
@@ -1256,10 +1256,10 @@
   white-space: nowrap;
   line-height: 1;
   letter-spacing: 0;
-  background: #f1f5f9;
-  color: #334155;
-  border: 1px solid #cbd5e1;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+  box-shadow: 0 1px 2px rgba(16, 185, 129, 0.08);
 }
 
 .match-score-box small {
