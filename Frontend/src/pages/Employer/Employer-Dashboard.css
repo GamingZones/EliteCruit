@@ -939,15 +939,39 @@
   color: #475569;
 }
 
-.smart-matches-job-selector select {
-  padding: 6px 12px;
+.smart-matches-job-selector select,
+.approved-job-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding: 8px 36px 8px 14px;
   border-radius: 8px;
   border: 1px solid #cbd5e1;
-  background: #ffffff;
+  background-color: #ffffff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px;
   color: #0c2a47;
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease;
+  min-width: 250px;
+  max-width: 100%;
+}
+
+.smart-matches-job-selector select:hover,
+.approved-job-select:hover {
+  border-color: #0284c7;
+}
+
+.smart-matches-job-selector select:focus,
+.approved-job-select:focus {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+  outline: none;
 }
 
 .talent-pool-count-label {
@@ -1950,10 +1974,32 @@
   color: #cbd5e1 !important;
 }
 
-[data-theme="dark"] .smart-matches-job-selector select {
-  background: #242735 !important;
-  border-color: #2e3244 !important;
+[data-theme="dark"] .smart-matches-job-selector select,
+[data-theme="dark"] .approved-job-select {
+  background-color: #20232e !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  border: 1px solid #2e3244 !important;
   color: #ffffff !important;
+  outline: none !important;
+}
+
+[data-theme="dark"] .smart-matches-job-selector select:hover,
+[data-theme="dark"] .approved-job-select:hover {
+  border-color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .smart-matches-job-selector select:focus,
+[data-theme="dark"] .approved-job-select:focus {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25) !important;
+  outline: none !important;
+}
+
+[data-theme="dark"] .smart-matches-job-selector select option,
+[data-theme="dark"] .approved-job-select option {
+  background-color: #1c1e27 !important;
+  color: #f1f5f9 !important;
+  padding: 8px 12px;
 }
 
 [data-theme="dark"] .talent-pool-count-label {

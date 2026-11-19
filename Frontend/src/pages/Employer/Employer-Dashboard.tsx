@@ -1158,21 +1158,22 @@ export default function EmployerDashboard() {
             {availableApprovedJobs.length > 0 && (
               <div className="smart-matches-head-bar">
                 <div className="smart-matches-job-selector">
-                  <span className="selector-label">Evaluating Candidates for:</span>
+                  <span className="selector-label">Job Vacancy:</span>
                   <select
+                    className="approved-job-select"
                     value={selectedApprovedJobId}
                     onChange={(e) => setSelectedApprovedJobId(e.target.value === "all" ? "all" : Number(e.target.value))}
                   >
-                    <option value="all">All Job Vacancies ({approvedApplications.length} approved)</option>
+                    <option value="all">All Job Vacancies</option>
                     {availableApprovedJobs.map((job) => (
                       <option key={job.id} value={job.id}>
-                        {job.title} ({job.count} approved)
+                        {job.title}
                       </option>
                     ))}
                   </select>
                 </div>
                 <span className="talent-pool-count-label">
-                  Showing <strong>{filteredApprovedApplications.length}</strong> approved {filteredApprovedApplications.length === 1 ? "candidate" : "candidates"} {selectedApprovedJobId !== "all" ? "for this job vacancy" : "across all vacancies"}
+                  Showing <strong>{filteredApprovedApplications.length}</strong> approved {filteredApprovedApplications.length === 1 ? "candidate" : "candidates"} {selectedApprovedJobId !== "all" ? "for this vacancy" : "across all vacancies"}
                 </span>
               </div>
             )}
