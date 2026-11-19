@@ -4464,7 +4464,7 @@ export default function JobSearch() {
                           </p>
 
                           <p className="result-summary">
-                            {shortenText(employer.company_description, "No company description provided yet.", 160)}
+                            {shortenText(employer.company_description, "No company description provided yet.", 240)}
                           </p>
                         </div>
 

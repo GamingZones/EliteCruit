@@ -3774,6 +3774,15 @@
   overflow: visible;
 }
 
+.employer-result-card .result-summary {
+  -webkit-line-clamp: 2;
+  line-height: 1.35;
+}
+
+.employer-result-card .result-left-col {
+  gap: 5px;
+}
+
 .employer-result-card .overflow-tooltip {
   top: calc(100% + 8px);
   bottom: auto;
