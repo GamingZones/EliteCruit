@@ -43,6 +43,7 @@ import {
   PREFERRED_LOCATION_OPTIONS,
   splitTopLevelTokens,
   lookupCategoryForSkill,
+  lookupCategoryForCertification,
 } from "../../utils/filters";
 import "./Applicant-Dashboard.css";
 import "./ApplicantProfile.css";
@@ -1148,7 +1149,8 @@ function EduSchoolCardEditor({
 
   const handleAddItem = async () => {
     const nameToAdd = degreeInput.trim();
-    if (!nameToAdd) return;
+    const schoolToAdd = schoolInput.trim();
+    if (!nameToAdd || !schoolToAdd) return;
 
     const startNum = parseInt(selectedStart, 10);
     const endNum = parseInt(selectedEnd, 10);
@@ -1158,7 +1160,6 @@ function EduSchoolCardEditor({
     }
     setYearError("");
 
-    const schoolToAdd = schoolInput.trim();
     const newItem: EduItemWithSchool = {
       name: nameToAdd,
       school: schoolToAdd,
@@ -1359,7 +1360,7 @@ function EduSchoolCardEditor({
           type="button"
           className="add-item-btn"
           onClick={handleAddItem}
-          disabled={disabled || !degreeInput.trim()}
+          disabled={disabled || !degreeInput.trim() || !schoolInput.trim()}
         >
           + Add
         </button>
@@ -1545,15 +1546,21 @@ function CourseSkillsEditor({
     [courseSkills, items]
   );
 
+  const canAdd = Boolean(
+    inputValue.trim() && (selectedCourse.trim() || lookupCategoryForSkill(inputValue.trim()))
+  );
+
   const handleAddItem = async () => {
     const nameToAdd = inputValue.trim();
     if (!nameToAdd) return;
     if (items.some((it) => it.name.toLowerCase() === nameToAdd.toLowerCase())) return;
 
     let courseTag = selectedCourse.trim();
-    if (!courseTag || courseTag === "General IT" || !SKILLS_COURSE_TAXONOMY_MAP[courseTag]) {
-      courseTag = lookupCategoryForSkill(nameToAdd) || courseTag || "General IT";
+    if (!courseTag || !SKILLS_COURSE_TAXONOMY_MAP[courseTag]) {
+      courseTag = lookupCategoryForSkill(nameToAdd) || courseTag;
     }
+    if (!courseTag) return;
+
     const newItems: CourseSkillItem[] = [
       ...items,
       { name: nameToAdd, course: courseTag, year: selectedYear },
@@ -1708,7 +1715,6 @@ function CourseSkillsEditor({
             disabled={disabled}
             onChange={(val) => {
               setSelectedCourse(val);
-              setInputValue("");
             }}
             placeholder="Select or search course category..."
           />
@@ -1717,7 +1723,15 @@ function CourseSkillsEditor({
             value={inputValue}
             placeholder={selectedCourse.trim() ? `Select ${selectedCourse} skill...` : "Select or search skill..."}
             disabled={disabled}
-            onChange={setInputValue}
+            onChange={(val) => {
+              setInputValue(val);
+              if (val.trim()) {
+                const matchedCat = lookupCategoryForSkill(val.trim());
+                if (matchedCat) {
+                  setSelectedCourse(matchedCat);
+                }
+              }
+            }}
             onEnterAdd={handleAddItem}
           />
         </div>
@@ -1742,7 +1756,7 @@ function CourseSkillsEditor({
           type="button"
           className="add-item-btn"
           onClick={handleAddItem}
-          disabled={disabled || !inputValue.trim()}
+          disabled={disabled || !canAdd}
         >
           + Add
         </button>
@@ -2148,13 +2162,22 @@ function CertificationsWithExpiryEditor({
     [activeCategoryList, items]
   );
 
+  const canAdd = Boolean(
+    inputValue.trim() && (selectedCertCategory.trim() || lookupCategoryForCertification(inputValue.trim()))
+  );
+
   const handleAddItem = async () => {
     const nameToAdd = inputValue.trim();
     if (!nameToAdd) return;
     if (items.some((it) => it.name.toLowerCase() === nameToAdd.toLowerCase())) return;
 
+    let categoryTag = selectedCertCategory.trim();
+    if (!categoryTag || categoryTag === "All Certification Categories" || !CERTIFICATION_CATEGORIES_MAP[categoryTag]) {
+      categoryTag = lookupCategoryForCertification(nameToAdd) || categoryTag;
+    }
+    if (!categoryTag || categoryTag === "All Certification Categories") return;
+
     const expiryString = selectedExpiry || String(CURRENT_YEAR);
-    const categoryTag = selectedCertCategory.trim() || "General";
 
     const newItems: CertItem[] = [
       ...items,
@@ -2334,7 +2357,6 @@ function CertificationsWithExpiryEditor({
             disabled={disabled}
             onChange={(val) => {
               setSelectedCertCategory(val);
-              setInputValue("");
             }}
             placeholder="Select or search certification category..."
           />
@@ -2343,7 +2365,15 @@ function CertificationsWithExpiryEditor({
             value={inputValue}
             placeholder={selectedCertCategory.trim() ? `Select ${selectedCertCategory} certification...` : "Select or search certification..."}
             disabled={disabled}
-            onChange={setInputValue}
+            onChange={(val) => {
+              setInputValue(val);
+              if (val.trim()) {
+                const matchedCat = lookupCategoryForCertification(val.trim());
+                if (matchedCat) {
+                  setSelectedCertCategory(matchedCat);
+                }
+              }
+            }}
             onEnterAdd={handleAddItem}
           />
         </div>
@@ -2382,7 +2412,7 @@ function CertificationsWithExpiryEditor({
           type="button"
           className="add-item-btn"
           onClick={handleAddItem}
-          disabled={disabled || !inputValue.trim()}
+          disabled={disabled || !canAdd}
         >
           + Add
         </button>

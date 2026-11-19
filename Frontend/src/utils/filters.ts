@@ -2282,6 +2282,46 @@ export function lookupCategoryForSkill(skillName: string): string | null {
   return null;
 }
 
+/**
+ * Looks up the taxonomy category for a given certification name from CERTIFICATION_CATEGORIES_MAP.
+ * Prevents certifications from incorrectly falling back to "General".
+ */
+export function lookupCategoryForCertification(certName: string): string | null {
+  if (!certName || !certName.trim()) return null;
+  const clean = certName
+    .replace(/\s*\[.*?\]/g, "")
+    .replace(/\s*\(.*?\)/g, "")
+    .trim()
+    .toLowerCase();
+  if (!clean) return null;
+
+  // 1. Exact match in taxonomy (skipping "All Certification Categories")
+  for (const [category, certs] of Object.entries(CERTIFICATION_CATEGORIES_MAP)) {
+    if (category === "All Certification Categories") continue;
+    if (certs.some((c) => c.toLowerCase() === clean)) {
+      return category;
+    }
+  }
+
+  // 2. Contains match (skipping "All Certification Categories")
+  if (clean.length >= 3) {
+    for (const [category, certs] of Object.entries(CERTIFICATION_CATEGORIES_MAP)) {
+      if (category === "All Certification Categories") continue;
+      if (
+        certs.some(
+          (c) =>
+            c.toLowerCase().includes(clean) ||
+            clean.includes(c.toLowerCase())
+        )
+      ) {
+        return category;
+      }
+    }
+  }
+
+  return null;
+}
+
 export function parseItemList(
   raw?: string | any[] | null,
   fallback: string[] = []
