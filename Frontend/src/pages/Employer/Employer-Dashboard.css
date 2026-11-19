@@ -2713,12 +2713,6 @@
 .inflow-badge.active { background: #e0f2fe; color: #0369a1; }
 .inflow-badge.low { background: #fef9c3; color: #854d0e; }
 
-.top-job-breakdown-section {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
 .top-job-velocity-row {
   display: flex;
   align-items: center;
@@ -2731,33 +2725,6 @@
   border-radius: 999px;
   background: #e2e8f0;
   overflow: hidden;
-  display: flex;
-}
-
-.velocity-bar-track.multi-segment {
-  display: flex;
-  align-items: center;
-}
-
-.velocity-bar-segment {
-  height: 100%;
-  transition: width 0.3s ease;
-}
-
-.velocity-bar-segment.segment-pending {
-  background: #f59e0b;
-}
-
-.velocity-bar-segment.segment-approved {
-  background: #10b981;
-}
-
-.velocity-bar-segment.segment-denied {
-  background: #ef4444;
-}
-
-.velocity-bar-segment.segment-empty {
-  background: #e2e8f0;
 }
 
 .velocity-bar-fill {
@@ -2774,100 +2741,6 @@
   font-size: 0.76rem;
   color: #475569;
   flex-shrink: 0;
-}
-
-/* Individual Status Badges (Pending / Approved / Denied) */
-.top-job-status-chips {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.job-status-chip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 7px;
-  border-radius: 6px;
-  text-decoration: none;
-  font-size: 0.72rem;
-  font-weight: 600;
-  transition: all 0.15s ease;
-  box-sizing: border-box;
-}
-
-.job-status-chip .chip-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  margin-right: 4px;
-  flex-shrink: 0;
-}
-
-.job-status-chip .chip-label {
-  flex: 1;
-  text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.job-status-chip .chip-val {
-  font-weight: 800;
-  font-size: 0.75rem;
-  margin-left: 3px;
-}
-
-/* Light Theme Status Chips */
-.job-status-chip.chip-pending {
-  background: #fffbeb;
-  border: 1px solid #fef08a;
-  color: #854d0e;
-}
-.job-status-chip.chip-pending .chip-dot {
-  background: #eab308;
-}
-.job-status-chip.chip-pending .chip-val {
-  color: #a16207;
-}
-.job-status-chip.chip-pending:hover {
-  background: #fef9c3;
-  border-color: #fde047;
-  transform: translateY(-1px);
-}
-
-.job-status-chip.chip-approved {
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  color: #065f46;
-}
-.job-status-chip.chip-approved .chip-dot {
-  background: #10b981;
-}
-.job-status-chip.chip-approved .chip-val {
-  color: #047857;
-}
-.job-status-chip.chip-approved:hover {
-  background: #d1fae5;
-  border-color: #6ee7b7;
-  transform: translateY(-1px);
-}
-
-.job-status-chip.chip-denied {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #991b1b;
-}
-.job-status-chip.chip-denied .chip-dot {
-  background: #ef4444;
-}
-.job-status-chip.chip-denied .chip-val {
-  color: #b91c1c;
-}
-.job-status-chip.chip-denied:hover {
-  background: #fee2e2;
-  border-color: #fca5a5;
-  transform: translateY(-1px);
 }
 
 .top-job-footer {
@@ -3035,64 +2908,8 @@
   background: #2e3244 !important;
 }
 
-[data-theme="dark"] .velocity-bar-segment.segment-empty {
-  background: #2e3244 !important;
-}
-
 [data-theme="dark"] .velocity-count-text {
   color: #cbd5e1 !important;
-}
-
-/* Dark Mode Status Chips */
-[data-theme="dark"] .job-status-chip.chip-pending {
-  background: rgba(234, 179, 8, 0.12) !important;
-  border: 1px solid rgba(234, 179, 8, 0.28) !important;
-  color: #fef08a !important;
-}
-[data-theme="dark"] .job-status-chip.chip-pending .chip-dot {
-  background: #facc15 !important;
-  box-shadow: 0 0 6px rgba(250, 204, 21, 0.4) !important;
-}
-[data-theme="dark"] .job-status-chip.chip-pending .chip-val {
-  color: #fde047 !important;
-}
-[data-theme="dark"] .job-status-chip.chip-pending:hover {
-  background: rgba(234, 179, 8, 0.2) !important;
-  border-color: #facc15 !important;
-}
-
-[data-theme="dark"] .job-status-chip.chip-approved {
-  background: rgba(16, 185, 129, 0.12) !important;
-  border: 1px solid rgba(16, 185, 129, 0.28) !important;
-  color: #a7f3d0 !important;
-}
-[data-theme="dark"] .job-status-chip.chip-approved .chip-dot {
-  background: #34d399 !important;
-  box-shadow: 0 0 6px rgba(52, 211, 153, 0.4) !important;
-}
-[data-theme="dark"] .job-status-chip.chip-approved .chip-val {
-  color: #6ee7b7 !important;
-}
-[data-theme="dark"] .job-status-chip.chip-approved:hover {
-  background: rgba(16, 185, 129, 0.2) !important;
-  border-color: #34d399 !important;
-}
-
-[data-theme="dark"] .job-status-chip.chip-denied {
-  background: rgba(239, 68, 68, 0.12) !important;
-  border: 1px solid rgba(239, 68, 68, 0.28) !important;
-  color: #fecaca !important;
-}
-[data-theme="dark"] .job-status-chip.chip-denied .chip-dot {
-  background: #f87171 !important;
-  box-shadow: 0 0 6px rgba(248, 113, 113, 0.4) !important;
-}
-[data-theme="dark"] .job-status-chip.chip-denied .chip-val {
-  color: #fca5a5 !important;
-}
-[data-theme="dark"] .job-status-chip.chip-denied:hover {
-  background: rgba(239, 68, 68, 0.2) !important;
-  border-color: #f87171 !important;
 }
 
 [data-theme="dark"] .top-job-footer {

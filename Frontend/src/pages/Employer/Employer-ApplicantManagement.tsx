@@ -973,16 +973,14 @@ export default function EmployerApplicantManagement() {
   const [appliedSearchQuery, setAppliedSearchQuery] = useState("");
   const [jobFilter, setJobFilter] = useState<string>(() => {
     if (typeof window !== "undefined") {
-      const searchParams = new URLSearchParams(window.location.search);
-      const qJobId = searchParams.get("jobId") || searchParams.get("job");
+      const qJobId = new URLSearchParams(window.location.search).get("jobId");
       if (qJobId) return qJobId;
     }
     return "all";
   });
   const [boardJobFilter, setBoardJobFilter] = useState<string>(() => {
     if (typeof window !== "undefined") {
-      const searchParams = new URLSearchParams(window.location.search);
-      const qJobId = searchParams.get("jobId") || searchParams.get("job");
+      const qJobId = new URLSearchParams(window.location.search).get("jobId");
       if (qJobId) return qJobId;
     }
     return "all";
@@ -997,13 +995,7 @@ export default function EmployerApplicantManagement() {
     return CAVITE_CITIES;
   }, [selectedProvince]);
   const [arrangementFilter, setArrangementFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      const qStatus = new URLSearchParams(window.location.search).get("status");
-      if (qStatus) return qStatus.toLowerCase();
-    }
-    return "all";
-  });
+  const [statusFilter, setStatusFilter] = useState("all");
   const [selectedExperience, setSelectedExperience] = useState("Any Experience");
   const [selectedMinSalary, setSelectedMinSalary] = useState("");
   const [selectedMaxSalary, setSelectedMaxSalary] = useState("");
@@ -1643,23 +1635,6 @@ export default function EmployerApplicantManagement() {
       if (jobFilter !== "all") {
         if (String(app.job_post_id) !== String(jobFilter) && (app.job_title || "").toLowerCase() !== jobFilter.toLowerCase()) {
           return false;
-        }
-      }
-
-      // 2b. Status Filter (e.g. pending / approved / denied)
-      if (statusFilter !== "all") {
-        const s = (app.status || "").toLowerCase();
-        const dec = (app.response_decision || "").toLowerCase();
-        if (statusFilter === "pending") {
-          const isApproved = ["approved", "accepted", "recruited", "hired"].includes(s) || ["accept", "accepted", "approved"].includes(dec);
-          const isDenied = ["rejected", "denied"].includes(s) || ["decline", "declined", "reject", "rejected"].includes(dec);
-          if (isApproved || isDenied) return false;
-        } else if (statusFilter === "approved") {
-          const isApproved = ["approved", "accepted", "recruited", "hired"].includes(s) || ["accept", "accepted", "approved"].includes(dec);
-          if (!isApproved) return false;
-        } else if (statusFilter === "denied") {
-          const isDenied = ["rejected", "denied"].includes(s) || ["decline", "declined", "reject", "rejected"].includes(dec);
-          if (!isDenied) return false;
         }
       }
 

@@ -64,9 +64,6 @@ type ActiveJobPost = {
   location: string | null;
   status: string;
   applicant_count: number;
-  pending_count?: number;
-  approved_count?: number;
-  denied_count?: number;
   salary_min?: number;
   salary_max?: number;
   employment_type?: string;
@@ -900,14 +897,8 @@ export default function EmployerDashboard() {
                             </svg>
                           ),
                         };
-                    const approvedCount = Number(job.approved_count || 0);
-                    const deniedCount = Number(job.denied_count || 0);
-                    const pendingCount = Number(
-                      job.pending_count !== undefined
-                        ? job.pending_count
-                        : Math.max(0, count - approvedCount - deniedCount)
-                    );
-                    const totalApplicants = count || (pendingCount + approvedCount + deniedCount);
+                    const maxCount = Math.max(sortedJobPosts[0]?.applicant_count || 1, 4);
+                    const fillPct = Math.min(100, Math.max(12, Math.round((count / maxCount) * 100)));
 
                     return (
                       <div className="top-job-item" key={job.id}>
@@ -927,76 +918,13 @@ export default function EmployerDashboard() {
                           </span>
                         </div>
 
-                        {/* Status Breakdown: Multi-Segment Ratio Bar & Status Badges */}
-                        <div className="top-job-breakdown-section">
-                          <div className="top-job-velocity-row">
-                            <div
-                              className="velocity-bar-track multi-segment"
-                              title={`${pendingCount} Pending, ${approvedCount} Approved, ${deniedCount} Denied`}
-                            >
-                              {totalApplicants > 0 ? (
-                                <>
-                                  {pendingCount > 0 && (
-                                    <div
-                                      className="velocity-bar-segment segment-pending"
-                                      style={{ width: `${(pendingCount / totalApplicants) * 100}%` }}
-                                      title={`Pending: ${pendingCount}`}
-                                    />
-                                  )}
-                                  {approvedCount > 0 && (
-                                    <div
-                                      className="velocity-bar-segment segment-approved"
-                                      style={{ width: `${(approvedCount / totalApplicants) * 100}%` }}
-                                      title={`Approved: ${approvedCount}`}
-                                    />
-                                  )}
-                                  {deniedCount > 0 && (
-                                    <div
-                                      className="velocity-bar-segment segment-denied"
-                                      style={{ width: `${(deniedCount / totalApplicants) * 100}%` }}
-                                      title={`Denied: ${deniedCount}`}
-                                    />
-                                  )}
-                                </>
-                              ) : (
-                                <div className="velocity-bar-segment segment-empty" style={{ width: "100%" }} />
-                              )}
-                            </div>
-                            <span className="velocity-count-text">
-                              <strong>{totalApplicants}</strong> {totalApplicants === 1 ? "applicant" : "applicants"}
-                            </span>
+                        <div className="top-job-velocity-row">
+                          <div className="velocity-bar-track">
+                            <div className={`velocity-bar-fill ${badgeClass}`} style={{ width: `${fillPct}%` }} />
                           </div>
-
-                          {/* Individual Status Badges */}
-                          <div className="top-job-status-chips">
-                            <a
-                              href={`/employer-applicant-management?jobId=${job.id}&status=pending`}
-                              className="job-status-chip chip-pending"
-                              title={`${pendingCount} Pending Candidate${pendingCount === 1 ? "" : "s"}`}
-                            >
-                              <span className="chip-dot dot-pending" />
-                              <span className="chip-label">Pending</span>
-                              <strong className="chip-val">{pendingCount}</strong>
-                            </a>
-                            <a
-                              href={`/employer-applicant-management?jobId=${job.id}&status=approved`}
-                              className="job-status-chip chip-approved"
-                              title={`${approvedCount} Approved Candidate${approvedCount === 1 ? "" : "s"}`}
-                            >
-                              <span className="chip-dot dot-approved" />
-                              <span className="chip-label">Approved</span>
-                              <strong className="chip-val">{approvedCount}</strong>
-                            </a>
-                            <a
-                              href={`/employer-applicant-management?jobId=${job.id}&status=denied`}
-                              className="job-status-chip chip-denied"
-                              title={`${deniedCount} Denied Candidate${deniedCount === 1 ? "" : "s"}`}
-                            >
-                              <span className="chip-dot dot-denied" />
-                              <span className="chip-label">Denied</span>
-                              <strong className="chip-val">{deniedCount}</strong>
-                            </a>
-                          </div>
+                          <span className="velocity-count-text">
+                            <strong>{count}</strong> {count === 1 ? "applicant" : "applicants"}
+                          </span>
                         </div>
 
                         <div className="top-job-footer">

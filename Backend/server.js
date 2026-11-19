@@ -5408,9 +5408,6 @@ app.get("/api/employers/:userId/active-job-posts", async (req, res) => {
          status,
          application_limit,
          (SELECT COUNT(a.id) FROM applications a WHERE a.job_post_id = job_posts.id) AS applicants_count,
-         (SELECT COUNT(a.id) FROM applications a WHERE a.job_post_id = job_posts.id AND (lower(COALESCE(a.status, '')) IN ('approved', 'accepted', 'recruited', 'hired') OR lower(COALESCE(a.response_decision, '')) IN ('accept', 'accepted', 'approved'))) AS approved_count,
-         (SELECT COUNT(a.id) FROM applications a WHERE a.job_post_id = job_posts.id AND (lower(COALESCE(a.status, '')) IN ('rejected', 'denied') OR lower(COALESCE(a.response_decision, '')) IN ('decline', 'declined', 'reject', 'rejected'))) AS denied_count,
-         (SELECT COUNT(a.id) FROM applications a WHERE a.job_post_id = job_posts.id AND lower(COALESCE(a.status, '')) NOT IN ('approved', 'accepted', 'recruited', 'hired', 'rejected', 'denied') AND lower(COALESCE(a.response_decision, '')) NOT IN ('accept', 'accepted', 'approved', 'decline', 'declined', 'reject', 'rejected')) AS pending_count,
          close_date,
          hide_salary 
        FROM job_posts 
@@ -5421,10 +5418,6 @@ app.get("/api/employers/:userId/active-job-posts", async (req, res) => {
     const active = rows
       .map((r) => ({
         ...r,
-        applicant_count: Number(r.applicants_count || 0),
-        approved_count: Number(r.approved_count || 0),
-        denied_count: Number(r.denied_count || 0),
-        pending_count: Number(r.pending_count || 0),
         status: deriveJobPostStatus(r.close_date, r.status),
       }))
       .filter((r) => r.status === "open");
@@ -6289,12 +6282,7 @@ app.get("/api/employers/:userId/dashboard-summary", authenticateToken, requireUs
     let activeJobPosts = [];
     if (hasApplications) {
       const rows = await all(
-        `SELECT jp.*,
-                COALESCE(NULLIF(TRIM(jp.location), ''), ep.company_address, ep.city, 'Cavite') AS location,
-                COUNT(a.id) AS applicant_count,
-                SUM(CASE WHEN a.id IS NOT NULL AND (lower(COALESCE(a.status, '')) IN ('approved', 'accepted', 'recruited', 'hired') OR lower(COALESCE(a.response_decision, '')) IN ('accept', 'accepted', 'approved')) THEN 1 ELSE 0 END) AS approved_count,
-                SUM(CASE WHEN a.id IS NOT NULL AND (lower(COALESCE(a.status, '')) IN ('rejected', 'denied') OR lower(COALESCE(a.response_decision, '')) IN ('decline', 'declined', 'reject', 'rejected')) THEN 1 ELSE 0 END) AS denied_count,
-                SUM(CASE WHEN a.id IS NOT NULL AND lower(COALESCE(a.status, '')) NOT IN ('approved', 'accepted', 'recruited', 'hired', 'rejected', 'denied') AND lower(COALESCE(a.response_decision, '')) NOT IN ('accept', 'accepted', 'approved', 'decline', 'declined', 'reject', 'rejected') THEN 1 ELSE 0 END) AS pending_count
+        `SELECT jp.*, COALESCE(NULLIF(TRIM(jp.location), ''), ep.company_address, ep.city, 'Cavite') AS location, COUNT(a.id) AS applicant_count
          FROM job_posts jp
          LEFT JOIN employer_profiles ep ON ep.user_id = jp.employer_user_id
          LEFT JOIN applications a ON a.job_post_id = jp.id
@@ -6304,14 +6292,7 @@ app.get("/api/employers/:userId/dashboard-summary", authenticateToken, requireUs
         [userId]
       );
       activeJobPosts = rows
-        .map((row) => ({
-          ...row,
-          applicant_count: Number(row.applicant_count || 0),
-          approved_count: Number(row.approved_count || 0),
-          denied_count: Number(row.denied_count || 0),
-          pending_count: Number(row.pending_count || 0),
-          status: deriveJobPostStatus(row.close_date, row.status),
-        }))
+        .map((row) => ({ ...row, status: deriveJobPostStatus(row.close_date, row.status) }))
         .filter((row) => row.status === "open");
     } else {
       const rows = await all(
@@ -6323,14 +6304,7 @@ app.get("/api/employers/:userId/dashboard-summary", authenticateToken, requireUs
         [userId]
       );
       activeJobPosts = rows
-        .map((row) => ({
-          ...row,
-          applicant_count: 0,
-          approved_count: 0,
-          denied_count: 0,
-          pending_count: 0,
-          status: deriveJobPostStatus(row.close_date, row.status),
-        }))
+        .map((row) => ({ ...row, applicant_count: 0, status: deriveJobPostStatus(row.close_date, row.status) }))
         .filter((row) => row.status === "open");
     }
 
