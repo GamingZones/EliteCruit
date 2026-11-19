@@ -1,0 +1,99 @@
+================================================================================
+          ELITECRUIT PRESENTATION SIMULATION: MESSAGES & INTERVIEWS SCRIPT
+================================================================================
+Presentation Accounts:
+  - Employer Account : zakiablando897@gmail.com (TechNova Innovations Inc.)
+  - Applicant Account: zaki_ablando897@yahoo.com (Juan Carlos Dela Cruz)
+  - Target Position  : Senior Frontend Engineer (Hybrid | Cavite)
+================================================================================
+
+--------------------------------------------------------------------------------
+PART 1: INTERVIEW SCHEDULING FORM DATA (Employer-ApplicantManagement)
+--------------------------------------------------------------------------------
+When opening the "Schedule Interview" modal on the candidate card:
+
+• Interview Title:
+  Technical Architecture & Frontend Evaluation
+
+• Interview Round / Stage:
+  Round 2 - Technical Interview
+
+• Date & Time:
+  Select Tomorrow's Date at 10:00 AM
+
+• Duration:
+  45 Minutes
+
+• Meeting Platform:
+  Google Meet
+
+• Meeting Link / URL:
+  https://meet.google.com/xyz-demo-cruit
+
+• Interviewers:
+  Mark Robinson (Lead Frontend Architect) & Sarah Gomez (Talent Acquisition)
+
+• Agenda / Recruiter Notes (Paste into Notes field):
+  Hi Juan Carlos, we are excited to evaluate your frontend experience with React and TypeScript. Please prepare a 15-minute walkthrough of your past architectural projects and state management implementations.
+
+
+--------------------------------------------------------------------------------
+PART 2: IN-APP CHAT EXCHANGES (/messages)
+--------------------------------------------------------------------------------
+Copy and paste these messages directly into the Chat window between Employer
+and Applicant during your live demonstration:
+
+--- SCENE 1: INITIAL OUTREACH & INTERVIEW INVITATION ---
+[Sender: Employer / Recruiter]
+"Hello Juan Carlos! We reviewed your profile and were very impressed by your hands-on experience in React, TypeScript, and fintech web portals in Cavite. We would love to invite you for a 45-minute Technical Architecture Interview tomorrow at 10:00 AM via Google Meet."
+
+[Sender: Applicant / Juan Carlos]
+"Hi Sarah! Thank you so much for reaching out and considering my application. I would be thrilled to meet the team. I confirm my attendance for tomorrow at 10:00 AM via Google Meet. Looking forward to our conversation!"
+
+
+--- SCENE 2: INTERVIEW DAY CHECK-IN ---
+[Sender: Employer / Recruiter]
+"Good morning Juan Carlos! Just sending a quick reminder for our interview today at 10:00 AM. Here is the direct meeting link: https://meet.google.com/xyz-demo-cruit. See you shortly!"
+
+[Sender: Applicant / Juan Carlos]
+"Good morning! Thank you for the reminder. I have my presentation and past React portal architecture ready. See you in the room!"
+
+
+--- SCENE 3: POST-INTERVIEW FEEDBACK & FORMAL OFFER NOTICE ---
+[Sender: Employer / Recruiter]
+"Hi Juan Carlos! The technical panel was thoroughly impressed with your deep knowledge of state optimization and component architecture. We are delighted to inform you that TechNova is extending a formal job offer for the Senior Frontend Engineer role! You can view and accept your complete Offer Letter in your Candidate Workspace."
+
+[Sender: Applicant / Juan Carlos]
+"Thank you so much to you and the entire TechNova team! I truly enjoyed our technical discussion. I will review the formal offer letter right away in my workspace. Excited for the opportunity to contribute!"
+
+
+--------------------------------------------------------------------------------
+PART 3: LIVE INTERVIEW Q&A TALKING POINTS (Speech Script for Presenters)
+--------------------------------------------------------------------------------
+If your presentation requires speaking or acting out a 60-second mock interview:
+
+[Recruiter]: 
+"Juan Carlos, thanks for joining us today. We noticed you have extensive experience building dashboards in React and TypeScript. Can you share how you handled load time performance in your previous role?"
+
+[Applicant]: 
+"Certainly! At Cavite Digital Solutions, our core analytics dashboard was experiencing render lags due to redundant DOM re-renders and unoptimized API polling. I implemented React memoization, code-splitting with dynamic imports, and moved background polling to an intelligent visibility-based interval. This reduced portal load times by 35% and cut server egress by nearly half."
+
+[Recruiter]: 
+"That directly aligns with what we need for our Cavite fintech portal. What is your preferred work setup and availability?"
+
+[Applicant]: 
+"I am based in Dasmariñas, Cavite, so TechNova's hybrid schedule in Indang/Dasmariñas is ideal for me. I can start with a standard 2-week turnover period."
+
+
+--------------------------------------------------------------------------------
+PART 4: FORMAL OFFER LETTER DATA SUMMARY (For Offer Letter Generation)
+--------------------------------------------------------------------------------
+Position Title      : Senior Frontend Engineer
+Department          : Product & Software Engineering
+Basic Monthly Salary: PHP 75,000.00
+Monthly Allowance   : PHP 10,000.00 (De Minimis, Internet & Wellness)
+Total Monthly Comp  : PHP 85,000.00
+Target Start Date   : First Monday of Next Month
+Employment Terms    : Full-time Regular (6-month probationary review with guaranteed 10% appraisal upon regularization)
+Benefits Package    : Day-1 HMO with 2 dependents, 15 VL/SL convertible to cash, 14th-month pay, flexible hybrid workstation allowance.
+================================================================================
