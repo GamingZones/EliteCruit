@@ -1040,9 +1040,6 @@ export default function EmployerDashboard() {
             </section>
           </div>
         )}
-            </section>
-          </div>
-        )}
 
         {/* ══════════════════════════════════════════════════════════════════
             TAB 2: SMART MATCHES
