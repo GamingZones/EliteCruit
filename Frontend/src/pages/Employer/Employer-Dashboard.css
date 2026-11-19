@@ -803,11 +803,24 @@
 
 
 /* ==========================================================================
-   EMPLOYER 3-TAB WORKSPACE STYLES (Postings, Smart Matches, Approved & Interviews)
+   EMPLOYER 2-TAB WORKSPACE STYLES (Recruitment Insights & Approved Candidates)
    ========================================================================== */
 
 .employer-page .dash-nav-container {
   margin: 16px 28px 0;
+}
+
+@media (min-width: 769px) {
+  .employer-page .dash-section-nav,
+  .employer-page .profile-section-nav.dash-section-nav,
+  .employer-page .dash-desktop-tabs,
+  [data-theme="dark"] .employer-page .dash-section-nav,
+  [data-theme="dark"] .employer-page .profile-section-nav.dash-section-nav,
+  [data-theme="dark"] .employer-page .dash-desktop-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
 }
 
 /* ── TAB 1: PIPELINE SUMMARY BAR ── */
