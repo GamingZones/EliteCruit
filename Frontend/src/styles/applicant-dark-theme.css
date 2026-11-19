@@ -4058,6 +4058,70 @@
   border-color: #0369a1 !important;
 }
 
+/* Top Performing Job Posts: Multi-Segment Velocity Bar & Status Badges */
+[data-theme="dark"] .employer-page .velocity-bar-track {
+  background: #2e3244 !important;
+}
+
+[data-theme="dark"] .employer-page .velocity-bar-segment.segment-empty {
+  background: #2e3244 !important;
+}
+
+[data-theme="dark"] .employer-page .velocity-count-text {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .employer-page .job-status-chip.chip-pending {
+  background: rgba(234, 179, 8, 0.12) !important;
+  border: 1px solid rgba(234, 179, 8, 0.28) !important;
+  color: #fef08a !important;
+}
+[data-theme="dark"] .employer-page .job-status-chip.chip-pending .chip-dot {
+  background: #facc15 !important;
+  box-shadow: 0 0 6px rgba(250, 204, 21, 0.4) !important;
+}
+[data-theme="dark"] .employer-page .job-status-chip.chip-pending .chip-val {
+  color: #fde047 !important;
+}
+[data-theme="dark"] .employer-page .job-status-chip.chip-pending:hover {
+  background: rgba(234, 179, 8, 0.2) !important;
+  border-color: #facc15 !important;
+}
+
+[data-theme="dark"] .employer-page .job-status-chip.chip-approved {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border: 1px solid rgba(16, 185, 129, 0.28) !important;
+  color: #a7f3d0 !important;
+}
+[data-theme="dark"] .employer-page .job-status-chip.chip-approved .chip-dot {
+  background: #34d399 !important;
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.4) !important;
+}
+[data-theme="dark"] .employer-page .job-status-chip.chip-approved .chip-val {
+  color: #6ee7b7 !important;
+}
+[data-theme="dark"] .employer-page .job-status-chip.chip-approved:hover {
+  background: rgba(16, 185, 129, 0.2) !important;
+  border-color: #34d399 !important;
+}
+
+[data-theme="dark"] .employer-page .job-status-chip.chip-denied {
+  background: rgba(239, 68, 68, 0.12) !important;
+  border: 1px solid rgba(239, 68, 68, 0.28) !important;
+  color: #fecaca !important;
+}
+[data-theme="dark"] .employer-page .job-status-chip.chip-denied .chip-dot {
+  background: #f87171 !important;
+  box-shadow: 0 0 6px rgba(248, 113, 113, 0.4) !important;
+}
+[data-theme="dark"] .employer-page .job-status-chip.chip-denied .chip-val {
+  color: #fca5a5 !important;
+}
+[data-theme="dark"] .employer-page .job-status-chip.chip-denied:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border-color: #f87171 !important;
+}
+
 /* Status Badges */
 [data-theme="dark"] .status-green {
   background: #059669 !important;
