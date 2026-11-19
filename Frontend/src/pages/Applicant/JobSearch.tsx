@@ -55,9 +55,9 @@ import { usePendingInvitationsCount } from "../../hooks/usePendingInvitationsCou
 
 function initialsFrom(name?: string | null): string {
   if (!name || !name.trim()) return "E";
-  const parts = name.trim().split(/\s+/);
+  const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return parts.slice(0, 2).map((w) => w[0].toUpperCase()).join("");
 }
 
 type JobCard = {
@@ -4363,34 +4363,44 @@ export default function JobSearch() {
                   </div>
                 </article>
               ) : (
-                paginatedEmployers.map((employer) => (
-                  <article key={employer.employer_user_id} className="result-card employer-result-card">
-                    <div className="result-card-main">
-                      <div className="result-left-col">
-                        <div className="result-title-row" style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-                          {employer.company_logo_path ? (
+                paginatedEmployers.map((employer) => {
+                  const logoSrc = employer.company_logo_path
+                    ? employer.company_logo_path.startsWith("http") || employer.company_logo_path.startsWith("/api")
+                      ? employer.company_logo_path
+                      : `/api/employers/${employer.employer_user_id}/logo`
+                    : null;
+
+                  return (
+                    <article key={employer.employer_user_id} className="result-card employer-result-card">
+                      <div className="result-card-main">
+                        {/* Left Column: Full-Square Company Logo */}
+                        <div
+                          className="job-logo-box"
+                          onClick={() => handleOpenEmployerDetails(employer)}
+                          title="Click to view employer details"
+                        >
+                          {logoSrc ? (
                             <img
-                              src={
-                                employer.company_logo_path.startsWith("http") || employer.company_logo_path.startsWith("/api")
-                                  ? employer.company_logo_path
-                                  : `/api/employers/${employer.employer_user_id}/logo`
-                              }
+                              src={logoSrc}
                               alt={employer.company_name}
-                              className="employer-card-logo"
+                              className="job-logo-img"
                               onError={(e) => {
                                 (e.currentTarget as HTMLElement).style.display = "none";
-                                const nextEl = e.currentTarget.nextElementSibling as HTMLElement;
-                                if (nextEl) nextEl.style.display = "grid";
+                                const initials = (e.currentTarget as HTMLElement).nextElementSibling as HTMLElement;
+                                if (initials) initials.style.display = "flex";
                               }}
                             />
                           ) : null}
-                          <div
-                            className="employer-avatar-fallback"
-                            style={{ display: employer.company_logo_path ? "none" : "grid" }}
+                          <span
+                            className="job-logo-initials"
+                            style={{ display: logoSrc ? "none" : "flex" }}
                           >
-                            {employer.company_name?.charAt(0)?.toUpperCase() || "E"}
-                          </div>
-                          <div style={{ display: "flex", flexDirection: "column", gap: "6px", minWidth: 0, flex: 1 }}>
+                            {initialsFrom(employer.company_name)}
+                          </span>
+                        </div>
+
+                        <div className="result-left-col">
+                          <div className="result-title-row">
                             <div className="employer-name-rating-row">
                               <span className="company-inline-rating-pill" title="Employer rating">
                                 <span className="star-icon">★</span>
@@ -4407,70 +4417,70 @@ export default function JobSearch() {
                                 <span className="status-chip closed">No Active Postings</span>
                               )}
                             </div>
-                            <p className="meta-line" style={{ margin: 0, display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px" }}>
-                              {(() => {
-                                const rawAddr = (employer.company_address || employer.location || "").trim();
-                                const rawCity = (employer.city || "").trim();
-
-                                // If multi-branch (explicitly delimited by ';' or '\n')
-                                if (rawAddr.includes(";") || rawAddr.includes("\n")) {
-                                  return <RenderLocationMeta location={rawAddr} />;
-                                }
-
-                                // Single address: resolve clean municipality/city
-                                let displayCity = "";
-                                if (rawCity && rawCity.toLowerCase() !== "cavite") {
-                                  displayCity = formatLocationWithCavite(rawCity);
-                                } else if (rawAddr) {
-                                  const foundCaviteCity = CAVITE_CITIES.find(
-                                    (c) => c.toLowerCase() !== "cavite" && rawAddr.toLowerCase().includes(c.toLowerCase())
-                                  );
-                                  if (foundCaviteCity) {
-                                    displayCity = `${foundCaviteCity}, Cavite`;
-                                  } else {
-                                    displayCity = formatLocationWithCavite(rawAddr);
-                                  }
-                                } else {
-                                  displayCity = "Cavite";
-                                }
-
-                                return (
-                                  <span
-                                    className="location-meta"
-                                    title={rawAddr && rawAddr !== displayCity ? `Address: ${rawAddr}` : undefined}
-                                  >
-                                    <MiniIcon name="location" />
-                                    <span>{displayCity}</span>
-                                  </span>
-                                );
-                              })()}
-                              {employer.industry && (
-                                <span className="emp-industry-tag">
-                                  {employer.industry.toUpperCase()}
-                                </span>
-                              )}
-                              {employer.company_size && <span className="emp-size-tag">{employer.company_size}</span>}
-                            </p>
                           </div>
+                          <p className="meta-line" style={{ margin: 0, display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px" }}>
+                            {(() => {
+                              const rawAddr = (employer.company_address || employer.location || "").trim();
+                              const rawCity = (employer.city || "").trim();
+
+                              // If multi-branch (explicitly delimited by ';' or '\n')
+                              if (rawAddr.includes(";") || rawAddr.includes("\n")) {
+                                return <RenderLocationMeta location={rawAddr} />;
+                              }
+
+                              // Single address: resolve clean municipality/city
+                              let displayCity = "";
+                              if (rawCity && rawCity.toLowerCase() !== "cavite") {
+                                displayCity = formatLocationWithCavite(rawCity);
+                              } else if (rawAddr) {
+                                const foundCaviteCity = CAVITE_CITIES.find(
+                                  (c) => c.toLowerCase() !== "cavite" && rawAddr.toLowerCase().includes(c.toLowerCase())
+                                );
+                                if (foundCaviteCity) {
+                                  displayCity = `${foundCaviteCity}, Cavite`;
+                                } else {
+                                  displayCity = formatLocationWithCavite(rawAddr);
+                                }
+                              } else {
+                                displayCity = "Cavite";
+                              }
+
+                              return (
+                                <span
+                                  className="location-meta"
+                                  title={rawAddr && rawAddr !== displayCity ? `Address: ${rawAddr}` : undefined}
+                                >
+                                  <MiniIcon name="location" />
+                                  <span>{displayCity}</span>
+                                </span>
+                              );
+                            })()}
+                            {employer.industry && (
+                              <span className="emp-industry-tag">
+                                {employer.industry.toUpperCase()}
+                              </span>
+                            )}
+                            {employer.company_size && <span className="emp-size-tag">{employer.company_size}</span>}
+                          </p>
+
+                          <p className="result-summary" style={{ marginTop: "6px", marginBottom: 0 }}>
+                            {shortenText(employer.company_description, "No company description provided yet.", 160)}
+                          </p>
                         </div>
 
-                        <p className="result-summary" style={{ marginTop: "10px" }}>
-                          {shortenText(employer.company_description, "No company description provided yet.", 160)}
-                        </p>
+                        <div className="result-right-col" style={{ justifyContent: "center" }}>
+                          <button
+                            type="button"
+                            className="details-btn"
+                            onClick={() => handleOpenEmployerDetails(employer)}
+                          >
+                            Details
+                          </button>
+                        </div>
                       </div>
-
-                      <div className="result-right-col" style={{ justifyContent: "center" }}>
-                        <button
-                          type="button"
-                          className="details-btn"
-                          onClick={() => handleOpenEmployerDetails(employer)}
-                        >
-                          Details
-                        </button>
-                      </div>
-                    </div>
-                  </article>
-                ))
+                    </article>
+                  );
+                })
               )}
 
               {employerTotalPages > 1 && (
