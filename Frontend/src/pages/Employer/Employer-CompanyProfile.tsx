@@ -297,6 +297,21 @@ export default function EmployerCompanyProfile() {
   const companyLabel = useEmployerCompanyLabel("Employer");
   const effectiveCompanyLabel = profile.business_name || companyLabel;
 
+  // Exclusive Presentation Demo Autofill state for designated employer
+  const DEMO_EMPLOYER_EMAIL = "zakiablando897@gmail.com";
+  let userEmailFromStorage = "";
+  try {
+    const raw = localStorage.getItem("elitecruit-user");
+    if (raw) userEmailFromStorage = JSON.parse(raw).email || "";
+  } catch {}
+
+  const isDemoEmployer = Boolean(
+    (profile.business_email && profile.business_email.trim().toLowerCase() === DEMO_EMPLOYER_EMAIL) ||
+    (draft.business_email && draft.business_email.trim().toLowerCase() === DEMO_EMPLOYER_EMAIL) ||
+    (userEmailFromStorage && userEmailFromStorage.trim().toLowerCase() === DEMO_EMPLOYER_EMAIL)
+  );
+  const [isAutoFillingDemo, setIsAutoFillingDemo] = useState(false);
+
   const missingFieldItems = useMemo(() => {
     const list: { key: string; label: string; section: "branding" | "overview" | "branches"; sectionName: string }[] = [];
     if (!profile.industry || !String(profile.industry).trim()) {
@@ -609,6 +624,107 @@ export default function EmployerCompanyProfile() {
       setPageMessage(error instanceof Error ? error.message : "Unable to save employer profile.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDemoAutofill = async () => {
+    if (!userId || isAutoFillingDemo) return;
+    setIsAutoFillingDemo(true);
+    setPageMessage("");
+
+    try {
+      if (activeSection === "branding") {
+        // Tab 1: Company & Branding details
+        const payload = {
+          ...draft,
+          business_name: "TechNova Innovations Inc.",
+          industry: "Information Technology",
+          company_size: "50-200 employees",
+        };
+        const response = await fetch(`/api/employers/${userId}/profile`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data?.message || "Failed to update branding details.");
+        const saved = normalizeEmployerProfile(data?.profile, payload);
+        setProfile(saved);
+        setDraft(saved);
+        setPageMessage("⚡ Company & Branding details populated!");
+      } else if (activeSection === "overview") {
+        // Tab 2: Contact Information & Company Overview
+        const payload = {
+          ...draft,
+          contact_number: "+63 917 123 4567",
+          province: "Cavite",
+          city: "Dasmariñas",
+          company_address: "4th Floor Tech Tower, Gov. Drive, Dasmariñas, Cavite",
+          company_description:
+            "TechNova Innovations is a premier software engineering firm delivering scalable cloud and fintech applications for enterprise clients across Southeast Asia.",
+        };
+        const response = await fetch(`/api/employers/${userId}/profile`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data?.message || "Failed to update contact & overview.");
+        const saved = normalizeEmployerProfile(data?.profile, payload);
+        setProfile(saved);
+        setDraft(saved);
+        setPageMessage("⚡ Contact & Overview details populated!");
+      } else if (activeSection === "branches") {
+        // Tab 3: Company Branch Locations
+        const demoBranch: BranchLocation = {
+          id: `branch-demo-${Date.now()}`,
+          branch_name: "Indang Tech Hub Branch",
+          province: "Cavite",
+          city: "Indang",
+          address: "Indang - Dasmarinas Tech Hub, Cavite",
+          contact_number: "+63 918 765 4321",
+          email: "indang.hub@technova-demo.ph",
+          is_main: false,
+        };
+
+        const existingMain = draft.branches.find((b) => b.is_main);
+        const mainBranch: BranchLocation = existingMain || {
+          id: `branch-main-${userId}`,
+          branch_name: `${(draft.business_name || "TechNova Innovations Inc.").trim()} (Main Branch)`,
+          province: draft.province || "Cavite",
+          city: draft.city || "Dasmariñas",
+          address: draft.company_address || "4th Floor Tech Tower, Gov. Drive, Dasmariñas, Cavite",
+          contact_number: draft.contact_number || "+63 917 123 4567",
+          email: draft.business_email || "zakiablando897@gmail.com",
+          is_main: true,
+        };
+
+        const otherBranches = draft.branches.filter((b) => !b.is_main && b.branch_name !== "Indang Tech Hub Branch");
+        const updatedBranches = [mainBranch, demoBranch, ...otherBranches];
+
+        const payload = {
+          ...draft,
+          branches: updatedBranches,
+        };
+        const response = await fetch(`/api/employers/${userId}/profile`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data?.message || "Failed to update branch locations.");
+        const saved = normalizeEmployerProfile(data?.profile, payload);
+        setProfile(saved);
+        setDraft(saved);
+        setIsAddingBranch(false);
+        setPageMessage("⚡ Branch Locations populated!");
+      }
+
+      setTimeout(() => setPageMessage(""), 4000);
+    } catch (err: any) {
+      setPageMessage(err?.message || "Failed to populate demo data.");
+    } finally {
+      setIsAutoFillingDemo(false);
     }
   };
 
@@ -1170,6 +1286,32 @@ export default function EmployerCompanyProfile() {
         <header className="appdash-topbar">
           <div className="appdash-top-left"><div><strong>Company Profile</strong></div></div>
           <div className="appdash-top-right">
+            {isDemoEmployer && (
+              <button
+                type="button"
+                className="x-demo-autofill-btn"
+                onClick={handleDemoAutofill}
+                disabled={isAutoFillingDemo}
+                title={`⚡ Demo Autofill: ${
+                  activeSection === "branding"
+                    ? "Company & Branding"
+                    : activeSection === "overview"
+                    ? "Contact & Overview"
+                    : "Branch Locations"
+                }`}
+                aria-label={`Demo Autofill ${activeSection}`}
+              >
+                {isAutoFillingDemo ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="x-demo-spin">
+                    <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="12" />
+                  </svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M13 2L3 14h7v8l10-12h-7l1-8z" />
+                  </svg>
+                )}
+              </button>
+            )}
             <div className="chatbot-wrapper">
               <EmployerChatbotDrawer
                 isOpen={isChatbotOpen}
