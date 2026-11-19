@@ -8274,6 +8274,103 @@
   color: #f1f5f9 !important;
 }
 
+[data-theme="dark"] .company-headquarters-leaflet-popup .leaflet-popup-content-wrapper {
+  background: #1c1e27 !important;
+  border: 1px solid #2e3244 !important;
+  color: #f1f5f9 !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6) !important;
+}
+
+[data-theme="dark"] .company-headquarters-leaflet-popup .leaflet-popup-tip {
+  background: #1c1e27 !important;
+}
+
+[data-theme="dark"] .company-headquarters-leaflet-popup .leaflet-popup-close-button,
+[data-theme="dark"] .leaflet-popup-close-button {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .company-headquarters-leaflet-popup .leaflet-popup-close-button:hover,
+[data-theme="dark"] .leaflet-popup-close-button:hover {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .company-map-popup-title {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .company-map-popup-subtitle {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .company-map-popup-location {
+  color: #cbd5e1 !important;
+  border-top: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .company-map-popup-logo {
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .company-map-popup-logo-placeholder {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .company-pin-badge {
+  background: #1c1e27 !important;
+  color: #38bdf8 !important;
+  border: 1px solid #2e3244 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="dark"] .company-pin-inner {
+  background: #0284c7 !important;
+  border-color: #1c1e27 !important;
+}
+
+[data-theme="dark"] .company-pin-inner::after {
+  border-top-color: #0284c7 !important;
+}
+
+[data-theme="dark"] .landmark-map-popup-title {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .landmark-map-popup-desc {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .area-empty-popup-header {
+  background: #14151B !important;
+  border-bottom: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .area-empty-header-name {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .area-empty-count {
+  color: #f87171 !important;
+}
+
+[data-theme="dark"] .area-empty-bubble-body {
+  background: #1c1e27 !important;
+}
+
+[data-theme="dark"] .area-empty-notice-text {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .area-empty-city {
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .area-empty-hint-text {
+  color: #94a3b8 !important;
+}
+
 /* 24.10 Side Job Details & Match Breakdown Floating Containers */
 [data-theme="dark"] .finder-side-job-details-modal,
 [data-theme="dark"] .finder-side-match-breakdown-modal {

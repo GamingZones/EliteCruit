@@ -2237,9 +2237,9 @@ export default function EmployerApplicantFinder() {
           landmarkMarkerRef.current = L.marker([lat, lng], { icon: landmarkIcon })
             .addTo(mapInstanceRef.current)
             .bindPopup(`
-              <div style="font-family: inherit; font-size: 0.85rem; padding: 2px;">
-                <strong style="color: #072948; display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">${mapPinSvgString("#e11d48", 16)} ${found.name}</strong>
-                <span style="color: #64748b; font-size: 0.76rem;">${found.displayName}</span>
+              <div class="landmark-map-popup-card">
+                <strong class="landmark-map-popup-title">${mapPinSvgString("#e11d48", 16)} ${found.name}</strong>
+                <span class="landmark-map-popup-desc">${found.displayName}</span>
               </div>
             `)
             .openPopup();
@@ -3167,8 +3167,8 @@ export default function EmployerApplicantFinder() {
           : "";
 
         const companyLogoHtml = logoUrl
-          ? `<img src="${logoUrl}" alt="${companyName}" style="width:34px; height:34px; border-radius:8px; object-fit:cover; border:1px solid #e2e8f0; flex-shrink:0;" />`
-          : `<div style="width:34px; height:34px; border-radius:8px; background:linear-gradient(135deg, #072948 0%, #0d4b82 100%); display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 2px 6px rgba(7,41,72,0.25);">
+          ? `<img src="${logoUrl}" alt="${companyName}" class="company-map-popup-logo" />`
+          : `<div class="company-map-popup-logo-placeholder">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f6be45" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
                 <path d="M9 22v-4h6v4"></path>
@@ -3185,15 +3185,15 @@ export default function EmployerApplicantFinder() {
             </div>`;
 
         companyMarker.bindPopup(`
-          <div style="font-family:inherit; min-width:210px; padding:6px 2px;">
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+          <div class="company-map-popup-card">
+            <div class="company-map-popup-header">
               ${companyLogoHtml}
-              <div style="min-width:0;">
-                <strong style="color:#0f172a; font-size:0.95rem; font-weight:800; display:block; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${companyName}</strong>
-                <small style="color:#64748b; font-size:0.74rem; font-weight:600;">Company Headquarters</small>
+              <div class="company-map-popup-info">
+                <strong class="company-map-popup-title">${companyName}</strong>
+                <small class="company-map-popup-subtitle">Company Headquarters</small>
               </div>
             </div>
-            <div style="display:flex; align-items:center; gap:6px; font-size:0.78rem; color:#334155; font-weight:600; padding-top:6px; border-top:1px solid #f1f5f9;">
+            <div class="company-map-popup-location">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e11d48" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                 <circle cx="12" cy="10" r="3"></circle>
@@ -3201,7 +3201,7 @@ export default function EmployerApplicantFinder() {
               <span>${companyCity}</span>
             </div>
           </div>
-        `);
+        `, { className: "company-headquarters-leaflet-popup" });
         companyMarkerRef.current = companyMarker;
       }
     }
@@ -3362,7 +3362,7 @@ export default function EmployerApplicantFinder() {
               const emptyPopupDiv = document.createElement("div");
               emptyPopupDiv.className = "area-map-popup compact-bubble";
               emptyPopupDiv.innerHTML = `
-                <div class="area-popup-header" style="background:#f8fafc; border-bottom:1px solid #e2e8f0;">
+                <div class="area-popup-header area-empty-popup-header">
                   <div class="area-popup-header-title">
                     <span class="area-header-pin-icon" style="display:inline-flex; align-items:center;">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -3371,16 +3371,16 @@ export default function EmployerApplicantFinder() {
                       </svg>
                     </span>
                     <div>
-                      <strong class="area-header-name" style="color:#334155;">${locCity}${locProv ? `, ${locProv}` : ""}</strong>
-                      <span class="area-header-count" style="color:#e11d48; font-weight:700;">0 Applicants currently available</span>
+                      <strong class="area-header-name area-empty-header-name">${locCity}${locProv ? `, ${locProv}` : ""}</strong>
+                      <span class="area-header-count area-empty-count">0 Applicants currently available</span>
                     </div>
                   </div>
                 </div>
-                <div class="area-popup-bubble-body" style="padding:12px 14px; text-align:center;">
-                  <p style="font-size:0.78rem; color:#64748b; margin:0 0 10px; line-height:1.45;">
-                    There are no registered jobseekers currently located in or seeking work in <strong>${locCity}</strong>.
+                <div class="area-popup-bubble-body area-empty-bubble-body">
+                  <p class="area-empty-notice-text">
+                    There are no registered jobseekers currently located in or seeking work in <strong class="area-empty-city">${locCity}</strong>.
                   </p>
-                  <div style="font-size:0.72rem; color:#94a3b8; font-style:italic;">
+                  <div class="area-empty-hint-text">
                     Try selecting nearby municipalities or expanding your search filters.
                   </div>
                 </div>
