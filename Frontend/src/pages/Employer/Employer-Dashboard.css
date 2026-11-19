@@ -1889,7 +1889,39 @@
 }
 
 .funnel-step-icon {
-  font-size: 1.15rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.funnel-step-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.step-applied .funnel-step-icon {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.step-screened .funnel-step-icon {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.step-interviewed .funnel-step-icon {
+  background: #f3e8ff;
+  color: #9333ea;
+}
+
+.step-hired .funnel-step-icon {
+  background: #dcfce7;
+  color: #16a34a;
 }
 
 .funnel-step-conv {
@@ -2023,10 +2055,18 @@
 
 .inflow-badge {
   display: inline-flex;
-  padding: 3px 8px;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
   border-radius: 999px;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 700;
+  flex-shrink: 0;
+}
+
+.inflow-badge svg {
+  width: 13px;
+  height: 13px;
   flex-shrink: 0;
 }
 
@@ -2253,4 +2293,70 @@
 
 [data-theme="dark"] .submission-job {
   color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .step-applied .funnel-step-icon {
+  background: rgba(29, 78, 216, 0.22) !important;
+  color: #60a5fa !important;
+  border: 1px solid rgba(96, 165, 250, 0.25) !important;
+}
+
+[data-theme="dark"] .step-screened .funnel-step-icon {
+  background: rgba(2, 132, 199, 0.22) !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(56, 189, 248, 0.25) !important;
+}
+
+[data-theme="dark"] .step-interviewed .funnel-step-icon {
+  background: rgba(147, 51, 234, 0.22) !important;
+  color: #c084fc !important;
+  border: 1px solid rgba(192, 132, 252, 0.25) !important;
+}
+
+[data-theme="dark"] .step-hired .funnel-step-icon {
+  background: rgba(22, 163, 74, 0.22) !important;
+  color: #4ade80 !important;
+  border: 1px solid rgba(74, 222, 128, 0.25) !important;
+}
+
+[data-theme="dark"] .step-applied .funnel-step-conv {
+  background: rgba(30, 64, 175, 0.25) !important;
+  color: #93c5fd !important;
+  border: 1px solid rgba(96, 165, 250, 0.3) !important;
+}
+
+[data-theme="dark"] .step-screened .funnel-step-conv {
+  background: rgba(3, 105, 161, 0.25) !important;
+  color: #7dd3fc !important;
+  border: 1px solid rgba(56, 189, 248, 0.3) !important;
+}
+
+[data-theme="dark"] .step-interviewed .funnel-step-conv {
+  background: rgba(107, 33, 168, 0.25) !important;
+  color: #d8b4fe !important;
+  border: 1px solid rgba(192, 132, 252, 0.3) !important;
+}
+
+[data-theme="dark"] .step-hired .funnel-step-conv {
+  background: rgba(21, 128, 61, 0.25) !important;
+  color: #86efac !important;
+  border: 1px solid rgba(74, 222, 128, 0.3) !important;
+}
+
+[data-theme="dark"] .inflow-badge.high {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.35) !important;
+}
+
+[data-theme="dark"] .inflow-badge.active {
+  background: rgba(14, 165, 233, 0.2) !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(14, 165, 233, 0.35) !important;
+}
+
+[data-theme="dark"] .inflow-badge.low {
+  background: rgba(234, 179, 8, 0.2) !important;
+  color: #facc15 !important;
+  border: 1px solid rgba(234, 179, 8, 0.35) !important;
 }

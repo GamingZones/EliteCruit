@@ -764,8 +764,15 @@ export default function EmployerDashboard() {
               <div className="funnel-steps-container">
                 <div className="funnel-step-item step-applied">
                   <div className="funnel-step-top">
-                    <span className="funnel-step-icon">📥</span>
-                    <span className="funnel-step-conv">100%</span>
+                    <span className="funnel-step-icon" title="Initial candidate applications">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="12" y1="18" x2="12" y2="12" />
+                        <polyline points="9 15 12 18 15 15" />
+                      </svg>
+                    </span>
+                    <span className="funnel-step-conv" title="Stage baseline volume">100% Volume</span>
                   </div>
                   <strong className="funnel-step-number">{funnelData.applied}</strong>
                   <span className="funnel-step-label">Applied</span>
@@ -778,8 +785,14 @@ export default function EmployerDashboard() {
 
                 <div className="funnel-step-item step-screened">
                   <div className="funnel-step-top">
-                    <span className="funnel-step-icon">🔍</span>
-                    <span className="funnel-step-conv">{funnelData.screenedConv}% Conv</span>
+                    <span className="funnel-step-icon" title="Candidates reviewed and screened">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        <path d="m8 11 2 2 4-4" />
+                      </svg>
+                    </span>
+                    <span className="funnel-step-conv" title="Percentage of applicants screened through">{funnelData.screenedConv}% Conversion</span>
                   </div>
                   <strong className="funnel-step-number">{funnelData.screened}</strong>
                   <span className="funnel-step-label">Screened</span>
@@ -792,8 +805,16 @@ export default function EmployerDashboard() {
 
                 <div className="funnel-step-item step-interviewed">
                   <div className="funnel-step-top">
-                    <span className="funnel-step-icon">📅</span>
-                    <span className="funnel-step-conv">{funnelData.interviewConv}% Conv</span>
+                    <span className="funnel-step-icon" title="Candidates scheduled for interview">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                        <path d="m9 16 2 2 4-4" />
+                      </svg>
+                    </span>
+                    <span className="funnel-step-conv" title="Percentage of applicants reaching interview">{funnelData.interviewConv}% Conversion</span>
                   </div>
                   <strong className="funnel-step-number">{funnelData.interviewed}</strong>
                   <span className="funnel-step-label">Interviewed</span>
@@ -806,8 +827,13 @@ export default function EmployerDashboard() {
 
                 <div className="funnel-step-item step-hired">
                   <div className="funnel-step-top">
-                    <span className="funnel-step-icon">🤝</span>
-                    <span className="funnel-step-conv">{funnelData.hiredConv}% Conv</span>
+                    <span className="funnel-step-icon" title="Candidates approved and hired">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                        <polyline points="22 4 12 14.01 9 11.01" />
+                      </svg>
+                    </span>
+                    <span className="funnel-step-conv" title="Overall hiring conversion rate">{funnelData.hiredConv}% Conversion</span>
                   </div>
                   <strong className="funnel-step-number">{funnelData.hired}</strong>
                   <span className="funnel-step-label">Offers & Hired</span>
@@ -840,7 +866,37 @@ export default function EmployerDashboard() {
                   {sortedJobPosts.slice(0, 6).map((job, idx) => {
                     const count = job.applicant_count || 0;
                     const badgeClass = count >= 3 ? "high" : count > 0 ? "active" : "low";
-                    const badgeText = count >= 3 ? "🔥 High Inflow" : count > 0 ? "⚡ Active Inflow" : "⚠️ Needs Inflow";
+                    const badgeInfo = count >= 3
+                      ? {
+                          label: "High Inflow",
+                          tooltip: "High applicant demand (3+ candidates received)",
+                          icon: (
+                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                              <path d="M12 23c-4.97 0-9-3.96-9-8.83 0-3.32 1.84-6.3 4.8-7.77.34-.17.75-.02.92.32.17.34.02.75-.32.92-2.4 1.2-3.9 3.63-3.9 6.33 0 3.97 3.36 7.2 7.5 7.2 4.14 0 7.5-3.23 7.5-7.2 0-2.31-1.12-4.43-3-5.78-.3-.21-.37-.62-.16-.92.21-.3.62-.37.92-.16 2.32 1.66 3.74 4.29 3.74 7.16 0 4.87-4.03 8.83-9 8.83Zm.28-7.98c-1.28 0-2.32-1.01-2.32-2.26 0-.8.44-1.54 1.15-1.92.33-.18.74-.06.92.27.18.33.06.74-.27.92-.35.19-.57.56-.57.96 0 .57.48 1.03 1.09 1.03.6 0 1.08-.46 1.08-1.03 0-.32-.14-.62-.38-.82-.29-.24-.33-.67-.1-1 .24-.29.67-.33 1-.1.49.4.78 1 .78 1.64 0 1.25-1.05 2.26-2.33 2.26Z" />
+                            </svg>
+                          ),
+                        }
+                      : count > 0
+                      ? {
+                          label: "Active Inflow",
+                          tooltip: "Steady applicant flow received",
+                          icon: (
+                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                              <path d="M11 21h-1l1-7H7.5c-.58 0-.57-.32-.38-.66.19-.34.05-.08.08-.14 1.33-2.33 3.48-6.1 6.8-11.2h1l-1 7h4.5c.47 0 .54.34.42.59l-.08.17-6.84 11.24Z" />
+                            </svg>
+                          ),
+                        }
+                      : {
+                          label: "Low Inflow",
+                          tooltip: "No recent applicants; vacancy may need promotion",
+                          icon: (
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <circle cx="12" cy="12" r="10" />
+                              <line x1="12" y1="8" x2="12" y2="12" />
+                              <line x1="12" y1="16" x2="12.01" y2="16" />
+                            </svg>
+                          ),
+                        };
                     const maxCount = Math.max(sortedJobPosts[0]?.applicant_count || 1, 4);
                     const fillPct = Math.min(100, Math.max(12, Math.round((count / maxCount) * 100)));
 
@@ -856,7 +912,10 @@ export default function EmployerDashboard() {
                               </div>
                             </div>
                           </div>
-                          <span className={`inflow-badge ${badgeClass}`}>{badgeText}</span>
+                          <span className={`inflow-badge ${badgeClass}`} title={badgeInfo.tooltip}>
+                            {badgeInfo.icon}
+                            <span>{badgeInfo.label}</span>
+                          </span>
                         </div>
 
                         <div className="top-job-velocity-row">
