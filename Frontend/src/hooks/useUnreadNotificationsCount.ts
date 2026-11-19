@@ -8,6 +8,9 @@ export function useUnreadNotificationsCount(): number {
     let isMounted = true;
 
     const fetchCount = async () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        return;
+      }
       const savedUserRaw = localStorage.getItem("elitecruit-user");
       if (!savedUserRaw) {
         if (isMounted) setUnreadCount(0);
@@ -45,12 +48,19 @@ export function useUnreadNotificationsCount(): number {
     fetchCount();
 
     const handleSync = () => fetchCount();
+    const handleVisibility = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        fetchCount();
+      }
+    };
+
     window.addEventListener("focus", handleSync);
     window.addEventListener("pageshow", handleSync);
     window.addEventListener("storage", handleSync);
     window.addEventListener("elitecruit_notif_update", handleSync);
+    document.addEventListener("visibilitychange", handleVisibility);
 
-    // Periodic check every 15 seconds
+    // Periodic check every 15 seconds (pauses when tab is inactive)
     const interval = setInterval(fetchCount, 15000);
 
     return () => {
@@ -59,6 +69,7 @@ export function useUnreadNotificationsCount(): number {
       window.removeEventListener("pageshow", handleSync);
       window.removeEventListener("storage", handleSync);
       window.removeEventListener("elitecruit_notif_update", handleSync);
+      document.removeEventListener("visibilitychange", handleVisibility);
       clearInterval(interval);
     };
   }, []);

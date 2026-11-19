@@ -2397,6 +2397,9 @@ export default function JobSearch() {
       employers.find((e) => e.company_name.toLowerCase() === detailsJob?.company.toLowerCase())?.employer_user_id;
     if (!isAnyMsgOpen || !empId || !employerMsgThread?.id) return;
     const interval = setInterval(async () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        return;
+      }
       try {
         const res = await fetch(`/api/messages/threads/${employerMsgThread.id}`);
         if (res.ok) {

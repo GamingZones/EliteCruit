@@ -101,6 +101,47 @@ button, input, select, textarea {
   gap: 10px;
 }
 
+/* Dashboard & List Refresh Trigger Button */
+.dash-refresh-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #0c2a47;
+  padding: 8px 14px;
+  border-radius: 9999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  font-family: inherit;
+}
+
+.dash-refresh-trigger-btn:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #00385e;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.dash-refresh-trigger-btn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.dash-refresh-trigger-btn .refresh-btn-icon.spin {
+  animation: dashIconSpin 0.8s linear infinite;
+}
+
+@keyframes dashIconSpin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 /* ==========================================================================
    GLOBAL PHONE & MOBILE RESOLUTION PREPARATION (max-width: 768px)
    Scope: Applied STRICTLY to phones/mobile screens; desktop/laptop UI is 100% untouched.

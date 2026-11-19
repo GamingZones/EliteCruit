@@ -1293,6 +1293,9 @@ export default function EmployerApplicantManagement() {
   useEffect(() => {
     if (!isMessagePanelOpen || !reviewModalApp?.applicant_user_id || !candMsgThread?.id) return;
     const interval = setInterval(async () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        return;
+      }
       try {
         const res = await fetch(`/api/messages/threads/${candMsgThread.id}`);
         if (res.ok) {
@@ -1524,7 +1527,9 @@ export default function EmployerApplicantManagement() {
     } catch {}
   };
 
-  const fetchApplications = useCallback(async () => {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const fetchApplications = useCallback(async (silent = false) => {
     const raw = localStorage.getItem("elitecruit-user");
     if (!raw) { setError("Sign in as employer to view applications."); setIsLoading(false); return; }
     let userId: number;
@@ -1538,7 +1543,10 @@ export default function EmployerApplicantManagement() {
       userId = parsed.id;
     } catch { setError("Unable to read account session."); setIsLoading(false); return; }
 
-    setIsLoading(true);
+    if (!silent) {
+      setIsLoading(true);
+      setIsRefreshing(true);
+    }
     setError("");
     try {
       const [res, invRes, jobsRes] = await Promise.all([
@@ -1578,14 +1586,47 @@ export default function EmployerApplicantManagement() {
         })
         .catch(() => {});
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load applications.");
+      if (!silent) {
+        setError(err instanceof Error ? err.message : "Failed to load applications.");
+      }
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+        setTimeout(() => setIsRefreshing(false), 300);
+      }
     }
   }, []);
 
   useEffect(() => {
-    fetchApplications();
+    fetchApplications(false);
+
+    // Periodic check every 45 seconds (pauses when tab is inactive)
+    const interval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        return;
+      }
+      fetchApplications(true);
+    }, 45000);
+
+    const handleVisibility = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        fetchApplications(true);
+      }
+    };
+    const handleSync = () => fetchApplications(true);
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", handleSync);
+    window.addEventListener("elitecruit_application_update", handleSync);
+    window.addEventListener("elitecruit-interviews-updated", handleSync);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", handleSync);
+      window.removeEventListener("elitecruit_application_update", handleSync);
+      window.removeEventListener("elitecruit-interviews-updated", handleSync);
+    };
   }, [fetchApplications]);
 
   const uniqueJobs = useMemo(() => {
@@ -3051,6 +3092,29 @@ export default function EmployerApplicantManagement() {
         <header className="appdash-topbar">
           <div className="appdash-top-left"><div><strong>Applicant Management</strong></div></div>
           <div className="appdash-top-right">
+            <button
+              type="button"
+              className={`dash-refresh-trigger-btn ${isRefreshing ? "refreshing" : ""}`}
+              onClick={() => fetchApplications(false)}
+              disabled={isRefreshing}
+              title="Refresh applications data"
+            >
+              <svg
+                className={`refresh-btn-icon ${isRefreshing ? "spin" : ""}`}
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+              </svg>
+              <span>Refresh</span>
+            </button>
             <div className="chatbot-wrapper">
               <EmployerChatbotDrawer
                 isOpen={isChatbotOpen}

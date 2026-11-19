@@ -1640,8 +1640,8 @@ export default function Messages() {
     }
   };
 
-  const fetchThreads = async (userId: number) => {
-    setIsLoadingThreads(true);
+  const fetchThreads = async (userId: number, silent = false) => {
+    if (!silent) setIsLoadingThreads(true);
     try {
       const res = await fetch(`/api/users/${userId}/messages`);
       if (res.ok) {
@@ -1654,7 +1654,7 @@ export default function Messages() {
       }
     } catch {
     } finally {
-      setIsLoadingThreads(false);
+      if (!silent) setIsLoadingThreads(false);
     }
   };
 
@@ -1751,6 +1751,71 @@ export default function Messages() {
       setSessionRole("applicant");
     }
   }, []);
+
+  // Inactive chats & thread list periodic refresh every 15 seconds
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    const interval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        return;
+      }
+      fetchThreads(currentUserId, true);
+    }, 15000);
+
+    const handleVisibility = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        fetchThreads(currentUserId, true);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [currentUserId]);
+
+  // Active chat conversation: poll every 4 seconds while selected
+  useEffect(() => {
+    if (!selectedThread?.id) return;
+
+    const pollActiveThread = async () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        return;
+      }
+      try {
+        const res = await fetch(`/api/messages/threads/${selectedThread.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          const incomingMsgs = Array.isArray(data?.messages) ? data.messages : [];
+          setMessages((prev) => {
+            if (
+              incomingMsgs.length !== prev.length ||
+              (incomingMsgs.length > 0 && incomingMsgs[incomingMsgs.length - 1]?.id !== prev[prev.length - 1]?.id)
+            ) {
+              return incomingMsgs;
+            }
+            return prev;
+          });
+        }
+      } catch {}
+    };
+
+    const interval = setInterval(pollActiveThread, 4000);
+
+    const handleVisibility = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        pollActiveThread();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [selectedThread?.id]);
 
   useEffect(() => {
     if (selectedThread?.id) {

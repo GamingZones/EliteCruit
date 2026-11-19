@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import ApplicantChatbotDrawer from "../../components/ApplicantChatbotDrawer";
 import CalendarDrawer from "../../components/CalendarDrawer";
@@ -770,6 +770,71 @@ export default function ApplicantDashboard() {
   const [withdrawTargetApp, setWithdrawTargetApp] = useState<any | null>(null);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [withdrawMessage, setWithdrawMessage] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const loadDashboardData = useCallback(async (silent = false) => {
+    const savedUserRaw = localStorage.getItem("elitecruit-user");
+    if (!savedUserRaw) return;
+    try {
+      const savedUser = JSON.parse(savedUserRaw);
+      if (!savedUser?.id || savedUser.role !== "applicant") return;
+      const uid = savedUser.id;
+      if (!silent) setIsRefreshing(true);
+
+      const [appsRes, invRes, jobsRes] = await Promise.allSettled([
+        fetch(`/api/applicants/${uid}/applications`),
+        fetch(`/api/applicants/${uid}/invitations`),
+        fetch("/api/job-posts"),
+      ]);
+
+      if (appsRes.status === "fulfilled" && appsRes.value.ok) {
+        const data = await appsRes.value.json();
+        setMyApplicationsList(Array.isArray(data?.applications) ? data.applications : []);
+        const ids = Array.isArray(data?.applications)
+          ? data.applications
+              .map((item: any) => Number(item?.job_post_id))
+              .filter((id: number) => Number.isInteger(id) && id > 0)
+          : [];
+        setAppliedJobIds(ids);
+      }
+
+      if (invRes.status === "fulfilled" && invRes.value.ok) {
+        const data = await invRes.value.json();
+        setInvitationsList(Array.isArray(data?.invitations) ? data.invitations : []);
+      }
+
+      if (jobsRes.status === "fulfilled" && jobsRes.value.ok) {
+        const data = await jobsRes.value.json();
+        if (Array.isArray(data?.jobPosts)) {
+          const mapped: JobCard[] = data.jobPosts.map((row: any, index: number) => ({
+            id: Number(row.id),
+            title: row.title || "Untitled Role",
+            company: row.company || "EliteCruit Partner",
+            location: formatLocationWithCavite(row.location || "Cavite"),
+            description: row.description || "",
+            workArrangement: row.work_arrangement || "On-Site",
+            experienceLevel: row.experience_level || "Mid-Level",
+            salaryRange: row.salary_range || "Competitive",
+            status: row.status || "open",
+            requirements: parseCompetencyDisplayTags(row.requirements),
+            urgent: Boolean(Number(row.is_urgent || 0)),
+            createdAt: typeof row.created_at === "string" ? row.created_at : null,
+            createdRank: index,
+            employerUserId: Number(row.employer_user_id) || undefined,
+            companyLogoPath: row.company_logo_path || null,
+            companyCoverPath: row.company_cover_path || null,
+            rating: row.rating ? String(row.rating) : "0.0",
+          }));
+          setJobs(mapped);
+        }
+      }
+    } catch {
+    } finally {
+      if (!silent) {
+        setTimeout(() => setIsRefreshing(false), 300);
+      }
+    }
+  }, []);
 
   const [archivedAppIds, setArchivedAppIds] = useState<number[]>(() => {
     try {
@@ -993,33 +1058,29 @@ export default function ApplicantDashboard() {
       if (savedUser.role !== "applicant" || !savedUser.id) return;
       setApplicantUserId(savedUser.id);
 
-      const refreshApplications = () => {
-        fetch(`/api/applicants/${savedUser.id}/applications`)
-          .then(async (response) => {
-            const data = await response.json();
-            if (!response.ok) throw new Error(data?.message || "Unable to load applications.");
-            setMyApplicationsList(Array.isArray(data?.applications) ? data.applications : []);
+      loadDashboardData(false);
 
-            const ids = Array.isArray(data?.applications)
-              ? data.applications
-                  .map((item: any) => Number(item?.job_post_id))
-                  .filter((id: number) => Number.isInteger(id) && id > 0)
-              : [];
-            setAppliedJobIds(ids);
-          })
-          .catch(() => {});
+      // Periodic check every 45 seconds (pauses when tab is inactive)
+      const interval = setInterval(() => {
+        if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+          return;
+        }
+        loadDashboardData(true);
+      }, 45000);
+
+      const handleVisibility = () => {
+        if (typeof document !== "undefined" && document.visibilityState === "visible") {
+          loadDashboardData(true);
+        }
       };
+      const handleSync = () => loadDashboardData(true);
 
-      refreshApplications();
-      window.addEventListener("elitecruit-interviews-updated", refreshApplications);
-      window.addEventListener("elitecruit_interviews_update", refreshApplications);
-
-      fetch(`/api/applicants/${savedUser.id}/invitations`)
-        .then((res) => res.json())
-        .then((data) => {
-          setInvitationsList(Array.isArray(data?.invitations) ? data.invitations : []);
-        })
-        .catch(() => {});
+      document.addEventListener("visibilitychange", handleVisibility);
+      window.addEventListener("focus", handleSync);
+      window.addEventListener("elitecruit-interviews-updated", handleSync);
+      window.addEventListener("elitecruit_interviews_update", handleSync);
+      window.addEventListener("elitecruit_application_update", handleSync);
+      window.addEventListener("elitecruit_invitation_update", handleSync);
 
       fetch(`/api/applicants/${savedUser.id}/profile`)
         .then((response) => response.json())
@@ -1067,10 +1128,20 @@ export default function ApplicantDashboard() {
           });
         })
         .catch(() => {});
+
+      return () => {
+        clearInterval(interval);
+        document.removeEventListener("visibilitychange", handleVisibility);
+        window.removeEventListener("focus", handleSync);
+        window.removeEventListener("elitecruit-interviews-updated", handleSync);
+        window.removeEventListener("elitecruit_interviews_update", handleSync);
+        window.removeEventListener("elitecruit_application_update", handleSync);
+        window.removeEventListener("elitecruit_invitation_update", handleSync);
+      };
     } catch {
       setApplicantLabel("Applicant");
     }
-  }, []);
+  }, [loadDashboardData]);
 
   const handleRespondInvitation = async (
     invitationId: number,
@@ -1545,6 +1616,29 @@ export default function ApplicantDashboard() {
           </div>
 
           <div className="appdash-top-right">
+            <button
+              type="button"
+              className={`dash-refresh-trigger-btn ${isRefreshing ? "refreshing" : ""}`}
+              onClick={() => loadDashboardData(false)}
+              disabled={isRefreshing}
+              title="Refresh dashboard data"
+            >
+              <svg
+                className={`refresh-btn-icon ${isRefreshing ? "spin" : ""}`}
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+              </svg>
+              <span>Refresh</span>
+            </button>
             <div className="chatbot-wrapper">
               <ApplicantChatbotDrawer
                 isOpen={isChatbotOpen}

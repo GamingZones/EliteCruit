@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { ChevronIcon, SideIcon } from "../../components/Icons";
 import { useEmployerCompanyLabel } from "../../hooks/useEmployerCompanyLabel";
 import { useUnreadNotificationsCount } from "../../hooks/useUnreadNotificationsCount";
@@ -391,7 +391,9 @@ export default function EmployerDashboard() {
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
-  useEffect(() => {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const loadDashboardData = useCallback(async (silent = false) => {
     const savedUserRaw = localStorage.getItem("elitecruit-user");
     if (!savedUserRaw) {
       setProfileMessage("Sign in as employer to view dashboard data.");
@@ -406,44 +408,80 @@ export default function EmployerDashboard() {
       }
 
       const empId = savedUser.id;
+      if (!silent) setIsRefreshing(true);
 
-      // 1. Dashboard summary
-      authFetch(`/api/employers/${empId}/dashboard-summary`)
-        .then(async (response) => {
-          const data = await response.json();
-          if (response.ok) {
-            setSummary({
-              stats: data?.stats || { activeJobs: 0, applications: 0, shortlisted: 0, toReview: 0 },
-              activeJobPosts: Array.isArray(data?.activeJobPosts) ? data.activeJobPosts : [],
-              recentApplications: Array.isArray(data?.recentApplications) ? data.recentApplications : [],
-            });
-          }
-        })
-        .catch((error) => setProfileMessage(error instanceof Error ? error.message : "Unable to load dashboard data."));
+      const [summaryRes, interviewsRes, approvedRes] = await Promise.allSettled([
+        authFetch(`/api/employers/${empId}/dashboard-summary`),
+        authFetch(`/api/interviews?user_id=${empId}&role=employer`),
+        authFetch(`/api/employers/${empId}/applications?status=approved`),
+      ]);
 
-      // 2. Scheduled interviews
-      authFetch(`/api/interviews?user_id=${empId}&role=employer`)
-        .then(async (response) => {
-          const data = await response.json();
-          if (response.ok && Array.isArray(data?.interviews)) {
-            setInterviews(data.interviews);
-          }
-        })
-        .catch(() => {});
+      if (summaryRes.status === "fulfilled" && summaryRes.value.ok) {
+        const data = await summaryRes.value.json();
+        setSummary({
+          stats: data?.stats || { activeJobs: 0, applications: 0, shortlisted: 0, toReview: 0 },
+          activeJobPosts: Array.isArray(data?.activeJobPosts) ? data.activeJobPosts : [],
+          recentApplications: Array.isArray(data?.recentApplications) ? data.recentApplications : [],
+        });
+      } else if (summaryRes.status === "rejected" && !silent) {
+        setProfileMessage(summaryRes.reason instanceof Error ? summaryRes.reason.message : "Unable to load dashboard data.");
+      }
 
-      // 3. Approved / Hired applications (Master Roster)
-      authFetch(`/api/employers/${empId}/applications?status=approved`)
-        .then(async (response) => {
-          const data = await response.json();
-          if (response.ok && Array.isArray(data?.applications)) {
-            setApprovedApplications(data.applications);
-          }
-        })
-        .catch(() => {});
+      if (interviewsRes.status === "fulfilled" && interviewsRes.value.ok) {
+        const data = await interviewsRes.value.json();
+        if (Array.isArray(data?.interviews)) {
+          setInterviews(data.interviews);
+        }
+      }
+
+      if (approvedRes.status === "fulfilled" && approvedRes.value.ok) {
+        const data = await approvedRes.value.json();
+        if (Array.isArray(data?.applications)) {
+          setApprovedApplications(data.applications);
+        }
+      }
     } catch {
-      setProfileMessage("Unable to read account session.");
+      if (!silent) {
+        setProfileMessage("Unable to read account session.");
+      }
+    } finally {
+      if (!silent) {
+        setTimeout(() => setIsRefreshing(false), 300);
+      }
     }
   }, []);
+
+  useEffect(() => {
+    loadDashboardData(false);
+
+    // Periodic check every 45 seconds (pauses when tab is inactive)
+    const interval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        return;
+      }
+      loadDashboardData(true);
+    }, 45000);
+
+    const handleVisibility = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        loadDashboardData(true);
+      }
+    };
+    const handleSync = () => loadDashboardData(true);
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", handleSync);
+    window.addEventListener("elitecruit_application_update", handleSync);
+    window.addEventListener("elitecruit-interviews-updated", handleSync);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", handleSync);
+      window.removeEventListener("elitecruit_application_update", handleSync);
+      window.removeEventListener("elitecruit-interviews-updated", handleSync);
+    };
+  }, [loadDashboardData]);
 
   const upcomingInterviews = useMemo(() => {
     return interviews.filter((i) => (i.status || "").toLowerCase() !== "cancelled");
@@ -669,6 +707,29 @@ export default function EmployerDashboard() {
             <div><strong>Employer Workspace</strong></div>
           </div>
           <div className="appdash-top-right">
+            <button
+              type="button"
+              className={`dash-refresh-trigger-btn ${isRefreshing ? "refreshing" : ""}`}
+              onClick={() => loadDashboardData(false)}
+              disabled={isRefreshing}
+              title="Refresh dashboard data"
+            >
+              <svg
+                className={`refresh-btn-icon ${isRefreshing ? "spin" : ""}`}
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+              </svg>
+              <span>Refresh</span>
+            </button>
             <div className="chatbot-wrapper">
               <EmployerChatbotDrawer
                 isOpen={isChatbotOpen}

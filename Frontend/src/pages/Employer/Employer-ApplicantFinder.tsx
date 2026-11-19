@@ -2105,6 +2105,9 @@ export default function EmployerApplicantFinder() {
   useEffect(() => {
     if (!isMessagePanelOpen || !selectedCandidate?.user_id || !candMsgThread?.id) return;
     const interval = setInterval(async () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        return;
+      }
       try {
         const res = await fetch(`/api/messages/threads/${candMsgThread.id}`);
         if (res.ok) {
