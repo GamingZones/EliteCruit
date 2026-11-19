@@ -4463,7 +4463,7 @@ export default function JobSearch() {
                             {employer.company_size && <span className="emp-size-tag">{employer.company_size}</span>}
                           </p>
 
-                          <p className="result-summary" style={{ marginTop: "6px", marginBottom: 0 }}>
+                          <p className="result-summary">
                             {shortenText(employer.company_description, "No company description provided yet.", 160)}
                           </p>
                         </div>

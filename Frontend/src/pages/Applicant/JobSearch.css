@@ -867,7 +867,7 @@
   border: 1px solid #d7dfeb;
   border-radius: 12px;
   background: #ffffff;
-  padding: 14px 18px;
+  padding: 10px 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
@@ -1014,7 +1014,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 6px;
+  gap: 3px;
   flex: 1;
   min-width: 0;
 }
@@ -1033,10 +1033,10 @@
   flex-shrink: 0;
   white-space: nowrap;
   border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 0.75rem;
+  padding: 2px 7px;
+  font-size: 0.72rem;
   font-weight: 800;
-  line-height: 1;
+  line-height: 1.1;
 }
 
 .status-chip.open {
@@ -1077,8 +1077,9 @@
 
 .result-title-row h3 {
   margin: 0;
-  font-size: 1.65rem;
-  line-height: 1.08;
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1095,13 +1096,16 @@
 .meta-line {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  font-size: 0.8rem;
+  line-height: 1.2;
 }
 
 .meta-line span {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
+  font-size: 0.8rem;
 }
 
 .company-meta-with-rating {
@@ -1132,28 +1136,28 @@
   align-items: center;
   justify-content: center;
   gap: 3px;
-  padding: 2px 8px;
+  padding: 1px 6px;
   border-radius: 999px;
   background: #fff8e6;
   color: #b85a06;
   border: 1px solid #f7d49e;
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 800;
-  line-height: 1.2;
+  line-height: 1.1;
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .company-inline-rating-pill span {
   color: #b85a06;
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 800;
-  line-height: 1.2;
+  line-height: 1.1;
 }
 
 .company-inline-rating-pill .star-icon {
   color: #e39d1f;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   line-height: 1;
 }
 
@@ -1272,12 +1276,12 @@
 }
 
 .result-summary {
-  margin: 0 0 6px;
+  margin: 0;
   color: #2f4d6f;
-  font-size: 0.98rem;
-  line-height: 1.35;
+  font-size: 0.82rem;
+  line-height: 1.25;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1297,7 +1301,7 @@
   flex-direction: column;
   justify-content: center;
   align-items: flex-end;
-  gap: 10px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -1354,10 +1358,10 @@
 .distance-pill,
 .urgent-pill {
   border-radius: 999px;
-  padding: 4px 11px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  line-height: 1;
+  padding: 2px 7px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.1;
   display: inline-flex;
   align-items: center;
   background: #eef3f9;
@@ -1408,7 +1412,11 @@
 }
 
 .result-right-col .apply-right-btn {
-  min-width: 66px;
+  min-width: 60px;
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border-radius: 8px;
 }
 
 .applied-btn,
@@ -1469,15 +1477,17 @@
 }
 
 .bookmark-icon-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
   border: 1px solid #efcc8e;
   background: #fff7e8;
   color: #e2a32f;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
 }
 
 .bookmark-icon-btn:hover {
@@ -1684,9 +1694,9 @@
   background: #ffffff;
   color: #123f64;
   border-radius: 8px;
-  padding: 9px 10px;
+  padding: 6px 14px;
   font: inherit;
-  font-size: 0.86rem;
+  font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
   width: 100%;
