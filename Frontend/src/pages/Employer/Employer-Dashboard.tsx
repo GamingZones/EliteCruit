@@ -305,6 +305,7 @@ export default function EmployerDashboard() {
   const [interviews, setInterviews] = useState<ScheduledInterview[]>([]);
   const [approvedApplications, setApprovedApplications] = useState<ApprovedApplication[]>([]);
   const [selectedEvalJobId, setSelectedEvalJobId] = useState<number | null>(null);
+  const [selectedApprovedJobId, setSelectedApprovedJobId] = useState<number | "all">("all");
 
   // Modals state
   const [detailsModalCandidate, setDetailsModalCandidate] = useState<CandidateModalData | null>(null);
@@ -544,6 +545,31 @@ export default function EmployerDashboard() {
       (a, b) => (b.applicant_count || 0) - (a.applicant_count || 0)
     );
   }, [summary.activeJobPosts]);
+
+  // Job posts with approved counts for Tab 3 filter
+  const availableApprovedJobs = useMemo(() => {
+    const jobMap = new Map<number, { id: number; title: string; count: number }>();
+    for (const job of summary.activeJobPosts) {
+      jobMap.set(job.id, { id: job.id, title: job.title, count: 0 });
+    }
+    for (const app of approvedApplications) {
+      const jid = Number(app.job_post_id);
+      if (jid) {
+        if (jobMap.has(jid)) {
+          jobMap.get(jid)!.count += 1;
+        } else {
+          jobMap.set(jid, { id: jid, title: app.job_title || `Job #${jid}`, count: 1 });
+        }
+      }
+    }
+    return Array.from(jobMap.values());
+  }, [summary.activeJobPosts, approvedApplications]);
+
+  // Filtered approved applications based on chosen vacancy
+  const filteredApprovedApplications = useMemo(() => {
+    if (selectedApprovedJobId === "all") return approvedApplications;
+    return approvedApplications.filter((app) => Number(app.job_post_id) === Number(selectedApprovedJobId));
+  }, [approvedApplications, selectedApprovedJobId]);
 
   const openCandidateDetails = (candidate: any) => {
     setDetailsModalCandidate({
@@ -1128,19 +1154,60 @@ export default function EmployerDashboard() {
               </a>
             </div>
 
-            {approvedApplications.length === 0 ? (
+            {/* VACANCY APPROVED SELECTOR BAR */}
+            {availableApprovedJobs.length > 0 && (
+              <div className="smart-matches-head-bar">
+                <div className="smart-matches-job-selector">
+                  <span className="selector-label">Evaluating Candidates for:</span>
+                  <select
+                    value={selectedApprovedJobId}
+                    onChange={(e) => setSelectedApprovedJobId(e.target.value === "all" ? "all" : Number(e.target.value))}
+                  >
+                    <option value="all">All Job Vacancies ({approvedApplications.length} approved)</option>
+                    {availableApprovedJobs.map((job) => (
+                      <option key={job.id} value={job.id}>
+                        {job.title} ({job.count} approved)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <span className="talent-pool-count-label">
+                  Showing <strong>{filteredApprovedApplications.length}</strong> approved {filteredApprovedApplications.length === 1 ? "candidate" : "candidates"} {selectedApprovedJobId !== "all" ? "for this job vacancy" : "across all vacancies"}
+                </span>
+              </div>
+            )}
+
+            {filteredApprovedApplications.length === 0 ? (
               <article className="result-card empty-state" style={{ margin: "14px 0 6px" }}>
                 <div className="empty-roster-box">
-                  <strong>No approved candidates yet.</strong>
-                  <p>When you approve candidates or extend formal offers in Applicant Management, they will be tracked here in this master roster.</p>
-                  <a href="/employer-applicant-management" className="dash-text-link-btn">
-                    Go to Applicant Management →
-                  </a>
+                  <strong>
+                    {selectedApprovedJobId === "all"
+                      ? "No approved candidates yet."
+                      : "No approved candidates for this job vacancy yet."}
+                  </strong>
+                  <p>
+                    {selectedApprovedJobId === "all"
+                      ? "When you approve candidates or extend formal offers in Applicant Management, they will be tracked here in this master roster."
+                      : "Select another job vacancy above or view all approved candidates."}
+                  </p>
+                  {selectedApprovedJobId !== "all" ? (
+                    <button
+                      type="button"
+                      className="dash-text-link-btn"
+                      onClick={() => setSelectedApprovedJobId("all")}
+                    >
+                      Show All Vacancies →
+                    </button>
+                  ) : (
+                    <a href="/employer-applicant-management" className="dash-text-link-btn">
+                      Go to Applicant Management →
+                    </a>
+                  )}
                 </div>
               </article>
             ) : (
               <div className="approved-candidates-list">
-                {approvedApplications.map((app) => {
+                {filteredApprovedApplications.map((app) => {
                   const picUrl = app.profile_picture_path
                     ? (app.profile_picture_path.startsWith("http") || app.profile_picture_path.startsWith("/api")
                         ? app.profile_picture_path
