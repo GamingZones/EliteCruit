@@ -185,7 +185,7 @@ type DashboardSummary = {
 const WORKSPACE_TABS = [
   { id: "section-insights", label: "Recruitment Insights", num: 1 },
   { id: "section-smart-matches", label: "Smart Matches", num: 2 },
-  { id: "section-approved-interviews", label: "Approved & Interviews", num: 3 },
+  { id: "section-approved-interviews", label: "Approved Candidates", num: 3 },
 ] as const;
 
 function initialsFromName(name: string | null | undefined) {
@@ -568,7 +568,7 @@ export default function EmployerDashboard() {
   const getTabBadgeCount = (tabId: string) => {
     if (tabId === "section-insights" || tabId === "section-postings") return summary.activeJobPosts.length;
     if (tabId === "section-smart-matches") return talentMatches.filter((c) => (c.matchScore || 0) >= 50).length;
-    if (tabId === "section-approved-interviews") return upcomingInterviews.length + approvedApplications.length;
+    if (tabId === "section-approved-interviews") return approvedApplications.length;
     return 0;
   };
 
@@ -1109,119 +1109,47 @@ export default function EmployerDashboard() {
         )}
 
         {/* ══════════════════════════════════════════════════════════════════
-            TAB 3: APPROVED & INTERVIEWS
+            TAB 3: APPROVED CANDIDATES ROSTER
            ══════════════════════════════════════════════════════════════════ */}
         {activeSection === "section-approved-interviews" && (
           <div className="section-anchor" id="section-approved-interviews">
             <div className="matches-card" style={{ margin: "16px 28px 14px" }}>
               <div className="matches-head">
                 <div>
-                  <small className="matches-head-eyebrow">HIRING STAGES & ROSTER</small>
-                  <h2>Approved Hires & Interview Schedule</h2>
-                  <p>Master roster of all approved candidates across your postings, upcoming scheduled interviews, and formal offer letters.</p>
+                  <small className="matches-head-eyebrow">APPROVED TALENT & HIRES</small>
+                  <h2>Approved Candidates Roster</h2>
+                  <p>Master roster of all approved candidates across your vacancies, applicant profiles, and formal offer letters.</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    window.dispatchEvent(new CustomEvent("elitecruit-open-calendar"));
-                  }}
+                <a
+                  href="/employer-applicant-management"
                   className="matches-head-action-btn"
                 >
-                  <span>Open Calendar Suite</span>
+                  <span>Applicant Management</span>
                   <span className="action-arrow">→</span>
-                </button>
+                </a>
               </div>
             </div>
 
-            <section className="interviews-dual-grid">
-              {/* UPCOMING SCHEDULED INTERVIEWS */}
-              <article className="employer-block">
-                <header>
-                  <h2>📅 Upcoming Candidate Interviews</h2>
-                  <button
-                    type="button"
-                    className="dash-text-link-btn"
-                    onClick={() => {
-                      window.dispatchEvent(new CustomEvent("elitecruit-open-calendar"));
-                    }}
-                  >
-                    View Calendar
-                  </button>
-                </header>
+            {/* MASTER APPROVED & HIRED TALENT ROSTER */}
+            <article className="employer-block approved-roster-block" style={{ margin: "0 28px 24px" }}>
+              <header>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <h2>Master Approved Candidates Roster</h2>
+                </div>
+                <a href="/employer-applicant-management">Applicant Management →</a>
+              </header>
 
-                {upcomingInterviews.length === 0 ? (
-                  <div className="empty-roster-box">
-                    <strong>No upcoming interviews scheduled.</strong>
-                    <p>Interviews booked with candidates will appear here with instant join links.</p>
-                    <a href="/employer-applicant-management#shortlisted-candidates" className="dash-text-link-btn">
-                      Schedule an Interview →
-                    </a>
-                  </div>
-                ) : (
-                  upcomingInterviews.slice(0, 6).map((item) => {
-                    const picUrl = item.applicant_profile_picture_path
-                      ? (item.applicant_profile_picture_path.startsWith("http") || item.applicant_profile_picture_path.startsWith("/api")
-                          ? item.applicant_profile_picture_path
-                          : `/api/applicants/${item.applicant_user_id}/profile-picture`)
-                      : null;
-
-                    return (
-                      <div className="interview-card-item" key={item.id}>
-                        <div className="interview-card-info">
-                          <div className="interview-card-avatar">
-                            {picUrl ? (
-                              <img src={picUrl} alt={item.applicant_name || "Candidate"} />
-                            ) : (
-                              <span>{initialsFromName(item.applicant_name)}</span>
-                            )}
-                          </div>
-                          <div className="interview-card-details">
-                            <strong>{item.applicant_name || "Candidate"}</strong>
-                            <span>{item.job_title || "Job Position"}</span>
-                            <span className="interview-card-time">
-                              {item.interview_date} • {item.start_time}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="interview-card-actions">
-                          {item.meeting_link ? (
-                            <a
-                              href={item.meeting_link.startsWith("http") ? item.meeting_link : `https://${item.meeting_link}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="btn-join-meeting"
-                            >
-                              Join Meeting
-                            </a>
-                          ) : (
-                            <span className="interview-type-pill">{item.interview_type || "On-Site"}</span>
-                          )}
-                          <a href="/messages" className="review-btn">Message</a>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </article>
-
-              {/* MASTER APPROVED & HIRED TALENT ROSTER */}
-              <article className="employer-block">
-                <header>
-                  <h2>🤝 Master Approved & Hired Roster</h2>
-                  <a href="/employer-applicant-management">Applicant Management →</a>
-                </header>
-
-                {approvedApplications.length === 0 ? (
-                  <div className="empty-roster-box">
-                    <strong>No approved candidates yet.</strong>
-                    <p>When you approve candidates or extend formal offers in Applicant Management, they will be tracked here in this master roster.</p>
-                    <a href="/employer-applicant-management" className="dash-text-link-btn">
-                      Go to Applicant Management →
-                    </a>
-                  </div>
-                ) : (
-                  approvedApplications.slice(0, 8).map((app) => {
+              {approvedApplications.length === 0 ? (
+                <div className="empty-roster-box">
+                  <strong>No approved candidates yet.</strong>
+                  <p>When you approve candidates or extend formal offers in Applicant Management, they will be tracked here in this master roster.</p>
+                  <a href="/employer-applicant-management" className="dash-text-link-btn">
+                    Go to Applicant Management →
+                  </a>
+                </div>
+              ) : (
+                <div className="approved-roster-grid">
+                  {approvedApplications.map((app) => {
                     const picUrl = app.profile_picture_path
                       ? (app.profile_picture_path.startsWith("http") || app.profile_picture_path.startsWith("/api")
                           ? app.profile_picture_path
@@ -1280,10 +1208,10 @@ export default function EmployerDashboard() {
                         </div>
                       </div>
                     );
-                  })
-                )}
-              </article>
-            </section>
+                  })}
+                </div>
+              )}
+            </article>
           </div>
         )}
       </main>
