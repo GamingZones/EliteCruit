@@ -1112,34 +1112,24 @@ export default function EmployerDashboard() {
             TAB 3: APPROVED CANDIDATES ROSTER
            ══════════════════════════════════════════════════════════════════ */}
         {activeSection === "section-approved-interviews" && (
-          <div className="section-anchor" id="section-approved-interviews">
-            <div className="matches-card" style={{ margin: "16px 28px 14px" }}>
-              <div className="matches-head">
-                <div>
-                  <small className="matches-head-eyebrow">APPROVED TALENT & HIRES</small>
-                  <h2>Approved Candidates Roster</h2>
-                  <p>Master roster of all approved candidates across your vacancies, applicant profiles, and formal offer letters.</p>
-                </div>
-                <a
-                  href="/employer-applicant-management"
-                  className="matches-head-action-btn"
-                >
-                  <span>Applicant Management</span>
-                  <span className="action-arrow">→</span>
-                </a>
+          <section className="matches-card section-anchor" id="section-approved-interviews" style={{ margin: "16px 28px 24px" }}>
+            <div className="matches-head">
+              <div>
+                <small className="matches-head-eyebrow">APPROVED TALENT & HIRES</small>
+                <h2>Approved Candidates Roster</h2>
+                <p>Master roster of all approved candidates across your vacancies, applicant profiles, and formal offer letters.</p>
               </div>
+              <a
+                href="/employer-applicant-management"
+                className="matches-head-action-btn"
+              >
+                <span>Applicant Management</span>
+                <span className="action-arrow">→</span>
+              </a>
             </div>
 
-            {/* MASTER APPROVED & HIRED TALENT ROSTER */}
-            <article className="employer-block approved-roster-block" style={{ margin: "0 28px 24px" }}>
-              <header>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <h2>Master Approved Candidates Roster</h2>
-                </div>
-                <a href="/employer-applicant-management">Applicant Management →</a>
-              </header>
-
-              {approvedApplications.length === 0 ? (
+            {approvedApplications.length === 0 ? (
+              <article className="result-card empty-state" style={{ margin: "14px 0 6px" }}>
                 <div className="empty-roster-box">
                   <strong>No approved candidates yet.</strong>
                   <p>When you approve candidates or extend formal offers in Applicant Management, they will be tracked here in this master roster.</p>
@@ -1147,72 +1137,173 @@ export default function EmployerDashboard() {
                     Go to Applicant Management →
                   </a>
                 </div>
-              ) : (
-                <div className="approved-roster-grid">
-                  {approvedApplications.map((app) => {
-                    const picUrl = app.profile_picture_path
-                      ? (app.profile_picture_path.startsWith("http") || app.profile_picture_path.startsWith("/api")
-                          ? app.profile_picture_path
-                          : `/api/applicants/${app.applicant_user_id}/profile-picture`)
-                      : null;
+              </article>
+            ) : (
+              <div className="approved-candidates-list">
+                {approvedApplications.map((app) => {
+                  const picUrl = app.profile_picture_path
+                    ? (app.profile_picture_path.startsWith("http") || app.profile_picture_path.startsWith("/api")
+                        ? app.profile_picture_path
+                        : `/api/applicants/${app.applicant_user_id}/profile-picture`)
+                    : null;
+                  const skillsList = parseCompetencyDisplayTags(app.skills || "");
+                  const locationText = app.city ? (app.city.toLowerCase().includes("cavite") ? app.city : `${app.city}, Cavite`) : (app.province || "Cavite");
+                  const genderText = app.gender || "Applicant";
+                  const workText = app.work_arrangement ? (app.work_arrangement.toLowerCase() === "onsite" ? "On-Site" : app.work_arrangement) : "On-Site";
+                  const salaryText = app.expected_salary ? `Expected: ${typeof app.expected_salary === "number" ? `PHP ${app.expected_salary.toLocaleString()}` : app.expected_salary}` : null;
 
-                    return (
-                      <div className="approved-roster-row" key={app.id}>
-                        <div className="interview-card-info">
-                          <div className="interview-card-avatar">
-                            {picUrl ? (
-                              <img src={picUrl} alt={app.applicant_name || "Candidate"} />
-                            ) : (
-                              <span>{initialsFromName(app.applicant_name)}</span>
+                  return (
+                    <article className="approved-applicant-card" key={app.id}>
+                      <div className="approved-card-main">
+                        {/* Left Column: Full-Square Profile Picture */}
+                        <div
+                          className="approved-avatar-box"
+                          onClick={() => openCandidateDetails(app)}
+                          title="Click to view candidate details"
+                        >
+                          {picUrl ? (
+                            <img
+                              src={picUrl}
+                              alt={app.applicant_name || "Candidate"}
+                              className="approved-avatar-img"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLElement).style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <span className="approved-avatar-initials">{initialsFromName(app.applicant_name)}</span>
+                          )}
+                        </div>
+
+                        {/* Center Column: Profile Info + Role + Meta Inline + Skills */}
+                        <div className="approved-card-left">
+                          <div className="approved-candidate-info">
+                            <div className="approved-name-row">
+                              <span className="approved-star-pill">
+                                <span className="star-icon">★</span> {app.rating ? Number(app.rating).toFixed(1) : "0.0"}
+                              </span>
+                              <h3 className="approved-candidate-name">{app.applicant_name || "Candidate"}</h3>
+                              <span className="approved-target-role-pill" title={`Vacancy: ${app.job_title || "Job Position"}`}>
+                                {app.job_title || app.desired_job_title || "Applicant"}
+                              </span>
+                              <span className="approved-status-pill">
+                                {app.decision_message ? "Formal Offer" : "Approved"}
+                              </span>
+                            </div>
+
+                            <div className="approved-candidate-meta-inline">
+                              <span className="approved-meta-inline-item">
+                                <svg className="mini-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                  <path d="M12 21s-6-4.35-6-9a6 6 0 1 1 12 0c0 4.65-6 9-6 9z" />
+                                  <circle cx="12" cy="12" r="2.5" />
+                                </svg>
+                                <span>{locationText}</span>
+                              </span>
+
+                              <span className="approved-meta-inline-item">
+                                <svg className="mini-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                  <circle cx="12" cy="7" r="4" />
+                                </svg>
+                                <span>{genderText}</span>
+                              </span>
+
+                              <span className="approved-meta-inline-item">
+                                <svg className="mini-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                                </svg>
+                                <span>{workText}</span>
+                              </span>
+
+                              {salaryText ? (
+                                <span className="approved-meta-inline-item">
+                                  <svg className="mini-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    <line x1="12" y1="1" x2="12" y2="23" />
+                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                  </svg>
+                                  <span>{salaryText}</span>
+                                </span>
+                              ) : (
+                                <span className="approved-meta-inline-item">
+                                  <svg className="mini-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                    <line x1="16" y1="2" x2="16" y2="6" />
+                                    <line x1="8" y1="2" x2="8" y2="6" />
+                                    <line x1="3" y1="10" x2="21" y2="10" />
+                                  </svg>
+                                  <span>Submitted: {formatDate(app.submitted_at)}</span>
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Skills Row */}
+                            {skillsList.length > 0 && (
+                              <div className="approved-skills-row">
+                                <span className="approved-skills-label">SKILLS:</span>
+                                <div className="approved-skills-wrap">
+                                  {skillsList.slice(0, 6).map((sk, idx) => (
+                                    <span className="approved-skill-pill" key={idx}>
+                                      {sk}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
                             )}
                           </div>
-                          <div className="interview-card-details">
-                            <strong>{app.applicant_name || "Candidate"}</strong>
-                            <span>{app.job_title || "Job Position"}</span>
-                            <small>Submitted: {formatDate(app.submitted_at)}</small>
-                          </div>
                         </div>
 
-                        <div className="approved-roster-actions">
-                          {app.decision_message ? (
+                        {/* Right Column: Actions Stack */}
+                        <div className="approved-card-right">
+                          <div className="approved-actions-stack">
+                            <a
+                              href="/messages"
+                              className="approved-card-btn btn-message"
+                            >
+                              Message
+                            </a>
+
                             <button
                               type="button"
-                              className="offer-letter-tag-btn"
-                              onClick={() => {
-                                setViewOfferLetterModal({
-                                  candidateName: app.applicant_name,
-                                  jobTitle: app.job_title,
-                                  letterText: app.decision_message,
-                                  status: app.status,
-                                  responseDecision: app.response_decision,
-                                  responseMessage: app.response_message,
-                                  responseDate: app.response_date,
-                                  proposedStartDate: app.proposed_start_date,
-                                });
-                              }}
+                              className="approved-card-btn btn-details"
+                              onClick={() => openCandidateDetails(app)}
                             >
-                              Formal Offer Letter
+                              Details
                             </button>
-                          ) : (
-                            <span className="status-green">Approved</span>
-                          )}
 
-                          <button
-                            type="button"
-                            className="review-btn"
-                            onClick={() => openCandidateDetails(app)}
-                          >
-                            Profile
-                          </button>
-                          <a href="/messages" className="review-btn">Message</a>
+                            {app.decision_message ? (
+                              <button
+                                type="button"
+                                className="approved-card-btn btn-offer"
+                                onClick={() => {
+                                  setViewOfferLetterModal({
+                                    candidateName: app.applicant_name,
+                                    jobTitle: app.job_title,
+                                    letterText: app.decision_message,
+                                    status: app.status,
+                                    responseDecision: app.response_decision,
+                                    responseMessage: app.response_message,
+                                    responseDate: app.response_date,
+                                    proposedStartDate: app.proposed_start_date,
+                                  });
+                                }}
+                              >
+                                Formal Offer Letter
+                              </button>
+                            ) : (
+                              <span className="approved-card-btn btn-approved">
+                                Approved
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </article>
-          </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </section>
         )}
       </main>
 

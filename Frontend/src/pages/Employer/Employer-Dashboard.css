@@ -1222,21 +1222,302 @@
   gap: 16px;
 }
 
-.approved-roster-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+/* ── TAB 3: APPROVED APPLICANT CARDS (APPLICANT FINDER DESIGN) ── */
+.approved-candidates-list {
+  display: flex;
+  flex-direction: column;
   gap: 12px;
-  margin-top: 10px;
+  margin-top: 14px;
 }
 
-.approved-roster-grid .approved-roster-row {
-  margin-top: 0;
+.approved-applicant-card {
+  border: 1px solid #7dd3fc;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 12px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+  width: 100%;
 }
 
-@media (max-width: 900px) {
-  .approved-roster-grid {
-    grid-template-columns: 1fr;
-  }
+.approved-applicant-card:hover {
+  border-color: #38bdf8;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.08);
+}
+
+.approved-card-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.approved-avatar-box {
+  width: 85px;
+  height: 85px;
+  min-width: 85px;
+  min-height: 85px;
+  max-width: 85px;
+  max-height: 85px;
+  aspect-ratio: 1 / 1;
+  border-radius: 14px;
+  background: #01294a;
+  color: #ffffff;
+  font-size: 1.55rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: transform 0.15s ease;
+}
+
+.approved-avatar-box:hover {
+  transform: scale(1.02);
+}
+
+.approved-avatar-img {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+  border-radius: 14px;
+}
+
+.approved-avatar-initials {
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.approved-card-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.approved-candidate-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.approved-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.approved-star-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.1;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.approved-star-pill .star-icon {
+  color: #f59e0b;
+  font-size: 0.78rem;
+  line-height: 1;
+}
+
+.approved-candidate-name {
+  margin: 0;
+  font-size: 1.12rem;
+  font-weight: 800;
+  color: #01294a;
+  line-height: 1.15;
+}
+
+.approved-target-role-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #f0f9ff;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.approved-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.approved-candidate-meta-inline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+.approved-meta-inline-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.approved-meta-inline-item .mini-icon-svg {
+  color: #64748b;
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.approved-skills-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.approved-skills-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.approved-skills-wrap {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.approved-skill-pill {
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+  line-height: 1.15;
+  background: #e0f2fe;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+}
+
+.approved-card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  flex-shrink: 0;
+}
+
+.approved-actions-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 140px;
+}
+
+.approved-card-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.15;
+  min-height: 28px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.approved-card-btn.btn-message {
+  background: #ffffff;
+  color: #01294a;
+  border: 1px solid #cbd5e1;
+}
+
+.approved-card-btn.btn-message:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.approved-card-btn.btn-details {
+  background: #01294a;
+  color: #ffffff;
+  border: 1px solid #01294a;
+}
+
+.approved-card-btn.btn-details:hover {
+  background: #0a3a63;
+  border-color: #0a3a63;
+}
+
+.approved-card-btn.btn-offer {
+  background: #0284c7;
+  color: #ffffff;
+  border: 1px solid #0284c7;
+}
+
+.approved-card-btn.btn-offer:hover {
+  background: #0369a1;
+  border-color: #0369a1;
+}
+
+.approved-card-btn.btn-approved {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  cursor: default;
 }
 
 .interview-card-item,
@@ -2380,4 +2661,114 @@
   background: rgba(234, 179, 8, 0.2) !important;
   color: #facc15 !important;
   border: 1px solid rgba(234, 179, 8, 0.35) !important;
+}
+
+/* ── APPROVED APPLICANT CARDS DARK MODE ── */
+[data-theme="dark"] .approved-applicant-card {
+  background: #1c1e27 !important;
+  border-color: #2e3244 !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .approved-applicant-card:hover {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.12) !important;
+}
+
+[data-theme="dark"] .approved-avatar-box {
+  background: #242735 !important;
+  color: #38bdf8 !important;
+  border: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .approved-candidate-name {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .approved-star-pill {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #fbbf24 !important;
+  border-color: rgba(251, 191, 36, 0.3) !important;
+}
+
+[data-theme="dark"] .approved-target-role-pill {
+  background: rgba(14, 165, 233, 0.15) !important;
+  color: #38bdf8 !important;
+  border-color: rgba(56, 189, 248, 0.35) !important;
+}
+
+[data-theme="dark"] .approved-status-pill {
+  background: rgba(34, 197, 94, 0.15) !important;
+  color: #4ade80 !important;
+  border-color: rgba(74, 222, 128, 0.3) !important;
+}
+
+[data-theme="dark"] .approved-meta-inline-item {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .approved-meta-inline-item .mini-icon-svg {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .approved-skills-label {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .approved-skill-pill {
+  background: rgba(14, 165, 233, 0.15) !important;
+  color: #38bdf8 !important;
+  border-color: rgba(56, 189, 248, 0.3) !important;
+}
+
+[data-theme="dark"] .approved-card-btn.btn-message {
+  background: #20232e !important;
+  color: #38bdf8 !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .approved-card-btn.btn-message:hover {
+  background: #282c3a !important;
+  border-color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .approved-card-btn.btn-details {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border-color: #0284c7 !important;
+}
+
+[data-theme="dark"] .approved-card-btn.btn-details:hover {
+  background: #0369a1 !important;
+  border-color: #0369a1 !important;
+}
+
+[data-theme="dark"] .approved-card-btn.btn-offer {
+  background: #0369a1 !important;
+  color: #ffffff !important;
+  border-color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .approved-card-btn.btn-offer:hover {
+  background: #0284c7 !important;
+  border-color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .approved-card-btn.btn-approved {
+  background: rgba(16, 185, 129, 0.18) !important;
+  color: #34d399 !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+@media (max-width: 768px) {
+  .approved-card-main {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  .approved-actions-stack {
+    width: 100% !important;
+    flex-direction: row !important;
+  }
 }
