@@ -749,78 +749,8 @@ export default function EmployerDashboard() {
            ══════════════════════════════════════════════════════════════════ */}
         {activeSection === "section-insights" && (
           <div className="section-anchor" id="section-insights">
-            {/* RECRUITMENT VELOCITY EYEBROW HEADER */}
-            <div className="matches-card" style={{ margin: "16px 28px 14px" }}>
-              <div className="matches-head">
-                <div>
-                  <small className="matches-head-eyebrow">RECRUITMENT VELOCITY & CONVERSION</small>
-                  <h2>Recruitment Insights & Hiring Funnel</h2>
-                  <p>Track stage-by-stage candidate conversion rates, vacancy performance, and incoming candidate submissions.</p>
-                </div>
-                <a href="/employer-job-posts/create" className="matches-head-action-btn">
-                  <span>Post New Vacancy</span>
-                  <span className="action-arrow">+</span>
-                </a>
-              </div>
-            </div>
-
-            {/* INTERACTIVE PIPELINE SUMMARY BAR */}
-            <div className="employer-pipeline-bar">
-              <a href="/employer-applicant-management#applicant-screening" className="pipeline-stat-card" title="View applicants pending review">
-                <span className="pipeline-stat-icon to-review">📥</span>
-                <div className="pipeline-stat-info">
-                  <span className="pipeline-stat-count">{summary.stats.toReview ?? 0}</span>
-                  <span className="pipeline-stat-label">Pending Review</span>
-                </div>
-              </a>
-
-              <a href="/employer-applicant-management#applicant-screening" className="pipeline-stat-card" title="View applicants under review">
-                <span className="pipeline-stat-icon under-review">🔍</span>
-                <div className="pipeline-stat-info">
-                  <span className="pipeline-stat-count">{summary.stats.underReview ?? 0}</span>
-                  <span className="pipeline-stat-label">Under Review</span>
-                </div>
-              </a>
-
-              <a href="/employer-applicant-management#shortlisted-candidates" className="pipeline-stat-card" title="View shortlisted candidates">
-                <span className="pipeline-stat-icon shortlisted">⭐</span>
-                <div className="pipeline-stat-info">
-                  <span className="pipeline-stat-count">{summary.stats.shortlisted ?? 0}</span>
-                  <span className="pipeline-stat-label">Shortlisted</span>
-                </div>
-              </a>
-
-              <button
-                type="button"
-                onClick={() => handleSectionClick("section-approved-interviews")}
-                className="pipeline-stat-card"
-                title="View scheduled interviews"
-              >
-                <span className="pipeline-stat-icon interview">📅</span>
-                <div className="pipeline-stat-info">
-                  <span className="pipeline-stat-count">{summary.stats.interview ?? upcomingInterviews.length}</span>
-                  <span className="pipeline-stat-label">In Interview</span>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleSectionClick("section-approved-interviews")}
-                className="pipeline-stat-card"
-                title="View approved and hired talent roster"
-              >
-                <span className="pipeline-stat-icon approved">🤝</span>
-                <div className="pipeline-stat-info">
-                  <span className="pipeline-stat-count">
-                    {(summary.stats.approved || 0) + (summary.stats.recruited || 0) + (summary.stats.hired || 0) || approvedApplications.length}
-                  </span>
-                  <span className="pipeline-stat-label">Approved & Hired</span>
-                </div>
-              </button>
-            </div>
-
             {/* VISUAL HIRING FUNNEL CONVERSION CHART */}
-            <article className="employer-block hiring-funnel-card" style={{ margin: "0 28px 14px" }}>
+            <article className="employer-block hiring-funnel-card" style={{ margin: "16px 28px 16px" }}>
               <header>
                 <div>
                   <h2>Visual Hiring Funnel</h2>
@@ -888,27 +818,26 @@ export default function EmployerDashboard() {
               </div>
             </article>
 
-            {/* DUAL GRID: TOP PERFORMING JOB POSTS & RECENT SUBMISSIONS */}
-            <section className="employer-dual-grid">
-              {/* TOP PERFORMING JOB POSTS */}
-              <article className="employer-block top-jobs-block">
-                <header>
-                  <div>
-                    <h2>Top Performing Job Posts</h2>
-                    <small className="block-sub-text">Ranked by applicant demand & hiring velocity</small>
-                  </div>
-                  <a href="/employer-job-posts/create" className="post-job-action-btn">Post New Job +</a>
-                </header>
+            {/* TOP PERFORMING JOB POSTS */}
+            <article className="employer-block top-jobs-block" style={{ margin: "0 28px 24px" }}>
+              <header>
+                <div>
+                  <h2>Top Performing Job Posts</h2>
+                  <small className="block-sub-text">Ranked by applicant demand & hiring velocity</small>
+                </div>
+                <a href="/employer-job-posts/create" className="post-job-action-btn">Post New Job +</a>
+              </header>
 
-                {sortedJobPosts.length === 0 ? (
-                  <div className="job-post-row">
-                    <div>
-                      <strong>No active posts yet.</strong>
-                      <small>Publish job vacancies to start tracking recruitment interest.</small>
-                    </div>
+              {sortedJobPosts.length === 0 ? (
+                <div className="job-post-row">
+                  <div>
+                    <strong>No active posts yet.</strong>
+                    <small>Publish job vacancies to start tracking recruitment interest.</small>
                   </div>
-                ) : (
-                  sortedJobPosts.slice(0, 5).map((job, idx) => {
+                </div>
+              ) : (
+                <div className="top-jobs-grid">
+                  {sortedJobPosts.slice(0, 6).map((job, idx) => {
                     const count = job.applicant_count || 0;
                     const badgeClass = count >= 3 ? "high" : count > 0 ? "active" : "low";
                     const badgeText = count >= 3 ? "🔥 High Inflow" : count > 0 ? "⚡ Active Inflow" : "⚠️ Needs Inflow";
@@ -947,97 +876,10 @@ export default function EmployerDashboard() {
                         </div>
                       </div>
                     );
-                  })
-                )}
-              </article>
-
-              {/* RECENT CANDIDATE SUBMISSIONS */}
-              <article className="employer-block recent-submissions-block">
-                <header>
-                  <div>
-                    <h2>Recent Candidate Submissions</h2>
-                    <small className="block-sub-text">Latest applications received across all postings</small>
-                  </div>
-                  <a href="/employer-applicant-management">Applicant Management →</a>
-                </header>
-
-                {summary.recentApplications.length === 0 ? (
-                  <div className="recent-app-row">
-                    <div className="recent-app-info">
-                      <strong>No applications yet.</strong>
-                      <small>Incoming candidate submissions will appear here for review.</small>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="submissions-compact-list">
-                    {summary.recentApplications.slice(0, 6).map((item) => {
-                      const picUrl = item.profile_picture_path
-                        ? (item.profile_picture_path.startsWith("http") || item.profile_picture_path.startsWith("/api")
-                            ? item.profile_picture_path
-                            : `/api/applicants/${item.applicant_user_id}/profile-picture`)
-                        : null;
-
-                      return (
-                        <div className="submission-compact-row" key={item.id}>
-                          <div className="submission-left">
-                            <span className="initials-pill">
-                              {picUrl ? (
-                                <img
-                                  src={picUrl}
-                                  alt={item.applicant_name || "Applicant"}
-                                  onError={(e) => {
-                                    (e.currentTarget as HTMLElement).style.display = "none";
-                                  }}
-                                />
-                              ) : (
-                                <span>{initialsFromName(item.applicant_name)}</span>
-                              )}
-                            </span>
-                            <div className="submission-info">
-                              <strong className="submission-name">{item.applicant_name || "Applicant"}</strong>
-                              <span className="submission-job">{item.job_title || "Job Post"}</span>
-                              <small className="submission-date">{formatDate(item.submitted_at)}</small>
-                            </div>
-                          </div>
-
-                          <div className="submission-actions">
-                            <span className={`status-chip ${(item.status || "pending").toLowerCase()}`}>
-                              {item.status === "submitted" ? "Pending" : item.status || "Pending"}
-                            </span>
-                            <button
-                              type="button"
-                              className="review-btn"
-                              onClick={() => openCandidateDetails(item)}
-                            >
-                              Review
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </article>
-
-              {/* QUICK ACTIONS */}
-              <article className="employer-block quick-actions-block" style={{ gridColumn: "1 / -1" }}>
-                <header><h2>Quick Actions</h2></header>
-                <div className="quick-actions-grid-row">
-                  <button type="button" onClick={() => { window.location.href = "/employer-job-posts/create"; }}>
-                    <EmployerIcon name="jobposts" />Post a New Job
-                  </button>
-                  <button type="button" onClick={() => { window.location.href = "/employer-company-profile"; }}>
-                    <EmployerIcon name="company" />Company Profile
-                  </button>
-                  <button type="button" onClick={() => { window.location.href = "/employer-applicant-finder"; }}>
-                    <EmployerIcon name="nearby" />Find Nearby Applicants
-                  </button>
-                  <button type="button" onClick={() => { window.location.href = "/employer-applicant-management"; }}>
-                    <EmployerIcon name="applicant" />Review Applications
-                  </button>
+                  })}
                 </div>
-              </article>
-            </section>
+              )}
+            </article>
           </div>
         )}
 
