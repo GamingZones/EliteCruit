@@ -34,7 +34,7 @@ export default function Settings() {
   // Password mode: "change" (standard) or "reset" (in-page OTP reset)
   const [passwordMode, setPasswordMode] = useState<"change" | "reset">("change");
   const [resetStep, setResetStep] = useState<"request" | "verify" | "set_new">("request");
-  const [resetEmail, setResetEmail] = useState(user?.email || "");
+  const [verifiedEmail, setVerifiedEmail] = useState<string>(() => (user?.email || "").trim().toLowerCase());
   const [resetMaskedEmail, setResetMaskedEmail] = useState("");
   const [resetDevCode, setResetDevCode] = useState("");
   const [resetOtpCode, setResetOtpCode] = useState("");
@@ -46,6 +46,21 @@ export default function Settings() {
   const [isVerifyingReset, setIsVerifyingReset] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [resetMessage, setResetMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+
+  useEffect(() => {
+    if (user?.email) {
+      setVerifiedEmail(user.email.trim().toLowerCase());
+    } else if (user?.id) {
+      fetch(`/api/users/${user.id}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data?.user?.email) {
+            setVerifiedEmail(data.user.email.trim().toLowerCase());
+          }
+        })
+        .catch(() => {});
+    }
+  }, [user?.id, user?.email]);
 
   useEffect(() => {
     if (resetCooldown <= 0) return;
@@ -97,9 +112,9 @@ export default function Settings() {
   const handleRequestResetCode = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setResetMessage(null);
-    const cleanEmail = resetEmail.trim().toLowerCase();
+    const cleanEmail = verifiedEmail.trim().toLowerCase();
     if (!cleanEmail || !cleanEmail.includes("@")) {
-      setResetMessage({ text: "Please enter a valid registered email address.", type: "error" });
+      setResetMessage({ text: "No verified email address associated with this account. Please update your profile contact info.", type: "error" });
       return;
     }
 
@@ -121,7 +136,7 @@ export default function Settings() {
       setResetOtpCode("");
       setResetCooldown(45);
       setResetStep("verify");
-      setResetMessage({ text: data.message || "A 6-digit password reset code has been sent to your email.", type: "success" });
+      setResetMessage({ text: data.message || "A 6-digit password reset code has been sent to your verified email.", type: "success" });
     } catch {
       setResetMessage({ text: "Unable to connect to server. Please try again.", type: "error" });
     } finally {
@@ -143,7 +158,7 @@ export default function Settings() {
       const res = await fetch("/api/auth/verify-reset-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: resetEmail.trim(), code: cleanCode }),
+        body: JSON.stringify({ email: verifiedEmail.trim().toLowerCase(), code: cleanCode }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -646,20 +661,31 @@ export default function Settings() {
                   {resetStep === "request" && (
                     <form onSubmit={handleRequestResetCode}>
                       <p className="x-info-notice">
-                        To reset your forgotten password, verify your registered email address below. We will send a secure 6-digit OTP code to verify your identity.
+                        To reset your forgotten password, verify your identity using the registered email address attached to your account. We will send a secure 6-digit OTP code to this verified destination.
                       </p>
-                      <div className="x-form-group">
-                        <label style={{ display: "block", fontSize: "13px", fontWeight: 600, marginBottom: "6px" }}>
-                          Registered Email Address
-                        </label>
-                        <input
-                          type="email"
-                          className="x-input-box"
-                          placeholder="name@example.com"
-                          value={resetEmail}
-                          onChange={(e) => setResetEmail(e.target.value)}
-                          required
-                        />
+
+                      <div className="x-verified-email-card">
+                        <div className="x-verified-email-icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                          </svg>
+                        </div>
+                        <div className="x-verified-email-content">
+                          <div className="x-verified-email-header">
+                            <span className="x-verified-email-label">Verified Account Email</span>
+                            <span className="x-verified-badge">
+                              <svg viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                              Locked Destination
+                            </span>
+                          </div>
+                          <div className="x-verified-email-value">{verifiedEmail || "No registered email detected"}</div>
+                          <p className="x-verified-email-desc">
+                            For your security, OTP reset codes are strictly sent to this verified address and cannot be redirected.
+                          </p>
+                        </div>
                       </div>
 
                       <div className="x-form-footer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -677,7 +703,7 @@ export default function Settings() {
                         <button
                           type="submit"
                           className="x-save-pill-btn"
-                          disabled={isRequestingReset || !resetEmail.trim() || !resetEmail.includes("@") || resetCooldown > 0}
+                          disabled={isRequestingReset || !verifiedEmail.trim() || !verifiedEmail.includes("@") || resetCooldown > 0}
                         >
                           {isRequestingReset ? "Sending code..." : resetCooldown > 0 ? `Wait ${resetCooldown}s` : "Send Code"}
                         </button>
@@ -688,7 +714,7 @@ export default function Settings() {
                   {resetStep === "verify" && (
                     <form onSubmit={handleVerifyResetCode}>
                       <p className="x-info-notice">
-                        Enter the 6-digit verification code sent to <strong>{resetMaskedEmail || resetEmail}</strong>.
+                        Enter the 6-digit verification code sent to <strong>{resetMaskedEmail || verifiedEmail}</strong>.
                       </p>
 
                       {resetDevCode && (
@@ -733,9 +759,13 @@ export default function Settings() {
                           type="button"
                           className="x-forgot-password-link"
                           style={{ background: "none", border: "none", padding: 0 }}
-                          onClick={() => setResetStep("request")}
+                          onClick={() => {
+                            setPasswordMode("change");
+                            setResetStep("request");
+                            setResetMessage(null);
+                          }}
                         >
-                          ← Change email
+                          ← Cancel reset
                         </button>
                         <button
                           type="submit"
