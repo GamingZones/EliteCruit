@@ -210,62 +210,52 @@ function formatDate(value: string | null | undefined) {
 }
 
 function getCandidateLetterStatus(app: ApprovedApplication): {
-  statusKey: "offer_extended" | "offer_accepted" | "offer_declined" | "approved";
+  statusKey: "offer_extended" | "offer_accepted" | "offer_declined";
   badgeLabel: string;
   badgeClass: string;
   buttonLabel: string;
   buttonClass: string;
 } {
-  if (app.decision_message) {
-    const dec = (app.response_decision || "").toLowerCase();
-    const appStatus = (app.status || "").toLowerCase();
+  const dec = (app.response_decision || "").toLowerCase();
+  const appStatus = (app.status || "").toLowerCase();
 
-    if (
-      dec === "accept" ||
-      dec === "accepted" ||
-      dec === "approved" ||
-      appStatus === "recruited" ||
-      appStatus === "accepted"
-    ) {
-      return {
-        statusKey: "offer_accepted",
-        badgeLabel: "Offer Accepted",
-        badgeClass: "status-offer-accepted",
-        buttonLabel: "Offer Accepted",
-        buttonClass: "btn-offer-accepted",
-      };
-    }
-
-    if (
-      dec === "decline" ||
-      dec === "declined" ||
-      dec === "rejected" ||
-      dec === "denied"
-    ) {
-      return {
-        statusKey: "offer_declined",
-        badgeLabel: "Offer Declined",
-        badgeClass: "status-offer-declined",
-        buttonLabel: "Offer Declined",
-        buttonClass: "btn-offer-declined",
-      };
-    }
-
+  if (
+    dec === "accept" ||
+    dec === "accepted" ||
+    dec === "approved" ||
+    appStatus === "recruited" ||
+    appStatus === "accepted"
+  ) {
     return {
-      statusKey: "offer_extended",
-      badgeLabel: "Offer Extended",
-      badgeClass: "status-offer-extended",
-      buttonLabel: "Offer Extended",
-      buttonClass: "btn-offer-extended",
+      statusKey: "offer_accepted",
+      badgeLabel: "Offer Accepted",
+      badgeClass: "status-offer-accepted",
+      buttonLabel: "Offer Accepted",
+      buttonClass: "btn-offer-accepted",
+    };
+  }
+
+  if (
+    dec === "decline" ||
+    dec === "declined" ||
+    dec === "rejected" ||
+    dec === "denied"
+  ) {
+    return {
+      statusKey: "offer_declined",
+      badgeLabel: "Offer Declined",
+      badgeClass: "status-offer-declined",
+      buttonLabel: "Offer Declined",
+      buttonClass: "btn-offer-declined",
     };
   }
 
   return {
-    statusKey: "approved",
-    badgeLabel: "Approved",
-    badgeClass: "status-approved",
-    buttonLabel: "Approved",
-    buttonClass: "btn-approved",
+    statusKey: "offer_extended",
+    badgeLabel: "Offer Extended",
+    badgeClass: "status-offer-extended",
+    buttonLabel: "Offer Extended",
+    buttonClass: "btn-offer-extended",
   };
 }
 
@@ -1500,16 +1490,12 @@ export default function EmployerDashboard() {
                                   letterText: app.decision_message,
                                   status: app.status,
                                   responseDecision: app.response_decision,
-                                  responseMessage: app.decision_message ? (app.response_message || app.response_letter) : null,
+                                  responseMessage: app.response_message || app.response_letter,
                                   responseDate: app.response_date || app.responded_at,
                                   proposedStartDate: app.proposed_start_date || app.start_date,
                                 });
                               }}
-                              title={
-                                app.decision_message
-                                  ? `Click to view ${letterStatus.buttonLabel} letter & details`
-                                  : "Click to view application approval details"
-                              }
+                              title={`Click to view ${letterStatus.buttonLabel} letter & details`}
                             >
                               {letterStatus.buttonLabel}
                             </button>
@@ -1550,21 +1536,20 @@ export default function EmployerDashboard() {
 
       {/* ── VIEW FORMAL OFFER LETTER MODAL (MATCHING MESSAGES DESIGN) ── */}
       {viewOfferLetterModal && (() => {
-        const hasOffer = Boolean(viewOfferLetterModal.letterText && viewOfferLetterModal.letterText.trim());
         const isAcc = Boolean(
           (viewOfferLetterModal.responseDecision || "").toLowerCase().includes("accept") ||
           (viewOfferLetterModal.responseDecision || "").toLowerCase() === "approved" ||
-          (hasOffer && (viewOfferLetterModal.status || "").toLowerCase() === "recruited")
+          (viewOfferLetterModal.status || "").toLowerCase() === "recruited"
         );
         const isDec = Boolean(
           (viewOfferLetterModal.responseDecision || "").toLowerCase().includes("decline") ||
           (viewOfferLetterModal.responseDecision || "").toLowerCase().includes("reject") ||
           (viewOfferLetterModal.responseDecision || "").toLowerCase() === "denied"
         );
-        const hasResponse = hasOffer && (isAcc || isDec || Boolean(viewOfferLetterModal.responseMessage));
+        const hasResponse = Boolean(isAcc || isDec || viewOfferLetterModal.responseMessage);
 
-        const offerText = viewOfferLetterModal.letterText ||
-          `This candidate's application has been officially approved.\n\nYou can create and extend an official formal employment offer letter with compensation details, proposed start date, and terms directly from the Applicant Management page.`;
+        const defaultOfferText = `[Formal Employment Offer: ${viewOfferLetterModal.jobTitle}]\nCompany: ${companyLabel || "Employer"}\n\nDear ${viewOfferLetterModal.candidateName},\n\nCongratulations! We are pleased to formally extend an offer of employment for the position of "${viewOfferLetterModal.jobTitle}".\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\n${companyLabel || "Employer"}`;
+        const offerText = (viewOfferLetterModal.letterText && viewOfferLetterModal.letterText.trim()) || defaultOfferText;
 
         const responseText = viewOfferLetterModal.responseMessage || (isAcc
           ? `Dear ${companyLabel || "Hiring Team"},\n\nThank you for extending the offer for the position of "${viewOfferLetterModal.jobTitle}". I am pleased to accept your offer and excited to join the team.\n\nSincerely,\n${viewOfferLetterModal.candidateName}`
@@ -1573,13 +1558,11 @@ export default function EmployerDashboard() {
         return (
           <div className="view-letter-backdrop" onClick={() => setViewOfferLetterModal(null)}>
             <div className="view-letter-pair-row" onClick={(e) => e.stopPropagation()}>
-              {/* ── CARD 1: FORMAL OFFER LETTER / APPROVAL RECORD ── */}
+              {/* ── CARD 1: FORMAL OFFER LETTER ── */}
               <div className="view-letter-modal-card">
                 <div className="view-letter-header">
                   <div>
-                    <span className="view-letter-eyebrow">
-                      {hasOffer ? "OFFICIAL CORRESPONDENCE" : "OFFICIAL APPLICATION RECORD"}
-                    </span>
+                    <span className="view-letter-eyebrow">OFFICIAL CORRESPONDENCE</span>
                     <h3 className="view-letter-title">{viewOfferLetterModal.jobTitle}</h3>
                     <p className="view-letter-company">Candidate: {viewOfferLetterModal.candidateName}</p>
                   </div>
@@ -1596,13 +1579,9 @@ export default function EmployerDashboard() {
 
                 <div className="view-letter-body-content">
                   <div className="view-letter-meta-row">
-                    {hasOffer ? (
-                      <span className={`view-letter-badge ${isAcc ? "accepted" : isDec ? "declined" : "extended"}`}>
-                        {isAcc ? "Offer Accepted" : isDec ? "Offer Declined" : "Offer Extended"}
-                      </span>
-                    ) : (
-                      <span className="view-letter-badge accepted">Application Approved</span>
-                    )}
+                    <span className={`view-letter-badge ${isAcc ? "accepted" : isDec ? "declined" : "extended"}`}>
+                      {isAcc ? "Offer Accepted" : isDec ? "Offer Declined" : "Offer Extended"}
+                    </span>
                     {viewOfferLetterModal.proposedStartDate && (
                       <span className="view-letter-start-date-tag">
                         Proposed Start Date: <strong>{viewOfferLetterModal.proposedStartDate}</strong>
@@ -1610,12 +1589,10 @@ export default function EmployerDashboard() {
                     )}
                   </div>
 
-                  <div className={`view-letter-body-box ${hasOffer ? "view-letter-offer-box" : ""}`}>
+                  <div className="view-letter-body-box view-letter-offer-box">
                     <div className="view-letter-box-header">
-                      <span className={`view-letter-box-label ${hasOffer ? "offer-label" : ""}`}>
-                        {hasOffer
-                          ? `EMPLOYMENT OFFER LETTER FROM ${companyLabel?.toUpperCase() || "EMPLOYER"}`
-                          : "APPLICATION APPROVAL RECORD"}
+                      <span className="view-letter-box-label offer-label">
+                        {`EMPLOYMENT OFFER LETTER FROM ${companyLabel?.toUpperCase() || "EMPLOYER"}`}
                       </span>
                     </div>
                     <pre className="view-letter-pre-text">{offerText}</pre>
@@ -1623,14 +1600,6 @@ export default function EmployerDashboard() {
                 </div>
 
                 <div className="view-letter-footer">
-                  {!hasOffer && (
-                    <a
-                      href="/employer-applicant-management"
-                      className="view-letter-link-btn"
-                    >
-                      Manage in Applicant Management →
-                    </a>
-                  )}
                   <button
                     type="button"
                     className="view-letter-done-btn"
