@@ -152,8 +152,11 @@ type ApprovedApplication = {
   decision_message_type?: string | null;
   response_decision?: string | null;
   response_message?: string | null;
+  response_letter?: string | null;
   response_date?: string | null;
+  responded_at?: string | null;
   proposed_start_date?: string | null;
+  start_date?: string | null;
   rating?: number | null;
   email?: string;
   phone?: string;
@@ -162,6 +165,9 @@ type ApprovedApplication = {
   skills?: string;
   qualifications?: string;
   certifications?: string;
+  work_arrangement?: string;
+  expected_salary?: number | string | null;
+  gender?: string;
 };
 
 type DashboardSummary = {
@@ -201,6 +207,66 @@ function formatDate(value: string | null | undefined) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
   return parsed.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function getCandidateLetterStatus(app: ApprovedApplication): {
+  statusKey: "letter_sent" | "approved_letter" | "denied_letter" | "approved";
+  badgeLabel: string;
+  badgeClass: string;
+  buttonLabel: string;
+  buttonClass: string;
+} {
+  if (app.decision_message) {
+    const dec = (app.response_decision || "").toLowerCase();
+    const appStatus = (app.status || "").toLowerCase();
+
+    if (
+      dec === "accept" ||
+      dec === "accepted" ||
+      dec === "approved" ||
+      appStatus === "recruited" ||
+      appStatus === "accepted"
+    ) {
+      return {
+        statusKey: "approved_letter",
+        badgeLabel: "Approved Letter",
+        badgeClass: "status-approved-letter",
+        buttonLabel: "Approved Letter",
+        buttonClass: "btn-approved-letter",
+      };
+    }
+
+    if (
+      dec === "decline" ||
+      dec === "declined" ||
+      dec === "rejected" ||
+      dec === "denied"
+    ) {
+      return {
+        statusKey: "denied_letter",
+        badgeLabel: "Denied Letter",
+        badgeClass: "status-denied-letter",
+        buttonLabel: "Denied Letter",
+        buttonClass: "btn-denied-letter",
+      };
+    }
+
+    return {
+      statusKey: "letter_sent",
+      badgeLabel: "Letter Sent",
+      badgeClass: "status-letter-sent",
+      buttonLabel: "Letter Sent",
+      buttonClass: "btn-letter-sent",
+    };
+  }
+
+  return {
+    statusKey: "approved",
+    badgeLabel: "Approved",
+    badgeClass: "status-approved",
+    buttonLabel: "Approved",
+    buttonClass: "btn-approved",
+  };
 }
 
 function RenderLocationMeta({ location }: { location?: string | null }) {
@@ -306,6 +372,7 @@ export default function EmployerDashboard() {
   const [approvedApplications, setApprovedApplications] = useState<ApprovedApplication[]>([]);
   const [selectedEvalJobId, setSelectedEvalJobId] = useState<number | null>(null);
   const [selectedApprovedJobId, setSelectedApprovedJobId] = useState<number | "all">("all");
+  const [selectedLetterStatus, setSelectedLetterStatus] = useState<"all" | "letter_sent" | "approved_letter" | "denied_letter">("all");
 
   // Modals state
   const [detailsModalCandidate, setDetailsModalCandidate] = useState<CandidateModalData | null>(null);
@@ -565,11 +632,42 @@ export default function EmployerDashboard() {
     return Array.from(jobMap.values());
   }, [summary.activeJobPosts, approvedApplications]);
 
-  // Filtered approved applications based on chosen vacancy
-  const filteredApprovedApplications = useMemo(() => {
-    if (selectedApprovedJobId === "all") return approvedApplications;
-    return approvedApplications.filter((app) => Number(app.job_post_id) === Number(selectedApprovedJobId));
+  // Filtered approved applications based on chosen vacancy and chosen letter status
+  const approvedStatusCounts = useMemo(() => {
+    const baseList =
+      selectedApprovedJobId === "all"
+        ? approvedApplications
+        : approvedApplications.filter((app) => Number(app.job_post_id) === Number(selectedApprovedJobId));
+
+    let letterSentCount = 0;
+    let approvedLetterCount = 0;
+    let deniedLetterCount = 0;
+
+    for (const app of baseList) {
+      const { statusKey } = getCandidateLetterStatus(app);
+      if (statusKey === "letter_sent") letterSentCount++;
+      else if (statusKey === "approved_letter") approvedLetterCount++;
+      else if (statusKey === "denied_letter") deniedLetterCount++;
+    }
+
+    return {
+      all: baseList.length,
+      letter_sent: letterSentCount,
+      approved_letter: approvedLetterCount,
+      denied_letter: deniedLetterCount,
+    };
   }, [approvedApplications, selectedApprovedJobId]);
+
+  const filteredApprovedApplications = useMemo(() => {
+    let list = approvedApplications;
+    if (selectedApprovedJobId !== "all") {
+      list = list.filter((app) => Number(app.job_post_id) === Number(selectedApprovedJobId));
+    }
+    if (selectedLetterStatus !== "all") {
+      list = list.filter((app) => getCandidateLetterStatus(app).statusKey === selectedLetterStatus);
+    }
+    return list;
+  }, [approvedApplications, selectedApprovedJobId, selectedLetterStatus]);
 
   const openCandidateDetails = (candidate: any) => {
     setDetailsModalCandidate({
@@ -1154,7 +1252,7 @@ export default function EmployerDashboard() {
               </a>
             </div>
 
-            {/* VACANCY APPROVED SELECTOR BAR */}
+            {/* VACANCY APPROVED SELECTOR BAR + 3-STATUS LETTER FILTER */}
             {availableApprovedJobs.length > 0 && (
               <div className="smart-matches-head-bar">
                 <div className="smart-matches-job-selector">
@@ -1172,9 +1270,44 @@ export default function EmployerDashboard() {
                     ))}
                   </select>
                 </div>
-                <span className="talent-pool-count-label">
-                  Showing <strong>{filteredApprovedApplications.length}</strong> approved {filteredApprovedApplications.length === 1 ? "candidate" : "candidates"} {selectedApprovedJobId !== "all" ? "for this vacancy" : "across all vacancies"}
-                </span>
+
+                <div className="approved-letter-status-tabs" role="tablist" aria-label="Offer letter status filter">
+                  <button
+                    type="button"
+                    className={`letter-status-tab ${selectedLetterStatus === "all" ? "active" : ""}`}
+                    onClick={() => setSelectedLetterStatus("all")}
+                    title="Show all approved candidates"
+                  >
+                    All <span className="tab-count">({approvedStatusCounts.all})</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`letter-status-tab tab-sent ${selectedLetterStatus === "letter_sent" ? "active" : ""}`}
+                    onClick={() => setSelectedLetterStatus(selectedLetterStatus === "letter_sent" ? "all" : "letter_sent")}
+                    title="Formal offer letter sent to candidate (awaiting response)"
+                  >
+                    <span className="status-indicator-dot dot-sent" />
+                    Letter Sent <span className="tab-count">({approvedStatusCounts.letter_sent})</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`letter-status-tab tab-approved ${selectedLetterStatus === "approved_letter" ? "active" : ""}`}
+                    onClick={() => setSelectedLetterStatus(selectedLetterStatus === "approved_letter" ? "all" : "approved_letter")}
+                    title="Candidate accepted the formal offer letter"
+                  >
+                    <span className="status-indicator-dot dot-approved" />
+                    Approved Letter <span className="tab-count">({approvedStatusCounts.approved_letter})</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`letter-status-tab tab-denied ${selectedLetterStatus === "denied_letter" ? "active" : ""}`}
+                    onClick={() => setSelectedLetterStatus(selectedLetterStatus === "denied_letter" ? "all" : "denied_letter")}
+                    title="Candidate declined or denied the formal offer letter"
+                  >
+                    <span className="status-indicator-dot dot-denied" />
+                    Denied Letter <span className="tab-count">({approvedStatusCounts.denied_letter})</span>
+                  </button>
+                </div>
               </div>
             )}
 
@@ -1182,16 +1315,28 @@ export default function EmployerDashboard() {
               <article className="result-card empty-state" style={{ margin: "14px 0 6px" }}>
                 <div className="empty-roster-box">
                   <strong>
-                    {selectedApprovedJobId === "all"
+                    {selectedLetterStatus !== "all"
+                      ? `No candidates found with "${selectedLetterStatus === "letter_sent" ? "Letter Sent" : selectedLetterStatus === "approved_letter" ? "Approved Letter" : "Denied Letter"}" status.`
+                      : selectedApprovedJobId === "all"
                       ? "No approved candidates yet."
                       : "No approved candidates for this job vacancy yet."}
                   </strong>
                   <p>
-                    {selectedApprovedJobId === "all"
+                    {selectedLetterStatus !== "all"
+                      ? "Try selecting another status tab above or view all approved candidates."
+                      : selectedApprovedJobId === "all"
                       ? "When you approve candidates or extend formal offers in Applicant Management, they will be tracked here in this master roster."
                       : "Select another job vacancy above or view all approved candidates."}
                   </p>
-                  {selectedApprovedJobId !== "all" ? (
+                  {selectedLetterStatus !== "all" ? (
+                    <button
+                      type="button"
+                      className="dash-text-link-btn"
+                      onClick={() => setSelectedLetterStatus("all")}
+                    >
+                      Show All Statuses →
+                    </button>
+                  ) : selectedApprovedJobId !== "all" ? (
                     <button
                       type="button"
                       className="dash-text-link-btn"
@@ -1209,6 +1354,7 @@ export default function EmployerDashboard() {
             ) : (
               <div className="approved-candidates-list">
                 {filteredApprovedApplications.map((app) => {
+                  const letterStatus = getCandidateLetterStatus(app);
                   const picUrl = app.profile_picture_path
                     ? (app.profile_picture_path.startsWith("http") || app.profile_picture_path.startsWith("/api")
                         ? app.profile_picture_path
@@ -1218,7 +1364,10 @@ export default function EmployerDashboard() {
                   const locationText = app.city ? (app.city.toLowerCase().includes("cavite") ? app.city : `${app.city}, Cavite`) : (app.province || "Cavite");
                   const genderText = app.gender || "Applicant";
                   const workText = app.work_arrangement ? (app.work_arrangement.toLowerCase() === "onsite" ? "On-Site" : app.work_arrangement) : "On-Site";
-                  const salaryText = app.expected_salary ? `Expected: ${typeof app.expected_salary === "number" ? `PHP ${app.expected_salary.toLocaleString()}` : app.expected_salary}` : null;
+                  const rawSalary = app.expected_salary != null ? String(app.expected_salary).replace(/^\$/, "₱ ") : null;
+                  const salaryText = rawSalary
+                    ? `Expected: ${typeof app.expected_salary === "number" ? `₱${app.expected_salary.toLocaleString()}` : rawSalary}`
+                    : null;
 
                   return (
                     <article className="approved-applicant-card" key={app.id}>
@@ -1254,8 +1403,8 @@ export default function EmployerDashboard() {
                               <span className="approved-target-role-pill" title={`Vacancy: ${app.job_title || "Job Position"}`}>
                                 {app.job_title || app.desired_job_title || "Applicant"}
                               </span>
-                              <span className="approved-status-pill">
-                                {app.decision_message ? "Formal Offer" : "Approved"}
+                              <span className={`approved-status-pill ${letterStatus.badgeClass}`}>
+                                {letterStatus.badgeLabel}
                               </span>
                             </div>
 
@@ -1286,9 +1435,11 @@ export default function EmployerDashboard() {
 
                               {salaryText ? (
                                 <span className="approved-meta-inline-item">
-                                  <svg className="mini-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                    <line x1="12" y1="1" x2="12" y2="23" />
-                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                  <svg className="mini-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    <path d="M6 3h6a4.5 4.5 0 0 1 0 9H6V3z" />
+                                    <line x1="6" y1="21" x2="6" y2="3" />
+                                    <line x1="3" y1="7.5" x2="15" y2="7.5" />
+                                    <line x1="3" y1="11.5" x2="15" y2="11.5" />
                                   </svg>
                                   <span>{salaryText}</span>
                                 </span>
@@ -1342,7 +1493,7 @@ export default function EmployerDashboard() {
                             {app.decision_message ? (
                               <button
                                 type="button"
-                                className="approved-card-btn btn-offer"
+                                className={`approved-card-btn ${letterStatus.buttonClass}`}
                                 onClick={() => {
                                   setViewOfferLetterModal({
                                     candidateName: app.applicant_name,
@@ -1350,13 +1501,13 @@ export default function EmployerDashboard() {
                                     letterText: app.decision_message,
                                     status: app.status,
                                     responseDecision: app.response_decision,
-                                    responseMessage: app.response_message,
-                                    responseDate: app.response_date,
-                                    proposedStartDate: app.proposed_start_date,
+                                    responseMessage: app.response_message || app.response_letter,
+                                    responseDate: app.response_date || app.responded_at,
+                                    proposedStartDate: app.proposed_start_date || app.start_date,
                                   });
                                 }}
                               >
-                                Formal Offer Letter
+                                {letterStatus.buttonLabel}
                               </button>
                             ) : (
                               <span className="approved-card-btn btn-approved">
@@ -1420,17 +1571,25 @@ export default function EmployerDashboard() {
             </div>
 
             <div className="view-letter-body-content">
-              {viewOfferLetterModal.proposedStartDate && (
+              {(viewOfferLetterModal.proposedStartDate || viewOfferLetterModal.responseDecision) && (
                 <div className="view-letter-meta-row" style={{ marginBottom: "12px" }}>
-                  <span className="view-letter-timestamp-tag">
-                    Proposed Start Date: <strong>{viewOfferLetterModal.proposedStartDate}</strong>
-                  </span>
-                  <span className={`offer-decision-tag ${viewOfferLetterModal.responseDecision === "accept" ? "accepted" : viewOfferLetterModal.responseDecision === "decline" ? "declined" : "pending"}`}>
-                    {viewOfferLetterModal.responseDecision === "accept"
-                      ? "Offer Accepted"
-                      : viewOfferLetterModal.responseDecision === "decline"
-                      ? "Offer Declined"
-                      : "Pending Candidate Response"}
+                  {viewOfferLetterModal.proposedStartDate && (
+                    <span className="view-letter-timestamp-tag">
+                      Proposed Start Date: <strong>{viewOfferLetterModal.proposedStartDate}</strong>
+                    </span>
+                  )}
+                  <span className={`offer-decision-tag ${
+                    (viewOfferLetterModal.responseDecision || "").toLowerCase().includes("accept") || (viewOfferLetterModal.responseDecision || "").toLowerCase() === "approved"
+                      ? "accepted"
+                      : (viewOfferLetterModal.responseDecision || "").toLowerCase().includes("decline") || (viewOfferLetterModal.responseDecision || "").toLowerCase().includes("reject") || (viewOfferLetterModal.responseDecision || "").toLowerCase() === "denied"
+                      ? "declined"
+                      : "pending"
+                  }`}>
+                    {(viewOfferLetterModal.responseDecision || "").toLowerCase().includes("accept") || (viewOfferLetterModal.responseDecision || "").toLowerCase() === "approved"
+                      ? "Approved Letter (Offer Accepted)"
+                      : (viewOfferLetterModal.responseDecision || "").toLowerCase().includes("decline") || (viewOfferLetterModal.responseDecision || "").toLowerCase().includes("reject") || (viewOfferLetterModal.responseDecision || "").toLowerCase() === "denied"
+                      ? "Denied Letter (Offer Declined)"
+                      : "Letter Sent (Awaiting Candidate Response)"}
                   </span>
                 </div>
               )}

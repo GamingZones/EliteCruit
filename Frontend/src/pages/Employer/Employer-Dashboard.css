@@ -979,6 +979,88 @@
   color: #64748b;
 }
 
+.approved-letter-status-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.letter-status-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  background: #ffffff;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.2;
+}
+
+.letter-status-tab:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.letter-status-tab.active {
+  background: #01294a;
+  color: #ffffff;
+  border-color: #01294a;
+}
+
+.letter-status-tab.tab-sent.active {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #0284c7;
+}
+
+.letter-status-tab.tab-approved.active {
+  background: #16a34a;
+  color: #ffffff;
+  border-color: #16a34a;
+}
+
+.letter-status-tab.tab-denied.active {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+.letter-status-tab .tab-count {
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.status-indicator-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.status-indicator-dot.dot-sent {
+  background: #0284c7;
+}
+
+.status-indicator-dot.dot-approved {
+  background: #16a34a;
+}
+
+.status-indicator-dot.dot-denied {
+  background: #dc2626;
+}
+
+.letter-status-tab.active .status-indicator-dot {
+  background: #ffffff;
+}
+
 .talent-matches-list {
   display: flex;
   flex-direction: column;
@@ -1406,6 +1488,30 @@
   flex-shrink: 0;
 }
 
+.approved-status-pill.status-letter-sent {
+  background: #e0f2fe;
+  color: #0284c7;
+  border-color: #7dd3fc;
+}
+
+.approved-status-pill.status-approved-letter {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #86efac;
+}
+
+.approved-status-pill.status-denied-letter {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+
+.approved-status-pill.status-approved {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #86efac;
+}
+
 .approved-candidate-meta-inline {
   display: flex;
   align-items: center;
@@ -1542,6 +1648,39 @@
   color: #047857;
   border: 1px solid #a7f3d0;
   cursor: default;
+}
+
+.approved-card-btn.btn-letter-sent {
+  background: #0284c7;
+  color: #ffffff;
+  border: 1px solid #0284c7;
+}
+
+.approved-card-btn.btn-letter-sent:hover {
+  background: #0369a1;
+  border-color: #0369a1;
+}
+
+.approved-card-btn.btn-approved-letter {
+  background: #16a34a;
+  color: #ffffff;
+  border: 1px solid #16a34a;
+}
+
+.approved-card-btn.btn-approved-letter:hover {
+  background: #15803d;
+  border-color: #15803d;
+}
+
+.approved-card-btn.btn-denied-letter {
+  background: #dc2626;
+  color: #ffffff;
+  border: 1px solid #dc2626;
+}
+
+.approved-card-btn.btn-denied-letter:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
 }
 
 .interview-card-item,
@@ -2804,6 +2943,116 @@
   background: rgba(16, 185, 129, 0.18) !important;
   color: #34d399 !important;
   border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+[data-theme="dark"] .letter-status-tab {
+  background: #20232e !important;
+  color: #cbd5e1 !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .letter-status-tab:hover {
+  background: #282c3a !important;
+  border-color: #38bdf8 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .letter-status-tab.active {
+  background: #38bdf8 !important;
+  color: #0a0e17 !important;
+  border-color: #38bdf8 !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="dark"] .letter-status-tab.tab-sent.active {
+  background: #38bdf8 !important;
+  color: #0a0e17 !important;
+  border-color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .letter-status-tab.tab-approved.active {
+  background: #4ade80 !important;
+  color: #0a0e17 !important;
+  border-color: #4ade80 !important;
+}
+
+[data-theme="dark"] .letter-status-tab.tab-denied.active {
+  background: #f87171 !important;
+  color: #0a0e17 !important;
+  border-color: #f87171 !important;
+}
+
+[data-theme="dark"] .status-indicator-dot.dot-sent {
+  background: #38bdf8 !important;
+}
+
+[data-theme="dark"] .status-indicator-dot.dot-approved {
+  background: #4ade80 !important;
+}
+
+[data-theme="dark"] .status-indicator-dot.dot-denied {
+  background: #f87171 !important;
+}
+
+[data-theme="dark"] .letter-status-tab.active .status-indicator-dot {
+  background: #0a0e17 !important;
+}
+
+[data-theme="dark"] .approved-status-pill.status-letter-sent {
+  background: rgba(14, 165, 233, 0.18) !important;
+  color: #38bdf8 !important;
+  border-color: rgba(56, 189, 248, 0.35) !important;
+}
+
+[data-theme="dark"] .approved-status-pill.status-approved-letter {
+  background: rgba(34, 197, 94, 0.18) !important;
+  color: #4ade80 !important;
+  border-color: rgba(74, 222, 128, 0.35) !important;
+}
+
+[data-theme="dark"] .approved-status-pill.status-denied-letter {
+  background: rgba(239, 68, 68, 0.18) !important;
+  color: #f87171 !important;
+  border-color: rgba(248, 113, 113, 0.35) !important;
+}
+
+[data-theme="dark"] .approved-status-pill.status-approved {
+  background: rgba(34, 197, 94, 0.18) !important;
+  color: #4ade80 !important;
+  border-color: rgba(74, 222, 128, 0.35) !important;
+}
+
+[data-theme="dark"] .approved-card-btn.btn-letter-sent {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border-color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .approved-card-btn.btn-letter-sent:hover {
+  background: #0369a1 !important;
+  border-color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .approved-card-btn.btn-approved-letter {
+  background: #16a34a !important;
+  color: #ffffff !important;
+  border-color: #4ade80 !important;
+}
+
+[data-theme="dark"] .approved-card-btn.btn-approved-letter:hover {
+  background: #15803d !important;
+  border-color: #4ade80 !important;
+}
+
+[data-theme="dark"] .approved-card-btn.btn-denied-letter {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border-color: #f87171 !important;
+}
+
+[data-theme="dark"] .approved-card-btn.btn-denied-letter:hover {
+  background: #b91c1c !important;
+  border-color: #f87171 !important;
 }
 
 @media (max-width: 768px) {
