@@ -10,7 +10,6 @@ import ApplicantDetailsModal, { type CandidateModalData } from "../../components
 import { authFetch } from "../../utils/auth";
 import {
   parseLocations,
-  calculateCandidateMatch,
   parseCompetencyDisplayTags,
 } from "../../utils/filters";
 import "../Applicant/Applicant-Dashboard.css";
@@ -86,43 +85,6 @@ type RecentApplication = {
   profile_picture_path?: string | null;
 };
 
-type TalentPoolCandidate = {
-  user_id: number;
-  email: string;
-  first_name?: string;
-  middle_name?: string;
-  last_name?: string;
-  applicant_name?: string;
-  phone?: string;
-  city?: string;
-  province?: string;
-  address?: string;
-  summary?: string;
-  desired_job_title?: string;
-  target_roles_json?: string;
-  expected_salary?: string | number;
-  expected_salary_min?: number;
-  expected_salary_max?: number;
-  work_arrangement?: string;
-  years_of_experience?: number;
-  skills?: string;
-  qualifications?: string;
-  certifications?: string;
-  profile_picture_path?: string | null;
-  matchScore?: number;
-  rating?: number;
-};
-
-type DirectInvitation = {
-  id: number;
-  applicant_user_id: number;
-  applicant_name: string;
-  job_title: string;
-  status: string;
-  created_at: string;
-  profile_picture_path?: string | null;
-};
-
 type ScheduledInterview = {
   id: number;
   job_title?: string;
@@ -190,8 +152,7 @@ type DashboardSummary = {
 
 const WORKSPACE_TABS = [
   { id: "section-insights", label: "Recruitment Insights", num: 1 },
-  { id: "section-smart-matches", label: "Smart Matches", num: 2 },
-  { id: "section-approved-interviews", label: "Approved Candidates", num: 3 },
+  { id: "section-approved-interviews", label: "Approved Candidates", num: 2 },
 ] as const;
 
 function initialsFromName(name: string | null | undefined) {
@@ -312,15 +273,12 @@ export default function EmployerDashboard() {
   });
 
   const [activeSection, setActiveSection] = useState<
-    "section-insights" | "section-smart-matches" | "section-approved-interviews"
+    "section-insights" | "section-approved-interviews"
   >(() => {
     if (typeof window !== "undefined") {
       const hash = window.location.hash.replace("#", "");
-      if (
-        hash === "section-smart-matches" ||
-        hash === "section-approved-interviews"
-      ) {
-        return hash as any;
+      if (hash === "section-approved-interviews") {
+        return hash;
       }
       if (hash === "section-insights" || hash === "section-postings") {
         return "section-insights";
@@ -356,11 +314,8 @@ export default function EmployerDashboard() {
     recentApplications: [],
   });
 
-  const [talentPool, setTalentPool] = useState<TalentPoolCandidate[]>([]);
-  const [directInvitations, setDirectInvitations] = useState<DirectInvitation[]>([]);
   const [interviews, setInterviews] = useState<ScheduledInterview[]>([]);
   const [approvedApplications, setApprovedApplications] = useState<ApprovedApplication[]>([]);
-  const [selectedEvalJobId, setSelectedEvalJobId] = useState<number | null>(null);
   const [selectedApprovedJobId, setSelectedApprovedJobId] = useState<number | "all">("all");
   const [selectedLetterStatus, setSelectedLetterStatus] = useState<"all" | "offer_extended" | "offer_accepted" | "offer_declined">("all");
 
@@ -414,7 +369,7 @@ export default function EmployerDashboard() {
   ];
 
   const handleSectionClick = (
-    sectionId: "section-insights" | "section-smart-matches" | "section-approved-interviews"
+    sectionId: "section-insights" | "section-approved-interviews"
   ) => {
     setActiveSection(sectionId);
     setIsMobileNavOpen(false);
@@ -426,11 +381,8 @@ export default function EmployerDashboard() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace("#", "");
-      if (
-        hash === "section-smart-matches" ||
-        hash === "section-approved-interviews"
-      ) {
-        setActiveSection(hash as any);
+      if (hash === "section-approved-interviews") {
+        setActiveSection(hash);
       } else if (hash === "section-insights" || hash === "section-postings") {
         setActiveSection("section-insights");
       }
@@ -469,27 +421,7 @@ export default function EmployerDashboard() {
         })
         .catch((error) => setProfileMessage(error instanceof Error ? error.message : "Unable to load dashboard data."));
 
-      // 2. Talent pool for Smart Matches
-      authFetch(`/api/employers/${empId}/talent-pool`)
-        .then(async (response) => {
-          const data = await response.json();
-          if (response.ok && Array.isArray(data?.candidates)) {
-            setTalentPool(data.candidates);
-          }
-        })
-        .catch(() => {});
-
-      // 3. Direct invitations
-      authFetch(`/api/employers/${empId}/direct-invitations`)
-        .then(async (response) => {
-          const data = await response.json();
-          if (response.ok && Array.isArray(data?.invitations)) {
-            setDirectInvitations(data.invitations);
-          }
-        })
-        .catch(() => {});
-
-      // 4. Scheduled interviews
+      // 2. Scheduled interviews
       authFetch(`/api/interviews?user_id=${empId}&role=employer`)
         .then(async (response) => {
           const data = await response.json();
@@ -499,7 +431,7 @@ export default function EmployerDashboard() {
         })
         .catch(() => {});
 
-      // 5. Approved / Hired applications (Master Roster)
+      // 3. Approved / Hired applications (Master Roster)
       authFetch(`/api/employers/${empId}/applications?status=approved`)
         .then(async (response) => {
           const data = await response.json();
@@ -512,51 +444,6 @@ export default function EmployerDashboard() {
       setProfileMessage("Unable to read account session.");
     }
   }, []);
-
-  // Compute Smart Matches
-  const targetJobForEval = useMemo(() => {
-    if (selectedEvalJobId) {
-      return summary.activeJobPosts.find((j) => j.id === selectedEvalJobId) || summary.activeJobPosts[0] || null;
-    }
-    return summary.activeJobPosts[0] || null;
-  }, [summary.activeJobPosts, selectedEvalJobId]);
-
-  const talentMatches = useMemo(() => {
-    if (!talentPool || talentPool.length === 0) return [];
-
-    const scored = talentPool.map((c) => {
-      let score = 0;
-      if (targetJobForEval) {
-        score = calculateCandidateMatch(
-          {
-            skills: c.skills,
-            qualifications: c.qualifications,
-            certifications: c.certifications,
-            desired_job_title: c.desired_job_title,
-            city: c.city,
-            expected_salary: c.expected_salary,
-            work_arrangement: c.work_arrangement,
-          },
-          {
-            title: targetJobForEval.title,
-            skills: targetJobForEval.required_skills || targetJobForEval.skills,
-            required_skills: targetJobForEval.required_skills,
-            qualifications: targetJobForEval.qualifications,
-            certifications: targetJobForEval.certifications,
-            city: targetJobForEval.location || "Cavite",
-            salary_min: targetJobForEval.salary_min,
-            salary_max: targetJobForEval.salary_max,
-          }
-        );
-      }
-      return {
-        ...c,
-        matchScore: score,
-      };
-    });
-
-    return scored.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
-  }, [talentPool, targetJobForEval]);
 
   const upcomingInterviews = useMemo(() => {
     return interviews.filter((i) => (i.status || "").toLowerCase() !== "cancelled");
@@ -681,7 +568,6 @@ export default function EmployerDashboard() {
 
   const getTabBadgeCount = (tabId: string) => {
     if (tabId === "section-insights" || tabId === "section-postings") return summary.activeJobPosts.length;
-    if (tabId === "section-smart-matches") return talentMatches.filter((c) => (c.matchScore || 0) >= 50).length;
     if (tabId === "section-approved-interviews") return approvedApplications.length;
     return 0;
   };
@@ -1057,173 +943,7 @@ export default function EmployerDashboard() {
         )}
 
         {/* ══════════════════════════════════════════════════════════════════
-            TAB 2: SMART MATCHES
-           ══════════════════════════════════════════════════════════════════ */}
-        {activeSection === "section-smart-matches" && (
-          <section className="matches-card section-anchor" id="section-smart-matches" style={{ margin: "16px 28px 24px" }}>
-            <div className="matches-head">
-              <div>
-                <small className="matches-head-eyebrow">AI-POWERED CANDIDATE DISCOVERY</small>
-                <h2>Smart Candidate Matches</h2>
-                <p>Top nearby candidates in Cavite automatically matched against your active vacancies by skills, qualifications, and location.</p>
-              </div>
-              <a href="/employer-applicant-finder" className="matches-head-action-btn">
-                <span>Explore on Map (Applicant Finder)</span>
-                <span className="action-arrow">→</span>
-              </a>
-            </div>
-
-            {/* VACANCY EVALUATION SELECTOR */}
-            {summary.activeJobPosts.length > 0 && (
-              <div className="smart-matches-head-bar">
-                <div className="smart-matches-job-selector">
-                  <span className="selector-label">Evaluating Candidates for:</span>
-                  <select
-                    value={selectedEvalJobId || ""}
-                    onChange={(e) => setSelectedEvalJobId(e.target.value ? Number(e.target.value) : null)}
-                  >
-                    {summary.activeJobPosts.map((job) => (
-                      <option key={job.id} value={job.id}>
-                        {job.title} ({job.applicant_count || 0} applicants)
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <span className="talent-pool-count-label">
-                  Showing top matches from <strong>{talentPool.length}</strong> available candidates in Cavite
-                </span>
-              </div>
-            )}
-
-            {/* CANDIDATE MATCHES LIST */}
-            {talentMatches.length === 0 ? (
-              <article className="result-card empty-state">
-                <div className="empty-roster-box">
-                  <strong>No candidate recommendations yet.</strong>
-                  <p>Publish active job posts with required skills to see matched local candidates.</p>
-                  <a href="/employer-job-posts/create" className="dash-text-link-btn">Post a Job Vacancy →</a>
-                </div>
-              </article>
-            ) : (
-              <div className="talent-matches-list">
-                {talentMatches.slice(0, 8).map((cand) => {
-                  const score = cand.matchScore || 0;
-                  const skillsList = parseCompetencyDisplayTags(cand.skills || "");
-                  const picUrl = cand.profile_picture_path
-                    ? (cand.profile_picture_path.startsWith("http") || cand.profile_picture_path.startsWith("/api")
-                        ? cand.profile_picture_path
-                        : `/api/applicants/${cand.user_id}/profile-picture`)
-                    : null;
-
-                  return (
-                    <article className="talent-match-card" key={cand.user_id}>
-                      <div className="talent-match-left">
-                        <div className="talent-match-avatar">
-                          {picUrl ? (
-                            <img
-                              src={picUrl}
-                              alt={cand.applicant_name || "Candidate"}
-                              onError={(e) => {
-                                (e.currentTarget as HTMLElement).style.display = "none";
-                              }}
-                            />
-                          ) : (
-                            <span>{initialsFromName(cand.applicant_name || cand.first_name)}</span>
-                          )}
-                        </div>
-
-                        <div className="talent-match-info">
-                          <div className="talent-match-name-row">
-                            <strong className="talent-match-name">
-                              {cand.applicant_name || `${cand.first_name || ""} ${cand.last_name || ""}`.trim() || "Candidate"}
-                            </strong>
-                            <span className={`talent-match-badge ${score >= 75 ? "rec" : "good"}`}>
-                              {score >= 75 ? "★ Recommended" : "Good Fit"} ({score}%)
-                            </span>
-                            {targetJobForEval && (
-                              <span className="talent-eval-job-pill">
-                                Vacancy: {targetJobForEval.title}
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="talent-match-meta">
-                            <span>{cand.desired_job_title || "Open to Opportunities"}</span>
-                            <span className="meta-dot">•</span>
-                            <span>{cand.city || "Cavite"}</span>
-                            {cand.work_arrangement && (
-                              <>
-                                <span className="meta-dot">•</span>
-                                <span className="meta-pill">{cand.work_arrangement}</span>
-                              </>
-                            )}
-                          </div>
-
-                          {skillsList.length > 0 && (
-                            <div className="talent-match-skills">
-                              {skillsList.slice(0, 5).map((sk, idx) => (
-                                <span key={idx} className="talent-skill-tag">{sk}</span>
-                              ))}
-                              {skillsList.length > 5 && (
-                                <span className="talent-skill-tag more">+{skillsList.length - 5} more</span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="talent-match-actions">
-                        <button
-                          type="button"
-                          className="talent-btn-view"
-                          onClick={() => openCandidateDetails(cand)}
-                        >
-                          View Profile
-                        </button>
-                        <a
-                          href={`/employer-applicant-finder?candidateId=${cand.user_id}`}
-                          className="talent-btn-invite"
-                        >
-                          Offer Job / Invite
-                        </a>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* DIRECT RECRUITMENT INVITATIONS TRACKER */}
-            {directInvitations.length > 0 && (
-              <div className="direct-invitations-tracker-card" style={{ marginTop: "24px" }}>
-                <div className="section-subhead">
-                  <h3>Recent Candidate Invitations</h3>
-                  <a href="/employer-applicant-management#direct-invitations">View Recruitment List →</a>
-                </div>
-                <div className="direct-invitations-grid">
-                  {directInvitations.slice(0, 4).map((inv) => (
-                    <div className="direct-inv-row" key={inv.id}>
-                      <div className="direct-inv-info">
-                        <strong>{inv.applicant_name}</strong>
-                        <span>Invited for: {inv.job_title}</span>
-                        <small>{formatDate(inv.created_at)}</small>
-                      </div>
-                      <div className="direct-inv-status">
-                        <span className={`status-chip ${(inv.status || "pending").toLowerCase()}`}>
-                          {inv.status || "Pending"}
-                        </span>
-                        <a href="/messages" className="review-btn">Message</a>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* ══════════════════════════════════════════════════════════════════
-            TAB 3: APPROVED CANDIDATES ROSTER
+            TAB 2: APPROVED CANDIDATES ROSTER
            ══════════════════════════════════════════════════════════════════ */}
         {activeSection === "section-approved-interviews" && (
           <section className="matches-card section-anchor" id="section-approved-interviews" style={{ margin: "16px 28px 24px" }}>
