@@ -145,6 +145,21 @@
   border-color: #38bdf8 !important;
 }
 
+[data-theme="dark"] .job-logo-box {
+  background: #181a20 !important;
+  color: #38bdf8 !important;
+  border: 1px solid #2e3244 !important;
+}
+
+[data-theme="dark"] .job-logo-box:hover {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2) !important;
+}
+
+[data-theme="dark"] .job-logo-initials {
+  color: #38bdf8 !important;
+}
+
 [data-theme="dark"] .job-card h3,
 [data-theme="dark"] .job-card h4,
 [data-theme="dark"] .result-title-row h3,

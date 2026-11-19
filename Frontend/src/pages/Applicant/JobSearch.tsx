@@ -4006,92 +4006,127 @@ export default function JobSearch() {
                   </div>
                 </article>
               ) : (
-                paginatedJobs.map((job) => (
-                  <article key={job.id} className="result-card">
-                    <div className="result-card-main">
-                      <div className="result-left-col">
-                        <div className="result-title-row">
-                          <h3 title={job.title}>{job.title}</h3>
-                        </div>
-                        <p className="meta-line">
-                          <span className="company-meta-with-rating">
-                            <span className="company-inline-rating-pill" title="Company rating">
-                              <span className="star-icon">★</span>
-                              <span>{job.rating ? Number(job.rating).toFixed(1) : "0.0"}</span>
-                            </span>
-                            <MiniIcon name="company" />
-                            <span>{job.company}</span>
-                          </span>
-                          <RenderLocationMeta location={job.location} />
-                        </p>
-                        <p className="result-summary">{job.summary || "No job description provided yet."}</p>
-                        <div className="result-tags">
-                          <span className={`status-chip ${job.status === "open" ? "open" : "closed"}`}>{job.status === "open" ? "Open" : "Closed"}</span>
-                          {job.urgent ? <span className="status-chip urgent">Urgent</span> : null}
-                          <span className="setup-pill">{job.setup}</span>
-                          {job.experienceLevel && <span className="exp-level-pill">{formatExperienceLevel(job.experienceLevel)}</span>}
-                          {(() => {
-                            const isHidden = Boolean(
-                              job.hideSalary ||
-                              job.hide_salary === 1 ||
-                              job.hide_salary === "1" ||
-                              job.hide_salary === true ||
-                              job.hide_salary === "true" ||
-                              job.salary === "Salary Confidential"
-                            );
-                            if (isHidden) {
-                              return <span className="salary-pill confidential">Salary Confidential</span>;
-                            }
-                            if (job.salary) {
-                              return <span className="salary-pill">{job.salary}</span>;
-                            }
-                            return null;
-                          })()}
-                        </div>
-                      </div>
+                paginatedJobs.map((job) => {
+                  const empUserId = job.employerUserId || employers.find((e) => e.company_name?.toLowerCase() === job.company?.toLowerCase())?.employer_user_id;
+                  const logoSrc = job.companyLogoPath
+                    ? job.companyLogoPath.startsWith("http") || job.companyLogoPath.startsWith("/api")
+                      ? job.companyLogoPath
+                      : empUserId ? `/api/employers/${empUserId}/logo` : null
+                    : empUserId ? `/api/employers/${empUserId}/logo` : null;
 
-                      <div className="result-right-col">
-                        <div className="card-top-actions">
-                          {(() => {
-                            const matchInfo = calculateJobMatchDetails(job, applicantMatchProfile);
-                            const rec = getApplicantRecommendation(matchInfo.score);
-                            if (!rec) return null;
-                            return (
-                              <span
-                                className={`applicant-rec-badge ${rec.colorClass}`}
-                                title={rec.label}
-                              >
-                                {rec.label}
-                              </span>
-                            );
-                          })()}
+                  return (
+                    <article key={job.id} className="result-card">
+                      <div className="result-card-main">
+                        {/* Left Column: Full-Square Company Logo */}
+                        <div
+                          className="job-logo-box"
+                          onClick={() => setDetailsJob(job)}
+                          title="Click to view job details"
+                        >
+                          {logoSrc ? (
+                            <img
+                              src={logoSrc}
+                              alt={job.company}
+                              className="job-logo-img"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLElement).style.display = "none";
+                                const initials = (e.currentTarget as HTMLElement).nextElementSibling as HTMLElement;
+                                if (initials) initials.style.display = "flex";
+                              }}
+                            />
+                          ) : null}
+                          <span
+                            className="job-logo-initials"
+                            style={{ display: logoSrc ? "none" : "flex" }}
+                          >
+                            {initialsFrom(job.company)}
+                          </span>
                         </div>
-                        <button type="button" className="details-btn" onClick={() => setDetailsJob(job)}>Details</button>
-                        <div className="card-bottom-actions">
-                          {(() => {
-                            const statusInfo = getJobApplicationStatus(job.id);
-                            const isJobClosed = job.status === "closed" || isJobClosedOrExpired(job.closeDate, job.status, job.applicationLimit, job.applicantCount);
-                            const isApplying = applyingJobId === job.id;
-                            const isApplied = Boolean(statusInfo);
-                            return (
-                              <button
-                                type="button"
-                                className={`solid-btn apply-right-btn ${isApplied ? `applied-btn status-${statusInfo?.statusClass || "applied"}` : isJobClosed ? "status-closed" : ""}`}
-                                onClick={() => !isApplied && !isJobClosed && setApplyJobTarget({ jobId: job.id, title: job.title })}
-                                disabled={isApplied || isJobClosed || isApplying}
-                              >
-                                {isApplied ? statusInfo!.label : isJobClosed ? "Closed" : isApplying ? "Applying..." : "Apply"}
-                              </button>
-                            );
-                          })()}
-                          <button type="button" className="bookmark-icon-btn" aria-label={bookmarkedIds.includes(job.id) ? "Remove bookmark" : "Bookmark job"} onClick={() => toggleBookmark(job.id)}>
-                            <MiniIcon name={bookmarkedIds.includes(job.id) ? "bookmarkFilled" : "bookmark"} />
-                          </button>
+
+                        <div className="result-left-col">
+                          <div className="result-title-row">
+                            <h3 title={job.title}>{job.title}</h3>
+                          </div>
+                          <p className="meta-line">
+                            <span className="company-meta-with-rating">
+                              <span className="company-inline-rating-pill" title="Company rating">
+                                <span className="star-icon">★</span>
+                                <span>{job.rating ? Number(job.rating).toFixed(1) : "0.0"}</span>
+                              </span>
+                              <MiniIcon name="company" />
+                              <span>{job.company}</span>
+                            </span>
+                            <RenderLocationMeta location={job.location} />
+                          </p>
+                          <p className="result-summary">{job.summary || "No job description provided yet."}</p>
+                          <div className="result-tags">
+                            <span className={`status-chip ${job.status === "open" ? "open" : "closed"}`}>{job.status === "open" ? "Open" : "Closed"}</span>
+                            {job.urgent ? <span className="status-chip urgent">Urgent</span> : null}
+                            <span className="setup-pill">{job.setup}</span>
+                            {job.experienceLevel && <span className="exp-level-pill">{formatExperienceLevel(job.experienceLevel)}</span>}
+                            {(() => {
+                              const isHidden = Boolean(
+                                job.hideSalary ||
+                                job.hide_salary === 1 ||
+                                job.hide_salary === "1" ||
+                                job.hide_salary === true ||
+                                job.hide_salary === "true" ||
+                                job.salary === "Salary Confidential"
+                              );
+                              if (isHidden) {
+                                return <span className="salary-pill confidential">Salary Confidential</span>;
+                              }
+                              if (job.salary) {
+                                return <span className="salary-pill">{job.salary}</span>;
+                              }
+                              return null;
+                            })()}
+                          </div>
+                        </div>
+
+                        <div className="result-right-col">
+                          <div className="card-top-actions">
+                            {(() => {
+                              const matchInfo = calculateJobMatchDetails(job, applicantMatchProfile);
+                              const rec = getApplicantRecommendation(matchInfo.score);
+                              if (!rec) return null;
+                              return (
+                                <span
+                                  className={`applicant-rec-badge ${rec.colorClass}`}
+                                  title={rec.label}
+                                >
+                                  {rec.label}
+                                </span>
+                              );
+                            })()}
+                          </div>
+                          <button type="button" className="details-btn" onClick={() => setDetailsJob(job)}>Details</button>
+                          <div className="card-bottom-actions">
+                            {(() => {
+                              const statusInfo = getJobApplicationStatus(job.id);
+                              const isJobClosed = job.status === "closed" || isJobClosedOrExpired(job.closeDate, job.status, job.applicationLimit, job.applicantCount);
+                              const isApplying = applyingJobId === job.id;
+                              const isApplied = Boolean(statusInfo);
+                              return (
+                                <button
+                                  type="button"
+                                  className={`solid-btn apply-right-btn ${isApplied ? `applied-btn status-${statusInfo?.statusClass || "applied"}` : isJobClosed ? "status-closed" : ""}`}
+                                  onClick={() => !isApplied && !isJobClosed && setApplyJobTarget({ jobId: job.id, title: job.title })}
+                                  disabled={isApplied || isJobClosed || isApplying}
+                                >
+                                  {isApplied ? statusInfo!.label : isJobClosed ? "Closed" : isApplying ? "Applying..." : "Apply"}
+                                </button>
+                              );
+                            })()}
+                            <button type="button" className="bookmark-icon-btn" aria-label={bookmarkedIds.includes(job.id) ? "Remove bookmark" : "Bookmark job"} onClick={() => toggleBookmark(job.id)}>
+                              <MiniIcon name={bookmarkedIds.includes(job.id) ? "bookmarkFilled" : "bookmark"} />
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </article>
-                ))
+                    </article>
+                  );
+                })
               )}
 
               {totalPages > 1 && (
