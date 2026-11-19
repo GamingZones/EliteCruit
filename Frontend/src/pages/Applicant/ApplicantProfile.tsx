@@ -690,15 +690,25 @@ const ALL_NUMERIC_YEARS: string[] = (() => {
   return list;
 })();
 
-const YEAR_OPTIONS = [
-  "Present",
-  ...Array.from({ length: 60 }, (_, i) => String(CURRENT_YEAR + 2 - i)),
-];
+const YEAR_OPTIONS = ALL_NUMERIC_YEARS;
 
 const EXPIRATION_YEAR_OPTIONS = [
   "No Expiry",
   ...Array.from({ length: 30 }, (_, i) => String(CURRENT_YEAR + 10 - i)),
 ];
+
+function cleanEduYear(rawYear?: string | null): string {
+  if (!rawYear) return String(CURRENT_YEAR);
+  const trimmed = rawYear.trim();
+  if (trimmed.toLowerCase().includes("present")) {
+    return String(CURRENT_YEAR);
+  }
+  const num = parseInt(trimmed, 10);
+  if (isNaN(num)) return String(CURRENT_YEAR);
+  if (num > CURRENT_YEAR) return String(CURRENT_YEAR);
+  if (num < MIN_YEAR) return String(MIN_YEAR);
+  return String(num);
+}
 
 function getValidStartOptions(currentEndYear: string): string[] {
   const maxAllowed = parseInt(currentEndYear, 10);
@@ -735,14 +745,20 @@ function parseStartEndItems(raw?: string | null): StartEndItem[] {
         if (typeof p === "object" && p !== null && p.name) {
           const yrs = String(p.years || p.period || "");
           const parts = yrs.split(/\s*-\s*/);
-          const endStr = parts[1] ? parts[1].trim() : String(CURRENT_YEAR);
+          let startStr = cleanEduYear(parts[0]);
+          let endStr = cleanEduYear(parts[1]);
+          const sNum = parseInt(startStr, 10);
+          const eNum = parseInt(endStr, 10);
+          if (!isNaN(sNum) && !isNaN(eNum) && sNum > eNum) {
+            startStr = endStr;
+          }
           return {
             name: p.name,
-            startYear: parts[0] ? parts[0].trim() : "2020",
-            endYear: endStr === "Present / Ongoing" ? String(CURRENT_YEAR) : endStr,
+            startYear: startStr,
+            endYear: endStr,
           };
         }
-        return { name: String(p), startYear: "2020", endYear: String(CURRENT_YEAR) };
+        return { name: String(p), startYear: String(CURRENT_YEAR), endYear: String(CURRENT_YEAR) };
       });
     }
   } catch {}
@@ -758,14 +774,20 @@ function parseStartEndItems(raw?: string | null): StartEndItem[] {
         const name = match[1].trim();
         const periodStr = match[2].trim();
         const parts = periodStr.split(/\s*-\s*/);
-        const endStr = parts[1] ? parts[1].trim() : String(CURRENT_YEAR);
+        let startStr = cleanEduYear(parts[0]);
+        let endStr = cleanEduYear(parts[1]);
+        const sNum = parseInt(startStr, 10);
+        const eNum = parseInt(endStr, 10);
+        if (!isNaN(sNum) && !isNaN(eNum) && sNum > eNum) {
+          startStr = endStr;
+        }
         return {
           name,
-          startYear: parts[0] ? parts[0].trim() : "2020",
-          endYear: endStr === "Present / Ongoing" ? String(CURRENT_YEAR) : endStr,
+          startYear: startStr,
+          endYear: endStr,
         };
       }
-      return { name: token, startYear: "2020", endYear: String(CURRENT_YEAR) };
+      return { name: token, startYear: String(CURRENT_YEAR), endYear: String(CURRENT_YEAR) };
     });
 }
 
@@ -784,8 +806,8 @@ function StartEndYearCardEditor({
 }) {
   const items = useMemo(() => parseStartEndItems(rawString), [rawString]);
   const [inputValue, setInputValue] = useState("");
-  const [selectedStart, setSelectedStart] = useState("2010");
-  const [selectedEnd, setSelectedEnd] = useState("2026");
+  const [selectedStart, setSelectedStart] = useState(String(CURRENT_YEAR));
+  const [selectedEnd, setSelectedEnd] = useState(String(CURRENT_YEAR));
   const [yearError, setYearError] = useState("");
 
   const availableOptions = useMemo(
@@ -809,6 +831,9 @@ function StartEndYearCardEditor({
     const ok = await onSave(formatted);
     if (ok) {
       setInputValue("");
+      setSelectedStart(String(CURRENT_YEAR));
+      setSelectedEnd(String(CURRENT_YEAR));
+      setYearError("");
     }
   };
 
@@ -825,7 +850,7 @@ function StartEndYearCardEditor({
     const sNum = parseInt(newStart, 10);
     const eNum = parseInt(newEnd, 10);
     if (!isNaN(sNum) && !isNaN(eNum) && sNum > eNum) {
-      validEnd = newStart;
+      validStart = newEnd;
     }
 
     const newItems = items.map((it, idx) =>
@@ -837,6 +862,7 @@ function StartEndYearCardEditor({
 
   const handleStartChange = (newStart: string) => {
     setSelectedStart(newStart);
+    setYearError("");
     const sNum = parseInt(newStart, 10);
     const eNum = parseInt(selectedEnd, 10);
     if (!isNaN(sNum) && !isNaN(eNum) && sNum > eNum) {
@@ -846,6 +872,7 @@ function StartEndYearCardEditor({
 
   const handleEndChange = (newEnd: string) => {
     setSelectedEnd(newEnd);
+    setYearError("");
     const sNum = parseInt(selectedStart, 10);
     const eNum = parseInt(newEnd, 10);
     if (!isNaN(sNum) && !isNaN(eNum) && sNum > eNum) {
@@ -867,8 +894,6 @@ function StartEndYearCardEditor({
           <div className="empty-category-notice">No items selected yet. Type or select up to 5 below.</div>
         ) : (
           items.map((item, idx) => {
-            const validStartOpts = getValidStartOptions(item.endYear);
-            const validEndOpts = getValidEndOptions(item.startYear);
             return (
               <div key={`${item.name}-${idx}`} className="exp-item-chip">
                 <span className="exp-item-name">{item.name}</span>
@@ -878,9 +903,14 @@ function StartEndYearCardEditor({
                     className="exp-years-select"
                     value={item.startYear}
                     disabled={disabled}
-                    onChange={(e) => handleUpdatePeriod(idx, e.target.value, item.endYear)}
+                    onChange={(e) => {
+                      const newStart = e.target.value;
+                      const sNum = parseInt(newStart, 10);
+                      const eNum = parseInt(item.endYear, 10);
+                      handleUpdatePeriod(idx, newStart, !isNaN(sNum) && !isNaN(eNum) && sNum > eNum ? newStart : item.endYear);
+                    }}
                   >
-                    {validStartOpts.map((yr) => (
+                    {YEAR_OPTIONS.filter((yr) => parseInt(yr, 10) <= parseInt(item.endYear, 10)).map((yr) => (
                       <option key={yr} value={yr}>
                         {yr}
                       </option>
@@ -891,9 +921,14 @@ function StartEndYearCardEditor({
                     className="exp-years-select"
                     value={item.endYear}
                     disabled={disabled}
-                    onChange={(e) => handleUpdatePeriod(idx, item.startYear, e.target.value)}
+                    onChange={(e) => {
+                      const newEnd = e.target.value;
+                      const sNum = parseInt(item.startYear, 10);
+                      const eNum = parseInt(newEnd, 10);
+                      handleUpdatePeriod(idx, !isNaN(sNum) && !isNaN(eNum) && sNum > eNum ? newEnd : item.startYear, newEnd);
+                    }}
                   >
-                    {validEndOpts.map((yr) => (
+                    {YEAR_OPTIONS.map((yr) => (
                       <option key={yr} value={yr}>
                         {yr}
                       </option>
@@ -934,7 +969,7 @@ function StartEndYearCardEditor({
               disabled={disabled}
               onChange={(e) => handleStartChange(e.target.value)}
             >
-              {getValidStartOptions(selectedEnd).map((yr) => (
+              {YEAR_OPTIONS.filter((yr) => parseInt(yr, 10) <= parseInt(selectedEnd, 10)).map((yr) => (
                 <option key={yr} value={yr}>
                   {yr}
                 </option>
@@ -948,7 +983,7 @@ function StartEndYearCardEditor({
               disabled={disabled}
               onChange={(e) => handleEndChange(e.target.value)}
             >
-              {getValidEndOptions(selectedStart).map((yr) => (
+              {YEAR_OPTIONS.map((yr) => (
                 <option key={yr} value={yr}>
                   {yr}
                 </option>
@@ -986,6 +1021,29 @@ type EduItemWithSchool = {
 function parseEduSchoolItems(raw?: string | null): EduItemWithSchool[] {
   if (!raw || !raw.trim()) return [];
 
+  const sanitizeEduItem = (
+    name: string,
+    school: string,
+    startPart?: string,
+    endPart?: string,
+    level: "graduate" | "college" | "shs" = "college"
+  ): EduItemWithSchool => {
+    let startStr = cleanEduYear(startPart);
+    let endStr = cleanEduYear(endPart);
+    const sNum = parseInt(startStr, 10);
+    const eNum = parseInt(endStr, 10);
+    if (!isNaN(sNum) && !isNaN(eNum) && sNum > eNum) {
+      startStr = endStr;
+    }
+    return {
+      name,
+      school,
+      startYear: startStr,
+      endYear: endStr,
+      level,
+    };
+  };
+
   try {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
@@ -993,20 +1051,17 @@ function parseEduSchoolItems(raw?: string | null): EduItemWithSchool[] {
         if (typeof p === "object" && p !== null && p.name) {
           const yrs = String(p.years || p.period || "");
           const parts = yrs.split(/\s*-\s*/);
-          const endStr = parts[1] ? parts[1].trim() : String(CURRENT_YEAR);
           const nameStr = String(p.name);
+          const isGrad = p.level === "graduate" || nameStr.includes("Master") || nameStr.includes("Doctor") || nameStr.includes("PhD") || nameStr.includes("MBA");
           const isShs = p.level === "shs" || nameStr.includes("Senior High") || nameStr.includes("TVL") || nameStr.includes("STEM") || nameStr.includes("ABM") || nameStr.includes("HUMSS") || nameStr.includes("TESDA");
-          return {
-            name: nameStr,
-            school: p.school || "",
-            startYear: parts[0] ? parts[0].trim() : "2020",
-            endYear: endStr === "Present / Ongoing" ? String(CURRENT_YEAR) : endStr,
-            level: isShs ? "shs" : "college",
-          };
+          const level: "graduate" | "college" | "shs" = isGrad ? "graduate" : isShs ? "shs" : "college";
+          return sanitizeEduItem(nameStr, p.school || "", parts[0], parts[1], level);
         }
         const strVal = String(p);
+        const isGrad = strVal.includes("Master") || strVal.includes("Doctor") || strVal.includes("PhD") || strVal.includes("MBA");
         const isShs = strVal.includes("Senior High") || strVal.includes("TVL") || strVal.includes("STEM") || strVal.includes("ABM") || strVal.includes("HUMSS") || strVal.includes("TESDA");
-        return { name: strVal, school: "", startYear: "2020", endYear: String(CURRENT_YEAR), level: isShs ? "shs" : "college" };
+        const level: "graduate" | "college" | "shs" = isGrad ? "graduate" : isShs ? "shs" : "college";
+        return sanitizeEduItem(strVal, "", String(CURRENT_YEAR), String(CURRENT_YEAR), level);
       });
     }
   } catch {}
@@ -1016,8 +1071,10 @@ function parseEduSchoolItems(raw?: string | null): EduItemWithSchool[] {
     .map((s) => s.trim())
     .filter(Boolean)
     .map((token) => {
+      const isGradTag = token.includes("[Graduate]") || token.includes("Master") || token.includes("Doctor") || token.includes("PhD") || token.includes("MBA");
       const isShsTag = token.includes("[SHS]") || token.includes("Senior High") || token.includes("TVL") || token.includes("STEM") || token.includes("ABM") || token.includes("HUMSS") || token.includes("TESDA");
-      const cleanToken = token.replace(/\[SHS\]/g, "").replace(/\[College\]/g, "").trim();
+      const level: "graduate" | "college" | "shs" = isGradTag ? "graduate" : isShsTag ? "shs" : "college";
+      const cleanToken = token.replace(/\[Graduate\]/g, "").replace(/\[SHS\]/g, "").replace(/\[College\]/g, "").trim();
 
       const atMatch = cleanToken.match(/^(.*?)\s*@\s*(.*?)\s*\((.*?)\)$/);
       if (atMatch) {
@@ -1025,30 +1082,16 @@ function parseEduSchoolItems(raw?: string | null): EduItemWithSchool[] {
         const school = atMatch[2].trim();
         const periodStr = atMatch[3].trim();
         const parts = periodStr.split(/\s*-\s*/);
-        const endStr = parts[1] ? parts[1].trim() : String(CURRENT_YEAR);
-        return {
-          name,
-          school,
-          startYear: parts[0] ? parts[0].trim() : "2020",
-          endYear: endStr === "Present / Ongoing" ? String(CURRENT_YEAR) : endStr,
-          level: isShsTag ? "shs" : "college",
-        };
+        return sanitizeEduItem(name, school, parts[0], parts[1], level);
       }
       const match = cleanToken.match(/^(.*?)\s*\((.*?)\)$/);
       if (match) {
         const name = match[1].trim();
         const periodStr = match[2].trim();
         const parts = periodStr.split(/\s*-\s*/);
-        const endStr = parts[1] ? parts[1].trim() : String(CURRENT_YEAR);
-        return {
-          name,
-          school: "",
-          startYear: parts[0] ? parts[0].trim() : "2020",
-          endYear: endStr === "Present / Ongoing" ? String(CURRENT_YEAR) : endStr,
-          level: isShsTag ? "shs" : "college",
-        };
+        return sanitizeEduItem(name, "", parts[0], parts[1], level);
       }
-      return { name: cleanToken, school: "", startYear: "2020", endYear: String(CURRENT_YEAR), level: isShsTag ? "shs" : "college" };
+      return sanitizeEduItem(cleanToken, "", String(CURRENT_YEAR), String(CURRENT_YEAR), level);
     });
 }
 
@@ -1079,9 +1122,29 @@ function EduSchoolCardEditor({
 
   const [degreeInput, setDegreeInput] = useState("");
   const [schoolInput, setSchoolInput] = useState("");
-  const [selectedStart, setSelectedStart] = useState("2010");
-  const [selectedEnd, setSelectedEnd] = useState("2026");
+  const [selectedStart, setSelectedStart] = useState(String(CURRENT_YEAR));
+  const [selectedEnd, setSelectedEnd] = useState(String(CURRENT_YEAR));
   const [yearError, setYearError] = useState("");
+
+  const handleSelectStart = (newStart: string) => {
+    setSelectedStart(newStart);
+    setYearError("");
+    const startNum = parseInt(newStart, 10);
+    const endNum = parseInt(selectedEnd, 10);
+    if (!isNaN(startNum) && !isNaN(endNum) && startNum > endNum) {
+      setSelectedEnd(newStart);
+    }
+  };
+
+  const handleSelectEnd = (newEnd: string) => {
+    setSelectedEnd(newEnd);
+    setYearError("");
+    const startNum = parseInt(selectedStart, 10);
+    const endNum = parseInt(newEnd, 10);
+    if (!isNaN(startNum) && !isNaN(endNum) && startNum > endNum) {
+      setSelectedStart(newEnd);
+    }
+  };
 
   const handleAddItem = async () => {
     const nameToAdd = degreeInput.trim();
@@ -1117,6 +1180,8 @@ function EduSchoolCardEditor({
     if (ok) {
       setDegreeInput("");
       setSchoolInput("");
+      setSelectedStart(String(CURRENT_YEAR));
+      setSelectedEnd(String(CURRENT_YEAR));
       setYearError("");
     }
   };
@@ -1133,50 +1198,48 @@ function EduSchoolCardEditor({
   };
 
   const handleUpdateStart = async (indexToUpdate: number, newStart: string) => {
-    const item = levelItems[indexToUpdate];
-    if (item) {
-      const sNum = parseInt(newStart, 10);
-      const eNum = parseInt(item.endYear, 10);
-      if (!isNaN(sNum) && !isNaN(eNum) && sNum > eNum) {
-        setYearError("Start year cannot be later than end year.");
-        return;
-      }
-    }
     setYearError("");
+    const item = levelItems[indexToUpdate];
+    let updatedEnd = item?.endYear || newStart;
+    const sNum = parseInt(newStart, 10);
+    const eNum = parseInt(updatedEnd, 10);
+    if (!isNaN(sNum) && !isNaN(eNum) && sNum > eNum) {
+      updatedEnd = newStart;
+    }
 
     const updatedLevelItems = levelItems.map((it, idx) =>
-      idx === indexToUpdate ? { ...it, startYear: newStart } : it
+      idx === indexToUpdate ? { ...it, startYear: newStart, endYear: updatedEnd } : it
     );
     const combined = [...otherLevelItems, ...updatedLevelItems];
-    const formatted = combined.map((it) =>
-      it.school
-        ? `${it.name} @ ${it.school} (${it.startYear} - ${it.endYear}) [${it.level === "graduate" ? "Graduate" : it.level === "shs" ? "SHS" : "College"}]`
-        : `${it.name} (${it.startYear} - ${it.endYear}) [${it.level === "graduate" ? "Graduate" : it.level === "shs" ? "SHS" : "College"}]`
-    );
+    const formatted = combined.map((it) => {
+      const levelTag = it.level === "graduate" ? "Graduate" : it.level === "shs" ? "SHS" : "College";
+      return it.school
+        ? `${it.name} @ ${it.school} (${it.startYear} - ${it.endYear}) [${levelTag}]`
+        : `${it.name} (${it.startYear} - ${it.endYear}) [${levelTag}]`;
+    });
     await onSaveAll(formatted);
   };
 
   const handleUpdateEnd = async (indexToUpdate: number, newEnd: string) => {
-    const item = levelItems[indexToUpdate];
-    if (item) {
-      const sNum = parseInt(item.startYear, 10);
-      const eNum = parseInt(newEnd, 10);
-      if (!isNaN(sNum) && !isNaN(eNum) && eNum < sNum) {
-        setYearError("End year cannot be earlier than start year.");
-        return;
-      }
-    }
     setYearError("");
+    const item = levelItems[indexToUpdate];
+    let updatedStart = item?.startYear || newEnd;
+    const sNum = parseInt(updatedStart, 10);
+    const eNum = parseInt(newEnd, 10);
+    if (!isNaN(sNum) && !isNaN(eNum) && sNum > eNum) {
+      updatedStart = newEnd;
+    }
 
     const updatedLevelItems = levelItems.map((it, idx) =>
-      idx === indexToUpdate ? { ...it, endYear: newEnd } : it
+      idx === indexToUpdate ? { ...it, startYear: updatedStart, endYear: newEnd } : it
     );
     const combined = [...otherLevelItems, ...updatedLevelItems];
-    const formatted = combined.map((it) =>
-      it.school
-        ? `${it.name} @ ${it.school} (${it.startYear} - ${it.endYear}) [${it.level === "graduate" ? "Graduate" : it.level === "shs" ? "SHS" : "College"}]`
-        : `${it.name} (${it.startYear} - ${it.endYear}) [${it.level === "graduate" ? "Graduate" : it.level === "shs" ? "SHS" : "College"}]`
-    );
+    const formatted = combined.map((it) => {
+      const levelTag = it.level === "graduate" ? "Graduate" : it.level === "shs" ? "SHS" : "College";
+      return it.school
+        ? `${it.name} @ ${it.school} (${it.startYear} - ${it.endYear}) [${levelTag}]`
+        : `${it.name} (${it.startYear} - ${it.endYear}) [${levelTag}]`;
+    });
     await onSaveAll(formatted);
   };
 
@@ -1209,7 +1272,7 @@ function EduSchoolCardEditor({
                   disabled={disabled}
                   onChange={(e) => handleUpdateStart(idx, e.target.value)}
                 >
-                  {YEAR_OPTIONS.map((yr) => (
+                  {YEAR_OPTIONS.filter((yr) => parseInt(yr, 10) <= parseInt(item.endYear, 10)).map((yr) => (
                     <option key={yr} value={yr}>
                       {yr}
                     </option>
@@ -1268,9 +1331,9 @@ function EduSchoolCardEditor({
             className="add-years-select"
             value={selectedStart}
             disabled={disabled}
-            onChange={(e) => { setSelectedStart(e.target.value); setYearError(""); }}
+            onChange={(e) => handleSelectStart(e.target.value)}
           >
-            {YEAR_OPTIONS.map((yr) => (
+            {YEAR_OPTIONS.filter((yr) => parseInt(yr, 10) <= parseInt(selectedEnd, 10)).map((yr) => (
               <option key={yr} value={yr}>
                 {yr}
               </option>
@@ -1282,7 +1345,7 @@ function EduSchoolCardEditor({
             className="add-years-select"
             value={selectedEnd}
             disabled={disabled}
-            onChange={(e) => { setSelectedEnd(e.target.value); setYearError(""); }}
+            onChange={(e) => handleSelectEnd(e.target.value)}
           >
             {YEAR_OPTIONS.map((yr) => (
               <option key={yr} value={yr}>
@@ -1717,11 +1780,11 @@ function parseCertItems(raw?: string | null): CertItem[] {
             return {
               name: String(p.name).trim(),
               category: p.category || "General",
-              acquiredYear: p.acquiredYear || p.acquired || "2010",
-              expiry: p.expiry || p.years || "2026",
+              acquiredYear: cleanEduYear(p.acquiredYear || p.acquired),
+              expiry: p.expiry || p.years || String(CURRENT_YEAR),
             };
           }
-          return { name: String(p).trim(), category: "General", acquiredYear: "2010", expiry: "2026" };
+          return { name: String(p).trim(), category: "General", acquiredYear: String(CURRENT_YEAR), expiry: String(CURRENT_YEAR) };
         })
         .filter((it) => Boolean(it.name));
     }
@@ -1767,12 +1830,12 @@ function parseCertItems(raw?: string | null): CertItem[] {
       category = catMatch[1].trim();
     }
 
-    let acquiredYear = "2010";
-    let expiry = "2026";
+    let acquiredYear = String(CURRENT_YEAR);
+    let expiry = String(CURRENT_YEAR);
 
     const acqMatch = token.match(/\(Acquired\s*([0-9]{4})(?:[\s,-]*(?:Expiration\s*|Expires\s*|Expiry\s*)?([^\)]+))?\)/i);
     if (acqMatch) {
-      if (acqMatch[1]) acquiredYear = acqMatch[1].trim();
+      if (acqMatch[1]) acquiredYear = cleanEduYear(acqMatch[1]);
       if (acqMatch[2]) expiry = acqMatch[2].replace(/^Expires?\s*/i, "").trim();
     } else {
       const parenMatch = token.match(/\(([^\)]+)\)$/);
@@ -1780,10 +1843,10 @@ function parseCertItems(raw?: string | null): CertItem[] {
         const inside = parenMatch[1].trim();
         const parts = inside.split(/[-,\/]+/);
         if (parts.length > 1) {
-          acquiredYear = parts[0].replace(/Acquired\s*/i, "").trim() || "2010";
-          expiry = parts[1].replace(/Expires?\s*/i, "").trim() || "2026";
+          acquiredYear = cleanEduYear(parts[0].replace(/Acquired\s*/i, "").trim());
+          expiry = parts[1].replace(/Expires?\s*/i, "").trim() || String(CURRENT_YEAR);
         } else if (/^\d{4}$/.test(inside)) {
-          acquiredYear = inside;
+          acquiredYear = cleanEduYear(inside);
         } else if (inside.toLowerCase().includes("expire")) {
           expiry = inside;
         }
@@ -1813,7 +1876,7 @@ function parseCertItems(raw?: string | null): CertItem[] {
         name: cleanName,
         category,
         acquiredYear,
-        expiry: expiry || "2026",
+        expiry: expiry || String(CURRENT_YEAR),
       });
     }
   }
@@ -2052,8 +2115,8 @@ function CertificationsWithExpiryEditor({
 }) {
   const items = useMemo(() => parseCertItems(rawString), [rawString]);
   const [inputValue, setInputValue] = useState("");
-  const [selectedAcquired, setSelectedAcquired] = useState("2010");
-  const [selectedExpiry, setSelectedExpiry] = useState("2026");
+  const [selectedAcquired, setSelectedAcquired] = useState(String(CURRENT_YEAR));
+  const [selectedExpiry, setSelectedExpiry] = useState(String(CURRENT_YEAR));
   const [selectedCertCategory, setSelectedCertCategory] = useState("");
 
   // Track which category has its popup list open
@@ -2090,26 +2153,26 @@ function CertificationsWithExpiryEditor({
     if (!nameToAdd) return;
     if (items.some((it) => it.name.toLowerCase() === nameToAdd.toLowerCase())) return;
 
-    const expiryString = selectedExpiry || "2026";
+    const expiryString = selectedExpiry || String(CURRENT_YEAR);
     const categoryTag = selectedCertCategory.trim() || "General";
 
     const newItems: CertItem[] = [
       ...items,
       { name: nameToAdd, category: categoryTag, acquiredYear: selectedAcquired, expiry: expiryString },
     ];
-    const formatted = newItems.map((it) => `${it.name} [${it.category}] (Acquired ${it.acquiredYear || "2010"} - Expiration ${it.expiry})`);
+    const formatted = newItems.map((it) => `${it.name} [${it.category}] (Acquired ${it.acquiredYear || String(CURRENT_YEAR)} - Expiration ${it.expiry})`);
     const ok = await onSave(formatted);
     if (ok) {
       setInputValue("");
-      setSelectedAcquired("2010");
-      setSelectedExpiry("2026");
+      setSelectedAcquired(String(CURRENT_YEAR));
+      setSelectedExpiry(String(CURRENT_YEAR));
       setSelectedCertCategory("");
     }
   };
 
   const handleRemoveItem = async (indexToRemove: number) => {
     const newItems = items.filter((_, idx) => idx !== indexToRemove);
-    const formatted = newItems.map((it) => `${it.name} [${it.category}] (Acquired ${it.acquiredYear || "2010"} - Expiration ${it.expiry})`);
+    const formatted = newItems.map((it) => `${it.name} [${it.category}] (Acquired ${it.acquiredYear || String(CURRENT_YEAR)} - Expiration ${it.expiry})`);
     await onSave(formatted);
     if (activePopupCategory) {
       const remaining = newItems.filter(
@@ -2123,13 +2186,13 @@ function CertificationsWithExpiryEditor({
 
   const handleUpdateAcquired = async (indexToUpdate: number, newAcquired: string) => {
     const newItems = items.map((it, idx) => (idx === indexToUpdate ? { ...it, acquiredYear: newAcquired } : it));
-    const formatted = newItems.map((it) => `${it.name} [${it.category}] (Acquired ${it.acquiredYear || "2010"} - Expiration ${it.expiry})`);
+    const formatted = newItems.map((it) => `${it.name} [${it.category}] (Acquired ${it.acquiredYear || String(CURRENT_YEAR)} - Expiration ${it.expiry})`);
     await onSave(formatted);
   };
 
   const handleUpdateExpiry = async (indexToUpdate: number, newExpiry: string) => {
     const newItems = items.map((it, idx) => (idx === indexToUpdate ? { ...it, expiry: newExpiry } : it));
-    const formatted = newItems.map((it) => `${it.name} [${it.category}] (Acquired ${it.acquiredYear || "2010"} - Expiration ${it.expiry})`);
+    const formatted = newItems.map((it) => `${it.name} [${it.category}] (Acquired ${it.acquiredYear || String(CURRENT_YEAR)} - Expiration ${it.expiry})`);
     await onSave(formatted);
   };
 
@@ -2210,7 +2273,7 @@ function CertificationsWithExpiryEditor({
                       <span className="skill-popup-since-label">Acquired:</span>
                       <select
                         className="exp-years-select"
-                        value={ALL_NUMERIC_YEARS.includes(item.acquiredYear || "") ? item.acquiredYear : "2010"}
+                        value={ALL_NUMERIC_YEARS.includes(item.acquiredYear || "") ? item.acquiredYear : String(CURRENT_YEAR)}
                         disabled={disabled}
                         onChange={(e) => handleUpdateAcquired(originalIndex, e.target.value)}
                       >
@@ -2224,7 +2287,7 @@ function CertificationsWithExpiryEditor({
                       <span className="skill-popup-since-label">Expires:</span>
                       <select
                         className="exp-years-select"
-                        value={EXPIRATION_YEAR_OPTIONS.includes(item.expiry) ? item.expiry : "2026"}
+                        value={EXPIRATION_YEAR_OPTIONS.includes(item.expiry) ? item.expiry : String(CURRENT_YEAR)}
                         disabled={disabled}
                         onChange={(e) => handleUpdateExpiry(originalIndex, e.target.value)}
                       >
