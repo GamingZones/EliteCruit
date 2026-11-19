@@ -900,7 +900,6 @@ export default function EmployerDashboard() {
                             </svg>
                           ),
                         };
-                    const count = job.applicant_count || 0;
                     const approvedCount = Number(job.approved_count || 0);
                     const deniedCount = Number(job.denied_count || 0);
                     const pendingCount = Number(
