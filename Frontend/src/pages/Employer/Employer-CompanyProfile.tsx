@@ -127,6 +127,20 @@ function normalizeEmployerProfile(source: any, fallback: EmployerProfileForm): E
         is_main: true,
       },
     ];
+  } else if (branchesArr.length > 0) {
+    branchesArr = branchesArr.map((b: any, idx) => {
+      const bName = (b.branch_name || b.name || b.title || "").trim();
+      return {
+        id: b.id || `branch-${idx}-${bName || "loc"}`,
+        branch_name: bName || `Branch ${idx + 1}`,
+        province: b.province || selectedProvince,
+        city: b.city || selectedCity,
+        address: b.address || fullAddress,
+        contact_number: b.contact_number || "",
+        email: b.email || "",
+        is_main: !!b.is_main,
+      };
+    });
   }
 
   return {

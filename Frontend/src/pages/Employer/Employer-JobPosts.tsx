@@ -25,6 +25,7 @@ import {
   EXP_YEARS_OPTIONS,
   getKeywordsForJobRole,
   cleanBranchLocation,
+  getCanonicalCaviteCity,
 } from "../../utils/filters";
 import "../Applicant/Applicant-Dashboard.css";
 import "./Employer-Dashboard.css";
@@ -608,23 +609,31 @@ function BranchSelectionModal({
   }, [isOpen, selectedValues]);
 
   const getBranchValue = (b: EmployerBranchItem) => {
-    if (b.city && !b.branch_name.toLowerCase().includes(b.city.toLowerCase())) {
-      return `${b.branch_name} (${b.city}${b.province && !b.city.includes(b.province) ? `, ${b.province}` : ""})`;
+    const bName = (b?.branch_name || "").trim();
+    const city = (b?.city || "").trim();
+    const province = (b?.province || "").trim();
+    if (!bName) return city || "Cavite";
+    if (city && !bName.toLowerCase().includes(city.toLowerCase())) {
+      const showProvince = province && !city.toLowerCase().includes(province.toLowerCase());
+      return `${bName} (${city}${showProvince ? `, ${province}` : ""})`;
     }
-    return b.branch_name;
+    return bName;
   };
 
   const isBranchChecked = (b: EmployerBranchItem) => {
-    const targetVal = getBranchValue(b).toLowerCase().trim();
-    const rawName = b.branch_name.toLowerCase().trim();
-    const locOnly = cleanBranchLocation(targetVal).toLowerCase().trim();
-    const city = (b.city || "").toLowerCase().trim();
+    const bName = (b?.branch_name || "").trim();
+    const val = getBranchValue(b);
+    const targetVal = val.toLowerCase().trim();
+    const rawName = bName.toLowerCase().trim();
+    const locOnly = cleanBranchLocation(val).toLowerCase().trim();
+    const city = (b?.city || "").toLowerCase().trim();
     return tempSelected.some((s) => {
-      const lower = s.toLowerCase().trim();
+      if (!s) return false;
+      const lower = String(s).toLowerCase().trim();
       return (
-        lower === targetVal ||
-        lower === rawName ||
-        lower === locOnly ||
+        (targetVal && lower === targetVal) ||
+        (rawName && lower === rawName) ||
+        (locOnly && lower === locOnly) ||
         (city && (lower === city || lower.includes(city) || city.includes(lower)))
       );
     });
@@ -632,24 +641,31 @@ function BranchSelectionModal({
 
   const toggleBranch = (b: EmployerBranchItem) => {
     const val = getBranchValue(b);
-    const rawName = b.branch_name.trim();
+    const bName = (b?.branch_name || "").trim();
+    const rawName = bName.trim();
     const locOnly = cleanBranchLocation(val);
+    const valLower = val.toLowerCase().trim();
+    const rawLower = rawName.toLowerCase();
+    const locLower = locOnly.toLowerCase();
+
     setTempSelected((prev) => {
       const exists = prev.some((s) => {
-        const lower = s.toLowerCase().trim();
+        if (!s) return false;
+        const lower = String(s).toLowerCase().trim();
         return (
-          lower === val.toLowerCase().trim() ||
-          lower === rawName.toLowerCase() ||
-          lower === locOnly.toLowerCase()
+          (valLower && lower === valLower) ||
+          (rawLower && lower === rawLower) ||
+          (locLower && lower === locLower)
         );
       });
       if (exists) {
         return prev.filter((s) => {
-          const lower = s.toLowerCase().trim();
+          if (!s) return false;
+          const lower = String(s).toLowerCase().trim();
           return (
-            lower !== val.toLowerCase().trim() &&
-            lower !== rawName.toLowerCase() &&
-            lower !== locOnly.toLowerCase()
+            (valLower && lower !== valLower) &&
+            (!rawLower || lower !== rawLower) &&
+            (!locLower || lower !== locLower)
           );
         });
       }
@@ -658,14 +674,18 @@ function BranchSelectionModal({
   };
 
   const isCityChecked = (city: string) => {
-    return tempSelected.some((s) => s.toLowerCase().trim() === city.toLowerCase().trim());
+    if (!city) return false;
+    const cleanCity = String(city).toLowerCase().trim();
+    return tempSelected.some((s) => s && String(s).toLowerCase().trim() === cleanCity);
   };
 
   const toggleCity = (city: string) => {
+    if (!city) return;
+    const cleanCity = String(city).toLowerCase().trim();
     setTempSelected((prev) => {
-      const exists = prev.some((s) => s.toLowerCase().trim() === city.toLowerCase().trim());
+      const exists = prev.some((s) => s && String(s).toLowerCase().trim() === cleanCity);
       if (exists) {
-        return prev.filter((s) => s.toLowerCase().trim() !== city.toLowerCase().trim());
+        return prev.filter((s) => !s || String(s).toLowerCase().trim() !== cleanCity);
       }
       return [...prev, city];
     });
@@ -673,10 +693,10 @@ function BranchSelectionModal({
 
   const handleSelectAll = () => {
     if (availableBranches.length > 0) {
-      const allVals = availableBranches.map(getBranchValue);
+      const allVals = availableBranches.map(getBranchValue).filter(Boolean);
       setTempSelected(Array.from(new Set([...tempSelected, ...allVals])));
     } else {
-      const allVals = fallbackCities.slice(0, 10);
+      const allVals = fallbackCities.slice(0, 10).filter(Boolean);
       setTempSelected(Array.from(new Set([...tempSelected, ...allVals])));
     }
   };
@@ -688,18 +708,18 @@ function BranchSelectionModal({
   const filteredBranches = useMemo(() => {
     if (!searchTerm.trim()) return availableBranches;
     const q = searchTerm.trim().toLowerCase();
-    return availableBranches.filter(
-      (b) =>
-        b.branch_name.toLowerCase().includes(q) ||
-        (b.city && b.city.toLowerCase().includes(q)) ||
-        (b.address && b.address.toLowerCase().includes(q))
-    );
+    return availableBranches.filter((b) => {
+      const name = (b?.branch_name || "").toLowerCase();
+      const city = (b?.city || "").toLowerCase();
+      const addr = (b?.address || "").toLowerCase();
+      return name.includes(q) || city.includes(q) || addr.includes(q);
+    });
   }, [availableBranches, searchTerm]);
 
   const filteredCities = useMemo(() => {
     if (!searchTerm.trim()) return fallbackCities;
     const q = searchTerm.trim().toLowerCase();
-    return fallbackCities.filter((c) => c.toLowerCase().includes(q));
+    return fallbackCities.filter((c) => c && String(c).toLowerCase().includes(q));
   }, [fallbackCities, searchTerm]);
 
   if (!isOpen) return null;
@@ -978,19 +998,28 @@ export default function EmployerJobPosts() {
     const seen = new Set<string>();
 
     if (companyBranches.length > 0) {
-      companyBranches.forEach((b) => {
-        const key = (b.branch_name || "").toLowerCase().trim();
+      companyBranches.forEach((rawB: any, idx) => {
+        if (!rawB) return;
+        const resolvedName = (rawB.branch_name || rawB.name || rawB.title || "").trim();
+        if (!resolvedName) return;
+        const key = resolvedName.toLowerCase();
         if (!seen.has(key)) {
           seen.add(key);
+          let resolvedCity = (rawB.city || "").trim();
+          const resolvedAddress = (rawB.address || "").trim();
+          if (!resolvedCity && resolvedAddress) {
+            const canonicalCity = getCanonicalCaviteCity(resolvedAddress);
+            if (canonicalCity) resolvedCity = canonicalCity;
+          }
           list.push({
-            id: b.id || `branch-${b.branch_name}`,
-            branch_name: b.branch_name,
-            city: b.city,
-            province: b.province || "Cavite",
-            address: b.address,
-            contact_number: b.contact_number,
-            email: b.email,
-            is_main: !!b.is_main,
+            id: String(rawB.id || `branch-${idx}-${resolvedName}`),
+            branch_name: resolvedName,
+            city: resolvedCity || "Cavite",
+            province: rawB.province || "Cavite",
+            address: resolvedAddress,
+            contact_number: rawB.contact_number || "",
+            email: rawB.email || "",
+            is_main: !!rawB.is_main,
           });
         }
       });
@@ -1010,8 +1039,8 @@ export default function EmployerJobPosts() {
           city: mainCity,
           province: employerProfileData.province || "Cavite",
           address: employerProfileData.company_address || mainCity,
-          contact_number: employerProfileData.contact_number,
-          email: employerProfileData.business_email,
+          contact_number: employerProfileData.contact_number || "",
+          email: employerProfileData.business_email || "",
           is_main: true,
         });
       }
