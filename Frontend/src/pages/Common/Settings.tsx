@@ -31,6 +31,30 @@ export default function Settings() {
   const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
+  // Password mode: "change" (standard) or "reset" (in-page OTP reset)
+  const [passwordMode, setPasswordMode] = useState<"change" | "reset">("change");
+  const [resetStep, setResetStep] = useState<"request" | "verify" | "set_new">("request");
+  const [resetEmail, setResetEmail] = useState(user?.email || "");
+  const [resetMaskedEmail, setResetMaskedEmail] = useState("");
+  const [resetDevCode, setResetDevCode] = useState("");
+  const [resetOtpCode, setResetOtpCode] = useState("");
+  const [resetToken, setResetToken] = useState("");
+  const [resetNewPassword, setResetNewPassword] = useState("");
+  const [resetConfirmPassword, setResetConfirmPassword] = useState("");
+  const [resetCooldown, setResetCooldown] = useState(0);
+  const [isRequestingReset, setIsRequestingReset] = useState(false);
+  const [isVerifyingReset, setIsVerifyingReset] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [resetMessage, setResetMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+
+  useEffect(() => {
+    if (resetCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResetCooldown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resetCooldown]);
+
   // Apply theme dynamically
   const applyTheme = (mode: ThemeMode) => {
     setThemeMode(mode);
@@ -54,13 +78,134 @@ export default function Settings() {
     applyTheme(saved);
   }, []);
 
-  // Validation rules
+  // Validation rules for changing password
   const hasMinLength = newPassword.length >= 8;
   const hasUppercase = /[A-Z]/.test(newPassword);
   const hasLowercase = /[a-z]/.test(newPassword);
   const hasNumber = /\d/.test(newPassword);
   const passwordsMatch = newPassword.length > 0 && newPassword === confirmPassword;
   const isFormValid = Boolean(currentPassword) && hasMinLength && hasUppercase && hasLowercase && hasNumber && passwordsMatch;
+
+  // Validation rules for resetting password
+  const resetHasMinLength = resetNewPassword.length >= 8;
+  const resetHasUppercase = /[A-Z]/.test(resetNewPassword);
+  const resetHasLowercase = /[a-z]/.test(resetNewPassword);
+  const resetHasNumber = /\d/.test(resetNewPassword);
+  const resetPasswordsMatch = resetNewPassword.length > 0 && resetNewPassword === resetConfirmPassword;
+  const isResetFormValid = resetHasMinLength && resetHasUppercase && resetHasLowercase && resetHasNumber && resetPasswordsMatch;
+
+  const handleRequestResetCode = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setResetMessage(null);
+    const cleanEmail = resetEmail.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      setResetMessage({ text: "Please enter a valid registered email address.", type: "error" });
+      return;
+    }
+
+    setIsRequestingReset(true);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleanEmail }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setResetMessage({ text: data?.message || "Unable to send password reset code.", type: "error" });
+        if (data?.retryAfter) setResetCooldown(data.retryAfter);
+        return;
+      }
+      setResetMaskedEmail(data.maskedEmail || cleanEmail);
+      setResetDevCode(data.devCode || "");
+      setResetOtpCode("");
+      setResetCooldown(45);
+      setResetStep("verify");
+      setResetMessage({ text: data.message || "A 6-digit password reset code has been sent to your email.", type: "success" });
+    } catch {
+      setResetMessage({ text: "Unable to connect to server. Please try again.", type: "error" });
+    } finally {
+      setIsRequestingReset(false);
+    }
+  };
+
+  const handleVerifyResetCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetMessage(null);
+    const cleanCode = resetOtpCode.replace(/\D/g, "");
+    if (cleanCode.length !== 6) {
+      setResetMessage({ text: "Please enter the complete 6-digit reset code.", type: "error" });
+      return;
+    }
+
+    setIsVerifyingReset(true);
+    try {
+      const res = await fetch("/api/auth/verify-reset-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: resetEmail.trim(), code: cleanCode }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setResetMessage({ text: data?.message || "Invalid reset code.", type: "error" });
+        return;
+      }
+      setResetToken(data.resetToken || "");
+      setResetNewPassword("");
+      setResetConfirmPassword("");
+      setResetStep("set_new");
+      setResetMessage({ text: "Code verified! Please create your new password below.", type: "success" });
+    } catch {
+      setResetMessage({ text: "Unable to connect to server. Please try again.", type: "error" });
+    } finally {
+      setIsVerifyingReset(false);
+    }
+  };
+
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetMessage(null);
+
+    if (!isResetFormValid) {
+      setResetMessage({
+        text: "Please satisfy all new password requirements (at least 8 characters, uppercase, lowercase, number, and matching).",
+        type: "error",
+      });
+      return;
+    }
+
+    setIsResettingPassword(true);
+    try {
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          resetToken,
+          newPassword: resetNewPassword,
+          confirmPassword: resetConfirmPassword,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setResetMessage({ text: data?.message || "Failed to reset password.", type: "error" });
+        return;
+      }
+      setPasswordMessage({
+        text: "Your password has been successfully reset! You can now use your new password.",
+        type: "success",
+      });
+      setPasswordMode("change");
+      setResetStep("request");
+      setResetOtpCode("");
+      setResetToken("");
+      setResetNewPassword("");
+      setResetConfirmPassword("");
+    } catch {
+      setResetMessage({ text: "Unable to connect to server. Please try again.", type: "error" });
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -360,7 +505,7 @@ export default function Settings() {
           )}
 
           {/* =================================================================
-              SUB-VIEW 2: CHANGE YOUR PASSWORD
+              SUB-VIEW 2: CHANGE OR RESET YOUR PASSWORD
               ================================================================= */}
           {view === "password" && (
             <div>
@@ -368,7 +513,15 @@ export default function Settings() {
                 <button
                   type="button"
                   className="subview-back-btn"
-                  onClick={() => setView("menu")}
+                  onClick={() => {
+                    if (passwordMode === "reset") {
+                      setPasswordMode("change");
+                      setResetStep("request");
+                      setResetMessage(null);
+                    } else {
+                      setView("menu");
+                    }
+                  }}
                   title="Back"
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -376,101 +529,299 @@ export default function Settings() {
                     <polyline points="12 19 5 12 12 5"></polyline>
                   </svg>
                 </button>
-                <h2 className="subview-header-title">Change your password</h2>
+                <h2 className="subview-header-title">
+                  {passwordMode === "reset" ? "Reset your password" : "Change your password"}
+                </h2>
               </div>
 
-              {passwordMessage && (
-                <div className={`x-alert-banner ${passwordMessage.type}`}>
-                  {passwordMessage.text}
+              {passwordMode === "change" ? (
+                <>
+                  {passwordMessage && (
+                    <div className={`x-alert-banner ${passwordMessage.type}`}>
+                      {passwordMessage.text}
+                    </div>
+                  )}
+
+                  <form onSubmit={handlePasswordSubmit}>
+                    {/* Current Password Field */}
+                    <div className="x-form-group">
+                      <input
+                        type="password"
+                        className="x-input-box"
+                        placeholder="Current password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const stored = getStoredUser<{ email?: string }>();
+                          setResetEmail(stored?.email || user?.email || "");
+                          setPasswordMode("reset");
+                          setResetStep("request");
+                          setResetMessage(null);
+                          setPasswordMessage(null);
+                        }}
+                        className="x-forgot-password-link"
+                        style={{ background: "none", border: "none", padding: 0, textAlign: "left" }}
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
+
+                    <hr className="x-form-divider" />
+
+                    {/* New Password Field */}
+                    <div className="x-form-group">
+                      <input
+                        type="password"
+                        className="x-input-box"
+                        placeholder="New password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    {/* Confirm Password Field */}
+                    <div className="x-form-group">
+                      <input
+                        type="password"
+                        className="x-input-box"
+                        placeholder="Confirm password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    {/* Password requirements */}
+                    {newPassword.length > 0 && (
+                      <div className="x-password-rules">
+                        <div className={`x-rule-item ${hasMinLength ? "valid" : ""}`}>
+                          {hasMinLength ? "✓" : "○"} At least 8 characters
+                        </div>
+                        <div className={`x-rule-item ${hasUppercase ? "valid" : ""}`}>
+                          {hasUppercase ? "✓" : "○"} At least one uppercase letter (A-Z)
+                        </div>
+                        <div className={`x-rule-item ${hasLowercase ? "valid" : ""}`}>
+                          {hasLowercase ? "✓" : "○"} At least one lowercase letter (a-z)
+                        </div>
+                        <div className={`x-rule-item ${hasNumber ? "valid" : ""}`}>
+                          {hasNumber ? "✓" : "○"} At least one number (0-9)
+                        </div>
+                        <div className={`x-rule-item ${passwordsMatch ? "valid" : ""}`}>
+                          {passwordsMatch ? "✓" : "○"} Passwords match
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Information Notice */}
+                    <p className="x-info-notice">
+                      Changing your password will update your credentials across all your active EliteCruit sessions except the one you're using at this time. The active applications with access to your account won't be affected. <a href="#" onClick={(e) => e.preventDefault()}>Learn more</a>
+                    </p>
+
+                    {/* Footer with Pill Save Button */}
+                    <div className="x-form-footer">
+                      <button
+                        type="submit"
+                        className="x-save-pill-btn"
+                        disabled={isSubmittingPassword || !isFormValid}
+                      >
+                        {isSubmittingPassword ? "Saving..." : "Save"}
+                      </button>
+                    </div>
+                  </form>
+                </>
+              ) : (
+                /* INLINE ATTACHED RESET PASSWORD FLOW */
+                <div className="x-reset-flow-container">
+                  {resetMessage && (
+                    <div className={`x-alert-banner ${resetMessage.type}`}>
+                      {resetMessage.text}
+                    </div>
+                  )}
+
+                  {resetStep === "request" && (
+                    <form onSubmit={handleRequestResetCode}>
+                      <p className="x-info-notice">
+                        To reset your forgotten password, verify your registered email address below. We will send a secure 6-digit OTP code to verify your identity.
+                      </p>
+                      <div className="x-form-group">
+                        <label style={{ display: "block", fontSize: "13px", fontWeight: 600, marginBottom: "6px" }}>
+                          Registered Email Address
+                        </label>
+                        <input
+                          type="email"
+                          className="x-input-box"
+                          placeholder="name@example.com"
+                          value={resetEmail}
+                          onChange={(e) => setResetEmail(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      <div className="x-form-footer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <button
+                          type="button"
+                          className="x-forgot-password-link"
+                          style={{ background: "none", border: "none", padding: 0 }}
+                          onClick={() => {
+                            setPasswordMode("change");
+                            setResetMessage(null);
+                          }}
+                        >
+                          ← I remember my password
+                        </button>
+                        <button
+                          type="submit"
+                          className="x-save-pill-btn"
+                          disabled={isRequestingReset || !resetEmail.trim() || !resetEmail.includes("@") || resetCooldown > 0}
+                        >
+                          {isRequestingReset ? "Sending code..." : resetCooldown > 0 ? `Wait ${resetCooldown}s` : "Send Code"}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+
+                  {resetStep === "verify" && (
+                    <form onSubmit={handleVerifyResetCode}>
+                      <p className="x-info-notice">
+                        Enter the 6-digit verification code sent to <strong>{resetMaskedEmail || resetEmail}</strong>.
+                      </p>
+
+                      {resetDevCode && (
+                        <div style={{ marginBottom: "12px", padding: "8px 12px", background: "#fef3c7", border: "1px solid #fde047", borderRadius: "8px", fontSize: "0.82rem", color: "#92400e" }}>
+                          🛠️ <strong>Development Hint:</strong> Use verification code <strong>{resetDevCode}</strong>
+                        </div>
+                      )}
+
+                      <div className="x-form-group">
+                        <label style={{ display: "block", fontSize: "13px", fontWeight: 600, marginBottom: "6px" }}>
+                          6-Digit Verification Code
+                        </label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          className="x-input-box x-otp-code-input"
+                          placeholder="123456"
+                          maxLength={6}
+                          value={resetOtpCode}
+                          onChange={(e) => setResetOtpCode(e.target.value.replace(/\D/g, ""))}
+                          required
+                          autoFocus
+                        />
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "10px" }}>
+                          <span style={{ fontSize: "13px", color: "#64748b" }}>
+                            Didn't receive the code?
+                          </span>
+                          <button
+                            type="button"
+                            className="x-forgot-password-link"
+                            style={{ background: "none", border: "none", padding: 0, cursor: resetCooldown > 0 ? "default" : "pointer", opacity: resetCooldown > 0 ? 0.6 : 1 }}
+                            onClick={() => handleRequestResetCode()}
+                            disabled={resetCooldown > 0 || isRequestingReset}
+                          >
+                            {resetCooldown > 0 ? `Resend code (${resetCooldown}s)` : "Resend code"}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="x-form-footer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <button
+                          type="button"
+                          className="x-forgot-password-link"
+                          style={{ background: "none", border: "none", padding: 0 }}
+                          onClick={() => setResetStep("request")}
+                        >
+                          ← Change email
+                        </button>
+                        <button
+                          type="submit"
+                          className="x-save-pill-btn"
+                          disabled={isVerifyingReset || resetOtpCode.length !== 6}
+                        >
+                          {isVerifyingReset ? "Verifying..." : "Verify Code"}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+
+                  {resetStep === "set_new" && (
+                    <form onSubmit={handleResetPasswordSubmit}>
+                      <p className="x-info-notice">
+                        Code verified! Please create and confirm your new password below.
+                      </p>
+
+                      <div className="x-form-group">
+                        <input
+                          type="password"
+                          className="x-input-box"
+                          placeholder="New password"
+                          value={resetNewPassword}
+                          onChange={(e) => setResetNewPassword(e.target.value)}
+                          required
+                          autoFocus
+                        />
+                      </div>
+
+                      <div className="x-form-group">
+                        <input
+                          type="password"
+                          className="x-input-box"
+                          placeholder="Confirm new password"
+                          value={resetConfirmPassword}
+                          onChange={(e) => setResetConfirmPassword(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      {resetNewPassword.length > 0 && (
+                        <div className="x-password-rules">
+                          <div className={`x-rule-item ${resetHasMinLength ? "valid" : ""}`}>
+                            {resetHasMinLength ? "✓" : "○"} At least 8 characters
+                          </div>
+                          <div className={`x-rule-item ${resetHasUppercase ? "valid" : ""}`}>
+                            {resetHasUppercase ? "✓" : "○"} At least one uppercase letter (A-Z)
+                          </div>
+                          <div className={`x-rule-item ${resetHasLowercase ? "valid" : ""}`}>
+                            {resetHasLowercase ? "✓" : "○"} At least one lowercase letter (a-z)
+                          </div>
+                          <div className={`x-rule-item ${resetHasNumber ? "valid" : ""}`}>
+                            {resetHasNumber ? "✓" : "○"} At least one number (0-9)
+                          </div>
+                          <div className={`x-rule-item ${resetPasswordsMatch ? "valid" : ""}`}>
+                            {resetPasswordsMatch ? "✓" : "○"} Passwords match
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="x-form-footer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <button
+                          type="button"
+                          className="x-forgot-password-link"
+                          style={{ background: "none", border: "none", padding: 0 }}
+                          onClick={() => {
+                            setPasswordMode("change");
+                            setResetStep("request");
+                            setResetMessage(null);
+                          }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="x-save-pill-btn"
+                          disabled={isResettingPassword || !isResetFormValid}
+                        >
+                          {isResettingPassword ? "Resetting..." : "Reset Password"}
+                        </button>
+                      </div>
+                    </form>
+                  )}
                 </div>
               )}
-
-              <form onSubmit={handlePasswordSubmit}>
-                {/* Current Password Field */}
-                <div className="x-form-group">
-                  <input
-                    type="password"
-                    className="x-input-box"
-                    placeholder="Current password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    required
-                  />
-                  <a
-                    href="/login"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      alert("To reset a forgotten password, please use the OTP verification flow on the Login screen.");
-                    }}
-                    className="x-forgot-password-link"
-                  >
-                    Forgot password?
-                  </a>
-                </div>
-
-                <hr className="x-form-divider" />
-
-                {/* New Password Field */}
-                <div className="x-form-group">
-                  <input
-                    type="password"
-                    className="x-input-box"
-                    placeholder="New password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    required
-                  />
-                </div>
-
-                {/* Confirm Password Field */}
-                <div className="x-form-group">
-                  <input
-                    type="password"
-                    className="x-input-box"
-                    placeholder="Confirm password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                  />
-                </div>
-
-                {/* Password requirements */}
-                {newPassword.length > 0 && (
-                  <div className="x-password-rules">
-                    <div className={`x-rule-item ${hasMinLength ? "valid" : ""}`}>
-                      {hasMinLength ? "✓" : "○"} At least 8 characters
-                    </div>
-                    <div className={`x-rule-item ${hasUppercase ? "valid" : ""}`}>
-                      {hasUppercase ? "✓" : "○"} At least one uppercase letter (A-Z)
-                    </div>
-                    <div className={`x-rule-item ${hasLowercase ? "valid" : ""}`}>
-                      {hasLowercase ? "✓" : "○"} At least one lowercase letter (a-z)
-                    </div>
-                    <div className={`x-rule-item ${hasNumber ? "valid" : ""}`}>
-                      {hasNumber ? "✓" : "○"} At least one number (0-9)
-                    </div>
-                    <div className={`x-rule-item ${passwordsMatch ? "valid" : ""}`}>
-                      {passwordsMatch ? "✓" : "○"} Passwords match
-                    </div>
-                  </div>
-                )}
-
-                {/* Information Notice */}
-                <p className="x-info-notice">
-                  Changing your password will update your credentials across all your active EliteCruit sessions except the one you're using at this time. The active applications with access to your account won't be affected. <a href="#" onClick={(e) => e.preventDefault()}>Learn more</a>
-                </p>
-
-                {/* Footer with Pill Save Button */}
-                <div className="x-form-footer">
-                  <button
-                    type="submit"
-                    className="x-save-pill-btn"
-                    disabled={isSubmittingPassword || !isFormValid}
-                  >
-                    {isSubmittingPassword ? "Saving..." : "Save"}
-                  </button>
-                </div>
-              </form>
             </div>
           )}
 
