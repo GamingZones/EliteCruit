@@ -3627,125 +3627,159 @@ export default function ApplicantProfile() {
     setIsAutoFillingDemo(true);
     setProfileMessage("");
 
-    const demoProfilePayload = {
-      first_name: "Juan Carlos",
-      middle_name: "M.",
-      last_name: "Dela Cruz",
-      phone: "9171234567",
-      gender: "Male",
-      province: "Cavite",
-      city: "Dasmariñas",
-      address: "Block 12 Lot 4, San Agustin",
-      summary:
-        "Passionate Senior Frontend Engineer with 4+ years of experience building modern React, TypeScript, and responsive web portals. Dedicated to clean architecture and intuitive user experiences.",
-      desired_job_title: "Senior Frontend Engineer",
-      expected_salary_min: 70000,
-      expected_salary_max: 85000,
-      expected_salary: "70,000.00 - 85,000.00",
-      work_arrangement: "Hybrid",
-      years_of_experience: "4",
-      preferred_locations: "Dasmariñas, Indang, Imus",
-      preferred_cities: ["Dasmariñas", "Indang", "Imus"],
-      shs_school: "Dasmariñas National High School",
-      shs_strand: "TVL - Technical-Vocational-Livelihood (ICT Programming)",
-      shs_grad_year: "2016",
-      college_grad_year: "2020",
-      target_roles_json: JSON.stringify([
-        {
-          id: `role-demo-${Date.now()}`,
-          category: "Web & Software Development",
-          title: "Senior Frontend Engineer",
-          work_arrangements: ["Hybrid", "Remote"],
-          salary_min: 70000,
-          salary_max: 85000,
-          hide_salary: false,
-        },
-      ]),
-    };
-
-    const demoWorkExperience = [
-      {
-        id: Date.now(),
-        title: "Frontend Web Developer",
-        company: "Cavite Digital Solutions Inc.",
-        location: "Dasmariñas, Cavite",
-        province: "Cavite",
-        city: "Dasmariñas",
-        employment_type: "Full-time",
-        start_month: "July",
-        start_year: "2021",
-        end_month: "",
-        end_year: "",
-        is_current: true,
-        responsibilities:
-          "Architected responsive web dashboards in React and TypeScript; reduced portal load times by 35% and collaborated with cross-functional UI/UX teams.",
-        skills: ["React", "TypeScript", "Tailwind CSS"],
-      },
-    ];
-
-    const demoQualifications = [
-      "TVL - Technical-Vocational-Livelihood (ICT Programming) @ Dasmariñas National High School (2014 - 2016) [SHS]",
-      "BS Information Technology - BSIT @ De La Salle University - Dasmariñas (2016 - 2020) [College]",
-    ];
-
-    const demoSkills = [
-      "React [Web & Software Development] (Since 2026)",
-      "TypeScript [Web & Software Development] (Since 2026)",
-      "JavaScript [Programming & Algorithms] (Since 2026)",
-      "HTML5/CSS3 [Web & Software Development] (Since 2026)",
-      "Tailwind CSS [Web & Software Development] (Since 2026)",
-      "REST APIs [Web & Software Development] (Since 2026)",
-      "Git [Web & Software Development] (Since 2026)",
-    ];
-
-    const demoCertifications = [
-      "Meta Certified Front-End Developer [Information Technology & Software] (Acquired: 2023, Exp: 2026)",
-      "AWS Certified Cloud Practitioner [Information Technology & Software] (Acquired: 2024, Exp: 2027)",
-    ];
-
     try {
-      // 1. Save main profile
-      await fetch(`/api/applicants/${userId}/profile`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(demoProfilePayload),
-      });
+      if (activeSection === "personal") {
+        // Section 1: Only Personal & Contact details
+        const payload = {
+          ...profile,
+          first_name: "Juan Carlos",
+          middle_name: "M.",
+          last_name: "Dela Cruz",
+          phone: "9171234567",
+          gender: "Male",
+          province: "Cavite",
+          city: "Dasmariñas",
+          address: "Block 12 Lot 4, San Agustin",
+          summary:
+            "Passionate Senior Frontend Engineer with 4+ years of experience building modern React, TypeScript, and responsive web portals. Dedicated to clean architecture and intuitive user experiences.",
+        };
+        const res = await fetch(`/api/applicants/${userId}/profile`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || "Failed to update personal details.");
+        setProfileMessageType("success");
+        setProfileMessage("⚡ Personal & Contact details populated!");
+      } else if (activeSection === "preferences") {
+        // Section 2: Only Career Preferences
+        const payload = {
+          ...profile,
+          first_name: profile.first_name || "Juan Carlos",
+          last_name: profile.last_name || "Dela Cruz",
+          desired_job_title: "Senior Frontend Engineer",
+          expected_salary_min: 70000,
+          expected_salary_max: 85000,
+          expected_salary: "70,000.00 - 85,000.00",
+          work_arrangement: "Hybrid",
+          years_of_experience: "4",
+          preferred_locations: "Dasmariñas, Indang, Imus",
+          preferred_cities: ["Dasmariñas", "Indang", "Imus"],
+          target_roles_json: JSON.stringify([
+            {
+              id: `role-demo-${Date.now()}`,
+              category: "Web & Software Development",
+              title: "Senior Frontend Engineer",
+              work_arrangements: ["Hybrid", "Remote"],
+              salary_min: 70000,
+              salary_max: 85000,
+              hide_salary: false,
+            },
+          ]),
+        };
+        const res = await fetch(`/api/applicants/${userId}/profile`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || "Failed to update career preferences.");
+        setProfileMessageType("success");
+        setProfileMessage("⚡ Career Preferences populated!");
+      } else if (activeSection === "competencies") {
+        // Section 3: Only Skills & Credentials (Education, Core Skills, Certifications)
+        const demoQualifications = [
+          "TVL - Technical-Vocational-Livelihood (ICT Programming) @ Dasmariñas National High School (2014 - 2016) [SHS]",
+          "BS Information Technology - BSIT @ De La Salle University - Dasmariñas (2016 - 2020) [College]",
+        ];
+        const demoSkills = [
+          "React [Web & Software Development] (Since 2026)",
+          "TypeScript [Web & Software Development] (Since 2026)",
+          "JavaScript [Programming & Algorithms] (Since 2026)",
+          "HTML5/CSS3 [Web & Software Development] (Since 2026)",
+          "Tailwind CSS [Web & Software Development] (Since 2026)",
+          "REST APIs [Web & Software Development] (Since 2026)",
+          "Git [Web & Software Development] (Since 2026)",
+        ];
+        const demoCertifications = [
+          "Meta Certified Front-End Developer [Information Technology & Software] (Acquired: 2023, Exp: 2026)",
+          "AWS Certified Cloud Practitioner [Information Technology & Software] (Acquired: 2024, Exp: 2027)",
+        ];
 
-      // 2. Save work experience
-      await fetch(`/api/applicants/${userId}/work-experience`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ work_experience: demoWorkExperience }),
-      });
+        await fetch(`/api/applicants/${userId}/profile`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...profile,
+            first_name: profile.first_name || "Juan Carlos",
+            last_name: profile.last_name || "Dela Cruz",
+            shs_school: "Dasmariñas National High School",
+            shs_strand: "TVL - Technical-Vocational-Livelihood (ICT Programming)",
+            shs_grad_year: "2016",
+            college_grad_year: "2020",
+          }),
+        });
 
-      // 3. Save qualifications, skills, and certifications
-      await fetch(`/api/applicants/${userId}/tags`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ field: "qualifications", items: demoQualifications }),
-      }).catch(() => {});
+        await fetch(`/api/applicants/${userId}/tags`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ field: "qualifications", items: demoQualifications }),
+        }).catch(() => {});
 
-      await fetch(`/api/applicants/${userId}/tags`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ field: "skills", items: demoSkills }),
-      }).catch(() => {});
+        await fetch(`/api/applicants/${userId}/tags`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ field: "skills", items: demoSkills }),
+        }).catch(() => {});
 
-      await fetch(`/api/applicants/${userId}/tags`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ field: "certifications", items: demoCertifications }),
-      }).catch(() => {});
+        await fetch(`/api/applicants/${userId}/tags`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ field: "certifications", items: demoCertifications }),
+        }).catch(() => {});
 
-      // 4. Reload full profile state into UI
+        setProfileMessageType("success");
+        setProfileMessage("⚡ Skills & Credentials populated!");
+      } else if (activeSection === "experience") {
+        // Section 4: Only Work Experience
+        const demoWorkExperience = [
+          {
+            id: Date.now(),
+            title: "Frontend Web Developer",
+            company: "Cavite Digital Solutions Inc.",
+            location: "Dasmariñas, Cavite",
+            province: "Cavite",
+            city: "Dasmariñas",
+            employment_type: "Full-time",
+            start_month: "July",
+            start_year: "2021",
+            end_month: "",
+            end_year: "",
+            is_current: true,
+            responsibilities:
+              "Architected responsive web dashboards in React and TypeScript; reduced portal load times by 35% and collaborated with cross-functional UI/UX teams.",
+            skills: ["React", "TypeScript", "Tailwind CSS"],
+          },
+        ];
+
+        const res = await fetch(`/api/applicants/${userId}/work-experience`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ work_experience: demoWorkExperience }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || "Failed to update work experience.");
+        setProfileMessageType("success");
+        setProfileMessage("⚡ Work Experience populated!");
+      }
+
+      // Refresh active profile state to reflect current section changes immediately
       await fetchProfile(userId);
-
-      setProfileMessageType("success");
-      setProfileMessage("⚡ Presentation demo profile data successfully loaded!");
       setTimeout(() => setProfileMessage(""), 4000);
     } catch (err: any) {
       setProfileMessageType("error");
-      setProfileMessage(err?.message || "Failed to load demo profile.");
+      setProfileMessage(err?.message || "Failed to load demo data.");
     } finally {
       setIsAutoFillingDemo(false);
     }
@@ -5146,8 +5180,16 @@ export default function ApplicantProfile() {
                 className="x-demo-autofill-btn"
                 onClick={handleDemoAutofill}
                 disabled={isAutoFillingDemo}
-                title="⚡ Presentation Demo: 1-Click Autofill Profile"
-                aria-label="Presentation Demo: 1-Click Autofill Profile"
+                title={`⚡ Demo Autofill: ${
+                  activeSection === "personal"
+                    ? "Personal & Contact"
+                    : activeSection === "preferences"
+                    ? "Career Preferences"
+                    : activeSection === "competencies"
+                    ? "Skills & Credentials"
+                    : "Work Experience"
+                }`}
+                aria-label={`Demo Autofill ${activeSection}`}
               >
                 {isAutoFillingDemo ? (
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="x-demo-spin">
