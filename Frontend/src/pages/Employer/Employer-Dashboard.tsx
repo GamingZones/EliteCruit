@@ -1500,7 +1500,7 @@ export default function EmployerDashboard() {
                                   letterText: app.decision_message,
                                   status: app.status,
                                   responseDecision: app.response_decision,
-                                  responseMessage: app.response_message || app.response_letter,
+                                  responseMessage: app.decision_message ? (app.response_message || app.response_letter) : null,
                                   responseDate: app.response_date || app.responded_at,
                                   proposedStartDate: app.proposed_start_date || app.start_date,
                                 });
@@ -1548,117 +1548,155 @@ export default function EmployerDashboard() {
         />
       )}
 
-      {/* ── VIEW FORMAL OFFER LETTER MODAL ── */}
-      {viewOfferLetterModal && (
-        <div className="view-letter-backdrop" onClick={() => setViewOfferLetterModal(null)}>
-          <div className="view-letter-modal card" onClick={(e) => e.stopPropagation()}>
-            <div className="view-letter-modal-header">
-              <div>
-                <span className="view-letter-badge">
-                  {viewOfferLetterModal.letterText ? "Official Formal Offer" : "Approval Decision Notice"}
-                </span>
-                <h3>{viewOfferLetterModal.jobTitle}</h3>
-                <p>Candidate: <strong>{viewOfferLetterModal.candidateName}</strong></p>
-              </div>
-              <button
-                type="button"
-                className="view-letter-close-btn"
-                onClick={() => setViewOfferLetterModal(null)}
-                title="Close modal"
-                aria-label="Close"
-              >
-                ✕
-              </button>
-            </div>
+      {/* ── VIEW FORMAL OFFER LETTER MODAL (MATCHING MESSAGES DESIGN) ── */}
+      {viewOfferLetterModal && (() => {
+        const hasOffer = Boolean(viewOfferLetterModal.letterText && viewOfferLetterModal.letterText.trim());
+        const isAcc = Boolean(
+          (viewOfferLetterModal.responseDecision || "").toLowerCase().includes("accept") ||
+          (viewOfferLetterModal.responseDecision || "").toLowerCase() === "approved" ||
+          (hasOffer && (viewOfferLetterModal.status || "").toLowerCase() === "recruited")
+        );
+        const isDec = Boolean(
+          (viewOfferLetterModal.responseDecision || "").toLowerCase().includes("decline") ||
+          (viewOfferLetterModal.responseDecision || "").toLowerCase().includes("reject") ||
+          (viewOfferLetterModal.responseDecision || "").toLowerCase() === "denied"
+        );
+        const hasResponse = hasOffer && (isAcc || isDec || Boolean(viewOfferLetterModal.responseMessage));
 
-            <div className="view-letter-body-content">
-              {(viewOfferLetterModal.proposedStartDate || viewOfferLetterModal.responseDecision || viewOfferLetterModal.status) && (
-                <div className="view-letter-meta-row" style={{ marginBottom: "12px" }}>
-                  {viewOfferLetterModal.proposedStartDate && (
-                    <span className="view-letter-timestamp-tag">
-                      Proposed Start Date: <strong>{viewOfferLetterModal.proposedStartDate}</strong>
+        const offerText = viewOfferLetterModal.letterText ||
+          `This candidate's application has been officially approved.\n\nYou can create and extend an official formal employment offer letter with compensation details, proposed start date, and terms directly from the Applicant Management page.`;
+
+        const responseText = viewOfferLetterModal.responseMessage || (isAcc
+          ? `Dear ${companyLabel || "Hiring Team"},\n\nThank you for extending the offer for the position of "${viewOfferLetterModal.jobTitle}". I am pleased to accept your offer and excited to join the team.\n\nSincerely,\n${viewOfferLetterModal.candidateName}`
+          : `Dear ${companyLabel || "Hiring Team"},\n\nThank you for considering me for the position of "${viewOfferLetterModal.jobTitle}". After careful consideration, I regret to inform you that I must decline this offer.\n\nSincerely,\n${viewOfferLetterModal.candidateName}`);
+
+        return (
+          <div className="view-letter-backdrop" onClick={() => setViewOfferLetterModal(null)}>
+            <div className="view-letter-pair-row" onClick={(e) => e.stopPropagation()}>
+              {/* ── CARD 1: FORMAL OFFER LETTER / APPROVAL RECORD ── */}
+              <div className="view-letter-modal-card">
+                <div className="view-letter-header">
+                  <div>
+                    <span className="view-letter-eyebrow">
+                      {hasOffer ? "OFFICIAL CORRESPONDENCE" : "OFFICIAL APPLICATION RECORD"}
                     </span>
-                  )}
-                  <span className={`offer-decision-tag ${
-                    (viewOfferLetterModal.responseDecision || "").toLowerCase().includes("accept") || (viewOfferLetterModal.responseDecision || "").toLowerCase() === "approved" || (viewOfferLetterModal.status || "").toLowerCase() === "recruited"
-                      ? "accepted"
-                      : (viewOfferLetterModal.responseDecision || "").toLowerCase().includes("decline") || (viewOfferLetterModal.responseDecision || "").toLowerCase().includes("reject") || (viewOfferLetterModal.responseDecision || "").toLowerCase() === "denied"
-                      ? "declined"
-                      : viewOfferLetterModal.letterText
-                      ? "pending"
-                      : "accepted"
-                  }`}>
-                    {(viewOfferLetterModal.responseDecision || "").toLowerCase().includes("accept") || (viewOfferLetterModal.responseDecision || "").toLowerCase() === "approved" || (viewOfferLetterModal.status || "").toLowerCase() === "recruited"
-                      ? "Offer Accepted (Recruited)"
-                      : (viewOfferLetterModal.responseDecision || "").toLowerCase().includes("decline") || (viewOfferLetterModal.responseDecision || "").toLowerCase().includes("reject") || (viewOfferLetterModal.responseDecision || "").toLowerCase() === "denied"
-                      ? "Offer Declined"
-                      : viewOfferLetterModal.letterText
-                      ? "Offer Extended (Awaiting Candidate Response)"
-                      : "Application Approved"}
-                  </span>
+                    <h3 className="view-letter-title">{viewOfferLetterModal.jobTitle}</h3>
+                    <p className="view-letter-company">Candidate: {viewOfferLetterModal.candidateName}</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="view-letter-close-btn"
+                    onClick={() => setViewOfferLetterModal(null)}
+                    title="Close"
+                    aria-label="Close"
+                  >
+                    ✕
+                  </button>
                 </div>
-              )}
 
-              <div className="view-letter-body-box">
-                <div className="view-letter-box-header">
-                  <span className="view-letter-box-label">
-                    {viewOfferLetterModal.letterText ? "FORMAL OFFER DETAILS & TERMS" : "APPLICATION APPROVAL RECORD"}
-                  </span>
-                </div>
-                <pre className="view-letter-pre-text">
-                  {viewOfferLetterModal.letterText ||
-                    "This candidate has been officially approved for the position.\n\nAn official formal offer letter with compensation details, proposed start date, and terms can be extended to this candidate from the Applicant Management page."}
-                </pre>
-              </div>
-
-              {viewOfferLetterModal.responseMessage ? (
-                <div className="view-letter-body-box" style={{ marginTop: "14px" }}>
-                  <div className="view-letter-box-header">
-                    <span className="view-letter-box-label">CANDIDATE RESPONSE LETTER</span>
-                    {viewOfferLetterModal.responseDate && (
-                      <small>{formatDate(viewOfferLetterModal.responseDate)}</small>
+                <div className="view-letter-body-content">
+                  <div className="view-letter-meta-row">
+                    {hasOffer ? (
+                      <span className={`view-letter-badge ${isAcc ? "accepted" : isDec ? "declined" : "extended"}`}>
+                        {isAcc ? "Offer Accepted" : isDec ? "Offer Declined" : "Offer Extended"}
+                      </span>
+                    ) : (
+                      <span className="view-letter-badge accepted">Application Approved</span>
+                    )}
+                    {viewOfferLetterModal.proposedStartDate && (
+                      <span className="view-letter-start-date-tag">
+                        Proposed Start Date: <strong>{viewOfferLetterModal.proposedStartDate}</strong>
+                      </span>
                     )}
                   </div>
-                  <pre className="view-letter-pre-text">
-                    {viewOfferLetterModal.responseMessage}
-                  </pre>
-                </div>
-              ) : viewOfferLetterModal.letterText && (
-                (viewOfferLetterModal.responseDecision || "").toLowerCase().includes("accept") ||
-                (viewOfferLetterModal.status || "").toLowerCase() === "recruited"
-              ) ? (
-                <div className="view-letter-body-box" style={{ marginTop: "14px" }}>
-                  <div className="view-letter-box-header">
-                    <span className="view-letter-box-label">CANDIDATE RESPONSE</span>
-                  </div>
-                  <pre className="view-letter-pre-text">
-                    {`Dear Hiring Team,\n\nI am pleased to accept your formal offer for the position of "${viewOfferLetterModal.jobTitle}". I look forward to joining the team.\n\nSincerely,\n${viewOfferLetterModal.candidateName}`}
-                  </pre>
-                </div>
-              ) : null}
-            </div>
 
-            <div className="view-letter-footer">
-              {!viewOfferLetterModal.letterText && (
-                <a
-                  href="/employer-applicant-management"
-                  className="view-letter-action-btn secondary"
-                  style={{ textDecoration: "none", marginRight: "auto" }}
-                >
-                  Manage in Applicant Management →
-                </a>
+                  <div className={`view-letter-body-box ${hasOffer ? "view-letter-offer-box" : ""}`}>
+                    <div className="view-letter-box-header">
+                      <span className={`view-letter-box-label ${hasOffer ? "offer-label" : ""}`}>
+                        {hasOffer
+                          ? `EMPLOYMENT OFFER LETTER FROM ${companyLabel?.toUpperCase() || "EMPLOYER"}`
+                          : "APPLICATION APPROVAL RECORD"}
+                      </span>
+                    </div>
+                    <pre className="view-letter-pre-text">{offerText}</pre>
+                  </div>
+                </div>
+
+                <div className="view-letter-footer">
+                  {!hasOffer && (
+                    <a
+                      href="/employer-applicant-management"
+                      className="view-letter-link-btn"
+                    >
+                      Manage in Applicant Management →
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    className="view-letter-done-btn"
+                    onClick={() => setViewOfferLetterModal(null)}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+
+              {/* ── CARD 2: CANDIDATE'S RESPONSE LETTER (When candidate responded) ── */}
+              {hasResponse && (
+                <div className="view-letter-modal-card view-letter-response-modal">
+                  <div className="view-letter-header" style={{ alignItems: "center" }}>
+                    <div>
+                      <span className="view-letter-eyebrow">CANDIDATE RESPONSE</span>
+                      <h3 className="view-letter-title" style={{ fontSize: "1.15rem" }}>
+                        Response Letter ({isAcc ? "Accepted" : "Declined"})
+                      </h3>
+                      <p className="view-letter-company">From: {viewOfferLetterModal.candidateName}</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="view-letter-close-btn"
+                      onClick={() => setViewOfferLetterModal(null)}
+                      title="Close"
+                      aria-label="Close"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="view-letter-body-content">
+                    {viewOfferLetterModal.responseDate && (
+                      <div className="view-letter-meta-row" style={{ marginBottom: "12px" }}>
+                        <span className="view-letter-start-date-tag">
+                          Submitted: {formatDate(viewOfferLetterModal.responseDate)}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="view-letter-body-box">
+                      <div className="view-letter-box-header">
+                        <span className="view-letter-box-label">
+                          FORMAL RESPONSE LETTER FROM CANDIDATE
+                        </span>
+                      </div>
+                      <pre className="view-letter-pre-text">{responseText}</pre>
+                    </div>
+                  </div>
+
+                  <div className="view-letter-footer">
+                    <button
+                      type="button"
+                      className="view-letter-done-btn"
+                      onClick={() => setViewOfferLetterModal(null)}
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
               )}
-              <button
-                type="button"
-                className="view-letter-action-btn primary"
-                onClick={() => setViewOfferLetterModal(null)}
-              >
-                Close
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* DOUBLE VERIFICATION: LOGOUT CONFIRMATION MODAL */}
       <ConfirmationModal
