@@ -2877,6 +2877,21 @@ export default function ApplicantProfile() {
   const [isSavingTags, setIsSavingTags] = useState(false);
   const [universityList, setUniversityList] = useState<string[]>(PHILIPPINES_UNIVERSITIES_COLLEGES);
 
+  // Exclusive Presentation Demo Autofill state for designated applicant
+  const DEMO_APPLICANT_EMAIL = "zaki_ablando897@yahoo.com";
+  let userEmailFromStorage = "";
+  try {
+    const raw = localStorage.getItem("elitecruit-user");
+    if (raw) userEmailFromStorage = JSON.parse(raw).email || "";
+  } catch {}
+
+  const isDemoApplicant = Boolean(
+    (profile.email && profile.email.trim().toLowerCase() === DEMO_APPLICANT_EMAIL) ||
+    (draft.email && draft.email.trim().toLowerCase() === DEMO_APPLICANT_EMAIL) ||
+    (userEmailFromStorage && userEmailFromStorage.trim().toLowerCase() === DEMO_APPLICANT_EMAIL)
+  );
+  const [isAutoFillingDemo, setIsAutoFillingDemo] = useState(false);
+
   // Email OTP verification states
   const [isEmailVerified, setIsEmailVerified] = useState<boolean>(false);
   const [verifiedEmailAddress, setVerifiedEmailAddress] = useState<string>("");
@@ -3604,6 +3619,135 @@ export default function ApplicantProfile() {
       }
     } catch (error) {
       setProfileMessage(error instanceof Error ? error.message : "Unable to load profile data.");
+    }
+  };
+
+  const handleDemoAutofill = async () => {
+    if (!userId || isAutoFillingDemo) return;
+    setIsAutoFillingDemo(true);
+    setProfileMessage("");
+
+    const demoProfilePayload = {
+      first_name: "Juan Carlos",
+      middle_name: "M.",
+      last_name: "Dela Cruz",
+      phone: "9171234567",
+      gender: "Male",
+      province: "Cavite",
+      city: "Dasmariñas",
+      address: "Block 12 Lot 4, San Agustin",
+      summary:
+        "Passionate Senior Frontend Engineer with 4+ years of experience building modern React, TypeScript, and responsive web portals. Dedicated to clean architecture and intuitive user experiences.",
+      desired_job_title: "Senior Frontend Engineer",
+      expected_salary_min: 70000,
+      expected_salary_max: 85000,
+      expected_salary: "70,000.00 - 85,000.00",
+      work_arrangement: "Hybrid",
+      years_of_experience: "4",
+      preferred_locations: "Dasmariñas, Indang, Imus",
+      preferred_cities: ["Dasmariñas", "Indang", "Imus"],
+      shs_school: "Dasmariñas National High School",
+      shs_strand: "TVL - Technical-Vocational-Livelihood (ICT Programming)",
+      shs_grad_year: "2016",
+      college_grad_year: "2020",
+      target_roles_json: JSON.stringify([
+        {
+          id: `role-demo-${Date.now()}`,
+          category: "Web & Software Development",
+          title: "Senior Frontend Engineer",
+          work_arrangements: ["Hybrid", "Remote"],
+          salary_min: 70000,
+          salary_max: 85000,
+          hide_salary: false,
+        },
+      ]),
+    };
+
+    const demoWorkExperience = [
+      {
+        id: Date.now(),
+        title: "Frontend Web Developer",
+        company: "Cavite Digital Solutions Inc.",
+        location: "Dasmariñas, Cavite",
+        province: "Cavite",
+        city: "Dasmariñas",
+        employment_type: "Full-time",
+        start_month: "July",
+        start_year: "2021",
+        end_month: "",
+        end_year: "",
+        is_current: true,
+        responsibilities:
+          "Architected responsive web dashboards in React and TypeScript; reduced portal load times by 35% and collaborated with cross-functional UI/UX teams.",
+        skills: ["React", "TypeScript", "Tailwind CSS"],
+      },
+    ];
+
+    const demoQualifications = [
+      "TVL - Technical-Vocational-Livelihood (ICT Programming) @ Dasmariñas National High School (2014 - 2016) [SHS]",
+      "BS Information Technology - BSIT @ De La Salle University - Dasmariñas (2016 - 2020) [College]",
+    ];
+
+    const demoSkills = [
+      "React [Web & Software Development] (Since 2026)",
+      "TypeScript [Web & Software Development] (Since 2026)",
+      "JavaScript [Programming & Algorithms] (Since 2026)",
+      "HTML5/CSS3 [Web & Software Development] (Since 2026)",
+      "Tailwind CSS [Web & Software Development] (Since 2026)",
+      "REST APIs [Web & Software Development] (Since 2026)",
+      "Git [Web & Software Development] (Since 2026)",
+    ];
+
+    const demoCertifications = [
+      "Meta Certified Front-End Developer [Information Technology & Software] (Acquired: 2023, Exp: 2026)",
+      "AWS Certified Cloud Practitioner [Information Technology & Software] (Acquired: 2024, Exp: 2027)",
+    ];
+
+    try {
+      // 1. Save main profile
+      await fetch(`/api/applicants/${userId}/profile`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(demoProfilePayload),
+      });
+
+      // 2. Save work experience
+      await fetch(`/api/applicants/${userId}/work-experience`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ work_experience: demoWorkExperience }),
+      });
+
+      // 3. Save qualifications, skills, and certifications
+      await fetch(`/api/applicants/${userId}/tags`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ field: "qualifications", items: demoQualifications }),
+      }).catch(() => {});
+
+      await fetch(`/api/applicants/${userId}/tags`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ field: "skills", items: demoSkills }),
+      }).catch(() => {});
+
+      await fetch(`/api/applicants/${userId}/tags`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ field: "certifications", items: demoCertifications }),
+      }).catch(() => {});
+
+      // 4. Reload full profile state into UI
+      await fetchProfile(userId);
+
+      setProfileMessageType("success");
+      setProfileMessage("⚡ Presentation demo profile data successfully loaded!");
+      setTimeout(() => setProfileMessage(""), 4000);
+    } catch (err: any) {
+      setProfileMessageType("error");
+      setProfileMessage(err?.message || "Failed to load demo profile.");
+    } finally {
+      setIsAutoFillingDemo(false);
     }
   };
 
@@ -4996,6 +5140,26 @@ export default function ApplicantProfile() {
             </div>
           </div>
           <div className="appdash-top-right">
+            {isDemoApplicant && (
+              <button
+                type="button"
+                className="x-demo-autofill-btn"
+                onClick={handleDemoAutofill}
+                disabled={isAutoFillingDemo}
+                title="⚡ Presentation Demo: 1-Click Autofill Profile"
+                aria-label="Presentation Demo: 1-Click Autofill Profile"
+              >
+                {isAutoFillingDemo ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="x-demo-spin">
+                    <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="12" />
+                  </svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M13 2L3 14h7v8l10-12h-7l1-8z" />
+                  </svg>
+                )}
+              </button>
+            )}
             <div className="chatbot-wrapper">
               <ApplicantChatbotDrawer
                 isOpen={isChatbotOpen}
