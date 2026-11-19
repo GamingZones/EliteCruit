@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { ChevronIcon, SideIcon } from "../../components/Icons";
 import { useEmployerCompanyLabel } from "../../hooks/useEmployerCompanyLabel";
 import { useUnreadNotificationsCount } from "../../hooks/useUnreadNotificationsCount";
@@ -6,7 +6,13 @@ import { useUnreadMessagesCount } from "../../hooks/useUnreadMessagesCount";
 import EmployerChatbotDrawer, { EmployerFAQItem as FAQItem } from "../../components/EmployerChatbotDrawer";
 import CalendarDrawer from "../../components/CalendarDrawer";
 import ConfirmationModal from "../../components/ConfirmationModal";
-import { cleanBranchLocation, parseLocations } from "../../utils/filters";
+import ApplicantDetailsModal, { type CandidateModalData } from "../../components/modals/ApplicantDetailsModal";
+import { authFetch } from "../../utils/auth";
+import {
+  parseLocations,
+  calculateCandidateMatch,
+  parseCompetencyDisplayTags,
+} from "../../utils/filters";
 import "../Applicant/Applicant-Dashboard.css";
 import "./Employer-Dashboard.css";
 
@@ -59,6 +65,15 @@ type ActiveJobPost = {
   location: string | null;
   status: string;
   applicant_count: number;
+  salary_min?: number;
+  salary_max?: number;
+  employment_type?: string;
+  work_arrangement?: string;
+  skills?: string | string[];
+  required_skills?: string | string[];
+  qualifications?: string | string[];
+  certifications?: string | string[];
+  employer_user_id?: number;
 };
 
 type RecentApplication = {
@@ -69,6 +84,84 @@ type RecentApplication = {
   applicant_name: string | null;
   applicant_user_id?: number;
   profile_picture_path?: string | null;
+};
+
+type TalentPoolCandidate = {
+  user_id: number;
+  email: string;
+  first_name?: string;
+  middle_name?: string;
+  last_name?: string;
+  applicant_name?: string;
+  phone?: string;
+  city?: string;
+  province?: string;
+  address?: string;
+  summary?: string;
+  desired_job_title?: string;
+  target_roles_json?: string;
+  expected_salary?: string | number;
+  expected_salary_min?: number;
+  expected_salary_max?: number;
+  work_arrangement?: string;
+  years_of_experience?: number;
+  skills?: string;
+  qualifications?: string;
+  certifications?: string;
+  profile_picture_path?: string | null;
+  matchScore?: number;
+  rating?: number;
+};
+
+type DirectInvitation = {
+  id: number;
+  applicant_user_id: number;
+  applicant_name: string;
+  job_title: string;
+  status: string;
+  created_at: string;
+  profile_picture_path?: string | null;
+};
+
+type ScheduledInterview = {
+  id: number;
+  job_title?: string;
+  applicant_name?: string;
+  applicant_user_id?: number;
+  applicant_profile_picture_path?: string | null;
+  interview_date: string;
+  start_time: string;
+  end_time?: string;
+  interview_type: string;
+  meeting_link?: string;
+  location_details?: string;
+  status: string;
+  cancellation_reason?: string;
+};
+
+type ApprovedApplication = {
+  id: number;
+  applicant_user_id: number;
+  applicant_name: string;
+  job_title: string;
+  job_post_id: number;
+  status: string;
+  submitted_at: string;
+  profile_picture_path?: string | null;
+  decision_message?: string | null;
+  decision_message_type?: string | null;
+  response_decision?: string | null;
+  response_message?: string | null;
+  response_date?: string | null;
+  proposed_start_date?: string | null;
+  rating?: number | null;
+  email?: string;
+  phone?: string;
+  city?: string;
+  province?: string;
+  skills?: string;
+  qualifications?: string;
+  certifications?: string;
 };
 
 type DashboardSummary = {
@@ -89,6 +182,12 @@ type DashboardSummary = {
   recentApplications: RecentApplication[];
 };
 
+const WORKSPACE_TABS = [
+  { id: "section-postings", label: "Postings & Inflow", num: 1 },
+  { id: "section-smart-matches", label: "Smart Matches", num: 2 },
+  { id: "section-approved-interviews", label: "Approved & Interviews", num: 3 },
+] as const;
+
 function initialsFromName(name: string | null | undefined) {
   const raw = (name || "").trim();
   if (!raw) return "AP";
@@ -101,13 +200,7 @@ function formatDate(value: string | null | undefined) {
   if (!value) return "-";
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleDateString("en-US");
-}
-
-function appStatusClass(status: string | null | undefined) {
-  const normalized = String(status || "").toLowerCase();
-  if (normalized === "pending" || normalized === "submitted") return "status-gray";
-  return "status-blue";
+  return parsed.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function RenderLocationMeta({ location }: { location?: string | null }) {
@@ -161,6 +254,24 @@ export default function EmployerDashboard() {
     }
     return true;
   });
+
+  const [activeSection, setActiveSection] = useState<
+    "section-postings" | "section-smart-matches" | "section-approved-interviews"
+  >(() => {
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash.replace("#", "");
+      if (
+        hash === "section-smart-matches" ||
+        hash === "section-approved-interviews" ||
+        hash === "section-postings"
+      ) {
+        return hash as any;
+      }
+    }
+    return "section-postings";
+  });
+
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const unreadNotifCount = useUnreadNotificationsCount();
   const unreadMessagesCount = useUnreadMessagesCount();
   const [isScreeningOpen, setIsScreeningOpen] = useState(false);
@@ -168,6 +279,7 @@ export default function EmployerDashboard() {
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [profileMessage, setProfileMessage] = useState("");
+
   const [summary, setSummary] = useState<DashboardSummary>({
     stats: {
       activeJobs: 0,
@@ -185,6 +297,27 @@ export default function EmployerDashboard() {
     activeJobPosts: [],
     recentApplications: [],
   });
+
+  const [talentPool, setTalentPool] = useState<TalentPoolCandidate[]>([]);
+  const [directInvitations, setDirectInvitations] = useState<DirectInvitation[]>([]);
+  const [interviews, setInterviews] = useState<ScheduledInterview[]>([]);
+  const [approvedApplications, setApprovedApplications] = useState<ApprovedApplication[]>([]);
+  const [selectedEvalJobId, setSelectedEvalJobId] = useState<number | null>(null);
+
+  // Modals state
+  const [detailsModalCandidate, setDetailsModalCandidate] = useState<CandidateModalData | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [viewOfferLetterModal, setViewOfferLetterModal] = useState<{
+    candidateName: string;
+    jobTitle: string;
+    letterText?: string | null;
+    status: string;
+    responseDecision?: string | null;
+    responseMessage?: string | null;
+    responseDate?: string | null;
+    proposedStartDate?: string | null;
+  } | null>(null);
+
   const companyLabel = useEmployerCompanyLabel("Employer");
 
   const dashboardFaqs: FAQItem[] = [
@@ -220,6 +353,31 @@ export default function EmployerDashboard() {
     },
   ];
 
+  const handleSectionClick = (
+    sectionId: "section-postings" | "section-smart-matches" | "section-approved-interviews"
+  ) => {
+    setActiveSection(sectionId);
+    setIsMobileNavOpen(false);
+    if (typeof window !== "undefined") {
+      window.location.hash = sectionId;
+    }
+  };
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace("#", "");
+      if (
+        hash === "section-smart-matches" ||
+        hash === "section-approved-interviews" ||
+        hash === "section-postings"
+      ) {
+        setActiveSection(hash as any);
+      }
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
   useEffect(() => {
     const savedUserRaw = localStorage.getItem("elitecruit-user");
     if (!savedUserRaw) {
@@ -234,21 +392,143 @@ export default function EmployerDashboard() {
         return;
       }
 
-      fetch(`/api/employers/${savedUser.id}/dashboard-summary`)
+      const empId = savedUser.id;
+
+      // 1. Dashboard summary
+      authFetch(`/api/employers/${empId}/dashboard-summary`)
         .then(async (response) => {
           const data = await response.json();
-          if (!response.ok) throw new Error(data?.message || "Unable to load dashboard data.");
-          setSummary({
-            stats: data?.stats || { activeJobs: 0, applications: 0, shortlisted: 0, toReview: 0 },
-            activeJobPosts: Array.isArray(data?.activeJobPosts) ? data.activeJobPosts : [],
-            recentApplications: Array.isArray(data?.recentApplications) ? data.recentApplications : [],
-          });
+          if (response.ok) {
+            setSummary({
+              stats: data?.stats || { activeJobs: 0, applications: 0, shortlisted: 0, toReview: 0 },
+              activeJobPosts: Array.isArray(data?.activeJobPosts) ? data.activeJobPosts : [],
+              recentApplications: Array.isArray(data?.recentApplications) ? data.recentApplications : [],
+            });
+          }
         })
         .catch((error) => setProfileMessage(error instanceof Error ? error.message : "Unable to load dashboard data."));
+
+      // 2. Talent pool for Smart Matches
+      authFetch(`/api/employers/${empId}/talent-pool`)
+        .then(async (response) => {
+          const data = await response.json();
+          if (response.ok && Array.isArray(data?.candidates)) {
+            setTalentPool(data.candidates);
+          }
+        })
+        .catch(() => {});
+
+      // 3. Direct invitations
+      authFetch(`/api/employers/${empId}/direct-invitations`)
+        .then(async (response) => {
+          const data = await response.json();
+          if (response.ok && Array.isArray(data?.invitations)) {
+            setDirectInvitations(data.invitations);
+          }
+        })
+        .catch(() => {});
+
+      // 4. Scheduled interviews
+      authFetch(`/api/interviews?user_id=${empId}&role=employer`)
+        .then(async (response) => {
+          const data = await response.json();
+          if (response.ok && Array.isArray(data?.interviews)) {
+            setInterviews(data.interviews);
+          }
+        })
+        .catch(() => {});
+
+      // 5. Approved / Hired applications (Master Roster)
+      authFetch(`/api/employers/${empId}/applications?status=approved`)
+        .then(async (response) => {
+          const data = await response.json();
+          if (response.ok && Array.isArray(data?.applications)) {
+            setApprovedApplications(data.applications);
+          }
+        })
+        .catch(() => {});
     } catch {
       setProfileMessage("Unable to read account session.");
     }
   }, []);
+
+  // Compute Smart Matches
+  const targetJobForEval = useMemo(() => {
+    if (selectedEvalJobId) {
+      return summary.activeJobPosts.find((j) => j.id === selectedEvalJobId) || summary.activeJobPosts[0] || null;
+    }
+    return summary.activeJobPosts[0] || null;
+  }, [summary.activeJobPosts, selectedEvalJobId]);
+
+  const talentMatches = useMemo(() => {
+    if (!talentPool || talentPool.length === 0) return [];
+
+    const scored = talentPool.map((c) => {
+      let score = 0;
+      if (targetJobForEval) {
+        score = calculateCandidateMatch(
+          {
+            skills: c.skills,
+            qualifications: c.qualifications,
+            certifications: c.certifications,
+            desired_job_title: c.desired_job_title,
+            city: c.city,
+            expected_salary: c.expected_salary,
+            work_arrangement: c.work_arrangement,
+          },
+          {
+            title: targetJobForEval.title,
+            skills: targetJobForEval.required_skills || targetJobForEval.skills,
+            required_skills: targetJobForEval.required_skills,
+            qualifications: targetJobForEval.qualifications,
+            certifications: targetJobForEval.certifications,
+            city: targetJobForEval.location || "Cavite",
+            salary_min: targetJobForEval.salary_min,
+            salary_max: targetJobForEval.salary_max,
+          }
+        );
+      }
+      return {
+        ...c,
+        matchScore: score,
+      };
+    });
+
+    return scored.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
+  }, [talentPool, targetJobForEval]);
+
+  const upcomingInterviews = useMemo(() => {
+    return interviews.filter((i) => (i.status || "").toLowerCase() !== "cancelled");
+  }, [interviews]);
+
+  const openCandidateDetails = (candidate: any) => {
+    setDetailsModalCandidate({
+      ...candidate,
+      id: candidate.user_id || candidate.applicant_user_id || candidate.id,
+      user_id: candidate.user_id || candidate.applicant_user_id || candidate.id,
+      applicant_user_id: candidate.user_id || candidate.applicant_user_id || candidate.id,
+      applicant_name:
+        candidate.applicant_name ||
+        (candidate.first_name ? `${candidate.first_name} ${candidate.last_name || ""}`.trim() : "Candidate"),
+      job_title: candidate.job_title || candidate.desired_job_title,
+      profile_picture_path: candidate.profile_picture_path,
+      city: candidate.city,
+      province: candidate.province,
+      skills: candidate.skills,
+      qualifications: candidate.qualifications,
+      certifications: candidate.certifications,
+    });
+    setIsDetailsModalOpen(true);
+  };
+
+  const getTabBadgeCount = (tabId: string) => {
+    if (tabId === "section-postings") return summary.activeJobPosts.length;
+    if (tabId === "section-smart-matches") return talentMatches.filter((c) => (c.matchScore || 0) >= 50).length;
+    if (tabId === "section-approved-interviews") return upcomingInterviews.length + approvedApplications.length;
+    return 0;
+  };
+
+  const activeTabObj = WORKSPACE_TABS.find((t) => t.id === activeSection) || WORKSPACE_TABS[0];
 
   return (
     <div className={`appdash-page employer-page ${isSidebarVisible ? "sidebar-visible" : "sidebar-hidden"}`}>
@@ -359,110 +639,584 @@ export default function EmployerDashboard() {
 
         {profileMessage && <p className="profile-message">{profileMessage}</p>}
 
-        <section className="employer-dual-grid">
-          <article className="employer-block">
-            <header><h2>Active Job Posts</h2><a href="/employer-job-posts/create">Post New Job</a></header>
-            {summary.activeJobPosts.length === 0 ? (
-              <div className="job-post-row">
-                <div>
-                  <strong>No active posts yet.</strong>
-                  <small>Publish a job post to start receiving applicants.</small>
-                </div>
-              </div>
-            ) : (
-              summary.activeJobPosts.slice(0, 5).map((job) => (
-                <div className="job-post-row" key={job.id}>
-                  <div className="job-post-info">
-                    <strong title={job.title}>{job.title}</strong>
-                    <div className="job-post-location">
-                      <RenderLocationMeta location={job.location} />
-                    </div>
-                    <small>{job.applicant_count || 0} applications</small>
-                  </div>
-                  <div className="job-post-actions">
-                    <span className="status-green">{job.status || "open"}</span>
-                    <a href="/employer-applicant-management" className="view-applicants-btn">
-                      View applicants
-                    </a>
-                  </div>
-                </div>
-              ))
-            )}
-          </article>
+        {/* ── 3-SECTION NAVIGATION TABS (Postings & Inflow, Smart Matches, Approved & Interviews) ── */}
+        <div className="dash-nav-container">
+          {/* Desktop Tab Row (Hidden on mobile <= 768px) */}
+          <nav className="profile-section-nav dash-section-nav dash-desktop-tabs" aria-label="Workspace Sections">
+            {WORKSPACE_TABS.map((tab) => {
+              const count = getTabBadgeCount(tab.id);
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  className={`section-nav-btn ${activeSection === tab.id ? "active" : ""}`}
+                  onClick={() => handleSectionClick(tab.id)}
+                >
+                  <span className="nav-num">{tab.num}</span>
+                  <span className="nav-label">{tab.label}</span>
+                  {count > 0 && <span className="tab-count-pill">{count}</span>}
+                </button>
+              );
+            })}
+          </nav>
 
-          <article className="employer-block">
-            <header><h2>Recent Applications</h2><a href="/employer-applicant-management">View All</a></header>
-            {summary.recentApplications.length === 0 ? (
-              <div className="recent-app-row">
-                <div className="recent-app-info">
-                  <strong>No applications yet.</strong>
-                  <small>Applicants for your posted jobs will appear here.</small>
-                </div>
-              </div>
-            ) : (
-              summary.recentApplications.slice(0, 5).map((item) => {
-                const picUrl = item.profile_picture_path
-                  ? (item.profile_picture_path.startsWith("http") || item.profile_picture_path.startsWith("/api")
-                      ? item.profile_picture_path
-                      : `/api/applicants/${item.applicant_user_id}/profile-picture`)
-                  : null;
-                return (
-                  <div className="recent-app-row" key={item.id}>
-                    <span className="initials-pill" style={{ overflow: "hidden", position: "relative" }}>
-                      {picUrl && (
-                        <img
-                          src={picUrl}
-                          alt={item.applicant_name || "Applicant"}
-                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                          onError={(e) => {
-                            (e.currentTarget as HTMLElement).style.display = "none";
-                            if (e.currentTarget.nextElementSibling) {
-                              (e.currentTarget.nextElementSibling as HTMLElement).style.display = "inline";
-                            }
-                          }}
-                        />
-                      )}
-                      <span style={{ display: picUrl ? "none" : "inline" }}>
-                        {initialsFromName(item.applicant_name)}
-                      </span>
-                    </span>
-                    <div className="recent-app-info">
-                      <strong>{item.applicant_name || "Applicant"}</strong>
-                      <p>{item.job_title || "Job Post"}</p>
-                      <small>{formatDate(item.submitted_at)}</small>
-                    </div>
-                    <a
-                      href="/employer-applicant-management"
-                      className="review-btn"
+          {/* Mobile Switcher (Visible on mobile <= 768px) */}
+          <div className="dash-mobile-switcher">
+            <button
+              type="button"
+              className="dash-mobile-switcher-btn"
+              onClick={() => setIsMobileNavOpen((prev) => !prev)}
+              aria-expanded={isMobileNavOpen}
+              aria-label="Toggle section menu"
+            >
+              <span className="dash-mobile-switcher-curr">
+                <span className="nav-num">{activeTabObj.num}</span>
+                <strong>{activeTabObj.label}</strong>
+              </span>
+              <ChevronIcon direction={isMobileNavOpen ? "up" : "down"} />
+            </button>
+
+            {isMobileNavOpen && (
+              <div className="dash-mobile-dropdown">
+                {WORKSPACE_TABS.map((tab) => {
+                  const count = getTabBadgeCount(tab.id);
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      className={`dash-mobile-option ${activeSection === tab.id ? "active" : ""}`}
+                      onClick={() => handleSectionClick(tab.id)}
                     >
-                      Review
+                      <span className="dash-mobile-opt-title">
+                        <span className="nav-num">{tab.num}</span>
+                        <span>{tab.label}</span>
+                      </span>
+                      {count > 0 && <span className="tab-count-pill">{count}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ══════════════════════════════════════════════════════════════════
+            TAB 1: POSTINGS & INFLOW
+           ══════════════════════════════════════════════════════════════════ */}
+        {activeSection === "section-postings" && (
+          <div className="section-anchor" id="section-postings">
+            {/* INTERACTIVE PIPELINE SUMMARY BAR */}
+            <div className="employer-pipeline-bar">
+              <a href="/employer-applicant-management#applicant-screening" className="pipeline-stat-card" title="View applicants pending review">
+                <span className="pipeline-stat-icon to-review">📥</span>
+                <div className="pipeline-stat-info">
+                  <span className="pipeline-stat-count">{summary.stats.toReview ?? 0}</span>
+                  <span className="pipeline-stat-label">Pending Review</span>
+                </div>
+              </a>
+
+              <a href="/employer-applicant-management#applicant-screening" className="pipeline-stat-card" title="View applicants under review">
+                <span className="pipeline-stat-icon under-review">🔍</span>
+                <div className="pipeline-stat-info">
+                  <span className="pipeline-stat-count">{summary.stats.underReview ?? 0}</span>
+                  <span className="pipeline-stat-label">Under Review</span>
+                </div>
+              </a>
+
+              <a href="/employer-applicant-management#shortlisted-candidates" className="pipeline-stat-card" title="View shortlisted candidates">
+                <span className="pipeline-stat-icon shortlisted">⭐</span>
+                <div className="pipeline-stat-info">
+                  <span className="pipeline-stat-count">{summary.stats.shortlisted ?? 0}</span>
+                  <span className="pipeline-stat-label">Shortlisted</span>
+                </div>
+              </a>
+
+              <button
+                type="button"
+                onClick={() => handleSectionClick("section-approved-interviews")}
+                className="pipeline-stat-card"
+                title="View scheduled interviews"
+              >
+                <span className="pipeline-stat-icon interview">📅</span>
+                <div className="pipeline-stat-info">
+                  <span className="pipeline-stat-count">{summary.stats.interview ?? upcomingInterviews.length}</span>
+                  <span className="pipeline-stat-label">In Interview</span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSectionClick("section-approved-interviews")}
+                className="pipeline-stat-card"
+                title="View approved and hired talent roster"
+              >
+                <span className="pipeline-stat-icon approved">🤝</span>
+                <div className="pipeline-stat-info">
+                  <span className="pipeline-stat-count">
+                    {(summary.stats.approved || 0) + (summary.stats.recruited || 0) + (summary.stats.hired || 0) || approvedApplications.length}
+                  </span>
+                  <span className="pipeline-stat-label">Approved & Hired</span>
+                </div>
+              </button>
+            </div>
+
+            {/* DUAL GRID: ACTIVE POSTS & RECENT APPLICATIONS */}
+            <section className="employer-dual-grid">
+              <article className="employer-block">
+                <header>
+                  <h2>Active Job Posts</h2>
+                  <a href="/employer-job-posts/create" className="post-job-action-btn">Post New Job +</a>
+                </header>
+                {summary.activeJobPosts.length === 0 ? (
+                  <div className="job-post-row">
+                    <div>
+                      <strong>No active posts yet.</strong>
+                      <small>Publish a job post to start receiving applicants.</small>
+                    </div>
+                  </div>
+                ) : (
+                  summary.activeJobPosts.slice(0, 5).map((job) => (
+                    <div className="job-post-row" key={job.id}>
+                      <div className="job-post-info">
+                        <strong title={job.title}>{job.title}</strong>
+                        <div className="job-post-location">
+                          <RenderLocationMeta location={job.location} />
+                        </div>
+                        <small>{job.applicant_count || 0} applications</small>
+                      </div>
+                      <div className="job-post-actions">
+                        <span className="status-green">{job.status || "open"}</span>
+                        <a href={`/employer-applicant-management?jobId=${job.id}`} className="view-applicants-btn">
+                          View applicants
+                        </a>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </article>
+
+              <article className="employer-block">
+                <header>
+                  <h2>Recent Applications</h2>
+                  <a href="/employer-applicant-management">View All →</a>
+                </header>
+                {summary.recentApplications.length === 0 ? (
+                  <div className="recent-app-row">
+                    <div className="recent-app-info">
+                      <strong>No applications yet.</strong>
+                      <small>Applicants for your posted jobs will appear here.</small>
+                    </div>
+                  </div>
+                ) : (
+                  summary.recentApplications.slice(0, 5).map((item) => {
+                    const picUrl = item.profile_picture_path
+                      ? (item.profile_picture_path.startsWith("http") || item.profile_picture_path.startsWith("/api")
+                          ? item.profile_picture_path
+                          : `/api/applicants/${item.applicant_user_id}/profile-picture`)
+                      : null;
+                    return (
+                      <div className="recent-app-row" key={item.id}>
+                        <span className="initials-pill" style={{ overflow: "hidden", position: "relative" }}>
+                          {picUrl && (
+                            <img
+                              src={picUrl}
+                              alt={item.applicant_name || "Applicant"}
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                              onError={(e) => {
+                                (e.currentTarget as HTMLElement).style.display = "none";
+                                if (e.currentTarget.nextElementSibling) {
+                                  (e.currentTarget.nextElementSibling as HTMLElement).style.display = "inline";
+                                }
+                              }}
+                            />
+                          )}
+                          <span style={{ display: picUrl ? "none" : "inline" }}>
+                            {initialsFromName(item.applicant_name)}
+                          </span>
+                        </span>
+                        <div className="recent-app-info">
+                          <strong>{item.applicant_name || "Applicant"}</strong>
+                          <p>{item.job_title || "Job Post"}</p>
+                          <small>{formatDate(item.submitted_at)}</small>
+                        </div>
+                        <a
+                          href="/employer-applicant-management"
+                          className="review-btn"
+                        >
+                          Review
+                        </a>
+                      </div>
+                    );
+                  })
+                )}
+              </article>
+
+              {/* QUICK ACTIONS */}
+              <article className="employer-block quick-actions-block" style={{ gridColumn: "1 / -1" }}>
+                <header><h2>Quick Actions</h2></header>
+                <div className="quick-actions-grid-row">
+                  <button type="button" onClick={() => { window.location.href = "/employer-job-posts/create"; }}>
+                    <EmployerIcon name="jobposts" />Post a New Job
+                  </button>
+                  <button type="button" onClick={() => { window.location.href = "/employer-company-profile"; }}>
+                    <EmployerIcon name="company" />Company Profile
+                  </button>
+                  <button type="button" onClick={() => { window.location.href = "/employer-applicant-finder"; }}>
+                    <EmployerIcon name="nearby" />Find Nearby Applicants
+                  </button>
+                  <button type="button" onClick={() => { window.location.href = "/employer-applicant-management"; }}>
+                    <EmployerIcon name="applicant" />Review Applications
+                  </button>
+                </div>
+              </article>
+            </section>
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════════
+            TAB 2: SMART MATCHES
+           ══════════════════════════════════════════════════════════════════ */}
+        {activeSection === "section-smart-matches" && (
+          <section className="matches-card section-anchor" id="section-smart-matches" style={{ margin: "16px 28px 24px" }}>
+            <div className="matches-head">
+              <div>
+                <small className="matches-head-eyebrow">AI-POWERED CANDIDATE DISCOVERY</small>
+                <h2>Smart Candidate Matches</h2>
+                <p>Top nearby candidates in Cavite automatically matched against your active vacancies by skills, qualifications, and location.</p>
+              </div>
+              <a href="/employer-applicant-finder" className="matches-head-action-btn">
+                <span>Explore on Map (Applicant Finder)</span>
+                <span className="action-arrow">→</span>
+              </a>
+            </div>
+
+            {/* VACANCY EVALUATION SELECTOR */}
+            {summary.activeJobPosts.length > 0 && (
+              <div className="smart-matches-head-bar">
+                <div className="smart-matches-job-selector">
+                  <span className="selector-label">Evaluating Candidates for:</span>
+                  <select
+                    value={selectedEvalJobId || ""}
+                    onChange={(e) => setSelectedEvalJobId(e.target.value ? Number(e.target.value) : null)}
+                  >
+                    {summary.activeJobPosts.map((job) => (
+                      <option key={job.id} value={job.id}>
+                        {job.title} ({job.applicant_count || 0} applicants)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <span className="talent-pool-count-label">
+                  Showing top matches from <strong>{talentPool.length}</strong> available candidates in Cavite
+                </span>
+              </div>
+            )}
+
+            {/* CANDIDATE MATCHES LIST */}
+            {talentMatches.length === 0 ? (
+              <article className="result-card empty-state">
+                <div className="empty-roster-box">
+                  <strong>No candidate recommendations yet.</strong>
+                  <p>Publish active job posts with required skills to see matched local candidates.</p>
+                  <a href="/employer-job-posts/create" className="dash-text-link-btn">Post a Job Vacancy →</a>
+                </div>
+              </article>
+            ) : (
+              <div className="talent-matches-list">
+                {talentMatches.slice(0, 8).map((cand) => {
+                  const score = cand.matchScore || 0;
+                  const skillsList = parseCompetencyDisplayTags(cand.skills || "");
+                  const picUrl = cand.profile_picture_path
+                    ? (cand.profile_picture_path.startsWith("http") || cand.profile_picture_path.startsWith("/api")
+                        ? cand.profile_picture_path
+                        : `/api/applicants/${cand.user_id}/profile-picture`)
+                    : null;
+
+                  return (
+                    <article className="talent-match-card" key={cand.user_id}>
+                      <div className="talent-match-left">
+                        <div className="talent-match-avatar">
+                          {picUrl ? (
+                            <img
+                              src={picUrl}
+                              alt={cand.applicant_name || "Candidate"}
+                              onError={(e) => {
+                                (e.currentTarget as HTMLElement).style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <span>{initialsFromName(cand.applicant_name || cand.first_name)}</span>
+                          )}
+                        </div>
+
+                        <div className="talent-match-info">
+                          <div className="talent-match-name-row">
+                            <strong className="talent-match-name">
+                              {cand.applicant_name || `${cand.first_name || ""} ${cand.last_name || ""}`.trim() || "Candidate"}
+                            </strong>
+                            <span className={`talent-match-badge ${score >= 75 ? "rec" : "good"}`}>
+                              {score >= 75 ? "★ Recommended" : "Good Fit"} ({score}%)
+                            </span>
+                            {targetJobForEval && (
+                              <span className="talent-eval-job-pill">
+                                Vacancy: {targetJobForEval.title}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="talent-match-meta">
+                            <span>{cand.desired_job_title || "Open to Opportunities"}</span>
+                            <span className="meta-dot">•</span>
+                            <span>{cand.city || "Cavite"}</span>
+                            {cand.work_arrangement && (
+                              <>
+                                <span className="meta-dot">•</span>
+                                <span className="meta-pill">{cand.work_arrangement}</span>
+                              </>
+                            )}
+                          </div>
+
+                          {skillsList.length > 0 && (
+                            <div className="talent-match-skills">
+                              {skillsList.slice(0, 5).map((sk, idx) => (
+                                <span key={idx} className="talent-skill-tag">{sk}</span>
+                              ))}
+                              {skillsList.length > 5 && (
+                                <span className="talent-skill-tag more">+{skillsList.length - 5} more</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="talent-match-actions">
+                        <button
+                          type="button"
+                          className="talent-btn-view"
+                          onClick={() => openCandidateDetails(cand)}
+                        >
+                          View Profile
+                        </button>
+                        <a
+                          href={`/employer-applicant-finder?candidateId=${cand.user_id}`}
+                          className="talent-btn-invite"
+                        >
+                          Offer Job / Invite
+                        </a>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* DIRECT RECRUITMENT INVITATIONS TRACKER */}
+            {directInvitations.length > 0 && (
+              <div className="direct-invitations-tracker-card" style={{ marginTop: "24px" }}>
+                <div className="section-subhead">
+                  <h3>Recent Candidate Invitations</h3>
+                  <a href="/employer-applicant-management#direct-invitations">View Recruitment List →</a>
+                </div>
+                <div className="direct-invitations-grid">
+                  {directInvitations.slice(0, 4).map((inv) => (
+                    <div className="direct-inv-row" key={inv.id}>
+                      <div className="direct-inv-info">
+                        <strong>{inv.applicant_name}</strong>
+                        <span>Invited for: {inv.job_title}</span>
+                        <small>{formatDate(inv.created_at)}</small>
+                      </div>
+                      <div className="direct-inv-status">
+                        <span className={`status-chip ${(inv.status || "pending").toLowerCase()}`}>
+                          {inv.status || "Pending"}
+                        </span>
+                        <a href="/messages" className="review-btn">Message</a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════════
+            TAB 3: APPROVED & INTERVIEWS
+           ══════════════════════════════════════════════════════════════════ */}
+        {activeSection === "section-approved-interviews" && (
+          <div className="section-anchor" id="section-approved-interviews">
+            <div className="matches-card" style={{ margin: "16px 28px 14px" }}>
+              <div className="matches-head">
+                <div>
+                  <small className="matches-head-eyebrow">HIRING STAGES & ROSTER</small>
+                  <h2>Approved Hires & Interview Schedule</h2>
+                  <p>Master roster of all approved candidates across your postings, upcoming scheduled interviews, and formal offer letters.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent("elitecruit-open-calendar"));
+                  }}
+                  className="matches-head-action-btn"
+                >
+                  <span>Open Calendar Suite</span>
+                  <span className="action-arrow">→</span>
+                </button>
+              </div>
+            </div>
+
+            <section className="interviews-dual-grid">
+              {/* UPCOMING SCHEDULED INTERVIEWS */}
+              <article className="employer-block">
+                <header>
+                  <h2>📅 Upcoming Candidate Interviews</h2>
+                  <button
+                    type="button"
+                    className="dash-text-link-btn"
+                    onClick={() => {
+                      window.dispatchEvent(new CustomEvent("elitecruit-open-calendar"));
+                    }}
+                  >
+                    View Calendar
+                  </button>
+                </header>
+
+                {upcomingInterviews.length === 0 ? (
+                  <div className="empty-roster-box">
+                    <strong>No upcoming interviews scheduled.</strong>
+                    <p>Interviews booked with candidates will appear here with instant join links.</p>
+                    <a href="/employer-applicant-management#shortlisted-candidates" className="dash-text-link-btn">
+                      Schedule an Interview →
                     </a>
                   </div>
-                );
-              })
-            )}
-          </article>
+                ) : (
+                  upcomingInterviews.slice(0, 6).map((item) => {
+                    const picUrl = item.applicant_profile_picture_path
+                      ? (item.applicant_profile_picture_path.startsWith("http") || item.applicant_profile_picture_path.startsWith("/api")
+                          ? item.applicant_profile_picture_path
+                          : `/api/applicants/${item.applicant_user_id}/profile-picture`)
+                      : null;
 
-          <article className="employer-block status-overview-block">
-            <header><h2>Application Status Overview</h2></header>
-            <div className="status-line"><span>Pending Review</span><b className="status-count gray">{summary.stats.toReview ?? 0}</b></div>
-            <div className="status-line"><span>Under Review</span><b className="status-count blue">{summary.stats.underReview ?? 0}</b></div>
-            <div className="status-line"><span>Shortlisted</span><b className="status-count blue">{summary.stats.shortlisted ?? 0}</b></div>
-            <div className="status-line"><span>Interviewing</span><b className="status-count purple">{summary.stats.interview ?? 0}</b></div>
-            <div className="status-line"><span>Approved</span><b className="status-count green">{summary.stats.approved ?? 0}</b></div>
-            <div className="status-line"><span>Recruited</span><b className="status-count teal">{summary.stats.recruited ?? 0}</b></div>
-            <div className="status-line"><span>Hired</span><b className="status-count green">{summary.stats.hired ?? 0}</b></div>
-            <div className="status-line"><span>Declined</span><b className="status-count red">{summary.stats.rejected ?? 0}</b></div>
-          </article>
+                    return (
+                      <div className="interview-card-item" key={item.id}>
+                        <div className="interview-card-info">
+                          <div className="interview-card-avatar">
+                            {picUrl ? (
+                              <img src={picUrl} alt={item.applicant_name || "Candidate"} />
+                            ) : (
+                              <span>{initialsFromName(item.applicant_name)}</span>
+                            )}
+                          </div>
+                          <div className="interview-card-details">
+                            <strong>{item.applicant_name || "Candidate"}</strong>
+                            <span>{item.job_title || "Job Position"}</span>
+                            <span className="interview-card-time">
+                              {item.interview_date} • {item.start_time}
+                            </span>
+                          </div>
+                        </div>
 
-          <article className="employer-block quick-actions-block">
-            <header><h2>Quick Actions</h2></header>
-            <button type="button" onClick={() => { window.location.href = "/employer-job-posts/create"; }}><EmployerIcon name="jobposts" />Post a New Job</button>
-            <button type="button" onClick={() => { window.location.href = "/employer-company-profile"; }}><EmployerIcon name="company" />Company Profile</button>
-            <button type="button" onClick={() => { window.location.href = "/employer-applicant-screening#nearby-applicants"; }}><EmployerIcon name="screening" />Find Nearby Applicants</button>
-            <button type="button" onClick={() => { window.location.href = "/employer-applicant-management"; }}><EmployerIcon name="applicant" />Review Applications</button>
-          </article>
-        </section>
+                        <div className="interview-card-actions">
+                          {item.meeting_link ? (
+                            <a
+                              href={item.meeting_link.startsWith("http") ? item.meeting_link : `https://${item.meeting_link}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn-join-meeting"
+                            >
+                              Join Meeting
+                            </a>
+                          ) : (
+                            <span className="interview-type-pill">{item.interview_type || "On-Site"}</span>
+                          )}
+                          <a href="/messages" className="review-btn">Message</a>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </article>
+
+              {/* MASTER APPROVED & HIRED TALENT ROSTER */}
+              <article className="employer-block">
+                <header>
+                  <h2>🤝 Master Approved & Hired Roster</h2>
+                  <a href="/employer-applicant-management">Applicant Management →</a>
+                </header>
+
+                {approvedApplications.length === 0 ? (
+                  <div className="empty-roster-box">
+                    <strong>No approved candidates yet.</strong>
+                    <p>When you approve candidates or extend formal offers in Applicant Management, they will be tracked here in this master roster.</p>
+                    <a href="/employer-applicant-management" className="dash-text-link-btn">
+                      Go to Applicant Management →
+                    </a>
+                  </div>
+                ) : (
+                  approvedApplications.slice(0, 8).map((app) => {
+                    const picUrl = app.profile_picture_path
+                      ? (app.profile_picture_path.startsWith("http") || app.profile_picture_path.startsWith("/api")
+                          ? app.profile_picture_path
+                          : `/api/applicants/${app.applicant_user_id}/profile-picture`)
+                      : null;
+
+                    return (
+                      <div className="approved-roster-row" key={app.id}>
+                        <div className="interview-card-info">
+                          <div className="interview-card-avatar">
+                            {picUrl ? (
+                              <img src={picUrl} alt={app.applicant_name || "Candidate"} />
+                            ) : (
+                              <span>{initialsFromName(app.applicant_name)}</span>
+                            )}
+                          </div>
+                          <div className="interview-card-details">
+                            <strong>{app.applicant_name || "Candidate"}</strong>
+                            <span>{app.job_title || "Job Position"}</span>
+                            <small>Submitted: {formatDate(app.submitted_at)}</small>
+                          </div>
+                        </div>
+
+                        <div className="approved-roster-actions">
+                          {app.decision_message ? (
+                            <button
+                              type="button"
+                              className="offer-letter-tag-btn"
+                              onClick={() => {
+                                setViewOfferLetterModal({
+                                  candidateName: app.applicant_name,
+                                  jobTitle: app.job_title,
+                                  letterText: app.decision_message,
+                                  status: app.status,
+                                  responseDecision: app.response_decision,
+                                  responseMessage: app.response_message,
+                                  responseDate: app.response_date,
+                                  proposedStartDate: app.proposed_start_date,
+                                });
+                              }}
+                            >
+                              Formal Offer Letter
+                            </button>
+                          ) : (
+                            <span className="status-green">Approved</span>
+                          )}
+
+                          <button
+                            type="button"
+                            className="review-btn"
+                            onClick={() => openCandidateDetails(app)}
+                          >
+                            Profile
+                          </button>
+                          <a href="/messages" className="review-btn">Message</a>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </article>
+            </section>
+          </div>
+        )}
       </main>
 
       {isSidebarVisible && (
@@ -472,6 +1226,94 @@ export default function EmployerDashboard() {
           aria-label="Close sidebar"
           onClick={() => setIsSidebarVisible(false)}
         />
+      )}
+
+      {/* ── APPLICANT DETAILS MODAL ── */}
+      {isDetailsModalOpen && detailsModalCandidate && (
+        <ApplicantDetailsModal
+          isOpen={isDetailsModalOpen}
+          onClose={() => {
+            setIsDetailsModalOpen(false);
+            setDetailsModalCandidate(null);
+          }}
+          candidate={detailsModalCandidate}
+          employerJobs={summary.activeJobPosts.map((j) => ({ ...j, location: j.location || undefined }))}
+          currentEmployerUserId={summary.activeJobPosts[0]?.employer_user_id}
+        />
+      )}
+
+      {/* ── VIEW FORMAL OFFER LETTER MODAL ── */}
+      {viewOfferLetterModal && (
+        <div className="view-letter-backdrop" onClick={() => setViewOfferLetterModal(null)}>
+          <div className="view-letter-modal card" onClick={(e) => e.stopPropagation()}>
+            <div className="view-letter-modal-header">
+              <div>
+                <span className="view-letter-badge">Official Formal Offer</span>
+                <h3>{viewOfferLetterModal.jobTitle}</h3>
+                <p>Candidate: <strong>{viewOfferLetterModal.candidateName}</strong></p>
+              </div>
+              <button
+                type="button"
+                className="view-letter-close-btn"
+                onClick={() => setViewOfferLetterModal(null)}
+                title="Close modal"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="view-letter-body-content">
+              {viewOfferLetterModal.proposedStartDate && (
+                <div className="view-letter-meta-row" style={{ marginBottom: "12px" }}>
+                  <span className="view-letter-timestamp-tag">
+                    Proposed Start Date: <strong>{viewOfferLetterModal.proposedStartDate}</strong>
+                  </span>
+                  <span className={`offer-decision-tag ${viewOfferLetterModal.responseDecision === "accept" ? "accepted" : viewOfferLetterModal.responseDecision === "decline" ? "declined" : "pending"}`}>
+                    {viewOfferLetterModal.responseDecision === "accept"
+                      ? "Offer Accepted"
+                      : viewOfferLetterModal.responseDecision === "decline"
+                      ? "Offer Declined"
+                      : "Pending Candidate Response"}
+                  </span>
+                </div>
+              )}
+
+              <div className="view-letter-body-box">
+                <div className="view-letter-box-header">
+                  <span className="view-letter-box-label">FORMAL OFFER DETAILS & TERMS</span>
+                </div>
+                <pre className="view-letter-pre-text">
+                  {viewOfferLetterModal.letterText || "Offer letter details submitted to candidate."}
+                </pre>
+              </div>
+
+              {viewOfferLetterModal.responseMessage && (
+                <div className="view-letter-body-box" style={{ marginTop: "14px" }}>
+                  <div className="view-letter-box-header">
+                    <span className="view-letter-box-label">CANDIDATE RESPONSE</span>
+                    {viewOfferLetterModal.responseDate && (
+                      <small>{formatDate(viewOfferLetterModal.responseDate)}</small>
+                    )}
+                  </div>
+                  <pre className="view-letter-pre-text">
+                    {viewOfferLetterModal.responseMessage}
+                  </pre>
+                </div>
+              )}
+            </div>
+
+            <div className="view-letter-footer">
+              <button
+                type="button"
+                className="view-letter-action-btn primary"
+                onClick={() => setViewOfferLetterModal(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* DOUBLE VERIFICATION: LOGOUT CONFIRMATION MODAL */}
@@ -491,4 +1333,3 @@ export default function EmployerDashboard() {
     </div>
   );
 }
-

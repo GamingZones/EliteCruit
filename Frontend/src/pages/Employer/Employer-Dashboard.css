@@ -800,3 +800,1023 @@
     backdrop-filter: blur(2px) !important;
   }
 }
+
+
+/* ==========================================================================
+   EMPLOYER 3-TAB WORKSPACE STYLES (Postings, Smart Matches, Approved & Interviews)
+   ========================================================================== */
+
+.employer-page .dash-nav-container {
+  margin: 16px 28px 0;
+}
+
+/* ── TAB 1: PIPELINE SUMMARY BAR ── */
+.employer-pipeline-bar {
+  margin: 16px 28px 14px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pipeline-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #ffffff;
+  border: 1px solid #d7dfeb;
+  border-radius: 12px;
+  padding: 12px 14px;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(12, 42, 71, 0.05);
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.pipeline-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(12, 42, 71, 0.1);
+  border-color: #0c2a47;
+}
+
+.pipeline-stat-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.pipeline-stat-icon.to-review { background: #fef3c7; color: #b45309; }
+.pipeline-stat-icon.under-review { background: #e0f2fe; color: #0284c7; }
+.pipeline-stat-icon.shortlisted { background: #dbeafe; color: #1d4ed8; }
+.pipeline-stat-icon.interview { background: #f3e8ff; color: #7e22ce; }
+.pipeline-stat-icon.approved { background: #dcfce7; color: #15803d; }
+
+.pipeline-stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.pipeline-stat-count {
+  font-size: 1.32rem;
+  font-weight: 800;
+  color: #0c2a47;
+  line-height: 1.1;
+}
+
+.pipeline-stat-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 3px;
+}
+
+.quick-actions-grid-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.quick-actions-grid-row button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fbff;
+  border: 1px solid #d7dfeb;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #1f4264;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.quick-actions-grid-row button:hover {
+  background: #eef5fc;
+  border-color: #0c2a47;
+  color: #0c2a47;
+}
+
+.quick-actions-grid-row button svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+/* ── TAB 2: SMART MATCHES STYLES ── */
+.smart-matches-head-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 14px 0 16px;
+  padding: 10px 14px;
+  background: #f8fbff;
+  border: 1px solid #d7dfeb;
+  border-radius: 10px;
+}
+
+.smart-matches-job-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.smart-matches-job-selector .selector-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.smart-matches-job-selector select {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #0c2a47;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.talent-pool-count-label {
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.talent-matches-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.talent-match-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #ffffff;
+  border: 1px solid #d7dfeb;
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 3px rgba(12, 42, 71, 0.04);
+  transition: all 0.2s ease;
+}
+
+.talent-match-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(12, 42, 71, 0.08);
+}
+
+.talent-match-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  flex: 1;
+}
+
+.talent-match-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: #0c2a47;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.talent-match-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.talent-match-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.talent-match-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.talent-match-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0c2a47;
+}
+
+.talent-match-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.talent-match-badge.rec {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.talent-match-badge.good {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.talent-eval-job-pill {
+  font-size: 0.72rem;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.talent-match-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #53708d;
+}
+
+.meta-dot {
+  color: #94a3b8;
+}
+
+.meta-pill {
+  background: #f1f5f9;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.talent-match-skills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.talent-skill-tag {
+  display: inline-flex;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.talent-skill-tag.more {
+  background: #e2e8f0;
+  color: #64748b;
+}
+
+.talent-match-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.talent-btn-view {
+  background: #ffffff;
+  border: 1px solid #d7dfeb;
+  color: #0c2a47;
+  font-weight: 600;
+  font-size: 0.78rem;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.talent-btn-view:hover {
+  background: #f1f5f9;
+}
+
+.talent-btn-invite {
+  background: #0c2a47;
+  border: 1px solid #0c2a47;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.78rem;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.talent-btn-invite:hover {
+  background: #173f67;
+}
+
+.direct-invitations-tracker-card {
+  background: #ffffff;
+  border: 1px solid #d7dfeb;
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.section-subhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.section-subhead h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0c2a47;
+}
+
+.section-subhead a {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #0284c7;
+  text-decoration: none;
+}
+
+.direct-invitations-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.direct-inv-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f8fbff;
+  border: 1px solid #d7dfeb;
+  border-radius: 8px;
+}
+
+.direct-inv-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.direct-inv-info strong {
+  font-size: 0.88rem;
+  color: #0c2a47;
+}
+
+.direct-inv-info span {
+  font-size: 0.76rem;
+  color: #53708d;
+}
+
+.direct-inv-info small {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.direct-inv-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ── TAB 3: APPROVED & INTERVIEWS STYLES ── */
+.interviews-dual-grid {
+  margin: 18px 28px 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.interview-card-item,
+.approved-roster-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #d7dfeb;
+  border-radius: 8px;
+  background: #f8fbff;
+  margin-top: 10px;
+  transition: all 0.15s ease;
+}
+
+.interview-card-item:hover,
+.approved-roster-row:hover {
+  background: #f1f7fe;
+  border-color: #cbd5e1;
+}
+
+.interview-card-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.interview-card-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #0c2a47;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.interview-card-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.interview-card-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.interview-card-details strong {
+  font-size: 0.9rem;
+  color: #0c2a47;
+}
+
+.interview-card-details span {
+  font-size: 0.78rem;
+  color: #53708d;
+}
+
+.interview-card-details small {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.interview-card-time {
+  font-size: 0.74rem;
+  color: #0284c7;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.interview-card-actions,
+.approved-roster-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-join-meeting {
+  background: #10b981;
+  color: #ffffff;
+  border: none;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.btn-join-meeting:hover {
+  background: #059669;
+}
+
+.interview-type-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: #e2e8f0;
+  color: #475569;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.offer-letter-tag-btn {
+  background: #dbeafe;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 5px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.offer-letter-tag-btn:hover {
+  background: #bfdbfe;
+}
+
+.empty-roster-box {
+  padding: 36px 20px;
+  text-align: center;
+  color: #64748b;
+}
+
+.empty-roster-box strong {
+  display: block;
+  font-size: 0.95rem;
+  color: #0c2a47;
+  margin-bottom: 4px;
+}
+
+.empty-roster-box p {
+  font-size: 0.8rem;
+  margin: 0 0 12px;
+}
+
+/* ── VIEW OFFER LETTER MODAL STYLES ── */
+.view-letter-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(3px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.view-letter-modal {
+  width: 100%;
+  max-width: 620px;
+  max-height: 85vh;
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #d7dfeb;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.view-letter-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.view-letter-badge {
+  display: inline-block;
+  background: #dbeafe;
+  color: #1e40af;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+
+.view-letter-modal-header h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: #0c2a47;
+}
+
+.view-letter-modal-header p {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.view-letter-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.view-letter-close-btn:hover {
+  background: #f1f5f9;
+  color: #0c2a47;
+}
+
+.view-letter-body-content {
+  padding: 18px 22px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.view-letter-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.view-letter-timestamp-tag {
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+.offer-decision-tag {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.offer-decision-tag.accepted {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.offer-decision-tag.declined {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.offer-decision-tag.pending {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.view-letter-body-box {
+  background: #f8fbff;
+  border: 1px solid #d7dfeb;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.view-letter-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.view-letter-box-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+}
+
+.view-letter-pre-text {
+  margin: 0;
+  font-family: inherit;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: #1e293b;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.view-letter-footer {
+  padding: 14px 22px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.view-letter-action-btn.primary {
+  background: #0c2a47;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 18px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.view-letter-action-btn.primary:hover {
+  background: #173f67;
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN (max-width: 1020px and max-width: 768px)
+   ========================================================================== */
+@media (max-width: 1020px) {
+  .employer-pipeline-bar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .interviews-dual-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-actions-grid-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .direct-invitations-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .employer-page .dash-nav-container {
+    margin: 12px 14px 0 !important;
+  }
+
+  .employer-pipeline-bar {
+    margin: 12px 14px 10px !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .smart-matches-head-bar {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  .talent-match-card {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  .talent-match-actions {
+    width: 100% !important;
+    justify-content: flex-end !important;
+  }
+
+  .interviews-dual-grid {
+    margin: 12px 14px 14px !important;
+  }
+
+  .quick-actions-grid-row {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ==========================================================================
+   STRICT DARK MODE ISOLATION ([data-theme="dark"])
+   Scope: Applied exclusively when data-theme="dark"; light mode remains 100% untouched.
+   ========================================================================== */
+[data-theme="dark"] .pipeline-stat-card {
+  background: #1c1e27 !important;
+  border-color: #2e3244 !important;
+  color: #f1f5f9 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .pipeline-stat-card:hover {
+  border-color: #f6be45 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45) !important;
+}
+
+[data-theme="dark"] .pipeline-stat-count {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .pipeline-stat-label {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .pipeline-stat-icon.to-review { background: rgba(245, 158, 11, 0.2) !important; color: #fbbf24 !important; }
+[data-theme="dark"] .pipeline-stat-icon.under-review { background: rgba(56, 189, 248, 0.2) !important; color: #38bdf8 !important; }
+[data-theme="dark"] .pipeline-stat-icon.shortlisted { background: rgba(96, 165, 250, 0.2) !important; color: #60a5fa !important; }
+[data-theme="dark"] .pipeline-stat-icon.interview { background: rgba(192, 132, 252, 0.2) !important; color: #c084fc !important; }
+[data-theme="dark"] .pipeline-stat-icon.approved { background: rgba(74, 222, 128, 0.2) !important; color: #4ade80 !important; }
+
+[data-theme="dark"] .quick-actions-grid-row button {
+  background: #20232e !important;
+  border-color: #2e3244 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .quick-actions-grid-row button:hover {
+  background: #292d3b !important;
+  border-color: #f6be45 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .smart-matches-head-bar,
+[data-theme="dark"] .direct-invitations-tracker-card {
+  background: #1c1e27 !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .smart-matches-job-selector .selector-label {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .smart-matches-job-selector select {
+  background: #242735 !important;
+  border-color: #2e3244 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .talent-pool-count-label {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .talent-match-card {
+  background: #1c1e27 !important;
+  border-color: #2e3244 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .talent-match-card:hover {
+  border-color: #3e445a !important;
+}
+
+[data-theme="dark"] .talent-match-name {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .talent-eval-job-pill {
+  background: #242735 !important;
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .talent-match-meta {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .meta-pill {
+  background: #242735 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .talent-skill-tag {
+  background: #242735 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .talent-skill-tag.more {
+  background: #2e3244 !important;
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .talent-btn-view {
+  background: #242735 !important;
+  border-color: #2e3244 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .talent-btn-view:hover {
+  background: #2e3244 !important;
+}
+
+[data-theme="dark"] .talent-btn-invite {
+  background: #0c2a47 !important;
+  border-color: #f6be45 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .section-subhead h3 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .direct-inv-row {
+  background: #20232e !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .direct-inv-info strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .direct-inv-info span {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .interview-card-item,
+[data-theme="dark"] .approved-roster-row {
+  background: #20232e !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .interview-card-item:hover,
+[data-theme="dark"] .approved-roster-row:hover {
+  background: #252936 !important;
+  border-color: #3e445a !important;
+}
+
+[data-theme="dark"] .interview-card-details strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .interview-card-details span {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .interview-type-pill {
+  background: #242735 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .offer-letter-tag-btn {
+  background: #1e3a8a !important;
+  border-color: #2563eb !important;
+  color: #bfdbfe !important;
+}
+
+[data-theme="dark"] .empty-roster-box strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .empty-roster-box p {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .view-letter-modal {
+  background: #1c1e27 !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .view-letter-modal-header {
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .view-letter-modal-header h3 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .view-letter-modal-header p {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .view-letter-close-btn {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .view-letter-close-btn:hover {
+  background: #242735 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .view-letter-timestamp-tag {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .view-letter-body-box {
+  background: #20232e !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .view-letter-box-label {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .view-letter-pre-text {
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .view-letter-footer {
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .view-letter-action-btn.primary {
+  background: #0c2a47 !important;
+  border: 1px solid #f6be45 !important;
+  color: #ffffff !important;
+}
