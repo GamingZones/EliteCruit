@@ -236,11 +236,11 @@ function formatCurrencyInput(value: string | number | null | undefined) {
 
 function parseSalaryInteger(value: string | number | null | undefined): string {
   if (value === null || value === undefined) return "";
-  const raw = String(value).replace(/,/g, "").replace(/[^0-9.]/g, "").trim();
+  const raw = String(value).replace(/,/g, "").replace(/\D/g, "").slice(0, 7).trim();
   if (!raw) return "";
   const amount = Number(raw);
   if (Number.isFinite(amount) && amount >= 0) {
-    return String(Math.round(amount));
+    return String(Math.min(9999999, Math.round(amount)));
   }
   return "";
 }
@@ -4193,9 +4193,8 @@ export default function ApplicantProfile() {
   };
 
   const handleChangeRoleSalary = (roleId: string, field: "salary_min" | "salary_max", rawInput: string) => {
-    const sanitized = rawInput.replace(/[^0-9.]/g, "");
-    const parts = sanitized.split(".");
-    const value = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join("")}` : sanitized;
+    const digitsOnly = rawInput.replace(/[^0-9]/g, "").slice(0, 7);
+    const value = digitsOnly;
     setActiveRoleSalaryInput({ id: roleId, field, value });
     setTargetRoles((prev) =>
       prev.map((r) => (r.id === roleId ? { ...r, [field]: value, hide_salary: false } : r))
@@ -4208,7 +4207,7 @@ export default function ApplicantProfile() {
 
     let formatted = "";
     if (currentVal) {
-      const num = Number(currentVal);
+      const num = Math.min(9999999, Number(currentVal));
       if (Number.isFinite(num) && num >= 0) {
         formatted = num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       } else {
@@ -6310,6 +6309,7 @@ export default function ApplicantProfile() {
                                               <input
                                                 className={roleSalaryError ? "has-error" : ""}
                                                 placeholder="Min Salary"
+                                                maxLength={7}
                                                 value={displayVal}
                                                 onFocus={() => {
                                                   setRoleSalaryLastField((prev) => ({ ...prev, [roleItem.id]: "min" }));
@@ -6338,6 +6338,7 @@ export default function ApplicantProfile() {
                                               <input
                                                 className={roleSalaryError ? "has-error" : ""}
                                                 placeholder="Max Salary"
+                                                maxLength={7}
                                                 value={displayVal}
                                                 onFocus={() => {
                                                   setRoleSalaryLastField((prev) => ({ ...prev, [roleItem.id]: "max" }));

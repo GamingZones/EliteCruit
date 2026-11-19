@@ -255,7 +255,7 @@ function requireUserOrAdmin(req, res, next) {
   if (req.user.role === "admin") {
     return next();
   }
-  if (Number.isInteger(targetUserId) && req.user.id === targetUserId) {
+  if (Number.isInteger(targetUserId) && Number(req.user.id) === targetUserId) {
     return next();
   }
   return res.status(403).json({ message: "Access denied. You cannot access or modify another user's data." });
@@ -773,12 +773,16 @@ function normalizeCurrency(value) {
   });
 }
 
+const MAX_SALARY_LIMIT = 9999999; // 7 digits max (PHP 9,999,999)
+
 function parseSalaryNumeric(value) {
   if (value === undefined || value === null) return null;
   const raw = String(value).replace(/,/g, "").replace(/[^0-9.]/g, "").trim();
   if (!raw) return null;
   const amount = Number(raw);
-  return Number.isFinite(amount) && amount >= 0 ? amount : null;
+  if (!Number.isFinite(amount) || amount < 0) return null;
+  if (amount > MAX_SALARY_LIMIT) return MAX_SALARY_LIMIT;
+  return Math.round(amount);
 }
 
 function parseCloseDate(value) {
@@ -919,12 +923,8 @@ app.post("/api/auth/register", async (req, res) => {
     }
 
     if (role === "applicant") {
-      const rawMin = expectedSalaryMin !== undefined && expectedSalaryMin !== null && String(expectedSalaryMin).trim()
-        ? Number(String(expectedSalaryMin).replace(/[^0-9.]/g, ""))
-        : null;
-      const rawMax = expectedSalaryMax !== undefined && expectedSalaryMax !== null && String(expectedSalaryMax).trim()
-        ? Number(String(expectedSalaryMax).replace(/[^0-9.]/g, ""))
-        : null;
+      const rawMin = parseSalaryNumeric(expectedSalaryMin);
+      const rawMax = parseSalaryNumeric(expectedSalaryMax);
 
       let consolidatedSalary = null;
       if (rawMin && rawMax) {
@@ -1510,14 +1510,17 @@ app.post("/api/auth/resend-2fa", async (req, res) => {
   }
 });
 
-app.post("/api/auth/send-email-otp", optionalAuthenticateToken, async (req, res) => {
+app.post("/api/auth/send-email-otp", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user?.id || Number(req.body?.userId);
-    const { email } = req.body ?? {};
-
-    if (!userId) {
+    const targetUserId = req.body?.userId ? Number(req.body.userId) : Number(req.user?.id);
+    if (!Number.isInteger(targetUserId) || targetUserId < 1) {
       return res.status(400).json({ message: "User session required. Please sign in again." });
     }
+    if (req.user.role !== "admin" && Number(req.user.id) !== targetUserId) {
+      return res.status(403).json({ message: "Access denied. You cannot request verification for another user." });
+    }
+    const userId = targetUserId;
+    const { email } = req.body ?? {};
 
     if (!email || typeof email !== "string" || !email.includes("@")) {
       return res.status(400).json({ message: "A valid email address is required." });
@@ -1564,14 +1567,17 @@ app.post("/api/auth/send-email-otp", optionalAuthenticateToken, async (req, res)
   }
 });
 
-app.post("/api/auth/verify-email-otp", optionalAuthenticateToken, async (req, res) => {
+app.post("/api/auth/verify-email-otp", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user?.id || Number(req.body?.userId);
-    const { email, code } = req.body ?? {};
-
-    if (!userId) {
+    const targetUserId = req.body?.userId ? Number(req.body.userId) : Number(req.user?.id);
+    if (!Number.isInteger(targetUserId) || targetUserId < 1) {
       return res.status(400).json({ message: "User session required. Please sign in again." });
     }
+    if (req.user.role !== "admin" && Number(req.user.id) !== targetUserId) {
+      return res.status(403).json({ message: "Access denied. You cannot verify another user's email." });
+    }
+    const userId = targetUserId;
+    const { email, code } = req.body ?? {};
 
     if (!email || !code) {
       return res.status(400).json({ message: "Email and verification code are required." });
@@ -2342,7 +2348,7 @@ app.get("/api/admin/employer-analytics", async (req, res) => {
   }
 });
 
-app.get("/api/admin/applicants", async (req, res) => {
+app.get("/api/admin/applicants", authenticateToken, requireAdmin, async (req, res) => {
   try {
     const rows = await all(`
       SELECT 
@@ -2389,7 +2395,7 @@ app.get("/api/admin/applicants", async (req, res) => {
   }
 });
 
-app.get("/api/admin/employers", async (req, res) => {
+app.get("/api/admin/employers", authenticateToken, requireAdmin, async (req, res) => {
   try {
     const rows = await all(`
       SELECT 
@@ -2433,7 +2439,7 @@ app.get("/api/admin/employers", async (req, res) => {
   }
 });
 
-app.patch("/api/admin/users/:userId/status", async (req, res) => {
+app.patch("/api/admin/users/:userId/status", authenticateToken, requireAdmin, async (req, res) => {
   const userId = Number(req.params.userId);
   const { is_active } = req.body ?? {};
   if (!Number.isInteger(userId) || userId < 1) {
@@ -2463,7 +2469,7 @@ app.patch("/api/admin/users/:userId/status", async (req, res) => {
   }
 });
 
-app.post("/api/admin/users/:userId/reset-password", async (req, res) => {
+app.post("/api/admin/users/:userId/reset-password", authenticateToken, requireAdmin, async (req, res) => {
   const userId = Number(req.params.userId);
   if (!Number.isInteger(userId) || userId < 1) {
     return res.status(400).json({ message: "Invalid user ID." });
@@ -3068,13 +3074,81 @@ const photoUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype && (file.mimetype.startsWith("image/") || file.mimetype === "image/svg+xml")) {
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (file.mimetype && allowed.includes(file.mimetype.toLowerCase())) {
       cb(null, true);
     } else {
-      cb(new Error("Only image files (JPG, PNG, WEBP, SVG, GIF) are allowed."));
+      cb(new Error("Only raster image files (JPG, PNG, WEBP, GIF) are allowed."));
     }
   },
 });
+
+function inspectAndSanitizeImage(buffer) {
+  if (!buffer || !Buffer.isBuffer(buffer) || buffer.length < 16) {
+    throw new Error("Invalid or empty image file.");
+  }
+
+  // 1. Verify Magic Bytes / File Signatures
+  let detectedType = null;
+  // JPEG: FF D8 FF
+  if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) {
+    detectedType = "image/jpeg";
+  }
+  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  else if (
+    buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47 &&
+    buffer[4] === 0x0D && buffer[5] === 0x0A && buffer[6] === 0x1A && buffer[7] === 0x0A
+  ) {
+    detectedType = "image/png";
+  }
+  // GIF: 47 49 46 38
+  else if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38) {
+    detectedType = "image/gif";
+  }
+  // WEBP: 52 49 46 46 (RIFF) ... 57 41 42 50 (WEBP)
+  else if (
+    buffer.length >= 12 &&
+    buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
+    buffer[8] === 0x57 && buffer[9] === 0x41 && buffer[10] === 0x42 && buffer[11] === 0x50
+  ) {
+    detectedType = "image/webp";
+  }
+
+  if (!detectedType) {
+    throw new Error("File content is not a valid image. Only JPEG, PNG, WEBP, and GIF images are permitted.");
+  }
+
+  // 2. Scan entire buffer for malicious script payloads / embedded code
+  const bufferStr = buffer.toString("binary").toLowerCase();
+  const dangerousSignatures = [
+    "<?php",
+    "<?=",
+    "<script",
+    "javascript:",
+    "vbscript:",
+    "onload=",
+    "onerror=",
+    "onclick=",
+    "onmouseover=",
+    "<svg",
+    "<!entity",
+    "<!doctype",
+    "eval(",
+    "system(",
+    "passthru(",
+    "shell_exec(",
+    "base64_decode(",
+    "document.cookie"
+  ];
+
+  for (const sig of dangerousSignatures) {
+    if (bufferStr.includes(sig)) {
+      throw new Error("Security violation: Image contains unsafe embedded executable script or tags.");
+    }
+  }
+
+  return detectedType;
+}
 
 app.post("/api/applicants/:userId/resume", authenticateToken, requireUserOrAdmin, resumeUpload.single("resume"), async (req, res) => {
   const userId = Number(req.params.userId);
@@ -3712,7 +3786,7 @@ const documentUpload = multer({
       "image/png",
       "image/webp"
     ];
-    if (allowed.includes(file.mimetype) || (file.mimetype && file.mimetype.startsWith("image/"))) {
+    if (file.mimetype && allowed.includes(file.mimetype.toLowerCase())) {
       cb(null, true);
     } else {
       cb(new Error("Allowed formats: PDF, DOCX, DOC, JPG, PNG, WEBP."));
@@ -3771,6 +3845,19 @@ app.post("/api/applicants/:userId/documents", authenticateToken, requireUserOrAd
   if (!req.file) return res.status(400).json({ message: "No document attached." });
 
   const { originalname, mimetype, size, buffer } = req.file;
+
+  let safeMimetype = mimetype;
+  if (mimetype && mimetype.startsWith("image/")) {
+    try {
+      safeMimetype = inspectAndSanitizeImage(buffer);
+    } catch (err) {
+      return res.status(400).json({ message: err.message || "Invalid or unsafe image document." });
+    }
+  } else if (mimetype && mimetype.includes("pdf")) {
+    if (!buffer || buffer.length < 5 || buffer[0] !== 0x25 || buffer[1] !== 0x50 || buffer[2] !== 0x44 || buffer[3] !== 0x46) {
+      return res.status(400).json({ message: "Invalid PDF document." });
+    }
+  }
 
   try {
     const profile = await get("SELECT resume_path FROM applicant_profiles WHERE user_id = ?", [userId]);
@@ -3866,13 +3953,20 @@ app.post("/api/applicants/:userId/profile-picture", authenticateToken, requireUs
   if (!Number.isInteger(userId) || userId < 1) return res.status(400).json({ message: "Invalid applicant." });
   if (!req.file) return res.status(400).json({ message: "No image file uploaded." });
 
-  const { mimetype, buffer } = req.file;
+  let safeMimetype;
+  try {
+    safeMimetype = inspectAndSanitizeImage(req.file.buffer);
+  } catch (err) {
+    return res.status(400).json({ message: err.message || "Invalid or unsafe image file." });
+  }
+
+  const { buffer } = req.file;
   const photoUrl = `/api/applicants/${userId}/profile-picture`;
 
   try {
     const updated = await run(
       "UPDATE applicant_profiles SET profile_picture_path = ?, profile_picture_data = ?, profile_picture_mimetype = ? WHERE user_id = ?",
-      [photoUrl, buffer, mimetype, userId]
+      [photoUrl, buffer, safeMimetype, userId]
     );
 
     if (!updated.changes) {
@@ -3906,6 +4000,8 @@ app.get("/api/applicants/:userId/profile-picture", async (req, res) => {
     }
 
     res.setHeader("Content-Type", row.profile_picture_mimetype || "image/jpeg");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
     res.setHeader("Cache-Control", "no-cache");
     return res.send(row.profile_picture_data);
   } catch (err) {
@@ -3939,13 +4035,20 @@ app.post("/api/employers/:userId/logo", authenticateToken, requireUserOrAdmin, p
   if (!Number.isInteger(userId) || userId < 1) return res.status(400).json({ message: "Invalid employer." });
   if (!req.file) return res.status(400).json({ message: "No logo file uploaded." });
 
-  const { mimetype, buffer } = req.file;
+  let safeMimetype;
+  try {
+    safeMimetype = inspectAndSanitizeImage(req.file.buffer);
+  } catch (err) {
+    return res.status(400).json({ message: err.message || "Invalid or unsafe logo file." });
+  }
+
+  const { buffer } = req.file;
   const logoUrl = `/api/employers/${userId}/logo`;
 
   try {
     const updated = await run(
       "UPDATE employer_profiles SET company_logo_path = ?, company_logo_data = ?, company_logo_mimetype = ? WHERE user_id = ?",
-      [logoUrl, buffer, mimetype, userId]
+      [logoUrl, buffer, safeMimetype, userId]
     );
 
     if (!updated.changes) {
@@ -3979,6 +4082,8 @@ app.get("/api/employers/:userId/logo", async (req, res) => {
     }
 
     res.setHeader("Content-Type", row.company_logo_mimetype || "image/png");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
     res.setHeader("Cache-Control", "no-cache");
     return res.send(row.company_logo_data);
   } catch (err) {
@@ -4012,13 +4117,20 @@ app.post("/api/employers/:userId/cover", authenticateToken, requireUserOrAdmin, 
   if (!Number.isInteger(userId) || userId < 1) return res.status(400).json({ message: "Invalid employer." });
   if (!req.file) return res.status(400).json({ message: "No cover file uploaded." });
 
-  const { mimetype, buffer } = req.file;
+  let safeMimetype;
+  try {
+    safeMimetype = inspectAndSanitizeImage(req.file.buffer);
+  } catch (err) {
+    return res.status(400).json({ message: err.message || "Invalid or unsafe cover image file." });
+  }
+
+  const { buffer } = req.file;
   const coverUrl = `/api/employers/${userId}/cover`;
 
   try {
     const updated = await run(
       "UPDATE employer_profiles SET company_cover_path = ?, company_cover_data = ?, company_cover_mimetype = ? WHERE user_id = ?",
-      [coverUrl, buffer, mimetype, userId]
+      [coverUrl, buffer, safeMimetype, userId]
     );
 
     if (!updated.changes) {
@@ -4052,6 +4164,8 @@ app.get("/api/employers/:userId/cover", async (req, res) => {
     }
 
     res.setHeader("Content-Type", row.company_cover_mimetype || "image/jpeg");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
     res.setHeader("Cache-Control", "no-cache");
     return res.send(row.company_cover_data);
   } catch (err) {
@@ -4137,8 +4251,8 @@ app.post("/api/employers/:userId/job-posts", authenticateToken, requireUserOrAdm
         typeof experience_level === "string" ? experience_level.trim() || null : null,
         numericLimit,
         parsedCloseDate,
-        Number.isFinite(Number(salary_min)) ? Number(salary_min) : null,
-        Number.isFinite(Number(salary_max)) ? Number(salary_max) : null,
+        parseSalaryNumeric(salary_min),
+        parseSalaryNumeric(salary_max),
         typeof description === "string" ? description.trim() || null : null,
         typeof qualifications === "string" ? qualifications.trim() || null : null,
         typeof certifications === "string" ? certifications.trim() || null : null,
@@ -4765,8 +4879,8 @@ app.put("/api/employers/:userId/job-posts/:jobPostId", authenticateToken, requir
         typeof experience_level === "string" ? experience_level.trim() || null : null,
         numericLimit,
         parsedCloseDate,
-        Number.isFinite(Number(salary_min)) ? Number(salary_min) : null,
-        Number.isFinite(Number(salary_max)) ? Number(salary_max) : null,
+        parseSalaryNumeric(salary_min),
+        parseSalaryNumeric(salary_max),
         typeof description === "string" ? description.trim() || null : null,
         typeof qualifications === "string" ? qualifications.trim() || null : null,
         typeof certifications === "string" ? certifications.trim() || null : null,
@@ -5491,7 +5605,7 @@ app.get("/api/employers/:userId/talent-pool", async (req, res) => {
   }
 });
 
-app.post("/api/employers/:userId/invite-candidate", optionalAuthenticateToken, async (req, res) => {
+app.post("/api/employers/:userId/invite-candidate", authenticateToken, requireUserOrAdmin, async (req, res) => {
   const userId = Number(req.params.userId);
   const { applicant_user_id, job_post_id, custom_message } = req.body ?? {};
 
@@ -6853,12 +6967,16 @@ app.get("/api/users/:userId/notifications", optionalAuthenticateToken, async (re
   }
 });
 
-app.put("/api/notifications/:id/read", optionalAuthenticateToken, async (req, res) => {
+app.put("/api/notifications/:id/read", authenticateToken, async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id < 1) return res.status(400).json({ message: "Invalid notification." });
   try {
-    const updated = await run("UPDATE notifications SET is_read = 1, read_at = CURRENT_TIMESTAMP WHERE id = ?", [id]);
-    if (!updated.changes) return res.status(404).json({ message: "Notification not found." });
+    const existing = await get("SELECT user_id FROM notifications WHERE id = ?", [id]);
+    if (!existing) return res.status(404).json({ message: "Notification not found." });
+    if (req.user.role !== "admin" && Number(req.user.id) !== Number(existing.user_id)) {
+      return res.status(403).json({ message: "Access denied." });
+    }
+    await run("UPDATE notifications SET is_read = 1, read_at = CURRENT_TIMESTAMP WHERE id = ?", [id]);
     const notification = await get("SELECT * FROM notifications WHERE id = ?", [id]);
     res.json({ notification });
   } catch {
@@ -6866,7 +6984,7 @@ app.put("/api/notifications/:id/read", optionalAuthenticateToken, async (req, re
   }
 });
 
-app.put("/api/users/:userId/notifications/read-all", optionalAuthenticateToken, async (req, res) => {
+app.put("/api/users/:userId/notifications/read-all", authenticateToken, requireUserOrAdmin, async (req, res) => {
   const userId = Number(req.params.userId);
   if (!Number.isInteger(userId) || userId < 1) return res.status(400).json({ message: "Invalid user." });
   try {
@@ -6878,7 +6996,7 @@ app.put("/api/users/:userId/notifications/read-all", optionalAuthenticateToken, 
   }
 });
 
-app.delete("/api/users/:userId/notifications", optionalAuthenticateToken, async (req, res) => {
+app.delete("/api/users/:userId/notifications", authenticateToken, requireUserOrAdmin, async (req, res) => {
   const userId = Number(req.params.userId);
   if (!Number.isInteger(userId) || userId < 1) return res.status(400).json({ message: "Invalid user." });
   try {
@@ -6890,10 +7008,15 @@ app.delete("/api/users/:userId/notifications", optionalAuthenticateToken, async 
   }
 });
 
-app.delete("/api/notifications/:id", optionalAuthenticateToken, async (req, res) => {
+app.delete("/api/notifications/:id", authenticateToken, async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id < 1) return res.status(400).json({ message: "Invalid notification." });
   try {
+    const existing = await get("SELECT user_id FROM notifications WHERE id = ?", [id]);
+    if (!existing) return res.status(404).json({ message: "Notification not found." });
+    if (req.user.role !== "admin" && Number(req.user.id) !== Number(existing.user_id)) {
+      return res.status(403).json({ message: "Access denied." });
+    }
     const deleted = await run("DELETE FROM notifications WHERE id = ?", [id]);
     if (!deleted.changes) return res.status(404).json({ message: "Notification not found." });
     res.json({ success: true, id });
@@ -7043,7 +7166,7 @@ app.get("/api/applicants/:userId/received-feedbacks", optionalAuthenticateToken,
   }
 });
 
-app.delete("/api/applicants/:userId/company-feedback/:id", optionalAuthenticateToken, async (req, res) => {
+app.delete("/api/applicants/:userId/company-feedback/:id", authenticateToken, requireUserOrAdmin, async (req, res) => {
   const userId = Number(req.params.userId);
   const feedbackId = req.params.id;
   if (!Number.isInteger(userId) || userId < 1) return res.status(400).json({ message: "Invalid applicant." });
@@ -7143,7 +7266,7 @@ app.get("/api/employers/:userId/candidate-feedbacks", optionalAuthenticateToken,
   }
 });
 
-app.delete("/api/employers/:userId/candidate-feedback/:id", optionalAuthenticateToken, async (req, res) => {
+app.delete("/api/employers/:userId/candidate-feedback/:id", authenticateToken, requireUserOrAdmin, async (req, res) => {
   const userId = Number(req.params.userId);
   const feedbackId = req.params.id;
   if (!Number.isInteger(userId) || userId < 1) return res.status(400).json({ message: "Invalid employer." });
@@ -7239,7 +7362,7 @@ app.get("/api/employers/:userId/eligible-feedback-candidates", optionalAuthentic
   }
 });
 
-app.post("/api/applicants/:userId/company-feedback", optionalAuthenticateToken, async (req, res) => {
+app.post("/api/applicants/:userId/company-feedback", authenticateToken, requireUserOrAdmin, async (req, res) => {
   const userId = Number(req.params.userId);
   const { employer_user_id, job_post_id, rating, comments, is_anonymous } = req.body ?? {};
 
@@ -7322,7 +7445,7 @@ app.post("/api/applicants/:userId/company-feedback", optionalAuthenticateToken, 
   }
 });
 
-app.post("/api/employers/:userId/applicant-feedback", optionalAuthenticateToken, async (req, res) => {
+app.post("/api/employers/:userId/applicant-feedback", authenticateToken, requireUserOrAdmin, async (req, res) => {
   const userId = Number(req.params.userId);
   const { applicant_user_id, job_post_id, rating, comments, is_anonymous } = req.body ?? {};
 

@@ -1062,29 +1062,29 @@ export default function EmployerJobPosts() {
 
   const parseSalaryInteger = (value: string | null | undefined): string => {
     if (!value) return "";
-    const raw = String(value).replace(/,/g, "").trim();
+    const raw = String(value).replace(/,/g, "").trim().replace(/\D/g, "").slice(0, 7);
     const amount = Number(raw);
     if (Number.isFinite(amount) && amount >= 0) {
-      return String(Math.round(amount));
+      return String(Math.min(9999999, Math.round(amount)));
     }
-    return raw.replace(/\D/g, "");
+    return raw;
   };
 
   const normalizeSalaryInput = (value: string) => {
-    const raw = value.replace(/,/g, "").trim();
+    const raw = value.replace(/,/g, "").trim().replace(/\D/g, "").slice(0, 7);
     if (!raw) return "";
     const amount = Number(raw);
     if (Number.isFinite(amount) && amount >= 0) {
-      return String(Math.round(amount));
+      return String(Math.min(9999999, Math.round(amount)));
     }
-    return value.replace(/\D/g, "");
+    return "";
   };
 
   const toSalaryPayload = (value: string) => {
-    const raw = value.replace(/,/g, "").trim();
+    const raw = value.replace(/,/g, "").trim().replace(/\D/g, "").slice(0, 7);
     const amount = Number(raw);
     if (Number.isFinite(amount) && amount >= 0) {
-      return String(Math.round(amount));
+      return String(Math.min(9999999, Math.round(amount)));
     }
     return "";
   };
@@ -1644,6 +1644,7 @@ export default function EmployerJobPosts() {
                       <input
                         data-field="salary_min"
                         placeholder="Min Salary"
+                        maxLength={7}
                         value={form.salary_min}
                         onChange={(event) => setField("salary_min", normalizeSalaryInput(event.target.value))}
                         onFocus={() => onFieldFocus("salary_min")}
@@ -1655,6 +1656,7 @@ export default function EmployerJobPosts() {
                       <input
                         data-field="salary_max"
                         placeholder="Max Salary"
+                        maxLength={7}
                         value={form.salary_max}
                         onChange={(event) => setField("salary_max", normalizeSalaryInput(event.target.value))}
                         onFocus={() => onFieldFocus("salary_max")}
