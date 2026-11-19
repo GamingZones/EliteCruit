@@ -4022,8 +4022,13 @@ export default function EmployerApplicantFinder() {
                     return (
                       <article key={cand.user_id} className="finder-card">
                         <div className="finder-card-main">
-                          {/* Left Column: Full-Height Profile Picture accommodating the entire left side */}
-                          <div className="finder-avatar-box">
+                          {/* Left Column: Full-Square Profile Picture */}
+                          <div
+                            className="finder-avatar-box"
+                            onClick={() => openCandidateModal(cand)}
+                            style={{ cursor: "pointer" }}
+                            title="Click to view candidate details"
+                          >
                             {cand.profile_picture_path ? (
                               <img
                                 src={cand.profile_picture_path.startsWith("http") || cand.profile_picture_path.startsWith("/api") ? cand.profile_picture_path : `/api/applicants/${cand.user_id}/profile-picture`}
@@ -4420,8 +4425,13 @@ export default function EmployerApplicantFinder() {
                   return (
                     <article key={cand.user_id} className="finder-card">
                       <div className="finder-card-main">
-                        {/* Left Column: Full-Height Profile Picture accommodating the entire left side */}
-                        <div className="finder-avatar-box">
+                        {/* Left Column: Full-Square Profile Picture */}
+                        <div
+                          className="finder-avatar-box"
+                          onClick={() => openCandidateModal(cand)}
+                          style={{ cursor: "pointer" }}
+                          title="Click to view candidate details"
+                        >
                           {cand.profile_picture_path ? (
                             <img
                               src={cand.profile_picture_path.startsWith("http") || cand.profile_picture_path.startsWith("/api") ? cand.profile_picture_path : `/api/applicants/${cand.user_id}/profile-picture`}
