@@ -961,6 +961,21 @@ export default function EmployerJobPosts() {
   const companyLabel = useEmployerCompanyLabel("Employer");
   const isEditMode = useMemo(() => Number.isInteger(editingJobId) && Number(editingJobId) > 0, [editingJobId]);
 
+  // Exclusive Presentation Demo Autofill state for designated employer
+  const DEMO_EMPLOYER_EMAIL = "zakiablando897@gmail.com";
+  let userEmailFromStorage = "";
+  try {
+    const raw = localStorage.getItem("elitecruit-user");
+    if (raw) userEmailFromStorage = JSON.parse(raw).email || "";
+  } catch {}
+
+  const isDemoEmployer = Boolean(
+    (employerProfileData?.business_email &&
+      employerProfileData.business_email.trim().toLowerCase() === DEMO_EMPLOYER_EMAIL) ||
+    (userEmailFromStorage && userEmailFromStorage.trim().toLowerCase() === DEMO_EMPLOYER_EMAIL)
+  );
+  const [isAutoFillingDemo, setIsAutoFillingDemo] = useState(false);
+
   useEffect(() => {
     const savedUserRaw = localStorage.getItem("elitecruit-user");
     if (!savedUserRaw) return;
@@ -1252,6 +1267,74 @@ export default function EmployerJobPosts() {
     }
   }, []);
 
+  const handleDemoAutofill = () => {
+    setIsAutoFillingDemo(true);
+    setProfileMessage("");
+
+    // Calculate a default close date 30 days from today
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 30);
+    const formattedCloseDate = futureDate.toISOString().split("T")[0];
+
+    // Pick branch location: prefer existing branch or default to Cavite tech hub
+    const defaultBranch =
+      allEmployerBranches[0]?.branch_name ||
+      employerProfileData?.company_address ||
+      "Indang - Dasmarinas Tech Hub, Cavite";
+
+    // Matching Demo Job Post fields that directly match the demo applicant (Juan Carlos Dela Cruz)
+    setForm({
+      title: "Senior Frontend Engineer",
+      customTitle: "",
+      location: defaultBranch,
+      application_limit: "50",
+      work_arrangement: "Hybrid",
+      experience_level: "Senior",
+      close_date: formattedCloseDate,
+      is_urgent: false,
+      hide_salary: false,
+      salary_min: "70,000.00",
+      salary_max: "85,000.00",
+      description:
+        "We are seeking a seasoned Senior Frontend Engineer to lead the client-facing architecture of our fintech core portal. You will design, build, and optimize responsive web applications using React, TypeScript, and modern CSS frameworks, collaborating closely with UI/UX designers and backend engineering teams.",
+    });
+
+    setSelectedLocations([defaultBranch]);
+
+    // Skills that match the demo applicant (Juan Carlos Dela Cruz)
+    setSelectedSkills([
+      { name: "React", years: "3", requirement: "Required" },
+      { name: "TypeScript", years: "3", requirement: "Required" },
+      { name: "JavaScript", years: "3", requirement: "Required" },
+      { name: "HTML5/CSS3", years: "3", requirement: "Required" },
+      { name: "Tailwind CSS", years: "2", requirement: "Preferred" },
+      { name: "REST APIs", years: "2", requirement: "Required" },
+      { name: "Git", years: "2", requirement: "Required" },
+    ]);
+
+    // Qualifications that match the demo applicant
+    setSelectedQualifications([
+      { name: "BS Information Technology - BSIT", years: "", requirement: "Required" },
+      { name: "Bachelor's Degree Graduate", years: "", requirement: "Required" },
+    ]);
+
+    // Certifications that match the demo applicant
+    setSelectedCertifications([
+      { name: "Meta Certified Front-End Developer", years: "", requirement: "Preferred" },
+      { name: "AWS Certified Cloud Practitioner", years: "", requirement: "Preferred" },
+    ]);
+
+    // Clear any previous error/focus states
+    setTouchedFields({});
+    setFocusedField(null);
+
+    setProfileMessage("⚡ Demo Senior Frontend Engineer vacancy populated!");
+    setTimeout(() => {
+      setIsAutoFillingDemo(false);
+      setProfileMessage("");
+    }, 3500);
+  };
+
   const setField = (name: keyof typeof form, value: string) => {
     setForm((current) => ({ ...current, [name]: value }));
     if (name === "application_limit") setApplicationLimitNotice("");
@@ -1467,6 +1550,26 @@ export default function EmployerJobPosts() {
         <header className="appdash-topbar">
           <div className="appdash-top-left"><div><strong>Job Posts</strong></div></div>
           <div className="appdash-top-right">
+            {isDemoEmployer && (
+              <button
+                type="button"
+                className="x-demo-autofill-btn"
+                onClick={handleDemoAutofill}
+                disabled={isAutoFillingDemo}
+                title="⚡ Demo Autofill: Senior Frontend Engineer Vacancy"
+                aria-label="Demo Autofill Job Vacancy"
+              >
+                {isAutoFillingDemo ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="x-demo-spin">
+                    <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="12" />
+                  </svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M13 2L3 14h7v8l10-12h-7l1-8z" />
+                  </svg>
+                )}
+              </button>
+            )}
             <div className="chatbot-wrapper">
               <EmployerChatbotDrawer
                 isOpen={isChatbotOpen}
