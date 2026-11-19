@@ -4022,25 +4022,26 @@ export default function EmployerApplicantFinder() {
                     return (
                       <article key={cand.user_id} className="finder-card">
                         <div className="finder-card-main">
-                          {/* Left Column: Avatar + Profile Info + Role + Education + Skills + Certifications */}
+                          {/* Left Column: Full-Height Profile Picture accommodating the entire left side */}
+                          <div className="finder-avatar-box">
+                            {cand.profile_picture_path ? (
+                              <img
+                                src={cand.profile_picture_path.startsWith("http") || cand.profile_picture_path.startsWith("/api") ? cand.profile_picture_path : `/api/applicants/${cand.user_id}/profile-picture`}
+                                alt={cand.applicant_name}
+                                className="finder-avatar-img"
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLElement).style.display = "none";
+                                }}
+                              />
+                            ) : (
+                              <span className="finder-avatar-initials">{initialsFrom(cand.applicant_name)}</span>
+                            )}
+                          </div>
+
+                          {/* Center Column: Profile Info + Role + Education + Skills + Certifications */}
                           <div className="finder-card-left">
-                            <div className="finder-card-header-row">
-                              <div className="finder-avatar-box">
-                                {cand.profile_picture_path ? (
-                                  <img
-                                    src={cand.profile_picture_path.startsWith("http") || cand.profile_picture_path.startsWith("/api") ? cand.profile_picture_path : `/api/applicants/${cand.user_id}/profile-picture`}
-                                    alt={cand.applicant_name}
-                                    style={{ width: "100%", height: "100%", borderRadius: "8px", objectFit: "cover" }}
-                                    onError={(e) => {
-                                      (e.currentTarget as HTMLElement).style.display = "none";
-                                    }}
-                                  />
-                                ) : (
-                                  initialsFrom(cand.applicant_name)
-                                )}
-                              </div>
-                              <div className="finder-candidate-info">
-                                <div className="finder-name-row">
+                            <div className="finder-candidate-info">
+                              <div className="finder-name-row">
                                   <span className="finder-star-pill">
                                     <span className="star-icon">★</span> {cand.rating ? Number(cand.rating).toFixed(1) : "0.0"}
                                   </span>
@@ -4106,7 +4107,6 @@ export default function EmployerApplicantFinder() {
                                   })()}
                                 </div>
                               </div>
-                            </div>
 
                             {/* Skills Row with single-line overflow and hover tooltip */}
                             {skillsList.length > 0 && (
@@ -4420,25 +4420,26 @@ export default function EmployerApplicantFinder() {
                   return (
                     <article key={cand.user_id} className="finder-card">
                       <div className="finder-card-main">
-                        {/* Left Column: Avatar + Profile Info + Skills + Certifications */}
+                        {/* Left Column: Full-Height Profile Picture accommodating the entire left side */}
+                        <div className="finder-avatar-box">
+                          {cand.profile_picture_path ? (
+                            <img
+                              src={cand.profile_picture_path.startsWith("http") || cand.profile_picture_path.startsWith("/api") ? cand.profile_picture_path : `/api/applicants/${cand.user_id}/profile-picture`}
+                              alt={cand.applicant_name}
+                              className="finder-avatar-img"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLElement).style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <span className="finder-avatar-initials">{initialsFrom(cand.applicant_name)}</span>
+                          )}
+                        </div>
+
+                        {/* Middle Column: Profile Info + Skills + Certifications */}
                         <div className="finder-card-left">
-                          <div className="finder-card-header-row">
-                            <div className="finder-avatar-box">
-                              {cand.profile_picture_path ? (
-                                <img
-                                  src={cand.profile_picture_path.startsWith("http") || cand.profile_picture_path.startsWith("/api") ? cand.profile_picture_path : `/api/applicants/${cand.user_id}/profile-picture`}
-                                  alt={cand.applicant_name}
-                                  style={{ width: "100%", height: "100%", borderRadius: "8px", objectFit: "cover" }}
-                                  onError={(e) => {
-                                    (e.currentTarget as HTMLElement).style.display = "none";
-                                  }}
-                                />
-                              ) : (
-                                initialsFrom(cand.applicant_name)
-                              )}
-                            </div>
-                            <div className="finder-candidate-info">
-                              <div className="finder-name-row">
+                          <div className="finder-candidate-info">
+                            <div className="finder-name-row">
                                 <span className="finder-star-pill">
                                   <span className="star-icon">★</span> {cand.rating ? Number(cand.rating).toFixed(1) : "0.0"}
                                 </span>
@@ -4504,7 +4505,6 @@ export default function EmployerApplicantFinder() {
                                 })()}
                               </div>
                             </div>
-                          </div>
 
                           {/* Skills Row with single-line overflow and hover tooltip */}
                           {skillsList.length > 0 && (

@@ -460,13 +460,14 @@
 .finder-card-main {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  gap: 20px;
+  align-items: stretch;
+  gap: 18px;
 }
 
 .finder-card-left {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 8px;
   flex: 1;
   min-width: 0;
@@ -479,17 +480,43 @@
 }
 
 .finder-avatar-box {
-  width: 46px;
-  height: 46px;
-  border-radius: 8px;
+  width: 96px;
+  min-width: 96px;
+  max-width: 96px;
+  align-self: stretch;
+  min-height: 96px;
+  border-radius: 10px;
   background: #01294a;
   color: #ffffff;
-  font-size: 1rem;
+  font-size: 1.65rem;
   font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.finder-avatar-box img,
+.finder-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 9px;
+}
+
+.finder-avatar-initials {
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
 }
 
 .finder-candidate-info {
@@ -660,6 +687,12 @@
 
 [data-theme="dark"] .finder-card-job-badge strong {
   color: #e0f2fe;
+}
+
+[data-theme="dark"] .finder-avatar-box {
+  background: #242735;
+  color: #38bdf8;
+  border: 1px solid #2e3244;
 }
 
 .finder-candidate-meta-inline {
@@ -4104,6 +4137,22 @@
   .mode-toggle-card .mode-actions {
     flex-direction: column !important;
     gap: 8px !important;
+  }
+
+  .finder-card-main {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  .finder-avatar-box {
+    width: 68px !important;
+    min-width: 68px !important;
+    max-width: 68px !important;
+    height: 68px !important;
+    min-height: 68px !important;
+    border-radius: 8px !important;
+    align-self: flex-start !important;
   }
 
   .mode-toggle-card button {
