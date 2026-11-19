@@ -210,7 +210,7 @@ function formatDate(value: string | null | undefined) {
 }
 
 function getCandidateLetterStatus(app: ApprovedApplication): {
-  statusKey: "letter_sent" | "approved_letter" | "denied_letter" | "approved";
+  statusKey: "offer_extended" | "offer_accepted" | "offer_declined" | "approved";
   badgeLabel: string;
   badgeClass: string;
   buttonLabel: string;
@@ -228,11 +228,11 @@ function getCandidateLetterStatus(app: ApprovedApplication): {
       appStatus === "accepted"
     ) {
       return {
-        statusKey: "approved_letter",
-        badgeLabel: "Approved Letter",
-        badgeClass: "status-approved-letter",
-        buttonLabel: "Approved Letter",
-        buttonClass: "btn-approved-letter",
+        statusKey: "offer_accepted",
+        badgeLabel: "Offer Accepted",
+        badgeClass: "status-offer-accepted",
+        buttonLabel: "Offer Accepted",
+        buttonClass: "btn-offer-accepted",
       };
     }
 
@@ -243,20 +243,20 @@ function getCandidateLetterStatus(app: ApprovedApplication): {
       dec === "denied"
     ) {
       return {
-        statusKey: "denied_letter",
-        badgeLabel: "Denied Letter",
-        badgeClass: "status-denied-letter",
-        buttonLabel: "Denied Letter",
-        buttonClass: "btn-denied-letter",
+        statusKey: "offer_declined",
+        badgeLabel: "Offer Declined",
+        badgeClass: "status-offer-declined",
+        buttonLabel: "Offer Declined",
+        buttonClass: "btn-offer-declined",
       };
     }
 
     return {
-      statusKey: "letter_sent",
-      badgeLabel: "Letter Sent",
-      badgeClass: "status-letter-sent",
-      buttonLabel: "Letter Sent",
-      buttonClass: "btn-letter-sent",
+      statusKey: "offer_extended",
+      badgeLabel: "Offer Extended",
+      badgeClass: "status-offer-extended",
+      buttonLabel: "Offer Extended",
+      buttonClass: "btn-offer-extended",
     };
   }
 
@@ -372,7 +372,7 @@ export default function EmployerDashboard() {
   const [approvedApplications, setApprovedApplications] = useState<ApprovedApplication[]>([]);
   const [selectedEvalJobId, setSelectedEvalJobId] = useState<number | null>(null);
   const [selectedApprovedJobId, setSelectedApprovedJobId] = useState<number | "all">("all");
-  const [selectedLetterStatus, setSelectedLetterStatus] = useState<"all" | "letter_sent" | "approved_letter" | "denied_letter">("all");
+  const [selectedLetterStatus, setSelectedLetterStatus] = useState<"all" | "offer_extended" | "offer_accepted" | "offer_declined">("all");
 
   // Modals state
   const [detailsModalCandidate, setDetailsModalCandidate] = useState<CandidateModalData | null>(null);
@@ -639,22 +639,22 @@ export default function EmployerDashboard() {
         ? approvedApplications
         : approvedApplications.filter((app) => Number(app.job_post_id) === Number(selectedApprovedJobId));
 
-    let letterSentCount = 0;
-    let approvedLetterCount = 0;
-    let deniedLetterCount = 0;
+    let offerExtendedCount = 0;
+    let offerAcceptedCount = 0;
+    let offerDeclinedCount = 0;
 
     for (const app of baseList) {
       const { statusKey } = getCandidateLetterStatus(app);
-      if (statusKey === "letter_sent") letterSentCount++;
-      else if (statusKey === "approved_letter") approvedLetterCount++;
-      else if (statusKey === "denied_letter") deniedLetterCount++;
+      if (statusKey === "offer_extended") offerExtendedCount++;
+      else if (statusKey === "offer_accepted") offerAcceptedCount++;
+      else if (statusKey === "offer_declined") offerDeclinedCount++;
     }
 
     return {
       all: baseList.length,
-      letter_sent: letterSentCount,
-      approved_letter: approvedLetterCount,
-      denied_letter: deniedLetterCount,
+      offer_extended: offerExtendedCount,
+      offer_accepted: offerAcceptedCount,
+      offer_declined: offerDeclinedCount,
     };
   }, [approvedApplications, selectedApprovedJobId]);
 
@@ -1282,30 +1282,30 @@ export default function EmployerDashboard() {
                   </button>
                   <button
                     type="button"
-                    className={`letter-status-tab tab-sent ${selectedLetterStatus === "letter_sent" ? "active" : ""}`}
-                    onClick={() => setSelectedLetterStatus(selectedLetterStatus === "letter_sent" ? "all" : "letter_sent")}
-                    title="Formal offer letter sent to candidate (awaiting response)"
+                    className={`letter-status-tab tab-extended ${selectedLetterStatus === "offer_extended" ? "active" : ""}`}
+                    onClick={() => setSelectedLetterStatus(selectedLetterStatus === "offer_extended" ? "all" : "offer_extended")}
+                    title="Formal offer letter extended to candidate (awaiting response)"
                   >
-                    <span className="status-indicator-dot dot-sent" />
-                    Letter Sent <span className="tab-count">({approvedStatusCounts.letter_sent})</span>
+                    <span className="status-indicator-dot dot-extended" />
+                    Offer Extended <span className="tab-count">({approvedStatusCounts.offer_extended})</span>
                   </button>
                   <button
                     type="button"
-                    className={`letter-status-tab tab-approved ${selectedLetterStatus === "approved_letter" ? "active" : ""}`}
-                    onClick={() => setSelectedLetterStatus(selectedLetterStatus === "approved_letter" ? "all" : "approved_letter")}
+                    className={`letter-status-tab tab-accepted ${selectedLetterStatus === "offer_accepted" ? "active" : ""}`}
+                    onClick={() => setSelectedLetterStatus(selectedLetterStatus === "offer_accepted" ? "all" : "offer_accepted")}
                     title="Candidate accepted the formal offer letter"
                   >
-                    <span className="status-indicator-dot dot-approved" />
-                    Approved Letter <span className="tab-count">({approvedStatusCounts.approved_letter})</span>
+                    <span className="status-indicator-dot dot-accepted" />
+                    Offer Accepted <span className="tab-count">({approvedStatusCounts.offer_accepted})</span>
                   </button>
                   <button
                     type="button"
-                    className={`letter-status-tab tab-denied ${selectedLetterStatus === "denied_letter" ? "active" : ""}`}
-                    onClick={() => setSelectedLetterStatus(selectedLetterStatus === "denied_letter" ? "all" : "denied_letter")}
-                    title="Candidate declined or denied the formal offer letter"
+                    className={`letter-status-tab tab-declined ${selectedLetterStatus === "offer_declined" ? "active" : ""}`}
+                    onClick={() => setSelectedLetterStatus(selectedLetterStatus === "offer_declined" ? "all" : "offer_declined")}
+                    title="Candidate declined the formal offer letter"
                   >
-                    <span className="status-indicator-dot dot-denied" />
-                    Denied Letter <span className="tab-count">({approvedStatusCounts.denied_letter})</span>
+                    <span className="status-indicator-dot dot-declined" />
+                    Offer Declined <span className="tab-count">({approvedStatusCounts.offer_declined})</span>
                   </button>
                 </div>
               </div>
@@ -1316,7 +1316,7 @@ export default function EmployerDashboard() {
                 <div className="empty-roster-box">
                   <strong>
                     {selectedLetterStatus !== "all"
-                      ? `No candidates found with "${selectedLetterStatus === "letter_sent" ? "Letter Sent" : selectedLetterStatus === "approved_letter" ? "Approved Letter" : "Denied Letter"}" status.`
+                      ? `No candidates found with "${selectedLetterStatus === "offer_extended" ? "Offer Extended" : selectedLetterStatus === "offer_accepted" ? "Offer Accepted" : "Offer Declined"}" status.`
                       : selectedApprovedJobId === "all"
                       ? "No approved candidates yet."
                       : "No approved candidates for this job vacancy yet."}
@@ -1490,30 +1490,29 @@ export default function EmployerDashboard() {
                               Details
                             </button>
 
-                            {app.decision_message ? (
-                              <button
-                                type="button"
-                                className={`approved-card-btn ${letterStatus.buttonClass}`}
-                                onClick={() => {
-                                  setViewOfferLetterModal({
-                                    candidateName: app.applicant_name,
-                                    jobTitle: app.job_title,
-                                    letterText: app.decision_message,
-                                    status: app.status,
-                                    responseDecision: app.response_decision,
-                                    responseMessage: app.response_message || app.response_letter,
-                                    responseDate: app.response_date || app.responded_at,
-                                    proposedStartDate: app.proposed_start_date || app.start_date,
-                                  });
-                                }}
-                              >
-                                {letterStatus.buttonLabel}
-                              </button>
-                            ) : (
-                              <span className="approved-card-btn btn-approved">
-                                Approved
-                              </span>
-                            )}
+                            <button
+                              type="button"
+                              className={`approved-card-btn ${letterStatus.buttonClass}`}
+                              onClick={() => {
+                                setViewOfferLetterModal({
+                                  candidateName: app.applicant_name,
+                                  jobTitle: app.job_title,
+                                  letterText: app.decision_message,
+                                  status: app.status,
+                                  responseDecision: app.response_decision,
+                                  responseMessage: app.response_message || app.response_letter,
+                                  responseDate: app.response_date || app.responded_at,
+                                  proposedStartDate: app.proposed_start_date || app.start_date,
+                                });
+                              }}
+                              title={
+                                app.decision_message
+                                  ? `Click to view ${letterStatus.buttonLabel} letter & details`
+                                  : "Click to view application approval details"
+                              }
+                            >
+                              {letterStatus.buttonLabel}
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -1555,7 +1554,9 @@ export default function EmployerDashboard() {
           <div className="view-letter-modal card" onClick={(e) => e.stopPropagation()}>
             <div className="view-letter-modal-header">
               <div>
-                <span className="view-letter-badge">Official Formal Offer</span>
+                <span className="view-letter-badge">
+                  {viewOfferLetterModal.letterText ? "Official Formal Offer" : "Approval Decision Notice"}
+                </span>
                 <h3>{viewOfferLetterModal.jobTitle}</h3>
                 <p>Candidate: <strong>{viewOfferLetterModal.candidateName}</strong></p>
               </div>
@@ -1571,7 +1572,7 @@ export default function EmployerDashboard() {
             </div>
 
             <div className="view-letter-body-content">
-              {(viewOfferLetterModal.proposedStartDate || viewOfferLetterModal.responseDecision) && (
+              {(viewOfferLetterModal.proposedStartDate || viewOfferLetterModal.responseDecision || viewOfferLetterModal.status) && (
                 <div className="view-letter-meta-row" style={{ marginBottom: "12px" }}>
                   {viewOfferLetterModal.proposedStartDate && (
                     <span className="view-letter-timestamp-tag">
@@ -1579,34 +1580,41 @@ export default function EmployerDashboard() {
                     </span>
                   )}
                   <span className={`offer-decision-tag ${
-                    (viewOfferLetterModal.responseDecision || "").toLowerCase().includes("accept") || (viewOfferLetterModal.responseDecision || "").toLowerCase() === "approved"
+                    (viewOfferLetterModal.responseDecision || "").toLowerCase().includes("accept") || (viewOfferLetterModal.responseDecision || "").toLowerCase() === "approved" || (viewOfferLetterModal.status || "").toLowerCase() === "recruited"
                       ? "accepted"
                       : (viewOfferLetterModal.responseDecision || "").toLowerCase().includes("decline") || (viewOfferLetterModal.responseDecision || "").toLowerCase().includes("reject") || (viewOfferLetterModal.responseDecision || "").toLowerCase() === "denied"
                       ? "declined"
-                      : "pending"
+                      : viewOfferLetterModal.letterText
+                      ? "pending"
+                      : "accepted"
                   }`}>
-                    {(viewOfferLetterModal.responseDecision || "").toLowerCase().includes("accept") || (viewOfferLetterModal.responseDecision || "").toLowerCase() === "approved"
-                      ? "Approved Letter (Offer Accepted)"
+                    {(viewOfferLetterModal.responseDecision || "").toLowerCase().includes("accept") || (viewOfferLetterModal.responseDecision || "").toLowerCase() === "approved" || (viewOfferLetterModal.status || "").toLowerCase() === "recruited"
+                      ? "Offer Accepted (Recruited)"
                       : (viewOfferLetterModal.responseDecision || "").toLowerCase().includes("decline") || (viewOfferLetterModal.responseDecision || "").toLowerCase().includes("reject") || (viewOfferLetterModal.responseDecision || "").toLowerCase() === "denied"
-                      ? "Denied Letter (Offer Declined)"
-                      : "Letter Sent (Awaiting Candidate Response)"}
+                      ? "Offer Declined"
+                      : viewOfferLetterModal.letterText
+                      ? "Offer Extended (Awaiting Candidate Response)"
+                      : "Application Approved"}
                   </span>
                 </div>
               )}
 
               <div className="view-letter-body-box">
                 <div className="view-letter-box-header">
-                  <span className="view-letter-box-label">FORMAL OFFER DETAILS & TERMS</span>
+                  <span className="view-letter-box-label">
+                    {viewOfferLetterModal.letterText ? "FORMAL OFFER DETAILS & TERMS" : "APPLICATION APPROVAL RECORD"}
+                  </span>
                 </div>
                 <pre className="view-letter-pre-text">
-                  {viewOfferLetterModal.letterText || "Offer letter details submitted to candidate."}
+                  {viewOfferLetterModal.letterText ||
+                    "This candidate has been officially approved for the position.\n\nAn official formal offer letter with compensation details, proposed start date, and terms can be extended to this candidate from the Applicant Management page."}
                 </pre>
               </div>
 
-              {viewOfferLetterModal.responseMessage && (
+              {viewOfferLetterModal.responseMessage ? (
                 <div className="view-letter-body-box" style={{ marginTop: "14px" }}>
                   <div className="view-letter-box-header">
-                    <span className="view-letter-box-label">CANDIDATE RESPONSE</span>
+                    <span className="view-letter-box-label">CANDIDATE RESPONSE LETTER</span>
                     {viewOfferLetterModal.responseDate && (
                       <small>{formatDate(viewOfferLetterModal.responseDate)}</small>
                     )}
@@ -1615,10 +1623,31 @@ export default function EmployerDashboard() {
                     {viewOfferLetterModal.responseMessage}
                   </pre>
                 </div>
-              )}
+              ) : viewOfferLetterModal.letterText && (
+                (viewOfferLetterModal.responseDecision || "").toLowerCase().includes("accept") ||
+                (viewOfferLetterModal.status || "").toLowerCase() === "recruited"
+              ) ? (
+                <div className="view-letter-body-box" style={{ marginTop: "14px" }}>
+                  <div className="view-letter-box-header">
+                    <span className="view-letter-box-label">CANDIDATE RESPONSE</span>
+                  </div>
+                  <pre className="view-letter-pre-text">
+                    {`Dear Hiring Team,\n\nI am pleased to accept your formal offer for the position of "${viewOfferLetterModal.jobTitle}". I look forward to joining the team.\n\nSincerely,\n${viewOfferLetterModal.candidateName}`}
+                  </pre>
+                </div>
+              ) : null}
             </div>
 
             <div className="view-letter-footer">
+              {!viewOfferLetterModal.letterText && (
+                <a
+                  href="/employer-applicant-management"
+                  className="view-letter-action-btn secondary"
+                  style={{ textDecoration: "none", marginRight: "auto" }}
+                >
+                  Manage in Applicant Management →
+                </a>
+              )}
               <button
                 type="button"
                 className="view-letter-action-btn primary"

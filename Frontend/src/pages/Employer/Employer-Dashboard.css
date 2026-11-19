@@ -1014,19 +1014,22 @@
   border-color: #01294a;
 }
 
-.letter-status-tab.tab-sent.active {
+.letter-status-tab.tab-sent.active,
+.letter-status-tab.tab-extended.active {
   background: #0284c7;
   color: #ffffff;
   border-color: #0284c7;
 }
 
-.letter-status-tab.tab-approved.active {
+.letter-status-tab.tab-approved.active,
+.letter-status-tab.tab-accepted.active {
   background: #16a34a;
   color: #ffffff;
   border-color: #16a34a;
 }
 
-.letter-status-tab.tab-denied.active {
+.letter-status-tab.tab-denied.active,
+.letter-status-tab.tab-declined.active {
   background: #dc2626;
   color: #ffffff;
   border-color: #dc2626;
@@ -1045,15 +1048,18 @@
   flex-shrink: 0;
 }
 
-.status-indicator-dot.dot-sent {
+.status-indicator-dot.dot-sent,
+.status-indicator-dot.dot-extended {
   background: #0284c7;
 }
 
-.status-indicator-dot.dot-approved {
+.status-indicator-dot.dot-approved,
+.status-indicator-dot.dot-accepted {
   background: #16a34a;
 }
 
-.status-indicator-dot.dot-denied {
+.status-indicator-dot.dot-denied,
+.status-indicator-dot.dot-declined {
   background: #dc2626;
 }
 
@@ -1488,19 +1494,22 @@
   flex-shrink: 0;
 }
 
-.approved-status-pill.status-letter-sent {
+.approved-status-pill.status-letter-sent,
+.approved-status-pill.status-offer-extended {
   background: #e0f2fe;
   color: #0284c7;
   border-color: #7dd3fc;
 }
 
-.approved-status-pill.status-approved-letter {
+.approved-status-pill.status-approved-letter,
+.approved-status-pill.status-offer-accepted {
   background: #dcfce7;
   color: #15803d;
   border-color: #86efac;
 }
 
-.approved-status-pill.status-denied-letter {
+.approved-status-pill.status-denied-letter,
+.approved-status-pill.status-offer-declined {
   background: #fee2e2;
   color: #b91c1c;
   border-color: #fca5a5;
@@ -1647,38 +1656,52 @@
   background: #ecfdf5;
   color: #047857;
   border: 1px solid #a7f3d0;
-  cursor: default;
+  cursor: pointer;
 }
 
-.approved-card-btn.btn-letter-sent {
+.approved-card-btn.btn-approved:hover {
+  background: #d1fae5;
+  border-color: #6ee7b7;
+}
+
+.approved-card-btn.btn-letter-sent,
+.approved-card-btn.btn-offer-extended {
   background: #0284c7;
   color: #ffffff;
   border: 1px solid #0284c7;
+  cursor: pointer;
 }
 
-.approved-card-btn.btn-letter-sent:hover {
+.approved-card-btn.btn-letter-sent:hover,
+.approved-card-btn.btn-offer-extended:hover {
   background: #0369a1;
   border-color: #0369a1;
 }
 
-.approved-card-btn.btn-approved-letter {
+.approved-card-btn.btn-approved-letter,
+.approved-card-btn.btn-offer-accepted {
   background: #16a34a;
   color: #ffffff;
   border: 1px solid #16a34a;
+  cursor: pointer;
 }
 
-.approved-card-btn.btn-approved-letter:hover {
+.approved-card-btn.btn-approved-letter:hover,
+.approved-card-btn.btn-offer-accepted:hover {
   background: #15803d;
   border-color: #15803d;
 }
 
-.approved-card-btn.btn-denied-letter {
+.approved-card-btn.btn-denied-letter,
+.approved-card-btn.btn-offer-declined {
   background: #dc2626;
   color: #ffffff;
   border: 1px solid #dc2626;
+  cursor: pointer;
 }
 
-.approved-card-btn.btn-denied-letter:hover {
+.approved-card-btn.btn-denied-letter:hover,
+.approved-card-btn.btn-offer-declined:hover {
   background: #b91c1c;
   border-color: #b91c1c;
 }
@@ -2964,33 +2987,39 @@
   font-weight: 800 !important;
 }
 
-[data-theme="dark"] .letter-status-tab.tab-sent.active {
+[data-theme="dark"] .letter-status-tab.tab-sent.active,
+[data-theme="dark"] .letter-status-tab.tab-extended.active {
   background: #38bdf8 !important;
   color: #0a0e17 !important;
   border-color: #38bdf8 !important;
 }
 
-[data-theme="dark"] .letter-status-tab.tab-approved.active {
+[data-theme="dark"] .letter-status-tab.tab-approved.active,
+[data-theme="dark"] .letter-status-tab.tab-accepted.active {
   background: #4ade80 !important;
   color: #0a0e17 !important;
   border-color: #4ade80 !important;
 }
 
-[data-theme="dark"] .letter-status-tab.tab-denied.active {
+[data-theme="dark"] .letter-status-tab.tab-denied.active,
+[data-theme="dark"] .letter-status-tab.tab-declined.active {
   background: #f87171 !important;
   color: #0a0e17 !important;
   border-color: #f87171 !important;
 }
 
-[data-theme="dark"] .status-indicator-dot.dot-sent {
+[data-theme="dark"] .status-indicator-dot.dot-sent,
+[data-theme="dark"] .status-indicator-dot.dot-extended {
   background: #38bdf8 !important;
 }
 
-[data-theme="dark"] .status-indicator-dot.dot-approved {
+[data-theme="dark"] .status-indicator-dot.dot-approved,
+[data-theme="dark"] .status-indicator-dot.dot-accepted {
   background: #4ade80 !important;
 }
 
-[data-theme="dark"] .status-indicator-dot.dot-denied {
+[data-theme="dark"] .status-indicator-dot.dot-denied,
+[data-theme="dark"] .status-indicator-dot.dot-declined {
   background: #f87171 !important;
 }
 
@@ -2998,19 +3027,22 @@
   background: #0a0e17 !important;
 }
 
-[data-theme="dark"] .approved-status-pill.status-letter-sent {
+[data-theme="dark"] .approved-status-pill.status-letter-sent,
+[data-theme="dark"] .approved-status-pill.status-offer-extended {
   background: rgba(14, 165, 233, 0.18) !important;
   color: #38bdf8 !important;
   border-color: rgba(56, 189, 248, 0.35) !important;
 }
 
-[data-theme="dark"] .approved-status-pill.status-approved-letter {
+[data-theme="dark"] .approved-status-pill.status-approved-letter,
+[data-theme="dark"] .approved-status-pill.status-offer-accepted {
   background: rgba(34, 197, 94, 0.18) !important;
   color: #4ade80 !important;
   border-color: rgba(74, 222, 128, 0.35) !important;
 }
 
-[data-theme="dark"] .approved-status-pill.status-denied-letter {
+[data-theme="dark"] .approved-status-pill.status-denied-letter,
+[data-theme="dark"] .approved-status-pill.status-offer-declined {
   background: rgba(239, 68, 68, 0.18) !important;
   color: #f87171 !important;
   border-color: rgba(248, 113, 113, 0.35) !important;
@@ -3022,37 +3054,58 @@
   border-color: rgba(74, 222, 128, 0.35) !important;
 }
 
-[data-theme="dark"] .approved-card-btn.btn-letter-sent {
+[data-theme="dark"] .approved-card-btn.btn-letter-sent,
+[data-theme="dark"] .approved-card-btn.btn-offer-extended {
   background: #0284c7 !important;
   color: #ffffff !important;
   border-color: #38bdf8 !important;
+  cursor: pointer !important;
 }
 
-[data-theme="dark"] .approved-card-btn.btn-letter-sent:hover {
+[data-theme="dark"] .approved-card-btn.btn-letter-sent:hover,
+[data-theme="dark"] .approved-card-btn.btn-offer-extended:hover {
   background: #0369a1 !important;
   border-color: #38bdf8 !important;
 }
 
-[data-theme="dark"] .approved-card-btn.btn-approved-letter {
+[data-theme="dark"] .approved-card-btn.btn-approved-letter,
+[data-theme="dark"] .approved-card-btn.btn-offer-accepted {
   background: #16a34a !important;
   color: #ffffff !important;
   border-color: #4ade80 !important;
+  cursor: pointer !important;
 }
 
-[data-theme="dark"] .approved-card-btn.btn-approved-letter:hover {
+[data-theme="dark"] .approved-card-btn.btn-approved-letter:hover,
+[data-theme="dark"] .approved-card-btn.btn-offer-accepted:hover {
   background: #15803d !important;
   border-color: #4ade80 !important;
 }
 
-[data-theme="dark"] .approved-card-btn.btn-denied-letter {
+[data-theme="dark"] .approved-card-btn.btn-denied-letter,
+[data-theme="dark"] .approved-card-btn.btn-offer-declined {
   background: #dc2626 !important;
   color: #ffffff !important;
   border-color: #f87171 !important;
+  cursor: pointer !important;
 }
 
-[data-theme="dark"] .approved-card-btn.btn-denied-letter:hover {
+[data-theme="dark"] .approved-card-btn.btn-denied-letter:hover,
+[data-theme="dark"] .approved-card-btn.btn-offer-declined:hover {
   background: #b91c1c !important;
   border-color: #f87171 !important;
+}
+
+[data-theme="dark"] .approved-card-btn.btn-approved {
+  background: rgba(16, 185, 129, 0.18) !important;
+  color: #34d399 !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+  cursor: pointer !important;
+}
+
+[data-theme="dark"] .approved-card-btn.btn-approved:hover {
+  background: rgba(16, 185, 129, 0.28) !important;
+  border-color: #34d399 !important;
 }
 
 @media (max-width: 768px) {
