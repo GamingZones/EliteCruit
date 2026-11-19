@@ -1820,3 +1820,416 @@
   border: 1px solid #f6be45 !important;
   color: #ffffff !important;
 }
+
+
+/* ==========================================================================
+   DIRECTION 3: RECRUITMENT INSIGHTS & HIRING FUNNEL STYLES
+   ========================================================================== */
+
+.block-sub-text {
+  display: block;
+  font-size: 0.74rem;
+  color: #64748b;
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+/* ── VISUAL HIRING FUNNEL CARD ── */
+.hiring-funnel-card {
+  box-sizing: border-box;
+}
+
+.funnel-summary-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.funnel-summary-badge strong {
+  font-weight: 800;
+  color: #065f46;
+}
+
+.funnel-steps-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.funnel-step-item {
+  flex: 1;
+  min-width: 0;
+  background: #f8fbff;
+  border: 1px solid #d7dfeb;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease;
+}
+
+.funnel-step-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(12, 42, 71, 0.08);
+}
+
+.funnel-step-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.funnel-step-icon {
+  font-size: 1.15rem;
+}
+
+.funnel-step-conv {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+.step-applied .funnel-step-conv { background: #dbeafe; color: #1e40af; }
+.step-screened .funnel-step-conv { background: #e0f2fe; color: #0369a1; }
+.step-interviewed .funnel-step-conv { background: #f3e8ff; color: #6b21a8; }
+.step-hired .funnel-step-conv { background: #dcfce7; color: #15803d; }
+
+.funnel-step-number {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #0c2a47;
+  line-height: 1.1;
+  margin: 10px 0 2px;
+}
+
+.funnel-step-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.funnel-bar-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.funnel-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.step-applied .funnel-bar-fill { background: #1d4ed8; }
+.step-screened .funnel-bar-fill { background: #0284c7; }
+.step-interviewed .funnel-bar-fill { background: #9333ea; }
+.step-hired .funnel-bar-fill { background: #16a34a; }
+
+.funnel-arrow {
+  color: #94a3b8;
+  font-size: 1.2rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+/* ── TOP PERFORMING JOB POSTS ── */
+.top-jobs-block {
+  min-width: 0;
+}
+
+.top-job-item {
+  padding: 12px 14px;
+  background: #f8fbff;
+  border: 1px solid #d7dfeb;
+  border-radius: 10px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.top-job-item:hover {
+  background: #f1f7fe;
+  border-color: #cbd5e1;
+}
+
+.top-job-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.top-job-title-col {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.top-job-rank {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: #0c2a47;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.top-job-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0c2a47;
+  display: block;
+}
+
+.inflow-badge {
+  display: inline-flex;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.inflow-badge.high { background: #fee2e2; color: #b91c1c; }
+.inflow-badge.active { background: #e0f2fe; color: #0369a1; }
+.inflow-badge.low { background: #fef9c3; color: #854d0e; }
+
+.top-job-velocity-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.velocity-bar-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.velocity-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.velocity-bar-fill.high { background: #ef4444; }
+.velocity-bar-fill.active { background: #0284c7; }
+.velocity-bar-fill.low { background: #eab308; }
+
+.velocity-count-text {
+  font-size: 0.76rem;
+  color: #475569;
+  flex-shrink: 0;
+}
+
+.top-job-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 4px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+/* ── RECENT CANDIDATE SUBMISSIONS ── */
+.recent-submissions-block {
+  min-width: 0;
+}
+
+.submissions-compact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.submission-compact-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #f8fbff;
+  border: 1px solid #d7dfeb;
+  border-radius: 10px;
+  transition: all 0.15s ease;
+}
+
+.submission-compact-row:hover {
+  background: #f1f7fe;
+  border-color: #cbd5e1;
+}
+
+.submission-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.submission-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.submission-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0c2a47;
+}
+
+.submission-job {
+  font-size: 0.76rem;
+  color: #53708d;
+}
+
+.submission-date {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  margin-top: 1px;
+}
+
+.submission-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ── RESPONSIVE & DARK MODE OVERRIDES ── */
+@media (max-width: 1020px) {
+  .funnel-steps-container {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .funnel-arrow {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .hiring-funnel-card {
+    margin: 0 14px 14px !important;
+  }
+
+  .funnel-steps-container {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+[data-theme="dark"] .block-sub-text {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .hiring-funnel-card {
+  background: #1c1e27 !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .funnel-summary-badge {
+  background: rgba(16, 185, 129, 0.18) !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+  color: #34d399 !important;
+}
+
+[data-theme="dark"] .funnel-summary-badge strong {
+  color: #6ee7b7 !important;
+}
+
+[data-theme="dark"] .funnel-step-item {
+  background: #20232e !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .funnel-step-number {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .funnel-step-label {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .funnel-bar-track {
+  background: #2e3244 !important;
+}
+
+[data-theme="dark"] .funnel-arrow {
+  color: #475569 !important;
+}
+
+[data-theme="dark"] .top-job-item {
+  background: #20232e !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .top-job-item:hover {
+  background: #252936 !important;
+  border-color: #3e445a !important;
+}
+
+[data-theme="dark"] .top-job-rank {
+  background: #242735 !important;
+  border: 1px solid #2e3244 !important;
+  color: #f6be45 !important;
+}
+
+[data-theme="dark"] .top-job-name {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .velocity-bar-track {
+  background: #2e3244 !important;
+}
+
+[data-theme="dark"] .velocity-count-text {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .top-job-footer {
+  border-top-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .submission-compact-row {
+  background: #20232e !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .submission-compact-row:hover {
+  background: #252936 !important;
+  border-color: #3e445a !important;
+}
+
+[data-theme="dark"] .submission-name {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .submission-job {
+  color: #94a3b8 !important;
+}
