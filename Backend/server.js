@@ -7606,9 +7606,8 @@ app.get("/api/interviews", async (req, res) => {
           i.applicant_user_id = ?
           OR i.candidate_user_ids @> to_jsonb(?::int)
           OR (lower(i.applicant_email) = (SELECT lower(email) FROM users WHERE id = ?))
-          OR (i.applicant_user_id IN (SELECT id FROM users WHERE lower(email) IN ('demo_applicant@elitecruit.ph', 'zaki_ablando897@yahoo.com', 'chudzones@gmail.com')) AND ? IN (SELECT id FROM users WHERE lower(email) IN ('demo_applicant@elitecruit.ph', 'zaki_ablando897@yahoo.com', 'chudzones@gmail.com')))
         )`;
-        params.push(userId, userId, userId, userId);
+        params.push(userId, userId, userId);
       }
       rows = await all(
         `SELECT i.*,
@@ -8163,29 +8162,13 @@ app.patch("/api/interviews/:id/status", async (req, res) => {
       }
     }
 
-    // Dispatch in-app chat thread system message for all relevant candidate threads
+    // Dispatch in-app chat thread system message strictly for the candidate(s) scheduled for this interview
     try {
       const empId = existing.employer_user_id;
       const targetCandIds = Array.from(new Set([
-        (updaterId && updaterId > 0) ? updaterId : null,
         existing.applicant_user_id,
         ...candidateUserIds,
-      ])).filter(Boolean);
-
-      // If any demo applicant email is linked, also sync to other demo applicant threads
-      const demoCandidateEmails = ["demo_applicant@elitecruit.ph", "zaki_ablando897@yahoo.com", "chudzones@gmail.com"];
-      try {
-        const demoUsers = await all(
-          "SELECT id FROM users WHERE lower(email) = ANY(?::text[])",
-          [demoCandidateEmails]
-        );
-        const demoUserIds = (demoUsers || []).map((u) => u.id);
-        if (targetCandIds.some((id) => demoUserIds.includes(id))) {
-          demoUserIds.forEach((id) => {
-            if (!targetCandIds.includes(id)) targetCandIds.push(id);
-          });
-        }
-      } catch {}
+      ])).filter((id) => Boolean(id) && Number(id) !== Number(empId));
 
       for (const candId of targetCandIds) {
         if (!empId || !candId) continue;
@@ -8958,6 +8941,48 @@ app.all("/api/admin/unregister-zaki-both-accounts", async (req, res) => {
   }
 });
 
+async function cleanupErroneousBroadcastInterviewMessages() {
+  try {
+    const res = await run(`
+      DELETE FROM messages m
+      WHERE (
+        m.message_text LIKE '[Interview Rescheduled]%'
+        OR m.message_text LIKE '[Interview Cancelled]%'
+        OR m.message_text LIKE '[Meeting Reschedule Request]%'
+        OR m.message_text LIKE '[Interview Scheduled]%'
+      )
+      AND EXISTS (
+        SELECT 1
+        FROM message_participants p
+        JOIN users u ON p.user_id = u.id AND u.role = 'applicant'
+        WHERE p.thread_id = m.thread_id
+        AND NOT EXISTS (
+          SELECT 1 FROM scheduled_interviews si
+          WHERE (
+            si.applicant_user_id = u.id
+            OR si.candidate_user_ids @> to_jsonb(u.id::int)
+            OR lower(si.applicant_email) = lower(u.email)
+          )
+          AND (
+            m.message_text ILIKE '%' || si.interview_title || '%'
+            OR m.message_text ILIKE '%' || si.interview_date || '%'
+          )
+        )
+      )
+    `);
+    console.log("[Cleanup] Erroneous broadcast interview messages cleaned successfully.");
+    return { success: true, count: res?.rowCount ?? 0 };
+  } catch (err) {
+    console.error("[Cleanup] Failed to clean broadcast messages:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+app.all("/api/admin/clean-broadcast-messages", async (_req, res) => {
+  const result = await cleanupErroneousBroadcastInterviewMessages();
+  res.json(result);
+});
+
 app.all("/api/system/unregister-zaki-both-accounts", async (req, res) => {
   try {
     const result = await unregisterZakiBothAccounts();
@@ -9671,6 +9696,7 @@ Promise.resolve()
   .then(() => syncHistoricalInvitations())
   .then(() => ensureAdminUser())
   .then(() => oneTimeResetZakiBothAccounts())
+  .then(() => cleanupErroneousBroadcastInterviewMessages())
   .then(() => seedAllSystemUserAccounts())
   .then(() => app.listen(PORT, "0.0.0.0", () => {
     console.log(`EliteCruit backend running at http://0.0.0.0:${PORT}`);
