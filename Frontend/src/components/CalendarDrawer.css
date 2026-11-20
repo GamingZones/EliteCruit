@@ -3134,30 +3134,37 @@
   border: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .cal-modal-preview-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
 }
 
 .cal-modal-preview-title {
   font-size: 0.95rem;
   font-weight: 700;
   color: #0c2a47;
+  line-height: 1.35;
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
 }
 
 .cal-modal-preview-badge {
   font-size: 0.72rem;
   font-weight: 700;
-  padding: 2px 8px;
+  padding: 3px 8px;
   border-radius: 6px;
   background: #e0f2fe;
   color: #0369a1;
   text-transform: capitalize;
+  flex-shrink: 0;
+  white-space: nowrap;
+  line-height: 1.2;
 }
 
 .cal-modal-preview-meta {
@@ -3165,14 +3172,64 @@
   color: #64748b;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 8px 16px;
   flex-wrap: wrap;
+  line-height: 1.3;
 }
 
 .cal-modal-preview-meta-item {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  color: #64748b;
+}
+
+.cal-modal-preview-meta-item svg,
+.cal-modal-meta-icon {
+  flex-shrink: 0;
+  color: #0284c7;
+  display: block;
+}
+
+.cal-modal-candidate-req-banner {
+  margin-top: 12px;
+  margin-bottom: 4px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cal-modal-candidate-req-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #b45309;
+}
+
+.cal-modal-candidate-req-text {
+  font-size: 0.82rem;
+  font-style: italic;
+  color: #78350f;
+  line-height: 1.4;
+}
+
+.cal-btn-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  line-height: 1;
+}
+
+.cal-btn-icon {
+  flex-shrink: 0;
+  display: block;
 }
 
 .cal-modal-preview-separator {
@@ -3318,6 +3375,28 @@
 
 [data-theme="dark"] .cal-modal-preview-meta {
   color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .cal-modal-preview-meta-item {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .cal-modal-preview-meta-item svg,
+[data-theme="dark"] .cal-modal-meta-icon {
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .cal-modal-candidate-req-banner {
+  background: rgba(245, 158, 11, 0.12) !important;
+  border-color: rgba(245, 158, 11, 0.4) !important;
+}
+
+[data-theme="dark"] .cal-modal-candidate-req-badge {
+  color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .cal-modal-candidate-req-text {
+  color: #fef3c7 !important;
 }
 
 [data-theme="dark"] .cal-modal-preview-separator {
