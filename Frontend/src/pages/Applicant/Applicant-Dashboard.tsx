@@ -1976,7 +1976,7 @@ export default function ApplicantDashboard() {
                             });
                           }}
                         >
-                          <span>Formal Offer Letter</span>
+                          <span>Offer Letter</span>
                         </button>
                       );
                     }
@@ -2247,11 +2247,16 @@ export default function ApplicantDashboard() {
           onConfirm={async ({ action, letter_text, letter_type, start_date }) => {
             if (!appDecisionModalTarget) return;
             const targetApp = appDecisionModalTarget.app;
+            const token = localStorage.getItem("elitecruit-token") || localStorage.getItem("token") || "";
             const res = await fetch(`/api/applicants/applications/${targetApp.id}/decision`, {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
               body: JSON.stringify({
                 action,
+                decision: action,
                 letter_text,
                 letter_type,
                 start_date: start_date || undefined,
@@ -2259,7 +2264,7 @@ export default function ApplicantDashboard() {
             });
             if (!res.ok) {
               const err = await res.json().catch(() => ({}));
-              throw new Error(err.detail || "Failed to submit response.");
+              throw new Error(err.message || err.detail || "Failed to submit response.");
             }
             showNotification(`Offer successfully ${action === "accept" ? "accepted" : "declined"}.`, "success");
             fetchApplicantData();
@@ -2379,11 +2384,16 @@ export default function ApplicantDashboard() {
                   onConfirm={async ({ action, letter_text, letter_type, start_date }) => {
                     if (!appDecisionModalTarget) return;
                     const targetApp = appDecisionModalTarget.app;
+                    const token = localStorage.getItem("elitecruit-token") || localStorage.getItem("token") || "";
                     const res = await fetch(`/api/applicants/applications/${targetApp.id}/decision`, {
                       method: "POST",
-                      headers: { "Content-Type": "application/json" },
+                      headers: {
+                        "Content-Type": "application/json",
+                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                      },
                       body: JSON.stringify({
                         action,
+                        decision: action,
                         letter_text,
                         letter_type,
                         start_date: start_date || undefined,
@@ -2391,7 +2401,7 @@ export default function ApplicantDashboard() {
                     });
                     if (!res.ok) {
                       const err = await res.json().catch(() => ({}));
-                      throw new Error(err.detail || "Failed to submit response.");
+                      throw new Error(err.message || err.detail || "Failed to submit response.");
                     }
                     showNotification(`Offer successfully ${action === "accept" ? "accepted" : "declined"}.`, "success");
                     fetchApplicantData();
@@ -2698,7 +2708,7 @@ export default function ApplicantDashboard() {
                                     });
                                   }}
                                 >
-                                  <span>Formal Offer Letter</span>
+                                  <span>Offer Letter</span>
                                 </button>
                               );
                             }

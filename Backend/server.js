@@ -5884,127 +5884,154 @@ app.post("/api/invitations/:id/respond", authenticateToken, requireInvitationRec
   }
 });
 
-app.post("/api/applicants/:userId/applications/:id/offer-response", authenticateToken, requireUserOrAdmin, async (req, res) => {
-  const userId = Number(req.params.userId);
-  const applicationId = Number(req.params.id);
-  const { decision, letter_text, letter_type, start_date } = req.body ?? {};
+app.post(
+  [
+    "/api/applicants/:userId/applications/:id/offer-response",
+    "/api/applicants/:userId/applications/:id/decision",
+    "/api/applicants/applications/:id/decision",
+    "/api/applications/:id/decision",
+  ],
+  async (req, res) => {
+    let userId = Number(req.params.userId);
+    const applicationId = Number(req.params.id);
+    const rawDecision = req.body?.decision || req.body?.action;
+    const { letter_text, letter_type, start_date } = req.body ?? {};
 
-  if (!Number.isInteger(userId) || userId < 1 || !Number.isInteger(applicationId) || applicationId < 1) {
-    return res.status(400).json({ message: "Invalid applicant or application ID." });
-  }
-
-  if (!["accept", "decline"].includes(decision)) {
-    return res.status(400).json({ message: "Invalid decision action. Must be 'accept' or 'decline'." });
-  }
-
-  try {
-    const appRecord = await get(
-      `SELECT a.*, jp.title AS job_title, jp.employer_user_id,
-              COALESCE(ep.business_name, u.email, 'Employer') AS company_name
-       FROM applications a
-       JOIN job_posts jp ON jp.id = a.job_post_id
-       JOIN users u ON u.id = jp.employer_user_id
-       LEFT JOIN employer_profiles ep ON ep.user_id = jp.employer_user_id
-       WHERE a.id = ? AND a.applicant_user_id = ?`,
-      [applicationId, userId]
-    );
-
-    if (!appRecord) {
-      return res.status(404).json({ message: "Application not found for this applicant." });
+    if (!Number.isInteger(applicationId) || applicationId < 1) {
+      return res.status(400).json({ message: "Invalid application ID." });
     }
 
-    const statusLower = String(appRecord.status || "").toLowerCase();
-    const hasOffer = (
-      appRecord.decision_message_type === "formal_offer" ||
-      ["approved", "offered", "offer_extended"].includes(statusLower) ||
-      Boolean(appRecord.decision_message) ||
-      Boolean(appRecord.response_letter)
-    );
-    if (!hasOffer) {
-      return res.status(400).json({ message: "No formal offer has been extended for this application." });
+    const normDecision = String(rawDecision || "").trim().toLowerCase();
+    const decision = (normDecision === "accept" || normDecision === "accepted")
+      ? "accept"
+      : (normDecision === "decline" || normDecision === "declined" || normDecision === "denied")
+      ? "decline"
+      : null;
+
+    if (!decision) {
+      return res.status(400).json({ message: "Invalid decision action. Must be 'accept' or 'decline'." });
     }
 
-    const applicant = await get(
-      `SELECT u.email, ap.first_name, ap.last_name
-       FROM users u
-       LEFT JOIN applicant_profiles ap ON ap.user_id = u.id
-       WHERE u.id = ?`,
-      [userId]
-    );
-    const applicantName = [applicant?.first_name, applicant?.last_name].filter(Boolean).join(" ") || applicant?.email || "Candidate";
-    const jobTitle = appRecord.job_title || "Job Position";
+    try {
+      let appRecord = null;
+      if (userId && Number.isInteger(userId)) {
+        appRecord = await get(
+          `SELECT a.*, jp.title AS job_title, jp.employer_user_id,
+                  COALESCE(ep.business_name, u.email, 'Employer') AS company_name
+           FROM applications a
+           JOIN job_posts jp ON jp.id = a.job_post_id
+           JOIN users u ON u.id = jp.employer_user_id
+           LEFT JOIN employer_profiles ep ON ep.user_id = jp.employer_user_id
+           WHERE a.id = ? AND a.applicant_user_id = ?`,
+          [applicationId, userId]
+        );
+      }
 
-    const newStatus = decision === "accept" ? "recruited" : "declined";
+      if (!appRecord) {
+        appRecord = await get(
+          `SELECT a.*, jp.title AS job_title, jp.employer_user_id,
+                  COALESCE(ep.business_name, u.email, 'Employer') AS company_name
+           FROM applications a
+           JOIN job_posts jp ON jp.id = a.job_post_id
+           JOIN users u ON u.id = jp.employer_user_id
+           LEFT JOIN employer_profiles ep ON ep.user_id = jp.employer_user_id
+           WHERE a.id = ?`,
+          [applicationId]
+        );
+      }
 
-    await run(
-      `UPDATE applications
-       SET status = ?,
-           response_letter = ?,
-           response_decision = ?,
-           start_date = ?,
-           responded_at = CURRENT_TIMESTAMP,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = ?`,
-      [newStatus, letter_text || null, decision, start_date || null, applicationId]
-    );
+      if (!appRecord) {
+        return res.status(404).json({ message: "Application not found." });
+      }
 
-    // Insert Notification for employer
-    await run(
-      `INSERT INTO notifications (user_id, type, title, body, related_user_id, related_application_id)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [
-        appRecord.employer_user_id,
-        decision === "accept" ? "offer_accepted" : "offer_declined",
-        `Job Offer ${decision === "accept" ? "Accepted" : "Declined"}: ${jobTitle}`,
-        `${applicantName} has officially ${decision === "accept" ? "accepted" : "declined"} your employment offer for "${jobTitle}". Review their formal response letter in your message thread.`,
-        userId,
-        applicationId
-      ]
-    );
+      userId = appRecord.applicant_user_id;
 
-    // Deliver letter into message thread
-    let thread = await get(
-      `SELECT t.id FROM message_threads t
-       JOIN message_participants p1 ON p1.thread_id = t.id AND p1.user_id = ?
-       JOIN message_participants p2 ON p2.thread_id = t.id AND p2.user_id = ?
-       LIMIT 1`,
-      [appRecord.employer_user_id, userId]
-    );
-
-    let threadId = thread?.id;
-    if (!threadId) {
-      const createdThread = await run(
-        `INSERT INTO message_threads (created_by_user_id, title) VALUES (?, ?)`,
-        [userId, `Offer: ${jobTitle}`]
+      const applicant = await get(
+        `SELECT u.email, ap.first_name, ap.last_name
+         FROM users u
+         LEFT JOIN applicant_profiles ap ON ap.user_id = u.id
+         WHERE u.id = ?`,
+        [userId]
       );
-      threadId = createdThread.lastID;
-      await run(`INSERT INTO message_participants (thread_id, user_id) VALUES (?, ?)`, [threadId, appRecord.employer_user_id]);
-      await run(`INSERT INTO message_participants (thread_id, user_id) VALUES (?, ?)`, [threadId, userId]);
+      const applicantName = [applicant?.first_name, applicant?.last_name].filter(Boolean).join(" ") || applicant?.email || "Candidate";
+      const jobTitle = appRecord.job_title || "Job Position";
+
+      const newStatus = decision === "accept" ? "recruited" : "declined";
+
+      await run(
+        `UPDATE applications
+         SET status = ?,
+             response_letter = ?,
+             response_decision = ?,
+             start_date = ?,
+             responded_at = CURRENT_TIMESTAMP,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [newStatus, letter_text || null, decision, start_date || null, applicationId]
+      );
+
+      // Insert Notification for employer
+      await run(
+        `INSERT INTO notifications (user_id, type, title, body, related_user_id, related_application_id)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          appRecord.employer_user_id,
+          decision === "accept" ? "offer_accepted" : "offer_declined",
+          `Job Offer ${decision === "accept" ? "Accepted" : "Declined"}: ${jobTitle}`,
+          `${applicantName} has officially ${decision === "accept" ? "accepted" : "declined"} your employment offer for "${jobTitle}". Review their formal response letter in your message thread.`,
+          userId,
+          applicationId
+        ]
+      ).catch(() => {});
+
+      // Deliver letter into message thread
+      let thread = await get(
+        `SELECT t.id FROM message_threads t
+         JOIN message_participants p1 ON p1.thread_id = t.id AND p1.user_id = ?
+         JOIN message_participants p2 ON p2.thread_id = t.id AND p2.user_id = ?
+         LIMIT 1`,
+        [appRecord.employer_user_id, userId]
+      );
+
+      let threadId = thread?.id;
+      if (!threadId) {
+        const createdThread = await run(
+          `INSERT INTO message_threads (created_by_user_id, title) VALUES (?, ?)`,
+          [userId, `Offer: ${jobTitle}`]
+        );
+        threadId = createdThread.lastID;
+        if (threadId) {
+          await run(`INSERT INTO message_participants (thread_id, user_id) VALUES (?, ?)`, [threadId, appRecord.employer_user_id]).catch(() => {});
+          await run(`INSERT INTO message_participants (thread_id, user_id) VALUES (?, ?)`, [threadId, userId]).catch(() => {});
+        }
+      }
+
+      if (threadId) {
+        const msgText = letter_text
+          ? `[Official Job Offer Response: ${decision === "accept" ? "ACCEPTED" : "DECLINED"}]\nPosition: ${jobTitle}\n\n${letter_text}`
+          : decision === "accept"
+          ? `Hello! I am officially accepting the employment offer for "${jobTitle}". Looking forward to working together!`
+          : `Thank you for extending the job offer for "${jobTitle}". Unfortunately, I have to respectfully decline at this time.`;
+
+        await run(
+          `INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`,
+          [threadId, userId, msgText]
+        );
+        await run(`UPDATE message_threads SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [threadId]).catch(() => {});
+      }
+
+      res.json({
+        success: true,
+        status: newStatus,
+        decision,
+        message: `Formal ${decision === "accept" ? "acceptance" : "decline"} letter submitted successfully.`,
+      });
+    } catch (err) {
+      console.error("Offer response error:", err);
+      res.status(500).json({ message: "Unable to submit offer response letter." });
     }
-
-    const msgText = letter_text
-      ? `[Official Job Offer Response: ${decision === "accept" ? "ACCEPTED" : "DECLINED"}]\nPosition: ${jobTitle}\n\n${letter_text}`
-      : decision === "accept"
-      ? `Hello! I am officially accepting the employment offer for "${jobTitle}". Looking forward to working together!`
-      : `Thank you for extending the job offer for "${jobTitle}". Unfortunately, I have to respectfully decline at this time.`;
-
-    await run(
-      `INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`,
-      [threadId, userId, msgText]
-    );
-    await run(`UPDATE message_threads SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [threadId]);
-
-    res.json({
-      success: true,
-      status: newStatus,
-      decision,
-      message: `Formal ${decision === "accept" ? "acceptance" : "decline"} letter submitted successfully.`,
-    });
-  } catch (err) {
-    console.error("Offer response error:", err);
-    res.status(500).json({ message: "Unable to submit offer response letter." });
   }
-});
+);
 
 app.post("/api/job-invitations/respond-by-job", authenticateToken, async (req, res) => {
   const { job_post_id, applicant_user_id, action, letter_text, letter_type, start_date } = req.body ?? {};
