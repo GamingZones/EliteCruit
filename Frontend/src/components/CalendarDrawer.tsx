@@ -644,11 +644,16 @@ export default function CalendarDrawer({
   const [applicantRescheduleModalItem, setApplicantRescheduleModalItem] = useState<ScheduledInterview | null>(null);
   const [applicantRescheduleReason, setApplicantRescheduleReason] = useState("");
   const [isSubmittingRescheduleRequest, setIsSubmittingRescheduleRequest] = useState(false);
+  const [rescheduleSuccessFeedback, setRescheduleSuccessFeedback] = useState<string | null>(null);
   const [pendingRescheduleId, setPendingRescheduleId] = useState<number | null>(null);
 
   const handleOpenApplicantRescheduleModal = (item: ScheduledInterview) => {
     setApplicantRescheduleModalItem(item);
-    setApplicantRescheduleReason("");
+    if (item.status === "reschedule_requested" && item.notes) {
+      setApplicantRescheduleReason(item.notes.replace(/^Reschedule Requested:\s*/i, ""));
+    } else {
+      setApplicantRescheduleReason("");
+    }
   };
 
   const handleSendRescheduleRequest = async () => {
@@ -658,6 +663,7 @@ export default function CalendarDrawer({
     const interviewId = applicantRescheduleModalItem.id;
     const reasonText = applicantRescheduleReason.trim();
 
+    // Optimistically update state & local storage immediately
     setInterviews((prev) =>
       prev.map((it) =>
         it.id === interviewId
@@ -671,17 +677,44 @@ export default function CalendarDrawer({
     );
 
     try {
-      await fetch(`/api/interviews/${interviewId}/status`, {
+      const cached = localStorage.getItem("elitecruit_scheduled_interviews");
+      if (cached) {
+        const list = JSON.parse(cached);
+        if (Array.isArray(list)) {
+          const updated = list.map((it: any) =>
+            it.id === interviewId
+              ? { ...it, status: "reschedule_requested", notes: `Reschedule Requested: ${reasonText}` }
+              : it
+          );
+          localStorage.setItem("elitecruit_scheduled_interviews", JSON.stringify(updated));
+        }
+      }
+    } catch {}
+
+    try {
+      const res = await fetch(`/api/interviews/${interviewId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status: "reschedule_requested",
+          role: "applicant",
           reschedule_reason: reasonText,
           cancellation_reason: reasonText,
           updated_by_user_id: currentUserId,
           notes: `Reschedule Requested: ${reasonText}`,
         }),
       });
+
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.success) {
+        if (data.interview) {
+          setInterviews((prev) =>
+            prev.map((it) => (it.id === interviewId ? { ...it, ...data.interview } : it))
+          );
+        }
+        setRescheduleSuccessFeedback("Reschedule request submitted successfully! Your employer has been notified.");
+        setTimeout(() => setRescheduleSuccessFeedback(null), 6000);
+      }
 
       loadInterviewsFromApi();
       window.dispatchEvent(new Event("elitecruit_interviews_update"));
@@ -1413,6 +1446,27 @@ export default function CalendarDrawer({
 
         {/* Drawer Body */}
         <div className="calendar-slideover-body">
+          {rescheduleSuccessFeedback && (
+            <div
+              style={{
+                margin: "12px 16px 4px 16px",
+                padding: "10px 14px",
+                borderRadius: "8px",
+                backgroundColor: "rgba(16, 185, 129, 0.15)",
+                border: "1px solid #10b981",
+                color: "var(--cal-text, #0f172a)",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                fontSize: "0.86rem",
+                fontWeight: 600,
+              }}
+            >
+              <span style={{ color: "#10b981", fontSize: "1.1rem" }}>✓</span>
+              <span>{rescheduleSuccessFeedback}</span>
+            </div>
+          )}
+
           {/* ── TAB 1: CALENDAR & AGENDA ── */}
           {activeTab === "calendar" && (
             <>
@@ -2379,6 +2433,30 @@ export default function CalendarDrawer({
               </button>
             </div>
 
+            {isEmployer && interviewToReschedule.status === "reschedule_requested" && (
+              <div
+                style={{
+                  background: "rgba(245, 158, 11, 0.12)",
+                  border: "1px solid rgba(245, 158, 11, 0.4)",
+                  borderRadius: "10px",
+                  padding: "12px 14px",
+                  fontSize: "0.85rem",
+                  color: "var(--cal-text, #0f172a)",
+                  marginTop: "8px",
+                  marginBottom: "4px",
+                }}
+              >
+                <div style={{ fontWeight: 700, color: "#d97706", display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
+                  <span>⏳</span> Candidate Reschedule Request
+                </div>
+                <div style={{ color: "var(--cal-subtext, #475569)", fontStyle: "italic" }}>
+                  "{interviewToReschedule.notes
+                    ? interviewToReschedule.notes.replace(/^Reschedule Requested:\s*/i, "")
+                    : "Candidate requested to reschedule this meeting."}"
+                </div>
+              </div>
+            )}
+
             <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginTop: "16px" }}>
               {/* 1. Date Field */}
               <div>
@@ -2655,10 +2733,12 @@ function InterviewItemCard({
         <div className="interview-card-title-row">
           <h4 className="interview-card-title">{item.interview_title || item.interview_stage || "Interview"}</h4>
           {!isEmployer && (
-            <span className={`applicant-meeting-pill ${item.status === "reschedule_requested" ? "reschedule-req" : applicantStatus}`}>
+            <span className={`applicant-meeting-pill ${item.status === "reschedule_requested" ? "reschedule-req" : item.status === "rescheduled" ? "rescheduled" : applicantStatus}`}>
               {applicantStatus === "ongoing" && item.status !== "reschedule_requested" && <span className="applicant-pill-pulse-dot" />}
               {item.status === "reschedule_requested"
                 ? "Reschedule Requested"
+                : item.status === "rescheduled"
+                ? "Rescheduled"
                 : applicantStatus === "scheduled"
                 ? "Scheduled"
                 : applicantStatus === "ongoing"
@@ -2732,8 +2812,8 @@ function InterviewItemCard({
       </div>
 
       {item.notes && (
-        <div className="interview-notes-box">
-          <strong>Notes:</strong> {item.notes}
+        <div className={`interview-notes-box ${item.status === "reschedule_requested" ? "reschedule-requested-notes" : ""}`}>
+          <strong>{item.status === "reschedule_requested" ? "Reschedule Request Pending:" : "Notes:"}</strong> {item.notes.replace(/^Reschedule Requested:\s*/i, "")}
         </div>
       )}
 
@@ -2771,7 +2851,7 @@ function InterviewItemCard({
         {/* Right side: Action buttons */}
         <div className="interview-card-right-actions">
           {/* Action buttons (Reschedule & Cancel with Reason) */}
-          {(isPending || isAccepted || applicantStatus === "scheduled" || applicantStatus === "ongoing" || item.status === "reschedule_requested") && !isConcluded && (
+          {(isPending || isAccepted || applicantStatus === "scheduled" || applicantStatus === "ongoing" || item.status === "reschedule_requested" || item.status === "rescheduled") && !isConcluded && (
             <div style={{ display: "flex", gap: "5px", alignItems: "center", flexWrap: "wrap" }}>
               {isEmployer ? (
                 <button
@@ -2792,8 +2872,9 @@ function InterviewItemCard({
                       onOpenRescheduleModal(item);
                     }
                   }}
+                  title={item.status === "reschedule_requested" ? "Reschedule request is pending employer approval. Click to update your reason." : "Request to reschedule this interview"}
                 >
-                  {item.status === "reschedule_requested" ? "Reschedule Requested" : "Request Rescheduling"}
+                  {item.status === "reschedule_requested" ? "⏳ Reschedule Requested" : "Request Rescheduling"}
                 </button>
               )}
               <button

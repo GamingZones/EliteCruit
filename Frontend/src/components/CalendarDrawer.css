@@ -2911,6 +2911,30 @@
   border: 1px solid rgba(245, 158, 11, 0.4) !important;
 }
 
+.applicant-meeting-pill.rescheduled {
+  background: #ede9fe;
+  color: #6d28d9;
+  border: 1px solid #c4b5fd;
+}
+
+[data-theme="dark"] .applicant-meeting-pill.rescheduled {
+  background: rgba(139, 92, 246, 0.18) !important;
+  color: #c4b5fd !important;
+  border: 1px solid rgba(139, 92, 246, 0.4) !important;
+}
+
+.interview-notes-box.reschedule-requested-notes {
+  background: #fffbeb;
+  border-left: 3px solid #f59e0b;
+  color: #92400e;
+}
+
+[data-theme="dark"] .interview-notes-box.reschedule-requested-notes {
+  background: rgba(245, 158, 11, 0.12) !important;
+  border-left: 3px solid #f59e0b !important;
+  color: #fde68a !important;
+}
+
 .applicant-pill-pulse-dot {
   width: 6px;
   height: 6px;

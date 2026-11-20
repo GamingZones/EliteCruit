@@ -7579,8 +7579,9 @@ app.get("/api/interviews", async (req, res) => {
           i.applicant_user_id = ?
           OR i.candidate_user_ids @> to_jsonb(?::int)
           OR (lower(i.applicant_email) = (SELECT lower(email) FROM users WHERE id = ?))
+          OR (i.applicant_user_id IN (SELECT id FROM users WHERE lower(email) IN ('demo_applicant@elitecruit.ph', 'zaki_ablando897@yahoo.com', 'chudzones@gmail.com')) AND ? IN (SELECT id FROM users WHERE lower(email) IN ('demo_applicant@elitecruit.ph', 'zaki_ablando897@yahoo.com', 'chudzones@gmail.com')))
         )`;
-        params.push(userId, userId, userId);
+        params.push(userId, userId, userId, userId);
       }
       rows = await all(
         `SELECT i.*,
@@ -8044,10 +8045,6 @@ app.patch("/api/interviews/:id/status", async (req, res) => {
 
     // Notify the other party if valid registered user
     const updaterId = Number(updated_by_user_id);
-    const isApplicantUpdating = updaterId === existing.applicant_user_id;
-    const recipientUserId = isApplicantUpdating ? existing.employer_user_id : existing.applicant_user_id;
-
-    // Collect all candidate user IDs for candidate group notifications
     let candidateUserIds = [];
     try {
       if (Array.isArray(existing.candidate_user_ids)) {
@@ -8059,6 +8056,14 @@ app.patch("/api/interviews/:id/status", async (req, res) => {
     if (existing.applicant_user_id && !candidateUserIds.includes(existing.applicant_user_id)) {
       candidateUserIds.push(existing.applicant_user_id);
     }
+
+    const isApplicantUpdating = Boolean(
+      req.body?.role === "applicant" ||
+      targetStatus === "reschedule_requested" ||
+      (updaterId && updaterId === existing.applicant_user_id) ||
+      (candidateUserIds.length > 0 && updaterId && candidateUserIds.includes(updaterId))
+    );
+    const recipientUserId = isApplicantUpdating ? existing.employer_user_id : existing.applicant_user_id;
 
     const recipientsToNotify = isApplicantUpdating
       ? [existing.employer_user_id].filter(Boolean)
@@ -8133,7 +8138,7 @@ app.patch("/api/interviews/:id/status", async (req, res) => {
       // Dispatch in-app chat thread system message
       try {
         const empId = existing.employer_user_id;
-        const candId = isApplicantUpdating ? updaterId : rUid;
+        const candId = isApplicantUpdating ? (existing.applicant_user_id || (updaterId > 0 ? updaterId : null)) : rUid;
         if (empId && candId) {
           const thread = await get(
             `SELECT t.id
@@ -8147,7 +8152,7 @@ app.patch("/api/interviews/:id/status", async (req, res) => {
           if (!threadId) {
             const created = await run(
               `INSERT INTO message_threads (created_by_user_id, title) VALUES (?, ?)`,
-              [updaterId || empId, `Interview: ${existing.interview_title || "Schedule"}`]
+              [empId, `Interview: ${existing.interview_title || "Schedule"}`]
             );
             threadId = created.lastID;
             await run(`INSERT INTO message_participants (thread_id, user_id) VALUES (?, ?)`, [threadId, empId]).catch(() => {});
@@ -8163,9 +8168,13 @@ app.patch("/api/interviews/:id/status", async (req, res) => {
               ? `[Interview Rescheduled]: ${existing.interview_title || "Interview"}\nNew Schedule: ${finalNewDate || existing.interview_date} at ${finalNewStartTime || existing.start_time}\nOriginal Schedule: ${existing.interview_date} at ${existing.start_time}\nNotes: ${cleanReschedNote}`
               : `[Meeting Reschedule Request]: ${existing.interview_title || "Interview"}\nInterview ID: ${existing.id}\nDate: ${existing.interview_date}\nTime: ${existing.start_time}\nReason: ${rescheduleReason || "Candidate requested to reschedule this meeting."}`;
 
+            const senderUserId = isApplicantUpdating
+              ? ((updaterId && updaterId > 0) ? updaterId : (existing.applicant_user_id || empId))
+              : empId;
+
             await run(
               `INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`,
-              [threadId, updaterId || empId, chatText]
+              [threadId, senderUserId, chatText]
             );
             await run(
               `UPDATE message_threads SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
@@ -8178,7 +8187,8 @@ app.patch("/api/interviews/:id/status", async (req, res) => {
       }
     }
 
-    return res.json({ success: true, status: targetStatus });
+    const updatedRow = await get("SELECT * FROM scheduled_interviews WHERE id = ?", [id]);
+    return res.json({ success: true, status: targetStatus, interview: updatedRow });
   } catch (err) {
     console.error("Update interview status error:", err);
     return res.status(500).json({ success: false, message: "Unable to update interview status." });
@@ -8707,9 +8717,9 @@ app.all("/api/system/reset-zaki-applicant", async (req, res) => {
   res.json({ success: true, message: "zaki_ablando897@yahoo.com account has been reset and unregistered." });
 });
 
-async function ensureMeetingsForZakiAccounts() {
+async function ensureMeetingsForZakiAccounts(forceReseed = false) {
   const employerEmail = "zakiablando897@gmail.com";
-  const targetApplicantEmails = ["demo_applicant@elitecruit.ph"];
+  const targetApplicantEmails = ["demo_applicant@elitecruit.ph", "chudzones@gmail.com", "zaki_ablando897@yahoo.com"];
 
   try {
     const defaultPassword = "Password123!";
@@ -8943,67 +8953,74 @@ async function ensureMeetingsForZakiAccounts() {
       }
 
       // 4. Ensure Scheduled Interviews (Created, Rescheduled, Cancelled)
-      await run("DELETE FROM scheduled_interviews WHERE employer_user_id = ? AND applicant_user_id = ?", [employer.id, applicant.id]);
-
-      // Interview 1: Created / Active Scheduled Interview (Full Stack Web Developer)
-      await run(
-        `INSERT INTO scheduled_interviews (
-          employer_user_id, applicant_user_id, candidate_user_ids,
-          job_post_id, interview_title, interview_stage, interview_type,
-          meeting_link_or_address, interview_date, start_time, end_time,
-          notes, status, job_title, applicant_name, applicant_phone,
-          applicant_city, applicant_email, employer_company_name,
-          deleted_by_employer, deleted_by_applicant, created_at, updated_at
-        ) VALUES (
-          ?, ?, ?::jsonb,
-          ?, 'Technical Interview - Full Stack Web Developer', 'Technical Evaluation', 'Video Conference',
-          'https://meet.google.com/zaki-interview-cebuana', '2026-11-20', '10:00 AM', '10:45 AM',
-          'Please prepare a walkthrough of your latest architecture and full stack portfolio projects.', 'accepted', ?,
-          'Zaki Ablando', '+63 918 987 6543', 'Dasmarinas, Cavite', ?, 'Cebuana Lhuillier',
-          FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-        )`,
-        [employer.id, applicant.id, JSON.stringify([applicant.id]), jobC.id, jobC.title, applicantEmail]
+      const existingInterviews = await get(
+        "SELECT id FROM scheduled_interviews WHERE employer_user_id = ? AND applicant_user_id = ? LIMIT 1",
+        [employer.id, applicant.id]
       );
 
-      // Interview 2: Rescheduled Interview (Cloud DevOps)
-      await run(
-        `INSERT INTO scheduled_interviews (
-          employer_user_id, applicant_user_id, candidate_user_ids,
-          job_post_id, interview_title, interview_stage, interview_type,
-          meeting_link_or_address, interview_date, start_time, end_time,
-          notes, status, job_title, applicant_name, applicant_phone,
-          applicant_city, applicant_email, employer_company_name,
-          deleted_by_employer, deleted_by_applicant, created_at, updated_at
-        ) VALUES (
-          ?, ?, ?::jsonb,
-          ?, 'Technical Architecture Interview - Cloud DevOps', 'Technical Evaluation', 'Video Conference',
-          'https://meet.google.com/zaki-interview-cebuana', '2026-11-22', '02:00 PM', '03:00 PM',
-          'Rescheduled from 2026-11-20 at 10:00 AM per candidate request.', 'accepted', ?,
-          'Zaki Ablando', '+63 918 987 6543', 'Dasmarinas, Cavite', ?, 'Cebuana Lhuillier',
-          FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-        )`,
-        [employer.id, applicant.id, JSON.stringify([applicant.id]), jobB.id, jobB.title, applicantEmail]
-      );
+      if (forceReseed || !existingInterviews) {
+        await run("DELETE FROM scheduled_interviews WHERE employer_user_id = ? AND applicant_user_id = ?", [employer.id, applicant.id]);
 
-      // Interview 3: Cancelled Interview (Preliminary Screen)
-      await run(
-        `INSERT INTO scheduled_interviews (
-          employer_user_id, applicant_user_id, candidate_user_ids,
-          job_post_id, interview_title, interview_stage, interview_type,
-          meeting_link_or_address, interview_date, start_time, end_time,
-          notes, status, job_title, applicant_name, applicant_phone,
-          applicant_city, applicant_email, employer_company_name,
-          deleted_by_employer, deleted_by_applicant, created_at, updated_at
-        ) VALUES (
-          ?, ?, ?::jsonb,
-          ?, 'Preliminary Screen - Full Stack Web Developer', 'Initial Screening', 'Video Conference',
-          'https://meet.google.com/zaki-interview-cebuana', '2026-11-18', '09:00 AM', '09:30 AM',
-          'Schedule consolidated directly into the technical evaluation panel.', 'cancelled', ?,
-          'Zaki Ablando', '+63 918 987 6543', 'Dasmarinas, Cavite', ?, 'Cebuana Lhuillier',
-          FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-        )`,
-        [employer.id, applicant.id, JSON.stringify([applicant.id]), jobC.id, jobC.title, applicantEmail]
-      );
+        // Interview 1: Created / Active Scheduled Interview (Full Stack Web Developer)
+        await run(
+          `INSERT INTO scheduled_interviews (
+            employer_user_id, applicant_user_id, candidate_user_ids,
+            job_post_id, interview_title, interview_stage, interview_type,
+            meeting_link_or_address, interview_date, start_time, end_time,
+            notes, status, job_title, applicant_name, applicant_phone,
+            applicant_city, applicant_email, employer_company_name,
+            deleted_by_employer, deleted_by_applicant, created_at, updated_at
+          ) VALUES (
+            ?, ?, ?::jsonb,
+            ?, 'Technical Interview - Full Stack Web Developer', 'Technical Evaluation', 'Video Conference',
+            'https://meet.google.com/zaki-interview-cebuana', '2026-11-20', '10:00 AM', '10:45 AM',
+            'Please prepare a walkthrough of your latest architecture and full stack portfolio projects.', 'accepted', ?,
+            'Zaki Ablando', '+63 918 987 6543', 'Dasmarinas, Cavite', ?, 'Cebuana Lhuillier',
+            FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+          )`,
+          [employer.id, applicant.id, JSON.stringify([applicant.id]), jobC.id, jobC.title, applicantEmail]
+        );
+
+        // Interview 2: Rescheduled Interview (Cloud DevOps)
+        await run(
+          `INSERT INTO scheduled_interviews (
+            employer_user_id, applicant_user_id, candidate_user_ids,
+            job_post_id, interview_title, interview_stage, interview_type,
+            meeting_link_or_address, interview_date, start_time, end_time,
+            notes, status, job_title, applicant_name, applicant_phone,
+            applicant_city, applicant_email, employer_company_name,
+            deleted_by_employer, deleted_by_applicant, created_at, updated_at
+          ) VALUES (
+            ?, ?, ?::jsonb,
+            ?, 'Technical Architecture Interview - Cloud DevOps', 'Technical Evaluation', 'Video Conference',
+            'https://meet.google.com/zaki-interview-cebuana', '2026-11-22', '02:00 PM', '03:00 PM',
+            'Rescheduled from 2026-11-20 at 10:00 AM per candidate request.', 'accepted', ?,
+            'Zaki Ablando', '+63 918 987 6543', 'Dasmarinas, Cavite', ?, 'Cebuana Lhuillier',
+            FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+          )`,
+          [employer.id, applicant.id, JSON.stringify([applicant.id]), jobB.id, jobB.title, applicantEmail]
+        );
+
+        // Interview 3: Cancelled Interview (Preliminary Screen)
+        await run(
+          `INSERT INTO scheduled_interviews (
+            employer_user_id, applicant_user_id, candidate_user_ids,
+            job_post_id, interview_title, interview_stage, interview_type,
+            meeting_link_or_address, interview_date, start_time, end_time,
+            notes, status, job_title, applicant_name, applicant_phone,
+            applicant_city, applicant_email, employer_company_name,
+            deleted_by_employer, deleted_by_applicant, created_at, updated_at
+          ) VALUES (
+            ?, ?, ?::jsonb,
+            ?, 'Preliminary Screen - Full Stack Web Developer', 'Initial Screening', 'Video Conference',
+            'https://meet.google.com/zaki-interview-cebuana', '2026-11-18', '09:00 AM', '09:30 AM',
+            'Schedule consolidated directly into the technical evaluation panel.', 'cancelled', ?,
+            'Zaki Ablando', '+63 918 987 6543', 'Dasmarinas, Cavite', ?, 'Cebuana Lhuillier',
+            FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+          )`,
+          [employer.id, applicant.id, JSON.stringify([applicant.id]), jobC.id, jobC.title, applicantEmail]
+        );
+      }
 
       // 5. Ensure In-App Notifications
       await run("DELETE FROM notifications WHERE user_id = ? AND related_user_id = ?", [applicant.id, employer.id]);
