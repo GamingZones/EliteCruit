@@ -72,6 +72,35 @@ export default function AdminEmployerManagement() {
   const [statusEmployerTarget, setStatusEmployerTarget] = useState<EmployerItem | null>(null);
   const [resetEmployerTarget, setResetEmployerTarget] = useState<EmployerItem | null>(null);
 
+  // UNREGISTER DEMO ACCOUNTS MODAL STATES
+  const [isUnregisterModalOpen, setIsUnregisterModalOpen] = useState(false);
+  const [isUnregistering, setIsUnregistering] = useState(false);
+  const [unregisterSuccessMsg, setUnregisterSuccessMsg] = useState<string | null>(null);
+
+  const handleConfirmUnregister = async () => {
+    setIsUnregistering(true);
+    try {
+      const res = await authFetch("/api/admin/unregister-zaki-both-accounts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsUnregisterModalOpen(false);
+        setUnregisterSuccessMsg(
+          "Both presentation accounts (zakiablando897@gmail.com and zaki_ablando897@yahoo.com) have been completely unregistered and removed from the database."
+        );
+        loadEmployers();
+      } else {
+        showToast(data.error || data.message || "Failed to unregister accounts.", "error");
+      }
+    } catch (err: any) {
+      showToast(err.message || "Network error while unregistering accounts.", "error");
+    } finally {
+      setIsUnregistering(false);
+    }
+  };
+
   const handleToggleStatus = (employer: EmployerItem) => {
     setStatusEmployerTarget(employer);
   };
@@ -198,7 +227,21 @@ export default function AdminEmployerManagement() {
           <div className="appdash-top-left">
             <strong>Employer Management</strong>
           </div>
-          <div className="appdash-top-right">
+          <div className="appdash-top-right" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <button
+              type="button"
+              className="admin-topbar-action-btn"
+              onClick={() => setIsUnregisterModalOpen(true)}
+              title="Unregister presentation demo accounts (zakiablando897@gmail.com & zaki_ablando897@yahoo.com)"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="8.5" cy="7" r="4" />
+                <line x1="18" y1="8" x2="23" y2="13" />
+                <line x1="23" y1="8" x2="18" y2="13" />
+              </svg>
+              Unregister Demo Accounts
+            </button>
             <a href="/admin-employer-analytics" style={{ fontSize: "0.82rem", fontWeight: 600, color: "#103f65", textDecoration: "none", backgroundColor: "#e2e8f0", padding: "0.3rem 0.75rem", borderRadius: "0.375rem" }}>
               View Employer Analytics
             </a>
@@ -582,6 +625,45 @@ export default function AdminEmployerManagement() {
         isConfirming={isUpdating}
         onCancel={() => setResetEmployerTarget(null)}
         onConfirm={doConfirmResetPassword}
+      />
+
+      {/* UNREGISTER CONFIRMATION MODAL (RULE 6 COMPLIANT) */}
+      <ConfirmationModal
+        isOpen={isUnregisterModalOpen}
+        type="warning"
+        title="Unregister Both Accounts"
+        message={
+          <div>
+            Are you sure you want to completely unregister both presentation accounts?
+            <div style={{ marginTop: "12px", padding: "10px 14px", background: "#f8fafc", borderRadius: "8px", textAlign: "left", fontSize: "0.85rem", border: "1px solid #e2e8f0" }}>
+              <div style={{ marginBottom: "4px" }}>
+                <strong>Employer:</strong> <span>zakiablando897@gmail.com</span> (TechNova)
+              </div>
+              <div>
+                <strong>Applicant:</strong> <span>zaki_ablando897@yahoo.com</span> (Juan Carlos)
+              </div>
+            </div>
+            <p style={{ marginTop: "10px", marginBottom: "0", fontSize: "0.82rem", color: "#64748b" }}>
+              This will permanently delete both user accounts, company profiles, job posts, applications, and chat messages so they can be registered anew.
+            </p>
+          </div>
+        }
+        cancelLabel="Cancel"
+        confirmLabel={isUnregistering ? "Unregistering..." : "Yes, Unregister Both"}
+        isConfirming={isUnregistering}
+        onCancel={() => setIsUnregisterModalOpen(false)}
+        onConfirm={handleConfirmUnregister}
+      />
+
+      {/* SUCCESS POPUP MODAL (RULE 6 COMPLIANT) */}
+      <ConfirmationModal
+        isOpen={!!unregisterSuccessMsg}
+        type="warning"
+        title="Accounts Unregistered"
+        message={unregisterSuccessMsg}
+        hideCancel={true}
+        confirmLabel="OK"
+        onConfirm={() => setUnregisterSuccessMsg(null)}
       />
     </div>
   );

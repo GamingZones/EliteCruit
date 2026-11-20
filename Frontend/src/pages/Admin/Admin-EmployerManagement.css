@@ -542,6 +542,41 @@
   color: #991b1b;
 }
 
+/* Presentation Demo Account Actions */
+.admin-topbar-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.2;
+}
+
+.admin-topbar-action-btn:hover {
+  background: #fecaca;
+  border-color: #f87171;
+  color: #991b1b;
+}
+
+[data-theme="dark"] .admin-topbar-action-btn {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
+
+[data-theme="dark"] .admin-topbar-action-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #ffffff;
+}
+
 /* ==========================================================================
    PHONE & MOBILE UI ADJUSTMENTS (max-width: 768px)
    Scope: Applied STRICTLY to phones/mobile screens; desktop/laptop UI is 100% untouched.

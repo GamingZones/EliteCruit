@@ -8901,6 +8901,68 @@ app.post("/api/admin/reset-zaki-accounts", async (req, res) => {
   try {
     const result = await oneTimeResetZakiBothAccounts(true);
     return res.json({ success: true, message: "Zaki accounts cleanly reset to presentation baseline!", result });
+
+async function unregisterZakiBothAccounts() {
+  const employerEmail = "zakiablando897@gmail.com";
+  const applicantEmail = "zaki_ablando897@yahoo.com";
+  const targetEmails = [employerEmail.toLowerCase(), applicantEmail.toLowerCase()];
+
+  console.log("[Account Unregister] Unregistering both presentation accounts:", targetEmails);
+
+  const empUser = await get("SELECT id FROM users WHERE lower(email) = ?", [employerEmail.toLowerCase()]);
+  const appUser = await get("SELECT id FROM users WHERE lower(email) = ?", [applicantEmail.toLowerCase()]);
+  const uids = [empUser?.id, appUser?.id].filter(Boolean);
+
+  for (const uid of uids) {
+    await run("DELETE FROM two_factor_codes WHERE user_id = ?", [uid]).catch(() => {});
+    await run("DELETE FROM notifications WHERE user_id = ? OR related_user_id = ?", [uid, uid]).catch(() => {});
+    await run("DELETE FROM company_ratings WHERE employer_user_id = ? OR applicant_user_id = ?", [uid, uid]).catch(() => {});
+    await run("DELETE FROM candidate_ratings WHERE employer_user_id = ? OR applicant_user_id = ?", [uid, uid]).catch(() => {});
+    await run("DELETE FROM scheduled_interviews WHERE employer_user_id = ? OR applicant_user_id = ?", [uid, uid]).catch(() => {});
+    await run("DELETE FROM job_invitations WHERE employer_user_id = ? OR applicant_user_id = ?", [uid, uid]).catch(() => {});
+    await run("DELETE FROM applications WHERE applicant_user_id = ? OR job_post_id IN (SELECT id FROM job_posts WHERE employer_user_id = ?)", [uid, uid]).catch(() => {});
+    await run("DELETE FROM company_faq WHERE employer_user_id = ?", [uid]).catch(() => {});
+    await run("DELETE FROM messages WHERE sender_user_id = ?", [uid]).catch(() => {});
+    await run("DELETE FROM message_participants WHERE user_id = ?", [uid]).catch(() => {});
+    await run("DELETE FROM job_posts WHERE employer_user_id = ?", [uid]).catch(() => {});
+    await run("DELETE FROM employer_profiles WHERE user_id = ?", [uid]).catch(() => {});
+    await run("DELETE FROM applicant_profiles WHERE user_id = ?", [uid]).catch(() => {});
+    await run("DELETE FROM users WHERE id = ?", [uid]).catch(() => {});
+  }
+
+  await run("DELETE FROM message_threads WHERE id NOT IN (SELECT DISTINCT thread_id FROM message_participants)").catch(() => {});
+  await run("DELETE FROM registration_email_otps WHERE lower(email) IN (?, ?)", [employerEmail.toLowerCase(), applicantEmail.toLowerCase()]).catch(() => {});
+
+  // Ensure migration key is recorded so startup never auto-recreates them!
+  await run("INSERT INTO system_migrations (name) VALUES ('one_time_reset_zaki_both_accounts_nov20') ON CONFLICT (name) DO NOTHING").catch(() => {});
+
+  console.log(`[Account Unregister] Successfully unregistered ${uids.length} account(s).`);
+  return {
+    success: true,
+    message: "Both presentation accounts (zakiablando897@gmail.com and zaki_ablando897@yahoo.com) have been completely unregistered.",
+    unregisteredCount: uids.length,
+  };
+}
+
+app.post("/api/admin/unregister-zaki-both-accounts", async (req, res) => {
+  try {
+    const result = await unregisterZakiBothAccounts();
+    return res.json(result);
+  } catch (err) {
+    console.error("[Unregister Accounts] Error:", err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.all("/api/system/unregister-zaki-both-accounts", async (req, res) => {
+  try {
+    const result = await unregisterZakiBothAccounts();
+    return res.json(result);
+  } catch (err) {
+    console.error("[Unregister Accounts] Error:", err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
