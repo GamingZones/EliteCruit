@@ -3113,10 +3113,71 @@
 }
 
 .cal-modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+@media (max-width: 440px) {
+  .cal-modal-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cal-modal-interview-preview {
+  margin-top: 14px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 6px;
+}
+
+.cal-modal-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cal-modal-preview-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0c2a47;
+}
+
+.cal-modal-preview-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #e0f2fe;
+  color: #0369a1;
+  text-transform: capitalize;
+}
+
+.cal-modal-preview-meta {
+  font-size: 0.82rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cal-modal-preview-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cal-modal-preview-separator {
+  color: #94a3b8;
+  font-weight: bold;
 }
 
 .cal-modal-btn {
@@ -3137,8 +3198,15 @@
   color: #ffffff;
 }
 
-.cal-modal-btn.primary:hover {
+.cal-modal-btn.primary:hover:not(:disabled) {
   background: #002640;
+}
+
+.cal-modal-btn.primary:disabled {
+  background: #94a3b8;
+  color: #ffffff;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .cal-modal-btn.secondary {
@@ -3147,8 +3215,13 @@
   color: #0f172a;
 }
 
-.cal-modal-btn.secondary:hover {
+.cal-modal-btn.secondary:hover:not(:disabled) {
   background: #f1f5f9;
+}
+
+.cal-modal-btn.secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .cal-modal-btn.danger {
@@ -3229,14 +3302,63 @@
   color: #38bdf8 !important;
 }
 
-[data-theme="dark"] .cal-modal-btn.secondary {
-  background: #242735 !important;
-  border-color: #3b4259 !important;
-  color: #f1f5f9 !important;
+[data-theme="dark"] .cal-modal-interview-preview {
+  background: #141722 !important;
+  border-color: #272b3c !important;
 }
 
-[data-theme="dark"] .cal-modal-btn.secondary:hover {
-  background: #2e3244 !important;
+[data-theme="dark"] .cal-modal-preview-title {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .cal-modal-preview-badge {
+  background: rgba(14, 165, 233, 0.18) !important;
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .cal-modal-preview-meta {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .cal-modal-preview-separator {
+  color: #475569 !important;
+}
+
+[data-theme="dark"] .cal-modal-btn.primary {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .cal-modal-btn.primary:hover:not(:disabled) {
+  background: #0369a1 !important;
+}
+
+[data-theme="dark"] .cal-modal-btn.primary:disabled {
+  background: #1e293b !important;
+  color: #64748b !important;
+  cursor: not-allowed !important;
+  border: 1px solid #334155 !important;
+  opacity: 0.8 !important;
+}
+
+[data-theme="dark"] .cal-modal-btn.secondary {
+  background: #1e2230 !important;
+  border: 1px solid #333a4d !important;
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .cal-modal-btn.secondary:hover:not(:disabled) {
+  background: #282d40 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .applicant-modal-close-btn {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .applicant-modal-close-btn:hover {
+  background: #282d40 !important;
+  color: #f8fafc !important;
 }
 
 /* ── Candidate Details Modal Dark Mode (Image 3 Fixes) ── */

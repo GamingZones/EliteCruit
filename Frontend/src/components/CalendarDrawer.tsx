@@ -1447,22 +1447,8 @@ export default function CalendarDrawer({
         {/* Drawer Body */}
         <div className="calendar-slideover-body">
           {rescheduleSuccessFeedback && (
-            <div
-              style={{
-                margin: "12px 16px 4px 16px",
-                padding: "10px 14px",
-                borderRadius: "8px",
-                backgroundColor: "rgba(16, 185, 129, 0.15)",
-                border: "1px solid #10b981",
-                color: "var(--cal-text, #0f172a)",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                fontSize: "0.86rem",
-                fontWeight: 600,
-              }}
-            >
-              <span style={{ color: "#10b981", fontSize: "1.1rem" }}>✓</span>
+            <div className="cal-reschedule-success-alert">
+              <span className="cal-reschedule-success-icon">✓</span>
               <span>{rescheduleSuccessFeedback}</span>
             </div>
           )}
@@ -2434,22 +2420,11 @@ export default function CalendarDrawer({
             </div>
 
             {isEmployer && interviewToReschedule.status === "reschedule_requested" && (
-              <div
-                style={{
-                  background: "rgba(245, 158, 11, 0.12)",
-                  border: "1px solid rgba(245, 158, 11, 0.4)",
-                  borderRadius: "10px",
-                  padding: "12px 14px",
-                  fontSize: "0.85rem",
-                  color: "var(--cal-text, #0f172a)",
-                  marginTop: "8px",
-                  marginBottom: "4px",
-                }}
-              >
-                <div style={{ fontWeight: 700, color: "#d97706", display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
+              <div className="cal-modal-candidate-req-banner">
+                <div className="cal-modal-candidate-req-badge">
                   <span>⏳</span> Candidate Reschedule Request
                 </div>
-                <div style={{ color: "var(--cal-subtext, #475569)", fontStyle: "italic" }}>
+                <div className="cal-modal-candidate-req-text">
                   "{interviewToReschedule.notes
                     ? interviewToReschedule.notes.replace(/^Reschedule Requested:\s*/i, "")
                     : "Candidate requested to reschedule this meeting."}"
@@ -2598,26 +2573,33 @@ export default function CalendarDrawer({
               </button>
             </div>
 
-            <div
-              style={{
-                marginTop: "12px",
-                marginBottom: "16px",
-                padding: "12px 14px",
-                borderRadius: "10px",
-                background: "var(--cal-card-bg, #f8fafc)",
-                border: "1px solid var(--cal-border, #e2e8f0)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "4px",
-              }}
-            >
-              <strong style={{ fontSize: "0.95rem", color: "var(--cal-text, #0f172a)" }}>
-                {applicantRescheduleModalItem.interview_title || applicantRescheduleModalItem.interview_stage || "Interview"}
-              </strong>
-              <div style={{ fontSize: "0.82rem", color: "var(--cal-subtext, #64748b)", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                <span>📅 {applicantRescheduleModalItem.interview_date}</span>
-                <span>•</span>
-                <span>⏰ {formatDisplayTime(applicantRescheduleModalItem.start_time)} {applicantRescheduleModalItem.end_time ? `- ${formatDisplayTime(applicantRescheduleModalItem.end_time)}` : ""}</span>
+            <div className="cal-modal-interview-preview">
+              <div className="cal-modal-preview-header">
+                <span className="cal-modal-preview-title">
+                  {applicantRescheduleModalItem.interview_title || applicantRescheduleModalItem.interview_stage || "Interview"}
+                </span>
+                {applicantRescheduleModalItem.interview_type && (
+                  <span className="cal-modal-preview-badge">
+                    {applicantRescheduleModalItem.interview_type}
+                  </span>
+                )}
+              </div>
+              <div className="cal-modal-preview-meta">
+                <span className="cal-modal-preview-meta-item">
+                  📅 {formatDisplayDate(applicantRescheduleModalItem.interview_date)}
+                </span>
+                <span className="cal-modal-preview-separator">•</span>
+                <span className="cal-modal-preview-meta-item">
+                  ⏰ {formatDisplayTime(applicantRescheduleModalItem.start_time)} {applicantRescheduleModalItem.end_time ? `- ${formatDisplayTime(applicantRescheduleModalItem.end_time)}` : ""}
+                </span>
+                {applicantRescheduleModalItem.employer_company_name && (
+                  <>
+                    <span className="cal-modal-preview-separator">•</span>
+                    <span className="cal-modal-preview-meta-item">
+                      🏢 {applicantRescheduleModalItem.employer_company_name}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
 
@@ -2633,12 +2615,11 @@ export default function CalendarDrawer({
                   placeholder="State your reason for rescheduling (e.g. scheduling conflict, emergency, academic commitment)..."
                   className="cal-modal-textarea"
                   required
-                  autoFocus
                 />
               </div>
             </div>
 
-            <div className="cal-modal-actions" style={{ marginTop: "18px" }}>
+            <div className="cal-modal-actions">
               <button
                 type="button"
                 className="cal-modal-btn secondary"
