@@ -9407,8 +9407,8 @@ Promise.resolve()
   .then(() => ensureAdminUser())
   .then(() => ensureMeetingsForZakiAccounts())
   .then(() => seedAllSystemUserAccounts())
-  .then(() => app.listen(PORT, () => {
-    console.log(`EliteCruit backend running at http://localhost:${PORT}`);
+  .then(() => app.listen(PORT, "0.0.0.0", () => {
+    console.log(`EliteCruit backend running at http://0.0.0.0:${PORT}`);
   }))
   .catch((error) => {
     console.error("Failed to prepare the database:", error);
