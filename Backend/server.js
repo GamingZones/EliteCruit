@@ -8720,12 +8720,187 @@ async function resetAndSeedZakiAccounts() {
   }
 }
 
+async function oneTimeResetZakiBothAccounts(force = false) {
+  const employerEmail = "zakiablando897@gmail.com";
+  const applicantEmail = "zaki_ablando897@yahoo.com";
+  const migrationKey = "one_time_reset_zaki_both_accounts_nov20";
+
+  try {
+    await run(
+      "CREATE TABLE IF NOT EXISTS system_migrations (name TEXT PRIMARY KEY, executed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP)"
+    ).catch(() => {});
+
+    if (!force) {
+      const alreadyRun = await get("SELECT name FROM system_migrations WHERE name = ?", [migrationKey]);
+      if (alreadyRun) {
+        console.log(`[Zaki Reset] Migration '${migrationKey}' already executed. Skipping reset on startup.`);
+        return { success: true, skipped: true };
+      }
+    }
+
+    console.log("[Zaki Reset] Performing clean one-time reset for Zaki accounts...");
+
+    const empUser = await get("SELECT id FROM users WHERE lower(email) = ?", [employerEmail.toLowerCase()]);
+    const appUser = await get("SELECT id FROM users WHERE lower(email) = ?", [applicantEmail.toLowerCase()]);
+    const uids = [empUser?.id, appUser?.id].filter(Boolean);
+
+    for (const uid of uids) {
+      await run("DELETE FROM two_factor_codes WHERE user_id = ?", [uid]).catch(() => {});
+      await run("DELETE FROM notifications WHERE user_id = ? OR related_user_id = ?", [uid, uid]).catch(() => {});
+      await run("DELETE FROM company_ratings WHERE employer_user_id = ? OR applicant_user_id = ?", [uid, uid]).catch(() => {});
+      await run("DELETE FROM candidate_ratings WHERE employer_user_id = ? OR applicant_user_id = ?", [uid, uid]).catch(() => {});
+      await run("DELETE FROM scheduled_interviews WHERE employer_user_id = ? OR applicant_user_id = ?", [uid, uid]).catch(() => {});
+      await run("DELETE FROM job_invitations WHERE employer_user_id = ? OR applicant_user_id = ?", [uid, uid]).catch(() => {});
+      await run("DELETE FROM applications WHERE applicant_user_id = ? OR job_post_id IN (SELECT id FROM job_posts WHERE employer_user_id = ?)", [uid, uid]).catch(() => {});
+      await run("DELETE FROM company_faq WHERE employer_user_id = ?", [uid]).catch(() => {});
+      await run("DELETE FROM messages WHERE sender_user_id = ?", [uid]).catch(() => {});
+      await run("DELETE FROM message_participants WHERE user_id = ?", [uid]).catch(() => {});
+    }
+    await run("DELETE FROM message_threads WHERE id NOT IN (SELECT DISTINCT thread_id FROM message_participants)").catch(() => {});
+    await run("DELETE FROM registration_email_otps WHERE lower(email) IN (?, ?)", [employerEmail.toLowerCase(), applicantEmail.toLowerCase()]).catch(() => {});
+
+    const defaultPassword = "Password123!";
+    const passHash = await bcrypt.hash(defaultPassword, 10);
+
+    // 1. Ensure Employer: TechNova Innovations Inc.
+    let employerId = empUser?.id;
+    if (!employerId) {
+      const empRes = await run(
+        "INSERT INTO users (email, password_hash, role, is_active, is_email_verified, two_factor_enabled) VALUES (?, ?, 'employer', true, true, false)",
+        [employerEmail.toLowerCase(), passHash]
+      );
+      employerId = empRes.lastID;
+    } else {
+      await run(
+        "UPDATE users SET password_hash = ?, role = 'employer', is_active = true, is_email_verified = true, two_factor_enabled = false WHERE id = ?",
+        [passHash, employerId]
+      );
+    }
+
+    await run(
+      `INSERT INTO employer_profiles (
+        user_id, business_name, industry, company_size, company_description, contact_number,
+        province, city, company_address, terms_accepted, terms_accepted_at
+      ) VALUES (?, 'TechNova Innovations Inc.', 'Information Technology & Software Services', '51-200 employees',
+        'Pioneering fintech and responsive web solutions in Cavite.', '+63 917 123 4567',
+        'Cavite', 'Indang', 'Indang - Dasmarinas Tech Hub, Cavite', true, CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id) DO UPDATE SET
+        business_name = 'TechNova Innovations Inc.',
+        industry = 'Information Technology & Software Services',
+        company_size = '51-200 employees',
+        company_description = 'Pioneering fintech and responsive web solutions in Cavite.',
+        contact_number = '+63 917 123 4567',
+        province = 'Cavite',
+        city = 'Indang',
+        company_address = 'Indang - Dasmarinas Tech Hub, Cavite',
+        terms_accepted = true`,
+      [employerId]
+    );
+
+    // Clean old jobs for this employer to avoid duplicate or stale jobs
+    await run("DELETE FROM job_posts WHERE employer_user_id = ?", [employerId]).catch(() => {});
+
+    // Insert the two presentation job posts
+    await run(
+      `INSERT INTO job_posts (
+        employer_user_id, title, location, status, is_urgent, hide_salary,
+        work_arrangement, experience_level, salary_min, salary_max,
+        description, qualifications, required_skills, close_date
+      ) VALUES (
+        ?, 'Senior Frontend Engineer', 'Indang, Cavite', 'open', 0, 0,
+        'Hybrid', 'Senior', 75000, 85000,
+        'Architect and build next-generation responsive fintech web applications and interactive banking portals.',
+        ?::jsonb, ?::jsonb, '2026-12-31'
+      )`,
+      [
+        employerId,
+        JSON.stringify(["Bachelor of Science in Information Technology (BSIT)"]),
+        JSON.stringify(["React", "TypeScript", "Next.js", "Tailwind CSS"])
+      ]
+    );
+
+    await run(
+      `INSERT INTO job_posts (
+        employer_user_id, title, location, status, is_urgent, hide_salary,
+        work_arrangement, experience_level, salary_min, salary_max,
+        description, qualifications, required_skills, close_date
+      ) VALUES (
+        ?, 'Frontend UI/UX Developer', 'Indang, Cavite', 'open', 0, 0,
+        'Hybrid', 'Mid-Level', 40000, 55000,
+        'Design and build accessible, responsive user interfaces for modern web and mobile fintech portals.',
+        ?::jsonb, ?::jsonb, '2026-12-31'
+      )`,
+      [
+        employerId,
+        JSON.stringify(["Bachelor of Science in Information Technology (BSIT)"]),
+        JSON.stringify(["React", "Tailwind CSS", "TypeScript", "Figma"])
+      ]
+    );
+
+    // 2. Ensure Applicant: Juan Carlos Dela Cruz
+    let applicantId = appUser?.id;
+    if (!applicantId) {
+      const appRes = await run(
+        "INSERT INTO users (email, password_hash, role, is_active, is_email_verified, two_factor_enabled) VALUES (?, ?, 'applicant', true, true, false)",
+        [applicantEmail.toLowerCase(), passHash]
+      );
+      applicantId = appRes.lastID;
+    } else {
+      await run(
+        "UPDATE users SET password_hash = ?, role = 'applicant', is_active = true, is_email_verified = true, two_factor_enabled = false WHERE id = ?",
+        [passHash, applicantId]
+      );
+    }
+
+    await run(
+      `INSERT INTO applicant_profiles (
+        user_id, first_name, last_name, phone, city, province, address,
+        desired_job_title, expected_salary, work_arrangement, terms_accepted, terms_accepted_at
+      ) VALUES (
+        ?, 'Juan Carlos', 'Dela Cruz', '+63 917 555 1234', 'Indang', 'Cavite', 'Indang, Cavite',
+        'Senior Frontend Engineer', 'PHP 75,000', 'Hybrid', true, CURRENT_TIMESTAMP
+      )
+       ON CONFLICT (user_id) DO UPDATE SET
+        first_name = 'Juan Carlos',
+        last_name = 'Dela Cruz',
+        phone = '+63 917 555 1234',
+        city = 'Indang',
+        province = 'Cavite',
+        address = 'Indang, Cavite',
+        desired_job_title = 'Senior Frontend Engineer',
+        expected_salary = 'PHP 75,000',
+        work_arrangement = 'Hybrid',
+        terms_accepted = true`,
+      [applicantId]
+    );
+
+    await run(
+      "INSERT INTO system_migrations (name) VALUES (?) ON CONFLICT (name) DO NOTHING",
+      [migrationKey]
+    ).catch(() => {});
+
+    console.log("[Zaki Reset] Completed one-time clean reset for Zaki accounts successfully!");
+    return { success: true };
+  } catch (err) {
+    console.error("[Zaki Reset] Error resetting Zaki accounts:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+app.all("/api/system/reset-zaki-both-accounts", async (req, res) => {
+  const result = await oneTimeResetZakiBothAccounts(true);
+  res.json(result);
+});
+
+app.all("/api/admin/reset-zaki-both-accounts", async (req, res) => {
+  const result = await oneTimeResetZakiBothAccounts(true);
+  res.json(result);
+});
+
 app.post("/api/admin/reset-zaki-accounts", async (req, res) => {
   try {
-    await run("DELETE FROM system_migrations WHERE name = 'zaki_accounts_reset_v3'").catch(() => {});
-    await resetAndSeedZakiAccounts();
-    await ensureMeetingsForZakiAccounts();
-    return res.json({ success: true, message: "Zaki accounts reset and full interactions seeded successfully!" });
+    const result = await oneTimeResetZakiBothAccounts(true);
+    return res.json({ success: true, message: "Zaki accounts cleanly reset to presentation baseline!", result });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
@@ -9427,7 +9602,6 @@ if (fs.existsSync(distPath)) {
 Promise.resolve()
   .then(() => initPgDatabase())
   .then(() => ensureExtendedTables())
-  .then(() => resetSpecificApplicantAccount("zaki_ablando897@yahoo.com"))
   .then(() => migrateApplicantProfilesRemoveExperience())
   .then(() => ensureApplicantProfileColumns())
   .then(() => ensureEmployerProfileColumns())
@@ -9435,7 +9609,7 @@ Promise.resolve()
   .then(() => ensureScheduledInterviewColumns())
   .then(() => syncHistoricalInvitations())
   .then(() => ensureAdminUser())
-  .then(() => ensureMeetingsForZakiAccounts())
+  .then(() => oneTimeResetZakiBothAccounts())
   .then(() => seedAllSystemUserAccounts())
   .then(() => app.listen(PORT, "0.0.0.0", () => {
     console.log(`EliteCruit backend running at http://0.0.0.0:${PORT}`);
