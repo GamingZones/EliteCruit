@@ -8134,57 +8134,79 @@ app.patch("/api/interviews/:id/status", async (req, res) => {
       } catch (emailErr) {
         console.error("Interview notification email error:", emailErr?.message || emailErr);
       }
+    }
 
-      // Dispatch in-app chat thread system message
+    // Dispatch in-app chat thread system message for all relevant candidate threads
+    try {
+      const empId = existing.employer_user_id;
+      const targetCandIds = Array.from(new Set([
+        (updaterId && updaterId > 0) ? updaterId : null,
+        existing.applicant_user_id,
+        ...candidateUserIds,
+      ])).filter(Boolean);
+
+      // If any demo applicant email is linked, also sync to other demo applicant threads
+      const demoCandidateEmails = ["demo_applicant@elitecruit.ph", "zaki_ablando897@yahoo.com", "chudzones@gmail.com"];
       try {
-        const empId = existing.employer_user_id;
-        const candId = isApplicantUpdating ? (existing.applicant_user_id || (updaterId > 0 ? updaterId : null)) : rUid;
-        if (empId && candId) {
-          const thread = await get(
-            `SELECT t.id
-             FROM message_threads t
-             JOIN message_participants p1 ON p1.thread_id = t.id AND p1.user_id = ?
-             JOIN message_participants p2 ON p2.thread_id = t.id AND p2.user_id = ?
-             LIMIT 1`,
-            [empId, candId]
+        const demoUsers = await all(
+          "SELECT id FROM users WHERE lower(email) = ANY(?::text[])",
+          [demoCandidateEmails]
+        );
+        const demoUserIds = (demoUsers || []).map((u) => u.id);
+        if (targetCandIds.some((id) => demoUserIds.includes(id))) {
+          demoUserIds.forEach((id) => {
+            if (!targetCandIds.includes(id)) targetCandIds.push(id);
+          });
+        }
+      } catch {}
+
+      for (const candId of targetCandIds) {
+        if (!empId || !candId) continue;
+
+        let thread = await get(
+          `SELECT t.id
+           FROM message_threads t
+           JOIN message_participants p1 ON p1.thread_id = t.id AND p1.user_id = ?
+           JOIN message_participants p2 ON p2.thread_id = t.id AND p2.user_id = ?
+           LIMIT 1`,
+          [empId, candId]
+        );
+        let threadId = thread?.id;
+        if (!threadId) {
+          const created = await run(
+            `INSERT INTO message_threads (created_by_user_id, title) VALUES (?, ?)`,
+            [empId, `Interview: ${existing.interview_title || "Schedule"}`]
           );
-          let threadId = thread?.id;
-          if (!threadId) {
-            const created = await run(
-              `INSERT INTO message_threads (created_by_user_id, title) VALUES (?, ?)`,
-              [empId, `Interview: ${existing.interview_title || "Schedule"}`]
-            );
-            threadId = created.lastID;
+          threadId = created.lastID || (await get("SELECT id FROM message_threads WHERE created_by_user_id = ? ORDER BY id DESC LIMIT 1", [empId]))?.id;
+          if (threadId) {
             await run(`INSERT INTO message_participants (thread_id, user_id) VALUES (?, ?)`, [threadId, empId]).catch(() => {});
             await run(`INSERT INTO message_participants (thread_id, user_id) VALUES (?, ?)`, [threadId, candId]).catch(() => {});
           }
-
-          if (targetStatus === "cancelled" || targetStatus === "rescheduled" || targetStatus === "reschedule_requested") {
-            const reschedNote = rescheduleReason || notes || existing.notes || "Candidate schedule adjustment.";
-            const cleanReschedNote = typeof reschedNote === "string" ? reschedNote.replace(/^Rescheduled:\s*/i, "") : reschedNote;
-            const chatText = targetStatus === "cancelled"
-              ? `[Interview Cancelled]: ${existing.interview_title || "Interview"}\nOriginal Schedule: ${existing.interview_date} at ${existing.start_time}${cancellation_reason ? `\nReason: "${cancellation_reason}".` : ""}`
-              : targetStatus === "rescheduled"
-              ? `[Interview Rescheduled]: ${existing.interview_title || "Interview"}\nNew Schedule: ${finalNewDate || existing.interview_date} at ${finalNewStartTime || existing.start_time}\nOriginal Schedule: ${existing.interview_date} at ${existing.start_time}\nNotes: ${cleanReschedNote}`
-              : `[Meeting Reschedule Request]: ${existing.interview_title || "Interview"}\nInterview ID: ${existing.id}\nDate: ${existing.interview_date}\nTime: ${existing.start_time}\nReason: ${rescheduleReason || "Candidate requested to reschedule this meeting."}`;
-
-            const senderUserId = isApplicantUpdating
-              ? ((updaterId && updaterId > 0) ? updaterId : (existing.applicant_user_id || empId))
-              : empId;
-
-            await run(
-              `INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`,
-              [threadId, senderUserId, chatText]
-            );
-            await run(
-              `UPDATE message_threads SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-              [threadId]
-            ).catch(() => {});
-          }
         }
-      } catch (msgErr) {
-        console.error("Interview thread message error:", msgErr?.message || msgErr);
+
+        if (threadId && (targetStatus === "cancelled" || targetStatus === "rescheduled" || targetStatus === "reschedule_requested")) {
+          const reschedNote = rescheduleReason || notes || existing.notes || "Candidate schedule adjustment.";
+          const cleanReschedNote = typeof reschedNote === "string" ? reschedNote.replace(/^Rescheduled:\s*/i, "") : reschedNote;
+          const chatText = targetStatus === "cancelled"
+            ? `[Interview Cancelled]: ${existing.interview_title || "Interview"}\nOriginal Schedule: ${existing.interview_date} at ${existing.start_time}${cancellation_reason ? `\nReason: "${cancellation_reason}".` : ""}`
+            : targetStatus === "rescheduled"
+            ? `[Interview Rescheduled]: ${existing.interview_title || "Interview"}\nNew Schedule: ${finalNewDate || existing.interview_date} at ${finalNewStartTime || existing.start_time}\nOriginal Schedule: ${existing.interview_date} at ${existing.start_time}\nNotes: ${cleanReschedNote}`
+            : `[Meeting Reschedule Request]: ${existing.interview_title || "Interview"}\nInterview ID: ${existing.id}\nDate: ${existing.interview_date}\nTime: ${existing.start_time}\nReason: ${rescheduleReason || "Candidate requested to reschedule this meeting."}`;
+
+          const senderUserId = isApplicantUpdating ? candId : empId;
+
+          await run(
+            `INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`,
+            [threadId, senderUserId, chatText]
+          );
+          await run(
+            `UPDATE message_threads SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+            [threadId]
+          ).catch(() => {});
+        }
       }
+    } catch (msgErr) {
+      console.error("Interview thread message error:", msgErr?.message || msgErr);
     }
 
     const updatedRow = await get("SELECT * FROM scheduled_interviews WHERE id = ?", [id]);

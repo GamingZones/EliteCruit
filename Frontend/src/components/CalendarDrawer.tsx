@@ -719,6 +719,15 @@ export default function CalendarDrawer({
       loadInterviewsFromApi();
       window.dispatchEvent(new Event("elitecruit_interviews_update"));
       window.dispatchEvent(new CustomEvent("elitecruit-interviews-updated"));
+      window.dispatchEvent(
+        new CustomEvent("elitecruit-interview-reschedule-requested", {
+          detail: {
+            interviewId,
+            reason: reasonText,
+            interview: applicantRescheduleModalItem,
+          },
+        })
+      );
     } catch (err) {
       console.error("Failed to submit reschedule request:", err);
     } finally {

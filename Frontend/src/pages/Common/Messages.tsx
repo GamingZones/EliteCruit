@@ -634,6 +634,34 @@ export default function Messages() {
   const [applicantLabel, setApplicantLabel] = useState(getInitialApplicantName);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
+  // Live Scheduled Interviews State (synchronized with Calendar)
+  const [scheduledInterviews, setScheduledInterviews] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem("elitecruit_scheduled_interviews");
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const loadScheduledInterviews = useCallback(async (uid?: number, role?: string) => {
+    const targetUid = uid || currentUserId;
+    const targetRole = role || sessionRole;
+    if (!targetUid) return;
+    try {
+      const res = await fetch(`/api/interviews?user_id=${targetUid}&role=${targetRole}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.success && Array.isArray(data.interviews)) {
+          setScheduledInterviews(data.interviews);
+          try {
+            localStorage.setItem("elitecruit_scheduled_interviews", JSON.stringify(data.interviews));
+          } catch {}
+        }
+      }
+    } catch {}
+  }, [currentUserId, sessionRole]);
+
   // Formal Letter Viewer Modal State
   const [viewLetterModalTarget, setViewLetterModalTarget] = useState<{
     title: string;
@@ -1702,6 +1730,7 @@ export default function Messages() {
       if (savedUser.id) {
         setCurrentUserId(savedUser.id);
         fetchThreads(savedUser.id);
+        loadScheduledInterviews(savedUser.id, savedUser.role || "applicant");
       }
 
       if (savedUser.role === "employer") {
@@ -1775,6 +1804,29 @@ export default function Messages() {
       document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [currentUserId]);
+
+  // Synchronize scheduled interviews and conversation messages in real time with Calendar events
+  useEffect(() => {
+    const handleInterviewUpdate = () => {
+      loadScheduledInterviews();
+      if (selectedThread?.id) {
+        fetchThreadMessages(selectedThread.id);
+      }
+      if (currentUserId) {
+        fetchThreads(currentUserId, true);
+      }
+    };
+
+    window.addEventListener("elitecruit_interviews_update", handleInterviewUpdate);
+    window.addEventListener("elitecruit-interviews-updated", handleInterviewUpdate);
+    window.addEventListener("elitecruit-interview-reschedule-requested", handleInterviewUpdate);
+
+    return () => {
+      window.removeEventListener("elitecruit_interviews_update", handleInterviewUpdate);
+      window.removeEventListener("elitecruit-interviews-updated", handleInterviewUpdate);
+      window.removeEventListener("elitecruit-interview-reschedule-requested", handleInterviewUpdate);
+    };
+  }, [loadScheduledInterviews, selectedThread?.id, currentUserId]);
 
   // Active chat conversation: poll every 4 seconds while selected
   useEffect(() => {
@@ -2553,57 +2605,124 @@ export default function Messages() {
                                 </div>
                               </article>
                             );
-                          })() : special.type === "interview_scheduled" ? (
-                            <article className={`chat-bubble chat-special-card chat-interview-card ${isMe ? "outgoing" : "incoming"}`}>
-                              <div className="chat-special-header">
-                                <div className="chat-special-badge-row">
-                                  <span className="chat-special-badge badge-interview-sched">
-                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                                      <line x1="16" y1="2" x2="16" y2="6" />
-                                      <line x1="8" y1="2" x2="8" y2="6" />
-                                      <line x1="3" y1="10" x2="21" y2="10" />
-                                    </svg>
-                                    <span>Interview Scheduled</span>
-                                  </span>
-                                  <time className="chat-special-time">{msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}</time>
+                          })() : special.type === "interview_scheduled" ? (() => {
+                            const matchedInterview = scheduledInterviews.find(
+                              (inv) =>
+                                (special.interviewId && inv.id === special.interviewId) ||
+                                (inv.interview_title && special.jobTitle && inv.interview_title.toLowerCase().trim() === special.jobTitle.toLowerCase().trim()) ||
+                                (inv.job_title && special.jobTitle && inv.job_title.toLowerCase().trim() === special.jobTitle.toLowerCase().trim())
+                            );
+                            const currentStatus = matchedInterview?.status || "scheduled";
+                            const isReschedRequested = currentStatus === "reschedule_requested";
+                            const isCancelled = currentStatus === "cancelled";
+                            const isRescheduled = currentStatus === "rescheduled";
+
+                            return (
+                              <article className={`chat-bubble chat-special-card chat-interview-card ${isReschedRequested ? "chat-reschedule-req-card" : isCancelled ? "chat-cancelled-card" : isRescheduled ? "chat-rescheduled-card" : ""} ${isMe ? "outgoing" : "incoming"}`}>
+                                <div className="chat-special-header">
+                                  <div className="chat-special-badge-row">
+                                    {isReschedRequested ? (
+                                      <span className="chat-special-badge badge-interview-resched-req">
+                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                          <path d="M5 22h14" />
+                                          <path d="M5 2h14" />
+                                          <path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" />
+                                          <path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" />
+                                        </svg>
+                                        <span>Reschedule Requested</span>
+                                      </span>
+                                    ) : isCancelled ? (
+                                      <span className="chat-special-badge badge-interview-cancelled">
+                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                                          <circle cx="12" cy="12" r="10" />
+                                          <line x1="15" y1="9" x2="9" y2="15" />
+                                          <line x1="9" y1="9" x2="15" y2="15" />
+                                        </svg>
+                                        <span>Interview Cancelled</span>
+                                      </span>
+                                    ) : isRescheduled ? (
+                                      <span className="chat-special-badge badge-interview-resched">
+                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                          <circle cx="12" cy="12" r="10" />
+                                          <polyline points="12 6 12 12 14 14" />
+                                        </svg>
+                                        <span>Interview Rescheduled</span>
+                                      </span>
+                                    ) : (
+                                      <span className="chat-special-badge badge-interview-sched">
+                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                          <line x1="16" y1="2" x2="16" y2="6" />
+                                          <line x1="8" y1="2" x2="8" y2="6" />
+                                          <line x1="3" y1="10" x2="21" y2="10" />
+                                        </svg>
+                                        <span>Interview Scheduled</span>
+                                      </span>
+                                    )}
+                                    <time className="chat-special-time">{msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}</time>
+                                  </div>
+                                  <h4 className="chat-special-title">{special.jobTitle}</h4>
+                                  {special.stage && <div className="chat-special-subtitle">{special.stage}</div>}
                                 </div>
-                                <h4 className="chat-special-title">{special.jobTitle}</h4>
-                                {special.stage && <div className="chat-special-subtitle">{special.stage}</div>}
-                              </div>
 
-                              <div className="chat-special-grid">
-                                {special.date && (
-                                  <div className="chat-grid-row">
-                                    <span className="chat-grid-lbl">Date &amp; Time:</span>
-                                    <span className="chat-grid-val">{special.date} {special.time ? `at ${special.time}` : ""}</span>
+                                <div className="chat-special-grid">
+                                  {special.date && (
+                                    <div className="chat-grid-row">
+                                      <span className="chat-grid-lbl">Date &amp; Time:</span>
+                                      <span className="chat-grid-val">{special.date} {special.time ? `at ${special.time}` : ""}</span>
+                                    </div>
+                                  )}
+                                  {special.notes && (
+                                    <div className="chat-grid-row">
+                                      <span className="chat-grid-lbl">Notes:</span>
+                                      <span className="chat-grid-val">{special.notes}</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {isReschedRequested && (
+                                  <div className="chat-special-notice" style={{ borderLeftColor: "#f59e0b", margin: "10px 0 4px" }}>
+                                    <p style={{ fontWeight: 700, marginBottom: "4px", color: "#b45309" }}>
+                                      Reschedule Request Pending:
+                                    </p>
+                                    <p style={{ marginTop: "2px" }}>
+                                      {matchedInterview?.notes?.replace(/^Reschedule Requested:\s*/i, "") || "Reason: Sick"}
+                                    </p>
                                   </div>
                                 )}
-                                {special.notes && (
-                                  <div className="chat-grid-row">
-                                    <span className="chat-grid-lbl">Notes:</span>
-                                    <span className="chat-grid-val">{special.notes}</span>
-                                  </div>
-                                )}
-                              </div>
 
-                              <div className="chat-special-actions">
-                                <button
-                                  type="button"
-                                  className="chat-action-btn chat-btn-open-cal"
-                                  onClick={() => window.dispatchEvent(new CustomEvent("elitecruit-open-calendar", { detail: { tab: "all", date: special.date } }))}
-                                >
-                                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                                    <line x1="16" y1="2" x2="16" y2="6" />
-                                    <line x1="8" y1="2" x2="8" y2="6" />
-                                    <line x1="3" y1="10" x2="21" y2="10" />
-                                  </svg>
-                                  <span>Open Meeting Calendar</span>
-                                </button>
-                              </div>
-                            </article>
-                          ) : special.type === "interview_cancelled" ? (
+                                <div className="chat-special-actions">
+                                  <button
+                                    type="button"
+                                    className={`chat-action-btn ${isReschedRequested ? "chat-btn-reschedule-meeting" : "chat-btn-open-cal"}`}
+                                    onClick={() => window.dispatchEvent(new CustomEvent("elitecruit-open-calendar", { detail: { tab: "all", date: special.date } }))}
+                                  >
+                                    {isReschedRequested ? (
+                                      <>
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                          <path d="M5 22h14" />
+                                          <path d="M5 2h14" />
+                                          <path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" />
+                                          <path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" />
+                                        </svg>
+                                        <span>Reschedule Requested</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                          <line x1="16" y1="2" x2="16" y2="6" />
+                                          <line x1="8" y1="2" x2="8" y2="6" />
+                                          <line x1="3" y1="10" x2="21" y2="10" />
+                                        </svg>
+                                        <span>Open Meeting Calendar</span>
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                              </article>
+                            );
+                          })() : special.type === "interview_cancelled" ? (
                             <article className={`chat-bubble chat-special-card chat-cancelled-card ${isMe ? "outgoing" : "incoming"}`}>
                               <div className="chat-special-header">
                                 <div className="chat-special-badge-row">
@@ -2637,55 +2756,103 @@ export default function Messages() {
                                 </button>
                               </div>
                             </article>
-                          ) : special.type === "interview_rescheduled" ? (
-                            <article className={`chat-bubble chat-special-card chat-rescheduled-card ${isMe ? "outgoing" : "incoming"}`}>
-                              <div className="chat-special-header">
-                                <div className="chat-special-badge-row">
-                                  <span className="chat-special-badge badge-interview-resched">
-                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                      <circle cx="12" cy="12" r="10" />
-                                      <polyline points="12 6 12 12 14 14" />
-                                    </svg>
-                                    <span>Interview Rescheduled</span>
-                                  </span>
-                                  <time className="chat-special-time">{msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}</time>
+                          ) : special.type === "interview_rescheduled" ? (() => {
+                            const matchedInterview = scheduledInterviews.find(
+                              (inv) =>
+                                (special.interviewId && inv.id === special.interviewId) ||
+                                (inv.interview_title && special.jobTitle && inv.interview_title.toLowerCase().trim() === special.jobTitle.toLowerCase().trim()) ||
+                                (inv.job_title && special.jobTitle && inv.job_title.toLowerCase().trim() === special.jobTitle.toLowerCase().trim())
+                            );
+                            const currentStatus = matchedInterview?.status || "rescheduled";
+                            const isReschedRequested = currentStatus === "reschedule_requested";
+
+                            return (
+                              <article className={`chat-bubble chat-special-card ${isReschedRequested ? "chat-reschedule-req-card" : "chat-rescheduled-card"} ${isMe ? "outgoing" : "incoming"}`}>
+                                <div className="chat-special-header">
+                                  <div className="chat-special-badge-row">
+                                    {isReschedRequested ? (
+                                      <span className="chat-special-badge badge-interview-resched-req">
+                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                          <path d="M5 22h14" />
+                                          <path d="M5 2h14" />
+                                          <path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" />
+                                          <path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" />
+                                        </svg>
+                                        <span>Reschedule Requested</span>
+                                      </span>
+                                    ) : (
+                                      <span className="chat-special-badge badge-interview-resched">
+                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                          <circle cx="12" cy="12" r="10" />
+                                          <polyline points="12 6 12 12 14 14" />
+                                        </svg>
+                                        <span>Interview Rescheduled</span>
+                                      </span>
+                                    )}
+                                    <time className="chat-special-time">{msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}</time>
+                                  </div>
+                                  <h4 className="chat-special-title">{special.jobTitle}</h4>
                                 </div>
-                                <h4 className="chat-special-title">{special.jobTitle}</h4>
-                              </div>
 
-                              <div className="chat-special-grid">
-                                {special.date && (
-                                  <div className="chat-grid-row">
-                                    <span className="chat-grid-lbl">New Schedule:</span>
-                                    <span className="chat-grid-val">{special.date}</span>
+                                <div className="chat-special-grid">
+                                  {special.date && (
+                                    <div className="chat-grid-row">
+                                      <span className="chat-grid-lbl">New Schedule:</span>
+                                      <span className="chat-grid-val">{special.date}</span>
+                                    </div>
+                                  )}
+                                  {(special.notes || special.reason) && (
+                                    <div className="chat-grid-row">
+                                      <span className="chat-grid-lbl">Notes:</span>
+                                      <span className="chat-grid-val">{special.notes || special.reason}</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {isReschedRequested && (
+                                  <div className="chat-special-notice" style={{ borderLeftColor: "#f59e0b", margin: "10px 0 4px" }}>
+                                    <p style={{ fontWeight: 700, marginBottom: "4px", color: "#b45309" }}>
+                                      Reschedule Request Pending:
+                                    </p>
+                                    <p style={{ marginTop: "2px" }}>
+                                      {matchedInterview?.notes?.replace(/^Reschedule Requested:\s*/i, "") || "Reason: Sick"}
+                                    </p>
                                   </div>
                                 )}
-                                {(special.notes || special.reason) && (
-                                  <div className="chat-grid-row">
-                                    <span className="chat-grid-lbl">Notes:</span>
-                                    <span className="chat-grid-val">{special.notes || special.reason}</span>
-                                  </div>
-                                )}
-                              </div>
 
-                              <div className="chat-special-actions">
-                                <button
-                                  type="button"
-                                  className="chat-action-btn chat-btn-open-cal"
-                                  onClick={() => window.dispatchEvent(new CustomEvent("elitecruit-open-calendar", { detail: { tab: "all", date: special.date } }))}
-                                >
-                                  <span>Open Meeting Calendar</span>
-                                </button>
-                              </div>
-                            </article>
-                          ) : special.type === "interview_reschedule_request" ? (
+                                <div className="chat-special-actions">
+                                  <button
+                                    type="button"
+                                    className={`chat-action-btn ${isReschedRequested ? "chat-btn-reschedule-meeting" : "chat-btn-open-cal"}`}
+                                    onClick={() => window.dispatchEvent(new CustomEvent("elitecruit-open-calendar", { detail: { tab: "all", date: special.date } }))}
+                                  >
+                                    {isReschedRequested ? (
+                                      <>
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                          <path d="M5 22h14" />
+                                          <path d="M5 2h14" />
+                                          <path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" />
+                                          <path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" />
+                                        </svg>
+                                        <span>Reschedule Requested</span>
+                                      </>
+                                    ) : (
+                                      <span>Open Meeting Calendar</span>
+                                    )}
+                                  </button>
+                                </div>
+                              </article>
+                            );
+                          })() : special.type === "interview_reschedule_request" ? (
                             <article className={`chat-bubble chat-special-card chat-reschedule-req-card ${isMe ? "outgoing" : "incoming"}`}>
                               <div className="chat-special-header">
                                 <div className="chat-special-badge-row">
                                   <span className="chat-special-badge badge-interview-resched-req">
                                     <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                      <circle cx="12" cy="12" r="10" />
-                                      <polyline points="12 6 12 12 14 14" />
+                                      <path d="M5 22h14" />
+                                      <path d="M5 2h14" />
+                                      <path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" />
+                                      <path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" />
                                     </svg>
                                     <span>Reschedule Requested</span>
                                   </span>
@@ -2701,7 +2868,7 @@ export default function Messages() {
 
                               <div className="chat-special-notice" style={{ borderLeftColor: "#f59e0b" }}>
                                 <p style={{ fontWeight: 700, marginBottom: "4px" }}>
-                                  This user wants to reschedule the meeting.
+                                  {isMe ? "You requested to reschedule this meeting." : "This user wants to reschedule the meeting."}
                                 </p>
                                 {special.reason && (
                                   <p style={{ marginTop: "4px" }}>
@@ -2731,7 +2898,7 @@ export default function Messages() {
                                     <line x1="8" y1="2" x2="8" y2="6" />
                                     <line x1="3" y1="10" x2="21" y2="10" />
                                   </svg>
-                                  <span>Reschedule Meeting</span>
+                                  <span>{sessionRole === "employer" ? "Reschedule Interview" : "View in Calendar"}</span>
                                 </button>
                               </div>
                             </article>
