@@ -1674,7 +1674,10 @@ export default function EmployerApplicantManagement() {
 
       // 2. Job Post Pool
       if (jobFilter !== "all") {
-        if (String(app.job_post_id) !== String(jobFilter) && (app.job_title || "").toLowerCase() !== jobFilter.toLowerCase()) {
+        const matchesJob = app.job_post_id
+          ? String(app.job_post_id) === String(jobFilter)
+          : (app.job_title || "").toLowerCase() === jobFilter.toLowerCase();
+        if (!matchesJob) {
           return false;
         }
       }
@@ -1841,8 +1844,9 @@ export default function EmployerApplicantManagement() {
     }
     const list = applications.filter(
       (a) =>
-        String(a.job_post_id) === String(boardJobFilter) ||
-        (a.job_title || "").toLowerCase() === boardJobFilter.toLowerCase()
+        a.job_post_id
+          ? String(a.job_post_id) === String(boardJobFilter)
+          : (a.job_title || "").toLowerCase() === boardJobFilter.toLowerCase()
     );
     return [...list].sort((a, b) => {
       const matchA = getMatchPercent(a, undefined, allJobsMap);
@@ -1921,17 +1925,17 @@ export default function EmployerApplicantManagement() {
       }
 
       const jobApplicants = filteredApplications.filter((app) => {
-        const match =
-          String(app.job_post_id) === jobId ||
-          (app.job_title || "").toLowerCase() === jobInfo.title.toLowerCase();
+        const match = app.job_post_id
+          ? String(app.job_post_id) === jobId
+          : (app.job_title || "").toLowerCase() === jobInfo.title.toLowerCase();
         if (match) assignedAppIds.add(app.id);
         return match;
       });
 
-      const totalForJob = applications.filter(
-        (app) =>
-          String(app.job_post_id) === jobId ||
-          (app.job_title || "").toLowerCase() === jobInfo.title.toLowerCase()
+      const totalForJob = applications.filter((app) =>
+        app.job_post_id
+          ? String(app.job_post_id) === jobId
+          : (app.job_title || "").toLowerCase() === jobInfo.title.toLowerCase()
       ).length;
 
       if (
@@ -2049,17 +2053,17 @@ export default function EmployerApplicantManagement() {
 
     jobMap.forEach((jobInfo, jobId) => {
       const jobInvs = filteredInvitations.filter((inv) => {
-        const match =
-          String(inv.job_post_id) === jobId ||
-          (inv.job_title || "").toLowerCase() === jobInfo.title.toLowerCase();
+        const match = inv.job_post_id
+          ? String(inv.job_post_id) === jobId
+          : (inv.job_title || "").toLowerCase() === jobInfo.title.toLowerCase();
         if (match) assignedInvIds.add(inv.id);
         return match;
       });
 
-      const totalForJob = directInvitations.filter(
-        (inv) =>
-          String(inv.job_post_id) === jobId ||
-          (inv.job_title || "").toLowerCase() === jobInfo.title.toLowerCase()
+      const totalForJob = directInvitations.filter((inv) =>
+        inv.job_post_id
+          ? String(inv.job_post_id) === jobId
+          : (inv.job_title || "").toLowerCase() === jobInfo.title.toLowerCase()
       ).length;
 
       groups.push({
