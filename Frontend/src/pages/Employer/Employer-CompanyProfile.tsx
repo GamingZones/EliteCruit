@@ -635,9 +635,10 @@ export default function EmployerCompanyProfile() {
     try {
       if (activeSection === "branding") {
         // Tab 1: Company & Branding details
+        // Per specifications: company name, contact, email, and main branch should NOT have demo data.
+        // Only Industry and Company Size are populated.
         const payload = {
           ...draft,
-          business_name: "TechNova Innovations Inc.",
           industry: "Information Technology",
           company_size: "50-200 employees",
         };
@@ -651,17 +652,14 @@ export default function EmployerCompanyProfile() {
         const saved = normalizeEmployerProfile(data?.profile, payload);
         setProfile(saved);
         setDraft(saved);
-        setPageMessage("⚡ Company & Branding details populated!");
+        setPageMessage("⚡ Industry & Company Size populated!");
       } else if (activeSection === "overview") {
         // Tab 2: Contact Information & Company Overview
+        // Per specifications: only Company Overview (description) is populated. Contact/address are untouched.
         const payload = {
           ...draft,
-          contact_number: "+63 917 123 4567",
-          province: "Cavite",
-          city: "Dasmariñas",
-          company_address: "4th Floor Tech Tower, Gov. Drive, Dasmariñas, Cavite",
           company_description:
-            "TechNova Innovations is a premier software engineering firm delivering scalable cloud and fintech applications for enterprise clients across Southeast Asia.",
+            "TechNova Innovations is a premier software engineering and digital transformation firm. We specialize in building scalable enterprise cloud platforms, modern fintech applications, and high-performance web systems for clients across Southeast Asia. Our collaborative culture fosters innovation, engineering excellence, and continuous professional growth.",
         };
         const response = await fetch(`/api/employers/${userId}/profile`, {
           method: "PUT",
@@ -669,21 +667,36 @@ export default function EmployerCompanyProfile() {
           body: JSON.stringify(payload),
         });
         const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data?.message || "Failed to update contact & overview.");
+        if (!response.ok) throw new Error(data?.message || "Failed to update overview.");
         const saved = normalizeEmployerProfile(data?.profile, payload);
         setProfile(saved);
         setDraft(saved);
-        setPageMessage("⚡ Contact & Overview details populated!");
+        setPageMessage("⚡ Company Overview populated!");
       } else if (activeSection === "branches") {
         // Tab 3: Company Branch Locations
-        const demoBranch: BranchLocation = {
-          id: `branch-demo-${Date.now()}`,
-          branch_name: "Indang Tech Hub Branch",
-          province: "Cavite",
-          city: "Indang",
-          address: "Indang - Dasmarinas Tech Hub, Cavite",
-          contact_number: "+63 918 765 4321",
-          email: "indang.hub@technova-demo.ph",
+        // Per specifications: Main branch is auto and should not be changed.
+        // Add 2 more branches primarily close to Cavite (not in Cavite):
+        // 1. Alabang (Muntinlupa, Metro Manila)
+        // 2. Santa Rosa (Laguna)
+        const branchAlabang: BranchLocation = {
+          id: `branch-demo-alabang-${Date.now()}`,
+          branch_name: "Alabang Regional Operations Hub",
+          province: "Metro Manila",
+          city: "Muntinlupa",
+          address: "Filinvest City, Alabang, Muntinlupa City, Metro Manila",
+          contact_number: "+63 917 882 1100",
+          email: "alabang.hub@technova-ph.com",
+          is_main: false,
+        };
+
+        const branchLaguna: BranchLocation = {
+          id: `branch-demo-santarosa-${Date.now() + 1}`,
+          branch_name: "Santa Rosa Technology Center",
+          province: "Laguna",
+          city: "Santa Rosa",
+          address: "Laguna Technopark, Santa Rosa City, Laguna",
+          contact_number: "+63 917 882 2200",
+          email: "santarosa.office@technova-ph.com",
           is_main: false,
         };
 
@@ -699,8 +712,15 @@ export default function EmployerCompanyProfile() {
           is_main: true,
         };
 
-        const otherBranches = draft.branches.filter((b) => !b.is_main && b.branch_name !== "Indang Tech Hub Branch");
-        const updatedBranches = [mainBranch, demoBranch, ...otherBranches];
+        // Filter out existing instances of these two demo branches to prevent duplicates on repeated clicks
+        const otherBranches = draft.branches.filter(
+          (b) =>
+            !b.is_main &&
+            b.branch_name !== "Indang Tech Hub Branch" &&
+            b.branch_name !== "Alabang Regional Operations Hub" &&
+            b.branch_name !== "Santa Rosa Technology Center"
+        );
+        const updatedBranches = [mainBranch, branchAlabang, branchLaguna, ...otherBranches];
 
         const payload = {
           ...draft,
@@ -717,7 +737,7 @@ export default function EmployerCompanyProfile() {
         setProfile(saved);
         setDraft(saved);
         setIsAddingBranch(false);
-        setPageMessage("⚡ Branch Locations populated!");
+        setPageMessage("⚡ 2 Regional Branches (Alabang & Santa Rosa) populated!");
       }
 
       setTimeout(() => setPageMessage(""), 4000);

@@ -96,4 +96,37 @@ Total Monthly Comp  : PHP 85,000.00
 Target Start Date   : First Monday of Next Month
 Employment Terms    : Full-time Regular (6-month probationary review with guaranteed 10% appraisal upon regularization)
 Benefits Package    : Day-1 HMO with 2 dependents, 15 VL/SL convertible to cash, 14th-month pay, flexible hybrid workstation allowance.
+
+
+--------------------------------------------------------------------------------
+PART 5: EVALUATION & FEEDBACK DATA (BOTH SIDES)
+--------------------------------------------------------------------------------
+Submit these ratings and feedback reviews during the final recruitment evaluation stage:
+
+--- SIDE A: EMPLOYER EVALUATING CANDIDATE (TechNova -> Juan Carlos Dela Cruz) ---
+Target Candidate     : Juan Carlos Dela Cruz (Senior Frontend Engineer)
+Overall Star Rating  : ★★★★★ 5.0 / 5.0 (Exceptional Candidate)
+Evaluation Categories:
+  • Technical Competence     : 5.0 / 5.0 (Strong React, TypeScript, and component architecture)
+  • Communication & Culture : 5.0 / 5.0 (Articulate, clear explanations, collaborative mindset)
+  • Problem Solving          : 5.0 / 5.0 (Demonstrated concrete performance optimization results)
+
+Recruiter / Panel Feedback Comment (Copy & Paste):
+"Juan Carlos demonstrated outstanding technical competence and architectural clarity throughout the evaluation process. He articulated concrete optimization strategies in React and TypeScript that directly solve our performance requirements. His communication was professional and engaging at every stage. We strongly endorse his immediate hire for the Senior Frontend Engineer role."
+
+Hiring Decision / Recommendation: Strongly Recommended / Proceed to Offer
+
+
+--- SIDE B: CANDIDATE EVALUATING EMPLOYER (Juan Carlos -> TechNova Innovations Inc.) ---
+Target Company       : TechNova Innovations Inc.
+Overall Star Rating  : ★★★★★ 5.0 / 5.0 (Outstanding Employer of Choice)
+Review Categories    :
+  • Interview Process & Pace : 5.0 / 5.0 (Transparent, respectful, and well-organized)
+  • Technical Rigor & Clarity: 5.0 / 5.0 (Clear evaluation goals and collaborative discussions)
+  • Communication & Support  : 5.0 / 5.0 (Prompt recruiter follow-ups and seamless offer delivery)
+
+Candidate Review Comment (Copy & Paste):
+"The entire interview and recruitment journey with TechNova Innovations was exceptional. Sarah from Talent Acquisition maintained transparent, prompt communication at every step, and the technical discussion with Mark was collaborative and intellectually stimulating. The clear expectations, respectful interview atmosphere, and prompt formal offer letter reflect an outstanding company culture."
+
+Candidate Recommendation: Highly Recommended (100% Positive Employer Review)
 ================================================================================

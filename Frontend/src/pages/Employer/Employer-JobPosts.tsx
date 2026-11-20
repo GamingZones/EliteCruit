@@ -1301,15 +1301,13 @@ export default function EmployerJobPosts() {
 
     setSelectedLocations([defaultBranch]);
 
-    // Skills that match the demo applicant (Juan Carlos Dela Cruz)
+    // Skills that match the demo applicant (Juan Carlos Dela Cruz) - strictly 5 skills per demo specifications
     setSelectedSkills([
       { name: "React", years: "3", requirement: "Required" },
       { name: "TypeScript", years: "3", requirement: "Required" },
       { name: "JavaScript", years: "3", requirement: "Required" },
-      { name: "HTML5/CSS3", years: "3", requirement: "Required" },
       { name: "Tailwind CSS", years: "2", requirement: "Preferred" },
       { name: "REST APIs", years: "2", requirement: "Required" },
-      { name: "Git", years: "2", requirement: "Required" },
     ]);
 
     // Qualifications that match the demo applicant

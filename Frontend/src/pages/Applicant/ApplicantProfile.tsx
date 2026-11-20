@@ -3630,18 +3630,12 @@ export default function ApplicantProfile() {
     try {
       if (activeSection === "personal") {
         // Section 1: Only Personal & Contact details
+        // Per specifications: name, middle name, last name, gender, province, city, contact, email, and languages
+        // must NOT have demo data (preserve existing user input). Only BIO (summary) is populated.
         const payload = {
           ...profile,
-          first_name: "Juan Carlos",
-          middle_name: "M.",
-          last_name: "Dela Cruz",
-          phone: "9171234567",
-          gender: "Male",
-          province: "Cavite",
-          city: "Dasmariñas",
-          address: "Block 12 Lot 4, San Agustin",
           summary:
-            "Passionate Senior Frontend Engineer with 4+ years of experience building modern React, TypeScript, and responsive web portals. Dedicated to clean architecture and intuitive user experiences.",
+            "Passionate Senior Frontend Engineer with 4+ years of experience building scalable, high-performance web applications with React, TypeScript, and modern responsive design. Proven track record in optimizing component architecture, accelerating load speeds, and delivering intuitive user experiences for enterprise platforms.",
         };
         const res = await fetch(`/api/applicants/${userId}/profile`, {
           method: "PUT",
@@ -3651,21 +3645,20 @@ export default function ApplicantProfile() {
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.message || "Failed to update personal details.");
         setProfileMessageType("success");
-        setProfileMessage("⚡ Personal & Contact details populated!");
+        setProfileMessage("⚡ Bio summary populated!");
       } else if (activeSection === "preferences") {
         // Section 2: Only Career Preferences
+        // Per specifications: Role & Employment preferences populated
         const payload = {
           ...profile,
-          first_name: profile.first_name || "Juan Carlos",
-          last_name: profile.last_name || "Dela Cruz",
           desired_job_title: "Senior Frontend Engineer",
           expected_salary_min: 70000,
           expected_salary_max: 85000,
           expected_salary: "70,000.00 - 85,000.00",
           work_arrangement: "Hybrid",
           years_of_experience: "4",
-          preferred_locations: "Dasmariñas, Indang, Imus",
-          preferred_cities: ["Dasmariñas", "Indang", "Imus"],
+          preferred_locations: profile.preferred_locations || "Dasmariñas, Indang, Imus",
+          preferred_cities: profile.preferred_cities?.length ? profile.preferred_cities : ["Dasmariñas", "Indang", "Imus"],
           target_roles_json: JSON.stringify([
             {
               id: `role-demo-${Date.now()}`,
@@ -3689,15 +3682,15 @@ export default function ApplicantProfile() {
         setProfileMessage("⚡ Career Preferences populated!");
       } else if (activeSection === "competencies") {
         // Section 3: Only Skills & Credentials (Education, Core Skills, Certifications)
+        // Per specifications: college must be STI Dasma (BSIT), no master's degree
         const demoQualifications = [
           "TVL - Technical-Vocational-Livelihood (ICT Programming) @ Dasmariñas National High School (2014 - 2016) [SHS]",
-          "BS Information Technology - BSIT @ De La Salle University - Dasmariñas (2016 - 2020) [College]",
+          "BS Information Technology - BSIT @ STI College Dasmariñas (2016 - 2020) [College]",
         ];
         const demoSkills = [
           "React [Web & Software Development] (Since 2026)",
           "TypeScript [Web & Software Development] (Since 2026)",
           "JavaScript [Programming & Algorithms] (Since 2026)",
-          "HTML5/CSS3 [Web & Software Development] (Since 2026)",
           "Tailwind CSS [Web & Software Development] (Since 2026)",
           "REST APIs [Web & Software Development] (Since 2026)",
           "Git [Web & Software Development] (Since 2026)",
@@ -3712,8 +3705,6 @@ export default function ApplicantProfile() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ...profile,
-            first_name: profile.first_name || "Juan Carlos",
-            last_name: profile.last_name || "Dela Cruz",
             shs_school: "Dasmariñas National High School",
             shs_strand: "TVL - Technical-Vocational-Livelihood (ICT Programming)",
             shs_grad_year: "2016",
@@ -3743,23 +3734,58 @@ export default function ApplicantProfile() {
         setProfileMessage("⚡ Skills & Credentials populated!");
       } else if (activeSection === "experience") {
         // Section 4: Only Work Experience
+        // Per specifications: at least 3 work experience records
         const demoWorkExperience = [
           {
             id: Date.now(),
-            title: "Frontend Web Developer",
+            title: "Senior Frontend Engineer",
             company: "Cavite Digital Solutions Inc.",
             location: "Dasmariñas, Cavite",
             province: "Cavite",
             city: "Dasmariñas",
             employment_type: "Full-time",
             start_month: "July",
-            start_year: "2021",
+            start_year: "2023",
             end_month: "",
             end_year: "",
             is_current: true,
             responsibilities:
-              "Architected responsive web dashboards in React and TypeScript; reduced portal load times by 35% and collaborated with cross-functional UI/UX teams.",
+              "Lead frontend architecture for client web portals in React and TypeScript; reduced portal load times by 35% through component memoization and code-splitting; mentored junior developers.",
             skills: ["React", "TypeScript", "Tailwind CSS"],
+          },
+          {
+            id: Date.now() + 1,
+            title: "Frontend Web Developer",
+            company: "Nexura Cloud Technologies",
+            location: "Imus, Cavite",
+            province: "Cavite",
+            city: "Imus",
+            employment_type: "Full-time",
+            start_month: "March",
+            start_year: "2021",
+            end_month: "June",
+            end_year: "2023",
+            is_current: false,
+            responsibilities:
+              "Engineered high-performance web interfaces and reusable UI component libraries using React, JavaScript, and modern CSS; integrated secure REST APIs.",
+            skills: ["React", "JavaScript", "REST APIs", "Tailwind CSS"],
+          },
+          {
+            id: Date.now() + 2,
+            title: "Junior Web Developer",
+            company: "South Luzon Infotech Solutions",
+            location: "Bacoor, Cavite",
+            province: "Cavite",
+            city: "Bacoor",
+            employment_type: "Full-time",
+            start_month: "August",
+            start_year: "2020",
+            end_month: "February",
+            end_year: "2021",
+            is_current: false,
+            responsibilities:
+              "Developed responsive frontend web templates, resolved cross-browser layout inconsistencies, and contributed to Git-based team sprints.",
+            skills: ["HTML5/CSS3", "JavaScript", "Git"],
           },
         ];
 
@@ -3771,7 +3797,7 @@ export default function ApplicantProfile() {
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.message || "Failed to update work experience.");
         setProfileMessageType("success");
-        setProfileMessage("⚡ Work Experience populated!");
+        setProfileMessage("⚡ Work Experience (3 positions) populated!");
       }
 
       // Refresh active profile state to reflect current section changes immediately
