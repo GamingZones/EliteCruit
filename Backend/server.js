@@ -9114,7 +9114,10 @@ async function ensureMeetingsForZakiAccounts(forceReseed = false) {
         ).catch(() => {});
       }
 
-      if (threadId) {
+      const existingMsgCountRow = await get("SELECT COUNT(*) AS count FROM messages WHERE thread_id = ?", [threadId]);
+      const existingMsgCount = Number(existingMsgCountRow?.count || 0);
+
+      if (threadId && (forceReseed || existingMsgCount === 0)) {
         await run("DELETE FROM messages WHERE thread_id = ?", [threadId]);
 
         const threadMessages = [
