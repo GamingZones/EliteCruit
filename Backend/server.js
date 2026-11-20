@@ -8901,6 +8901,10 @@ app.post("/api/admin/reset-zaki-accounts", async (req, res) => {
   try {
     const result = await oneTimeResetZakiBothAccounts(true);
     return res.json({ success: true, message: "Zaki accounts cleanly reset to presentation baseline!", result });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 async function unregisterZakiBothAccounts() {
   const employerEmail = "zakiablando897@gmail.com";
@@ -8944,7 +8948,7 @@ async function unregisterZakiBothAccounts() {
   };
 }
 
-app.post("/api/admin/unregister-zaki-both-accounts", async (req, res) => {
+app.all("/api/admin/unregister-zaki-both-accounts", async (req, res) => {
   try {
     const result = await unregisterZakiBothAccounts();
     return res.json(result);
@@ -8963,11 +8967,6 @@ app.all("/api/system/unregister-zaki-both-accounts", async (req, res) => {
     return res.status(500).json({ success: false, error: err.message });
   }
 });
-  } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
-  }
-});
-
 async function resetSpecificApplicantAccount(emailToReset, force = false) {
   try {
     const cleanEmail = String(emailToReset || "").trim().toLowerCase();

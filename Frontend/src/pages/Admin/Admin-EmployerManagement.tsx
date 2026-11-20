@@ -84,15 +84,21 @@ export default function AdminEmployerManagement() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
+      }
+
+      if (res.ok && data?.success) {
         setIsUnregisterModalOpen(false);
         setUnregisterSuccessMsg(
           "Both presentation accounts (zakiablando897@gmail.com and zaki_ablando897@yahoo.com) have been completely unregistered and removed from the database."
         );
         loadEmployers();
       } else {
-        showToast(data.error || data.message || "Failed to unregister accounts.", "error");
+        showToast(data?.error || data?.message || `Server returned status ${res.status}.`, "error");
       }
     } catch (err: any) {
       showToast(err.message || "Network error while unregistering accounts.", "error");

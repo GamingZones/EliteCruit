@@ -96,15 +96,21 @@ export default function AdminDashboard() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
+      }
+
+      if (res.ok && data?.success) {
         setIsUnregisterModalOpen(false);
         setSuccessMessage(
           "Both presentation accounts (zakiablando897@gmail.com and zaki_ablando897@yahoo.com) have been completely unregistered and removed from the database."
         );
         fetchData();
       } else {
-        setErrorMessage(data.error || data.message || "Failed to unregister accounts.");
+        setErrorMessage(data?.error || data?.message || `Server returned status ${res.status}. Please try again.`);
       }
     } catch (err: any) {
       setErrorMessage(err.message || "Network error while unregistering accounts.");
