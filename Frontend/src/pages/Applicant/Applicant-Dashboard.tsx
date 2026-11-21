@@ -1004,11 +1004,12 @@ export default function ApplicantDashboard() {
   useEffect(() => {
     const applyHashScroll = () => {
       requestAnimationFrame(scrollToHashSection);
+      loadDashboardData(true);
     };
     applyHashScroll();
     window.addEventListener("hashchange", applyHashScroll);
     return () => window.removeEventListener("hashchange", applyHashScroll);
-  }, []);
+  }, [loadDashboardData]);
 
   useEffect(() => {
     const sectionIds = ["section-overview", "section-smart-matches", "section-applications", "section-invitations"];
@@ -1081,6 +1082,7 @@ export default function ApplicantDashboard() {
 
       document.addEventListener("visibilitychange", handleVisibility);
       window.addEventListener("focus", handleSync);
+      window.addEventListener("pageshow", handleSync);
       window.addEventListener("elitecruit-interviews-updated", handleSync);
       window.addEventListener("elitecruit_interviews_update", handleSync);
       window.addEventListener("elitecruit_application_update", handleSync);
@@ -1137,6 +1139,7 @@ export default function ApplicantDashboard() {
         clearInterval(interval);
         document.removeEventListener("visibilitychange", handleVisibility);
         window.removeEventListener("focus", handleSync);
+        window.removeEventListener("pageshow", handleSync);
         window.removeEventListener("elitecruit-interviews-updated", handleSync);
         window.removeEventListener("elitecruit_interviews_update", handleSync);
         window.removeEventListener("elitecruit_application_update", handleSync);
@@ -1460,6 +1463,7 @@ export default function ApplicantDashboard() {
       mainRef.current.scrollTop = 0;
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
+    loadDashboardData(true);
   };
 
   const currentTabIndex = WORKSPACE_TABS.findIndex((tab) => tab.id === activeSection);

@@ -376,6 +376,7 @@ export default function EmployerDashboard() {
     if (typeof window !== "undefined") {
       window.location.hash = sectionId;
     }
+    loadDashboardData(true);
   };
 
   useEffect(() => {
@@ -386,10 +387,11 @@ export default function EmployerDashboard() {
       } else if (hash === "section-insights" || hash === "section-postings") {
         setActiveSection("section-insights");
       }
+      loadDashboardData(true);
     };
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
-  }, []);
+  }, [loadDashboardData]);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -471,6 +473,7 @@ export default function EmployerDashboard() {
 
     document.addEventListener("visibilitychange", handleVisibility);
     window.addEventListener("focus", handleSync);
+    window.addEventListener("pageshow", handleSync);
     window.addEventListener("elitecruit_application_update", handleSync);
     window.addEventListener("elitecruit-interviews-updated", handleSync);
 
@@ -478,6 +481,7 @@ export default function EmployerDashboard() {
       clearInterval(interval);
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("focus", handleSync);
+      window.removeEventListener("pageshow", handleSync);
       window.removeEventListener("elitecruit_application_update", handleSync);
       window.removeEventListener("elitecruit-interviews-updated", handleSync);
     };

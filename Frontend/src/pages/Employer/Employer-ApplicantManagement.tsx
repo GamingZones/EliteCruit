@@ -1618,6 +1618,7 @@ export default function EmployerApplicantManagement() {
 
     document.addEventListener("visibilitychange", handleVisibility);
     window.addEventListener("focus", handleSync);
+    window.addEventListener("pageshow", handleSync);
     window.addEventListener("elitecruit_application_update", handleSync);
     window.addEventListener("elitecruit-interviews-updated", handleSync);
 
@@ -1625,6 +1626,7 @@ export default function EmployerApplicantManagement() {
       clearInterval(interval);
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("focus", handleSync);
+      window.removeEventListener("pageshow", handleSync);
       window.removeEventListener("elitecruit_application_update", handleSync);
       window.removeEventListener("elitecruit-interviews-updated", handleSync);
     };
@@ -2171,6 +2173,7 @@ export default function EmployerApplicantManagement() {
     if (mainEl) {
       mainEl.scrollTo({ top: 0, behavior: "smooth" });
     }
+    fetchApplications(true);
   };
 
   const scrollToShortlistBoard = (e?: React.MouseEvent) => {
@@ -2181,6 +2184,7 @@ export default function EmployerApplicantManagement() {
     if (mainEl) {
       mainEl.scrollTo({ top: 0, behavior: "smooth" });
     }
+    fetchApplications(true);
   };
 
   const scrollToDirectInvitations = (e?: React.MouseEvent) => {
@@ -2191,6 +2195,7 @@ export default function EmployerApplicantManagement() {
     if (mainEl) {
       mainEl.scrollTo({ top: 0, behavior: "smooth" });
     }
+    fetchApplications(true);
   };
 
   useEffect(() => {
@@ -2209,6 +2214,7 @@ export default function EmployerApplicantManagement() {
         const mainEl = mainRef.current || document.querySelector<HTMLElement>(".appdash-main");
         if (mainEl) mainEl.scrollTo({ top: 0, behavior: "smooth" });
       }
+      fetchApplications(true);
     };
 
     updateFromHash();
@@ -2221,7 +2227,7 @@ export default function EmployerApplicantManagement() {
       window.removeEventListener("elitecruit-interviews-updated", fetchApplications);
       window.removeEventListener("elitecruit_interviews_update", fetchApplications);
     };
-  }, []);
+  }, [fetchApplications]);
 
   const handleUpdateStatus = async (appId: number, newStatus: string) => {
     setApplications((prev) =>
