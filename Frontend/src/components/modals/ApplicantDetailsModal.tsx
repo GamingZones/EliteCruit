@@ -292,6 +292,7 @@ export type CandidateModalData = {
   is_recruited?: boolean | number | null;
   applied_jobs?: Array<{ job_post_id: number; status: string }> | string | null;
   latest_application_status?: string | null;
+  job_status_map?: Record<string | number, { type: "applied" | "invited"; status: string; label: string }>;
 };
 
 function formatDate(iso?: string | null): string {
@@ -326,6 +327,7 @@ export type ApplicantDetailsModalProps = {
   currentEmployerUserId?: number | string | null;
   initialSideTab?: "breakdown" | "messages" | "other-jobs" | null;
   onViewJobDetails?: (job: any) => void;
+  onInviteCandidateToJob?: (candidate: CandidateModalData, job: any) => void;
   hideFloatingTabs?: boolean;
   hideBreakdownTab?: boolean;
   hideOtherJobsTab?: boolean;
@@ -346,6 +348,7 @@ export default function ApplicantDetailsModal({
   currentEmployerUserId = null,
   initialSideTab = null,
   onViewJobDetails,
+  onInviteCandidateToJob,
   hideFloatingTabs = false,
   hideBreakdownTab = false,
   hideOtherJobsTab = false,
@@ -2697,6 +2700,35 @@ export default function ApplicantDetailsModal({
 
                 const pillClass = percent >= 75 ? "green" : percent >= 50 ? "yellow" : "red";
 
+                let jobConn: { type: "applied" | "invited"; status: string; label: string } | null = null;
+                if (candidate.job_status_map) {
+                  jobConn =
+                    candidate.job_status_map[otherJob.id] ||
+                    candidate.job_status_map[String(otherJob.id)] ||
+                    candidate.job_status_map[Number(otherJob.id)] ||
+                    null;
+                }
+                if (!jobConn && candidate.applied_jobs) {
+                  let appList: Array<{ job_post_id: number; status: string }> = [];
+                  if (Array.isArray(candidate.applied_jobs)) {
+                    appList = candidate.applied_jobs;
+                  } else if (typeof candidate.applied_jobs === "string") {
+                    try {
+                      appList = JSON.parse(candidate.applied_jobs);
+                    } catch {}
+                  }
+                  const found = appList.find((aj) => Number(aj.job_post_id) === Number(otherJob.id));
+                  if (found) {
+                    const st = (found.status || "").toLowerCase();
+                    const isRecruited = st === "recruited" || st === "accepted";
+                    jobConn = {
+                      type: "applied",
+                      status: st,
+                      label: isRecruited ? "Recruited" : "Already Applied",
+                    };
+                  }
+                }
+
                 return (
                   <div
                     key={otherJob.id}
@@ -2729,10 +2761,40 @@ export default function ApplicantDetailsModal({
                       </div>
                     </div>
 
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px", flexShrink: 0 }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px", flexShrink: 0 }}>
                       <div className={`jd-other-job-match-pill ${pillClass}`}>
                         {percent}% Match
                       </div>
+
+                      {jobConn ? (
+                        <span
+                          className={`jd-other-job-status-pill ${
+                            jobConn.label === "Recruited"
+                              ? "recruited"
+                              : jobConn.type === "invited"
+                              ? "invited"
+                              : "applied"
+                          }`}
+                          title={`Candidate ${jobConn.label.toLowerCase()} for this position`}
+                        >
+                          {jobConn.label === "Recruited" && (
+                            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          )}
+                          {jobConn.label}
+                        </span>
+                      ) : onInviteCandidateToJob ? (
+                        <button
+                          type="button"
+                          className="jd-other-job-invite-btn"
+                          title="Invite candidate to apply for this job position"
+                          onClick={() => onInviteCandidateToJob(candidate, otherJob)}
+                        >
+                          Invite to Apply
+                        </button>
+                      ) : null}
+
                       <button
                         type="button"
                         className="details-btn jd-other-job-details-btn"

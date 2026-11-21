@@ -1439,7 +1439,7 @@ export default function EmployerApplicantManagement() {
     }
     if (!employerUserId) return;
 
-    const targetApplicantUserId = reviewModalApp.applicant_user_id || reviewModalApp.user_id;
+    const targetApplicantUserId = reviewModalApp.applicant_user_id || (reviewModalApp as any).user_id || reviewModalProfile?.user_id || reviewModalProfile?.id;
 
     setIsRecruitSending(true);
     setRecruitSuccessMsg(null);
@@ -2819,7 +2819,48 @@ export default function EmployerApplicantManagement() {
     if (!reviewModalApp) return null;
     const p = reviewModalProfile || {};
     const candUserId = reviewModalApp.applicant_user_id || (reviewModalApp as any).user_id || p.user_id || p.id;
+    const candEmail = reviewModalApp.email || p.email;
     const matchScore = calculateAppMatch(reviewModalApp, reviewModalProfile);
+
+    // Build job_status_map to flag or exclude jobs candidate already applied or was invited to
+    const jobStatusMap: Record<string | number, { type: "applied" | "invited"; status: string; label: string }> = {};
+
+    applications.forEach((app) => {
+      const matches =
+        (candUserId && (Number(app.applicant_user_id) === Number(candUserId) || Number((app as any).user_id) === Number(candUserId))) ||
+        (candEmail && app.email && app.email.trim().toLowerCase() === candEmail.trim().toLowerCase());
+      if (matches && app.job_post_id) {
+        const st = (app.status || "").toLowerCase();
+        const isRecruited = st === "recruited" || st === "accepted" || app.response_decision === "accept";
+        const entry = {
+          type: "applied" as const,
+          status: st,
+          label: isRecruited ? "Recruited" : "Already Applied",
+        };
+        jobStatusMap[app.job_post_id] = entry;
+        jobStatusMap[String(app.job_post_id)] = entry;
+      }
+    });
+
+    directInvitations.forEach((inv) => {
+      const matches =
+        (candUserId && Number(inv.applicant_user_id) === Number(candUserId)) ||
+        (candEmail && inv.applicant_email && inv.applicant_email.trim().toLowerCase() === candEmail.trim().toLowerCase());
+      if (matches && inv.job_post_id) {
+        const st = (inv.status || "pending").toLowerCase();
+        const isRecruited = st === "accepted" || st === "recruited";
+        const existing = jobStatusMap[inv.job_post_id];
+        if (!existing || (!existing.label.includes("Recruited") && isRecruited)) {
+          const entry = {
+            type: "invited" as const,
+            status: st,
+            label: isRecruited ? "Recruited" : "Already Invited",
+          };
+          jobStatusMap[inv.job_post_id] = entry;
+          jobStatusMap[String(inv.job_post_id)] = entry;
+        }
+      }
+    });
 
     return {
       user_id: candUserId,
@@ -2863,8 +2904,9 @@ export default function EmployerApplicantManagement() {
       applied_date: reviewModalApp.submitted_at,
       status: reviewModalApp.status,
       response_letter: reviewModalApp.response_letter,
+      job_status_map: jobStatusMap,
     };
-  }, [reviewModalApp, reviewModalProfile, calculateAppMatch]);
+  }, [reviewModalApp, reviewModalProfile, calculateAppMatch, applications, directInvitations]);
 
   const employerJobsList = useMemo(() => {
     return Object.values(allJobsMap).map((j: any) => ({
@@ -2883,41 +2925,38 @@ export default function EmployerApplicantManagement() {
     }));
   }, [allJobsMap]);
 
+  const handleInviteCandidateToOtherJob = (candidate: CandidateModalData, job: any) => {
+    setSelectedJobDetails(job);
+    setRecruitJobTarget(job);
+    const candidateName = candidate.applicant_name || candidate.name || reviewModalApp?.applicant_name || "Candidate";
+    setRecruitCustomMsg(
+      `Hello ${candidateName}! We reviewed your profile and would like to invite you to apply for our open position: ${job?.title || "our open position"}.`
+    );
+    setRecruitSuccessMsg(null);
+    setIsRecruitModalOpen(true);
+  };
+
   const renderModalFooterActions = () => {
     if (!reviewModalApp) return null;
 
     if (isDirectInvitationModal) {
+      const invStatus = (reviewModalApp.status || "pending").toLowerCase();
+      const isRecruited = invStatus === "recruited" || invStatus === "accepted" || reviewModalApp.response_decision === "accept";
+      const isDeclined = invStatus === "declined" || invStatus === "denied" || reviewModalApp.response_decision === "decline";
+      const statusLabel = isRecruited ? "Recruited" : isDeclined ? "Declined" : "Invitation Pending";
+      const statusClass = isRecruited ? "recruited" : isDeclined ? "declined" : "pending";
+
       return (
-        <button
-          type="button"
-          className="solid-btn primary-solid"
-          onClick={() => {
-            const job = (reviewModalApp.job_post_id && allJobsMap[reviewModalApp.job_post_id]) ||
-              (reviewModalApp.job_post_id && employerJobsList.find((j: any) => Number(j.id) === Number(reviewModalApp.job_post_id))) ||
-              Object.values(allJobsMap)[0] ||
-              employerJobsList[0] ||
-              (reviewModalApp.job_title ? {
-                id: reviewModalApp.job_post_id || 1,
-                title: reviewModalApp.job_title,
-                location: reviewModalApp.job_location || "Cavite",
-                work_arrangement: reviewModalApp.job_work_arrangement || "On-Site",
-                salary_min: reviewModalApp.job_salary_min,
-                salary_max: reviewModalApp.job_salary_max,
-              } : null);
-            setSelectedJobDetails(job);
-            setRecruitJobTarget(job);
-            if (reviewModalApp) {
-              setRecruitCustomMsg(
-                `Hello ${reviewModalApp.applicant_name}! We reviewed your profile and would like to invite you to apply for our open position: ${job?.title || "our open position"}.`
-              );
-            }
-            setRecruitSuccessMsg(null);
-            setIsRecruitModalOpen(true);
-          }}
-          style={{ padding: "8px 18px", fontSize: "0.85rem", fontWeight: 700 }}
-        >
-          Invite to Apply
-        </button>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+          <span className={`direct-inv-status-pill ${statusClass}`}>
+            {isRecruited && (
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            )}
+            {statusLabel}
+          </span>
+        </div>
       );
     }
 
@@ -4780,6 +4819,7 @@ export default function EmployerApplicantManagement() {
             initialSideTab={modalInitialSideTab}
             hideCloseButton={true}
             customFooterActions={renderModalFooterActions()}
+            onInviteCandidateToJob={handleInviteCandidateToOtherJob}
           />,
           document.body
         )}
@@ -4916,11 +4956,19 @@ export default function EmployerApplicantManagement() {
                         cursor: "pointer",
                       }}
                     >
-                      {employerJobsList.map((j: any) => (
-                        <option key={j.id} value={j.id}>
-                          {j.title} ({j.location || "Cavite"})
-                        </option>
-                      ))}
+                      {employerJobsList.map((j: any) => {
+                        const conn = detailsCandidate?.job_status_map?.[j.id];
+                        const isCurrent = Number(selectedJobDetails?.id) === Number(j.id);
+                        return (
+                          <option
+                            key={j.id}
+                            value={j.id}
+                            disabled={Boolean(conn) && !isCurrent}
+                          >
+                            {j.title} ({j.location || "Cavite"}){conn ? ` — [${conn.label}]` : ""}
+                          </option>
+                        );
+                      })}
                     </select>
                   ) : (
                     <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 800, color: "#01294a" }}>{selectedJobDetails.title}</h4>
