@@ -241,7 +241,10 @@ function parseSalaryInteger(value: string | number | null | undefined): string {
   if (!clean) return "";
   const num = parseFloat(clean);
   if (!Number.isFinite(num) || num < 0) return "";
-  return String(Math.min(9999999, Math.round(num)));
+  if (Math.round(num) === num) {
+    return String(Math.min(9999999, Math.round(num)));
+  }
+  return String(Math.min(9999999, num));
 }
 
 function computeNextArrangements(current: string[] = [], clickedArr: string): string[] {
@@ -4420,16 +4423,25 @@ export default function ApplicantProfile() {
   const handleFocusRoleSalary = (roleId: string, field: "salary_min" | "salary_max") => {
     const role = targetRoles.find((r) => r.id === roleId);
     const currentVal = role && role[field] != null ? String(role[field]).replace(/,/g, "").trim() : "";
-    const cleanVal = currentVal.endsWith(".00") ? currentVal.slice(0, -3) : currentVal;
+    const cleanVal = parseSalaryInteger(currentVal);
     setActiveRoleSalaryInput({ id: roleId, field, value: cleanVal });
   };
 
   const handleChangeRoleSalary = (roleId: string, field: "salary_min" | "salary_max", rawInput: string) => {
-    const digitsOnly = rawInput.replace(/[^0-9]/g, "").slice(0, 7);
-    const value = digitsOnly;
-    setActiveRoleSalaryInput({ id: roleId, field, value });
+    let cleaned = rawInput.replace(/[^0-9.]/g, "");
+    const parts = cleaned.split(".");
+    if (parts.length > 2) {
+      cleaned = parts[0] + "." + parts.slice(1).join("");
+    }
+    if (cleaned.includes(".")) {
+      const [intPart, decPart] = cleaned.split(".");
+      cleaned = `${intPart.slice(0, 7)}.${decPart.slice(0, 2)}`;
+    } else {
+      cleaned = cleaned.slice(0, 7);
+    }
+    setActiveRoleSalaryInput({ id: roleId, field, value: cleaned });
     setTargetRoles((prev) =>
-      prev.map((r) => (r.id === roleId ? { ...r, [field]: value, hide_salary: false } : r))
+      prev.map((r) => (r.id === roleId ? { ...r, [field]: cleaned, hide_salary: false } : r))
     );
   };
 
@@ -4439,7 +4451,8 @@ export default function ApplicantProfile() {
 
     let formatted = "";
     if (currentVal) {
-      const num = Math.min(9999999, Number(currentVal));
+      const clean = currentVal.replace(/,/g, "").trim();
+      const num = parseFloat(clean);
       if (Number.isFinite(num) && num >= 0) {
         formatted = num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       } else {
@@ -6205,17 +6218,37 @@ export default function ApplicantProfile() {
                                             <input
                                               className={newRoleSalaryError ? "has-error" : ""}
                                               placeholder="Min Salary"
+                                              maxLength={15}
                                               value={newRoleSalaryMin}
-                                              onFocus={() => setNewRoleSalaryLastField("min")}
+                                              onFocus={() => {
+                                                setNewRoleSalaryLastField("min");
+                                                if (newRoleSalaryMin) {
+                                                  const clean = parseSalaryInteger(newRoleSalaryMin);
+                                                  if (clean !== newRoleSalaryMin) {
+                                                    setNewRoleSalaryMin(clean);
+                                                  }
+                                                }
+                                              }}
                                               onChange={(e) => {
                                                 setNewRoleSalaryLastField("min");
                                                 if (newRoleHideSalary) setNewRoleHideSalary(false);
-                                                const sanitized = e.target.value.replace(/[^0-9.]/g, "");
-                                                setNewRoleSalaryMin(sanitized);
+                                                let cleaned = e.target.value.replace(/[^0-9.]/g, "");
+                                                const parts = cleaned.split(".");
+                                                if (parts.length > 2) {
+                                                  cleaned = parts[0] + "." + parts.slice(1).join("");
+                                                }
+                                                if (cleaned.includes(".")) {
+                                                  const [intPart, decPart] = cleaned.split(".");
+                                                  cleaned = `${intPart.slice(0, 7)}.${decPart.slice(0, 2)}`;
+                                                } else {
+                                                  cleaned = cleaned.slice(0, 7);
+                                                }
+                                                setNewRoleSalaryMin(cleaned);
                                               }}
                                               onBlur={() => {
                                                 if (newRoleSalaryMin) {
-                                                  const num = Number(newRoleSalaryMin.replace(/,/g, ""));
+                                                  const raw = newRoleSalaryMin.replace(/,/g, "").trim();
+                                                  const num = parseFloat(raw);
                                                   if (Number.isFinite(num) && num >= 0) {
                                                     setNewRoleSalaryMin(num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
                                                   }
@@ -6228,17 +6261,37 @@ export default function ApplicantProfile() {
                                             <input
                                               className={newRoleSalaryError ? "has-error" : ""}
                                               placeholder="Max Salary"
+                                              maxLength={15}
                                               value={newRoleSalaryMax}
-                                              onFocus={() => setNewRoleSalaryLastField("max")}
+                                              onFocus={() => {
+                                                setNewRoleSalaryLastField("max");
+                                                if (newRoleSalaryMax) {
+                                                  const clean = parseSalaryInteger(newRoleSalaryMax);
+                                                  if (clean !== newRoleSalaryMax) {
+                                                    setNewRoleSalaryMax(clean);
+                                                  }
+                                                }
+                                              }}
                                               onChange={(e) => {
                                                 setNewRoleSalaryLastField("max");
                                                 if (newRoleHideSalary) setNewRoleHideSalary(false);
-                                                const sanitized = e.target.value.replace(/[^0-9.]/g, "");
-                                                setNewRoleSalaryMax(sanitized);
+                                                let cleaned = e.target.value.replace(/[^0-9.]/g, "");
+                                                const parts = cleaned.split(".");
+                                                if (parts.length > 2) {
+                                                  cleaned = parts[0] + "." + parts.slice(1).join("");
+                                                }
+                                                if (cleaned.includes(".")) {
+                                                  const [intPart, decPart] = cleaned.split(".");
+                                                  cleaned = `${intPart.slice(0, 7)}.${decPart.slice(0, 2)}`;
+                                                } else {
+                                                  cleaned = cleaned.slice(0, 7);
+                                                }
+                                                setNewRoleSalaryMax(cleaned);
                                               }}
                                               onBlur={() => {
                                                 if (newRoleSalaryMax) {
-                                                  const num = Number(newRoleSalaryMax.replace(/,/g, ""));
+                                                  const raw = newRoleSalaryMax.replace(/,/g, "").trim();
+                                                  const num = parseFloat(raw);
                                                   if (Number.isFinite(num) && num >= 0) {
                                                     setNewRoleSalaryMax(num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
                                                   }
@@ -6569,7 +6622,7 @@ export default function ApplicantProfile() {
                                               <input
                                                 className={roleSalaryError ? "has-error" : ""}
                                                 placeholder="Min Salary"
-                                                maxLength={7}
+                                                maxLength={15}
                                                 value={displayVal}
                                                 onFocus={() => {
                                                   setRoleSalaryLastField((prev) => ({ ...prev, [roleItem.id]: "min" }));
@@ -6598,7 +6651,7 @@ export default function ApplicantProfile() {
                                               <input
                                                 className={roleSalaryError ? "has-error" : ""}
                                                 placeholder="Max Salary"
-                                                maxLength={7}
+                                                maxLength={15}
                                                 value={displayVal}
                                                 onFocus={() => {
                                                   setRoleSalaryLastField((prev) => ({ ...prev, [roleItem.id]: "max" }));
