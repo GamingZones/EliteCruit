@@ -787,20 +787,24 @@ export default function ApplicantDashboard() {
         fetch("/api/job-posts"),
       ]);
 
+      let loadedAppliedJobIds: number[] = [];
       if (appsRes.status === "fulfilled" && appsRes.value.ok) {
         const data = await appsRes.value.json();
-        setMyApplicationsList(Array.isArray(data?.applications) ? data.applications : []);
-        const ids = Array.isArray(data?.applications)
-          ? data.applications
-              .map((item: any) => Number(item?.job_post_id))
-              .filter((id: number) => Number.isInteger(id) && id > 0)
-          : [];
-        setAppliedJobIds(ids);
+        const appsList = Array.isArray(data?.applications) ? data.applications : [];
+        setMyApplicationsList(appsList);
+        loadedAppliedJobIds = appsList
+          .map((item: any) => Number(item?.job_post_id))
+          .filter((id: number) => Number.isInteger(id) && id > 0);
+        setAppliedJobIds(loadedAppliedJobIds);
       }
 
       if (invRes.status === "fulfilled" && invRes.value.ok) {
         const data = await invRes.value.json();
-        setInvitationsList(Array.isArray(data?.invitations) ? data.invitations : []);
+        const rawInvs = Array.isArray(data?.invitations) ? data.invitations : [];
+        // Strictly filter Job Offers so it only shows direct employer-initiated offers,
+        // excluding any job where the applicant reached out and applied first.
+        const filteredInvs = rawInvs.filter((inv: any) => !loadedAppliedJobIds.includes(Number(inv.job_post_id)));
+        setInvitationsList(filteredInvs);
       }
 
       if (jobsRes.status === "fulfilled" && jobsRes.value.ok) {

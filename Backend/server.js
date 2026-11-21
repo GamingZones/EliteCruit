@@ -748,6 +748,36 @@ async function ensureJobPostColumns() {
   await run("ALTER TABLE job_invitations ADD COLUMN IF NOT EXISTS response_letter TEXT");
   await run("ALTER TABLE job_invitations ADD COLUMN IF NOT EXISTS responded_at TIMESTAMPTZ");
   await run("ALTER TABLE job_invitations ADD COLUMN IF NOT EXISTS start_date TEXT");
+  await run("ALTER TABLE applications ADD COLUMN IF NOT EXISTS initiated_by TEXT NOT NULL DEFAULT 'applicant'").catch(() => {});
+  
+  // Set initiated_by = 'employer' for applications created from accepted direct invitations
+  await run(`
+    UPDATE applications
+    SET initiated_by = 'employer'
+    WHERE id IN (
+      SELECT a.id
+      FROM applications a
+      JOIN job_invitations ji
+        ON ji.applicant_user_id = a.applicant_user_id
+       AND ji.job_post_id = a.job_post_id
+      WHERE ji.created_at <= a.submitted_at
+        AND a.was_shortlisted = FALSE
+        AND a.had_interview = FALSE
+        AND (a.status = 'recruited' OR a.status = 'accepted')
+    )
+  `).catch(() => {});
+
+  // Clean up any duplicate/artificial job_invitations created for jobs where the applicant applied first
+  await run(`
+    DELETE FROM job_invitations ji
+    WHERE EXISTS (
+      SELECT 1 FROM applications a
+      WHERE a.applicant_user_id = ji.applicant_user_id
+        AND a.job_post_id = ji.job_post_id
+        AND a.submitted_at < ji.created_at
+        AND COALESCE(a.initiated_by, 'applicant') = 'applicant'
+    )
+  `).catch(() => {});
 }
 
 function isValidPassword(password) {
@@ -4640,6 +4670,7 @@ app.get("/api/applicants/:userId/applications", authenticateToken, requireUserOr
        INNER JOIN users u ON u.id = jp.employer_user_id
        LEFT JOIN employer_profiles ep ON ep.user_id = jp.employer_user_id
        WHERE a.applicant_user_id = ?
+         AND COALESCE(a.initiated_by, 'applicant') = 'applicant'
        GROUP BY a.id, jp.id, ep.business_name, ep.company_address, ep.city, ep.company_logo_path, ep.company_cover_path, u.email
        ORDER BY datetime(a.submitted_at) DESC`,
       [userId]
@@ -5629,6 +5660,14 @@ app.post("/api/employers/:userId/invite-candidate", authenticateToken, requireUs
       return res.status(403).json({ message: "You do not own this job posting." });
     }
 
+    const existingApplicantApp = await get(
+      "SELECT id FROM applications WHERE job_post_id = ? AND applicant_user_id = ? AND COALESCE(initiated_by, 'applicant') = 'applicant'",
+      [jobId, applicantId]
+    );
+    if (existingApplicantApp) {
+      return res.status(400).json({ message: "Candidate has already applied for this job posting." });
+    }
+
     const empProfile = await get("SELECT business_name FROM employer_profiles WHERE user_id = ?", [userId]);
     const empUser = await get("SELECT email FROM users WHERE id = ?", [userId]);
     const companyName = empProfile?.business_name || empUser?.email || "An Employer";
@@ -5747,6 +5786,12 @@ app.get("/api/applicants/:userId/invitations", optionalAuthenticateToken, async 
        JOIN users u ON u.id = ji.employer_user_id
        LEFT JOIN employer_profiles ep ON ep.user_id = u.id
        WHERE ji.applicant_user_id = ?
+         AND NOT EXISTS (
+           SELECT 1 FROM applications a
+           WHERE a.applicant_user_id = ji.applicant_user_id
+             AND a.job_post_id = ji.job_post_id
+             AND COALESCE(a.initiated_by, 'applicant') = 'applicant'
+         )
        ORDER BY ji.created_at DESC`,
       [userId]
     );
@@ -5809,7 +5854,7 @@ app.post("/api/invitations/:id/respond", authenticateToken, requireInvitationRec
       );
       if (!existingApp) {
         await run(
-          "INSERT INTO applications (job_post_id, applicant_user_id, status, response_decision, response_letter, start_date, responded_at, submitted_at, updated_at) VALUES (?, ?, 'recruited', 'accept', ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+          "INSERT INTO applications (job_post_id, applicant_user_id, status, response_decision, response_letter, start_date, responded_at, submitted_at, updated_at, initiated_by) VALUES (?, ?, 'recruited', 'accept', ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'employer')",
           [invitation.job_post_id, invitation.applicant_user_id, letter_text || null, start_date || null]
         );
         await run("UPDATE job_posts SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", [invitation.job_post_id]);
@@ -6052,9 +6097,69 @@ app.post("/api/job-invitations/respond-by-job", authenticateToken, async (req, r
       [jobId, applicantId]
     );
 
+    const existingApp = await get(
+      "SELECT id, initiated_by FROM applications WHERE job_post_id = ? AND applicant_user_id = ?",
+      [jobId, applicantId]
+    );
+
+    const job = await get("SELECT title, employer_user_id FROM job_posts WHERE id = ?", [jobId]);
+    const jobTitle = job?.title || "the job position";
+    const employerUserId = invitation?.employer_user_id || job?.employer_user_id;
+
+    const applicant = await get(
+      `SELECT u.email, ap.first_name, ap.last_name
+       FROM users u
+       LEFT JOIN applicant_profiles ap ON ap.user_id = u.id
+       WHERE u.id = ?`,
+      [applicantId]
+    );
+    const applicantName = [applicant?.first_name, applicant?.last_name].filter(Boolean).join(" ") || applicant?.email || "Candidate";
+
+    const thread = employerUserId ? await get(
+      `SELECT t.id FROM message_threads t
+       JOIN message_participants p1 ON p1.thread_id = t.id AND p1.user_id = ?
+       JOIN message_participants p2 ON p2.thread_id = t.id AND p2.user_id = ?
+       LIMIT 1`,
+      [employerUserId, applicantId]
+    ) : null;
+
+    const msgContent = letter_text
+      ? `[Formal Response: ${action === "accept" ? "ACCEPTED" : "DECLINED"}]\nPosition: ${jobTitle}\n\n${letter_text}`
+      : action === "accept"
+      ? `Hello! I have accepted your offer for "${jobTitle}". Looking forward to discussing this opportunity!`
+      : `Thank you for considering me for "${jobTitle}". Unfortunately, I have to decline this offer at this time.`;
+
+    // If candidate applied directly (existing application) and no invitation existed, respond directly to the application
+    if (!invitation && existingApp) {
+      const newStatus = action === "accept" ? "recruited" : "declined";
+      await run(
+        "UPDATE applications SET status = ?, response_decision = ?, response_letter = COALESCE(?, response_letter), start_date = COALESCE(?, start_date), responded_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        [newStatus, action, letter_text || null, start_date || null, existingApp.id]
+      );
+      if (employerUserId) {
+        await run(
+          `INSERT INTO notifications (user_id, type, title, body, related_user_id, related_application_id)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [
+            employerUserId,
+            action === "accept" ? "offer_accepted" : "offer_declined",
+            `Job Offer ${action === "accept" ? "Accepted" : "Declined"}: ${jobTitle}`,
+            `${applicantName} has officially ${action === "accept" ? "accepted" : "declined"} your employment offer for "${jobTitle}".`,
+            applicantId,
+            existingApp.id
+          ]
+        );
+      }
+      if (thread?.id) {
+        await run(
+          `INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`,
+          [thread.id, applicantId, msgContent]
+        );
+      }
+      return res.json({ success: true, message: `Application offer successfully ${action}ed!` });
+    }
+
     if (!invitation) {
-      // Find employer
-      const job = await get("SELECT employer_user_id FROM job_posts WHERE id = ?", [jobId]);
       if (!job) return res.status(404).json({ message: "Job not found." });
       const created = await run(
         "INSERT INTO job_invitations (employer_user_id, applicant_user_id, job_post_id, status) VALUES (?, ?, ?, 'pending')",
@@ -6069,40 +6174,10 @@ app.post("/api/job-invitations/respond-by-job", authenticateToken, async (req, r
       [newStatus, letter_text || null, start_date || null, invitation.id]
     );
 
-    const job = await get("SELECT title FROM job_posts WHERE id = ?", [jobId]);
-    const jobTitle = job?.title || "the job position";
-
-    const applicant = await get(
-      `SELECT u.email, ap.first_name, ap.last_name
-       FROM users u
-       LEFT JOIN applicant_profiles ap ON ap.user_id = u.id
-       WHERE u.id = ?`,
-      [applicantId]
-    );
-    const applicantName = [applicant?.first_name, applicant?.last_name].filter(Boolean).join(" ") || applicant?.email || "Candidate";
-
-    const thread = await get(
-      `SELECT t.id FROM message_threads t
-       JOIN message_participants p1 ON p1.thread_id = t.id AND p1.user_id = ?
-       JOIN message_participants p2 ON p2.thread_id = t.id AND p2.user_id = ?
-       LIMIT 1`,
-      [invitation.employer_user_id, applicantId]
-    );
-
-    const msgContent = letter_text
-      ? `[Formal Invitation Response: ${action === "accept" ? "ACCEPTED" : "DECLINED"}]\nPosition: ${jobTitle}\n\n${letter_text}`
-      : action === "accept"
-      ? `Hello! I have accepted your invitation to apply for "${jobTitle}". Looking forward to discussing this opportunity!`
-      : `Thank you for considering me for "${jobTitle}". Unfortunately, I have to decline this invitation at this time.`;
-
     if (action === "accept") {
-      const existingApp = await get(
-        "SELECT id FROM applications WHERE job_post_id = ? AND applicant_user_id = ?",
-        [jobId, applicantId]
-      );
       if (!existingApp) {
         await run(
-          "INSERT INTO applications (job_post_id, applicant_user_id, status, response_decision, response_letter, start_date, responded_at, submitted_at, updated_at) VALUES (?, ?, 'recruited', 'accept', ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+          "INSERT INTO applications (job_post_id, applicant_user_id, status, response_decision, response_letter, start_date, responded_at, submitted_at, updated_at, initiated_by) VALUES (?, ?, 'recruited', 'accept', ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'employer')",
           [jobId, applicantId, letter_text || null, start_date || null]
         );
         await run("UPDATE job_posts SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", [jobId]);
