@@ -3463,8 +3463,8 @@ export default function Messages() {
               job={{
                 id: employerViewingJob.id,
                 title: employerViewingJob.title,
-                company: employerViewingJob.company || employerViewingJob.company_name || employerProfile?.business_name,
-                employerUserId: employerViewingJob.employerUserId || employerViewingJob.employer_user_id || currentEmployerId,
+                company: employerViewingJob.company || employerViewingJob.company_name || companyJobsData?.company_name || selectedCompanyDetails?.business_name || "Company",
+                employerUserId: employerViewingJob.employerUserId || employerViewingJob.employer_user_id || companyJobsData?.employer_user_id || currentUserId,
                 companyLogoPath: employerViewingJob.companyLogoPath || employerViewingJob.company_logo_path,
                 companyCoverPath: employerViewingJob.companyCoverPath || employerViewingJob.company_cover_path,
                 location: employerViewingJob.location || employerViewingJob.city || "Cavite",
