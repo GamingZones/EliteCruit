@@ -1457,6 +1457,7 @@ export default function EmployerApplicantManagement() {
       const data = await res.json();
       if (res.ok) {
         setRecruitSuccessMsg(`Invitation successfully sent to ${reviewModalApp.applicant_name}!`);
+        fetchApplications(true);
         setTimeout(() => {
           setIsRecruitModalOpen(false);
           setRecruitSuccessMsg(null);
@@ -2891,7 +2892,18 @@ export default function EmployerApplicantManagement() {
           type="button"
           className="solid-btn primary-solid"
           onClick={() => {
-            const job = Object.values(allJobsMap)[0];
+            const job = (reviewModalApp.job_post_id && allJobsMap[reviewModalApp.job_post_id]) ||
+              (reviewModalApp.job_post_id && employerJobsList.find((j: any) => Number(j.id) === Number(reviewModalApp.job_post_id))) ||
+              Object.values(allJobsMap)[0] ||
+              employerJobsList[0] ||
+              (reviewModalApp.job_title ? {
+                id: reviewModalApp.job_post_id || 1,
+                title: reviewModalApp.job_title,
+                location: reviewModalApp.job_location || "Cavite",
+                work_arrangement: reviewModalApp.job_work_arrangement || "On-Site",
+                salary_min: reviewModalApp.job_salary_min,
+                salary_max: reviewModalApp.job_salary_max,
+              } : null);
             setSelectedJobDetails(job);
             setRecruitJobTarget(job);
             if (reviewModalApp) {
@@ -4773,13 +4785,13 @@ export default function EmployerApplicantManagement() {
         )}
 
         {/* DIRECT RECRUITMENT INVITATION MODAL */}
-        {(isRecruitModalOpen || isRecruitModalClosing) && reviewModalApp && selectedJobDetails && (
+        {typeof document !== "undefined" && (isRecruitModalOpen || isRecruitModalClosing) && reviewModalApp && selectedJobDetails && createPortal(
           <div
             className="cand-details-overlay"
             style={{
               position: "fixed",
               inset: 0,
-              zIndex: 30000,
+              zIndex: 260000,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -4876,10 +4888,43 @@ export default function EmployerApplicantManagement() {
                   </div>
                 </div>
 
-                {/* Target Job Info */}
-                <div className="recruit-target-job-box" style={{ padding: "12px 14px", background: "#eff6ff", borderRadius: "10px", border: "1px solid #bfdbfe", display: "flex", flexDirection: "column", gap: "4px" }}>
+                {/* Target Job Info / Selector */}
+                <div className="recruit-target-job-box" style={{ padding: "12px 14px", background: "#eff6ff", borderRadius: "10px", border: "1px solid #bfdbfe", display: "flex", flexDirection: "column", gap: "6px" }}>
                   <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: "0.5px" }}>Target Job Opening</span>
-                  <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 800, color: "#01294a" }}>{selectedJobDetails.title}</h4>
+                  {employerJobsList.length > 1 ? (
+                    <select
+                      value={selectedJobDetails.id}
+                      onChange={(e) => {
+                        const chosenId = Number(e.target.value);
+                        const chosenJob = employerJobsList.find((j: any) => Number(j.id) === chosenId) || allJobsMap[chosenId];
+                        if (chosenJob) {
+                          setSelectedJobDetails(chosenJob);
+                          setRecruitJobTarget(chosenJob);
+                          setRecruitCustomMsg(
+                            `Hello ${reviewModalApp.applicant_name}! We reviewed your profile and would like to invite you to apply for our open position: ${chosenJob.title || "our open position"}.`
+                          );
+                        }
+                      }}
+                      style={{
+                        padding: "8px 10px",
+                        borderRadius: "6px",
+                        border: "1px solid #93c5fd",
+                        background: "#ffffff",
+                        fontSize: "0.9rem",
+                        fontWeight: 700,
+                        color: "#01294a",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {employerJobsList.map((j: any) => (
+                        <option key={j.id} value={j.id}>
+                          {j.title} ({j.location || "Cavite"})
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 800, color: "#01294a" }}>{selectedJobDetails.title}</h4>
+                  )}
                   <span style={{ fontSize: "0.78rem", color: "#475569" }}>{selectedJobDetails.location || "Cavite"} • {selectedJobDetails.work_arrangement || "On-Site"}</span>
                 </div>
 
@@ -4951,7 +4996,8 @@ export default function EmployerApplicantManagement() {
                 </div>
               </form>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* ── DECISION MODAL (ACCEPT / DENY WITH MESSAGE PREFERENCE & OPTIONAL LEFT INTERVIEW CARD) ── */}

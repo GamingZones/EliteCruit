@@ -4625,6 +4625,17 @@
   color: #94a3b8 !important;
 }
 
+[data-theme="dark"] .recruit-target-job-box select {
+  background: #242735 !important;
+  color: #f1f5f9 !important;
+  border-color: #3b82f6 !important;
+}
+
+[data-theme="dark"] .recruit-target-job-box select option {
+  background: #242735 !important;
+  color: #f1f5f9 !important;
+}
+
 /* ==========================================================================
    JOB ACCORDIONS & SCREENING TABLE DARK MODE (Rule 9 Isolation)
    ========================================================================== */

@@ -6851,6 +6851,17 @@
   color: #94a3b8 !important;
 }
 
+[data-theme="dark"] .recruit-target-job-box select {
+  background: #14151B !important;
+  color: #f8fafc !important;
+  border-color: #3b82f6 !important;
+}
+
+[data-theme="dark"] .recruit-target-job-box select option {
+  background: #1c1e27 !important;
+  color: #f8fafc !important;
+}
+
 [data-theme="dark"] .recruit-msg-textarea {
   background: #14151B !important;
   border: 1px solid #2e3244 !important;
