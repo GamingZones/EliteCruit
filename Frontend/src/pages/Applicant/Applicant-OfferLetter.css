@@ -555,6 +555,336 @@
   cursor: not-allowed;
 }
 
+.aol-template-card-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.aol-notices-preview-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0f9ff;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.aol-notices-preview-btn:hover {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #7dd3fc;
+}
+
+[data-theme="dark"] .aol-notices-preview-btn {
+  background: rgba(56, 189, 248, 0.12) !important;
+  border: 1px solid rgba(56, 189, 248, 0.3) !important;
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .aol-notices-preview-btn:hover {
+  background: rgba(56, 189, 248, 0.22) !important;
+  border-color: #38bdf8 !important;
+  color: #7dd3fc !important;
+}
+
+/* ── OFFICIAL CORRESPONDENCE MODAL (PREVIEW) ── */
+.view-letter-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 300000 !important;
+  background: rgba(9, 21, 35, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.2s ease-out;
+  box-sizing: border-box;
+}
+
+.view-letter-modal-card {
+  position: static !important;
+  top: auto !important;
+  left: auto !important;
+  transform: none !important;
+  background: #ffffff;
+  border-radius: 14px;
+  width: 550px !important;
+  max-width: min(550px, calc(100vw - 32px)) !important;
+  height: 560px !important;
+  max-height: 90vh !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
+  border: 1px solid #e2e8f0;
+  padding: 0;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.view-letter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 22px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.view-letter-body-content {
+  padding: 16px 22px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.view-letter-eyebrow {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #64748b;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.view-letter-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0c2a47;
+  line-height: 1.25;
+}
+
+.view-letter-company {
+  margin: 3px 0 0;
+  font-size: 0.88rem;
+  color: #475569;
+  font-weight: 600;
+}
+
+.view-letter-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.view-letter-close-btn:hover {
+  background: #f1f5f9;
+  color: #0c2a47;
+}
+
+.view-letter-meta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 12px 0;
+}
+
+.view-letter-badge {
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 999px;
+  letter-spacing: 0.03em;
+}
+
+.view-letter-badge.accepted {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.view-letter-badge.declined {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.view-letter-badge.extended {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.view-letter-body-box {
+  flex: 1;
+  min-height: 0;
+  background: #fafaf9;
+  border: 1px solid #e7e5e4;
+  border-radius: 10px;
+  padding: 16px;
+  overflow-y: auto;
+  max-height: none;
+}
+
+.view-letter-body-box.view-letter-offer-box {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+}
+
+.view-letter-box-header {
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #cbd5e1;
+}
+
+.view-letter-box-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #64748b;
+}
+
+.view-letter-box-label.offer-label {
+  color: #0284c7;
+}
+
+.view-letter-pre-text {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #1e293b;
+}
+
+.view-letter-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 22px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+  margin-top: 0;
+}
+
+.view-letter-done-btn {
+  background: #00385e;
+  color: #ffffff;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.view-letter-done-btn:hover {
+  background: #002742;
+}
+
+/* Dark Mode View Letter */
+[data-theme="dark"] .view-letter-modal-card {
+  background: #14151B !important;
+  border: 1px solid #2e3244 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .view-letter-header {
+  background: #14151B !important;
+  border-bottom-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .view-letter-body-content {
+  background: #14151B !important;
+}
+
+[data-theme="dark"] .view-letter-title {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .view-letter-company {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .view-letter-close-btn {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .view-letter-close-btn:hover {
+  background: #242735 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .view-letter-badge.accepted {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+  border: none !important;
+}
+
+[data-theme="dark"] .view-letter-badge.declined {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+  border: none !important;
+}
+
+[data-theme="dark"] .view-letter-badge.extended {
+  background: rgba(14, 165, 233, 0.18) !important;
+  color: #38bdf8 !important;
+  border: none !important;
+}
+
+[data-theme="dark"] .view-letter-body-box {
+  background: #181a24 !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .view-letter-body-box.view-letter-offer-box {
+  background: #181a24 !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .view-letter-box-header {
+  border-bottom-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .view-letter-box-label {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .view-letter-box-label.offer-label {
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .view-letter-pre-text {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .view-letter-footer {
+  background: #14151B !important;
+  border-top-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .view-letter-done-btn {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .view-letter-done-btn:hover {
+  background: #0369a1 !important;
+}
+
 @media (max-width: 768px) {
   .aol-main-content {
     padding: 16px 14px 36px !important;

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import ApplicantSidebar from "../../components/ApplicantSidebar";
 import ApplicantChatbotDrawer from "../../components/ApplicantChatbotDrawer";
 import CalendarDrawer from "../../components/CalendarDrawer";
@@ -69,6 +70,7 @@ export default function ApplicantOfferLetter() {
   const [savingCard, setSavingCard] = useState<"acceptance" | "denial" | null>(null);
   const [acceptanceStatus, setAcceptanceStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [denialStatus, setDenialStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [previewModalType, setPreviewModalType] = useState<"acceptance" | "denial" | null>(null);
 
   const [activeOfferContext, setActiveOfferContext] = useState<{
     id: number;
@@ -356,12 +358,12 @@ Document Timestamp: ${new Date().toLocaleString()}
 
   // Render live preview replacing dynamic tags with realistic sample data
   const renderPreview = (template: string, isAcceptance: boolean) => {
-    const sampleJob = activeOfferContext?.jobTitle || currentOffer?.title || "{job_title}";
-    const sampleCompany = activeOfferContext?.companyName || currentOffer?.company || "{company_name}";
-    const sampleStartDate = activeOfferContext?.startDate || currentOffer?.startDate || "{start_date}";
+    const sampleJob = activeOfferContext?.jobTitle || currentOffer?.title || "Senior Frontend Engineer";
+    const sampleCompany = activeOfferContext?.companyName || currentOffer?.company || "CEBUANA";
+    const sampleStartDate = activeOfferContext?.startDate || currentOffer?.startDate || "Two weeks from acceptance";
 
     return template
-      .replace(/\{applicant_name\}|\{candidate_name\}/g, candidateName || "{applicant_name}")
+      .replace(/\{applicant_name\}|\{candidate_name\}/g, candidateName || "Candidate")
       .replace(/\{job_title\}|\{position\}/g, sampleJob)
       .replace(/\{company_name\}|\{employer_name\}/g, sampleCompany)
       .replace(/\{start_date\}/g, sampleStartDate);
@@ -447,50 +449,6 @@ Document Timestamp: ${new Date().toLocaleString()}
         </header>
 
         <div className="aol-card-container">
-          {/* Active Context Banner when linked directly from an application or invitation */}
-          {activeOfferContext && (
-            <div
-              className="aol-active-offer-card"
-              style={{
-                marginBottom: "16px",
-                padding: "16px 20px",
-                background: "#f0f9ff",
-                border: "1px solid #bae6fd",
-                borderRadius: "12px",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: "12px",
-              }}
-            >
-              <div>
-                <span style={{ fontSize: "0.72rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", color: "#0369a1", display: "block" }}>
-                  LINKED FORMAL OFFER RECORD
-                </span>
-                <h3 style={{ margin: "3px 0 2px", fontSize: "1.1rem", color: "#0c2a47" }}>{activeOfferContext.jobTitle}</h3>
-                <p style={{ margin: 0, fontSize: "0.85rem", color: "#475569" }}>
-                  {activeOfferContext.companyName}{" "}
-                  {activeOfferContext.status
-                    ? `• Status: ${
-                        activeOfferContext.type === "invitation" && activeOfferContext.status === "pending"
-                          ? "Invitation Received"
-                          : activeOfferContext.status
-                      }`
-                    : ""}
-                </p>
-              </div>
-              <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                <a
-                  href="/applicant-dashboard#section-applications"
-                  className="ghost-btn"
-                  style={{ textDecoration: "none", fontSize: "0.84rem", padding: "8px 14px" }}
-                >
-                  ← Back to Applications
-                </a>
-              </div>
-            </div>
-          )}
 
           {/* Feedback alert banner */}
           {actionFeedback && (
@@ -853,28 +811,14 @@ Document Timestamp: ${new Date().toLocaleString()}
                       </button>
                     </div>
 
-                    {/* Textarea - Same length (full width) as the tag bar */}
+                    {/* Textarea */}
                     <textarea
                       className="aol-template-textarea"
-                      rows={8}
+                      rows={12}
                       value={acceptanceTemplate}
                       onChange={(e) => setAcceptanceTemplate(e.target.value)}
                       placeholder="Write your formal acceptance message..."
                     />
-
-                    {/* Preview Box - Same length (full width) as the tag bar */}
-                    <div className="aol-template-preview-box">
-                      <span className="aol-template-preview-label">
-                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
-                        Employer Preview
-                      </span>
-                      <div className="aol-template-preview-content">
-                        {renderPreview(acceptanceTemplate || SYSTEM_DEFAULT_ACCEPTANCE, true)}
-                      </div>
-                    </div>
                   </div>
 
                   {acceptanceStatus && (
@@ -892,14 +836,28 @@ Document Timestamp: ${new Date().toLocaleString()}
                     >
                       Restore System Defaults
                     </button>
-                    <button
-                      type="button"
-                      className="aol-notices-save-btn"
-                      onClick={() => handleSaveCard("acceptance")}
-                      disabled={savingCard === "acceptance" || !acceptanceTemplate.trim()}
-                    >
-                      {savingCard === "acceptance" ? "Saving..." : "Save Notice Template"}
-                    </button>
+                    <div className="aol-template-card-footer-right">
+                      <button
+                        type="button"
+                        className="aol-notices-preview-btn"
+                        onClick={() => setPreviewModalType("acceptance")}
+                        title="Preview official response letter as received by employer"
+                      >
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        Preview Letter
+                      </button>
+                      <button
+                        type="button"
+                        className="aol-notices-save-btn"
+                        onClick={() => handleSaveCard("acceptance")}
+                        disabled={savingCard === "acceptance" || !acceptanceTemplate.trim()}
+                      >
+                        {savingCard === "acceptance" ? "Saving..." : "Save Notice Template"}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -942,28 +900,14 @@ Document Timestamp: ${new Date().toLocaleString()}
                       </button>
                     </div>
 
-                    {/* Textarea - Same length (full width) as the tag bar */}
+                    {/* Textarea */}
                     <textarea
                       className="aol-template-textarea"
-                      rows={8}
+                      rows={12}
                       value={declineTemplate}
                       onChange={(e) => setDeclineTemplate(e.target.value)}
                       placeholder="Write your formal decline message..."
                     />
-
-                    {/* Preview Box - Same length (full width) as the tag bar */}
-                    <div className="aol-template-preview-box">
-                      <span className="aol-template-preview-label">
-                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
-                        Employer Preview
-                      </span>
-                      <div className="aol-template-preview-content">
-                        {renderPreview(declineTemplate || SYSTEM_DEFAULT_DECLINE, false)}
-                      </div>
-                    </div>
                   </div>
 
                   {denialStatus && (
@@ -981,14 +925,28 @@ Document Timestamp: ${new Date().toLocaleString()}
                     >
                       Restore System Defaults
                     </button>
-                    <button
-                      type="button"
-                      className="aol-notices-save-btn"
-                      onClick={() => handleSaveCard("denial")}
-                      disabled={savingCard === "denial" || !declineTemplate.trim()}
-                    >
-                      {savingCard === "denial" ? "Saving..." : "Save Notice Template"}
-                    </button>
+                    <div className="aol-template-card-footer-right">
+                      <button
+                        type="button"
+                        className="aol-notices-preview-btn"
+                        onClick={() => setPreviewModalType("denial")}
+                        title="Preview official decline notice as received by employer"
+                      >
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        Preview Notice
+                      </button>
+                      <button
+                        type="button"
+                        className="aol-notices-save-btn"
+                        onClick={() => handleSaveCard("denial")}
+                        disabled={savingCard === "denial" || !declineTemplate.trim()}
+                      >
+                        {savingCard === "denial" ? "Saving..." : "Save Notice Template"}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1049,6 +1007,82 @@ Document Timestamp: ${new Date().toLocaleString()}
             </div>
           </div>
         )}
+        {/* OFFICIAL CORRESPONDENCE PREVIEW MODAL */}
+        {previewModalType &&
+          createPortal(
+            <div
+              className="view-letter-backdrop"
+              onClick={() => setPreviewModalType(null)}
+              style={{ zIndex: 300000 }}
+            >
+              <div
+                className="view-letter-modal-card"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="view-letter-header">
+                  <div>
+                    <span className="view-letter-eyebrow">OFFICIAL CORRESPONDENCE PREVIEW</span>
+                    <h3 className="view-letter-title" style={{ fontSize: "1.15rem" }}>
+                      Response Letter ({previewModalType === "acceptance" ? "Accepted" : "Declined"})
+                    </h3>
+                    <p className="view-letter-company">
+                      Recipient: {activeOfferContext?.companyName || currentOffer?.company || "CEBUANA"} Hiring Team • {activeOfferContext?.jobTitle || currentOffer?.title || "Senior Frontend Engineer"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="view-letter-close-btn"
+                    onClick={() => setPreviewModalType(null)}
+                    title="Close preview"
+                    aria-label="Close"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="view-letter-body-content">
+                  <div className="view-letter-meta-row">
+                    <span
+                      className={`view-letter-badge ${
+                        previewModalType === "acceptance" ? "accepted" : "declined"
+                      }`}
+                    >
+                      {previewModalType === "acceptance"
+                        ? "Offer Accepted"
+                        : "Offer Declined"}
+                    </span>
+                  </div>
+
+                  <div className="view-letter-body-box">
+                    <div className="view-letter-box-header">
+                      <span className="view-letter-box-label">
+                        FORMAL RESPONSE LETTER
+                      </span>
+                    </div>
+                    <pre className="view-letter-pre-text">
+                      {renderPreview(
+                        previewModalType === "acceptance"
+                          ? (acceptanceTemplate || SYSTEM_DEFAULT_ACCEPTANCE)
+                          : (declineTemplate || SYSTEM_DEFAULT_DECLINE),
+                        previewModalType === "acceptance"
+                      )}
+                    </pre>
+                  </div>
+                </div>
+
+                <div className="view-letter-footer">
+                  <button
+                    type="button"
+                    className="view-letter-done-btn"
+                    onClick={() => setPreviewModalType(null)}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )}
       </main>
     </div>
   );
