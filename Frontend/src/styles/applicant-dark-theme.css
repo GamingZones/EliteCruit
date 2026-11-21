@@ -8933,6 +8933,18 @@
   color: #ffffff !important;
 }
 
+[data-theme="dark"] .notices-preview-btn {
+  background: rgba(56, 189, 248, 0.12) !important;
+  border: 1px solid rgba(56, 189, 248, 0.3) !important;
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .notices-preview-btn:hover {
+  background: rgba(56, 189, 248, 0.22) !important;
+  border-color: #38bdf8 !important;
+  color: #7dd3fc !important;
+}
+
 [data-theme="dark"] .notices-save-btn {
   background: #0284c7 !important;
   border: 1px solid #0284c7 !important;
@@ -10329,4 +10341,96 @@
 [data-theme="dark"] .view-letter-badge.accepted,
 [data-theme="dark"] .view-letter-badge.declined {
   border: none !important;
+}
+
+/* Official Correspondence Modal (Notices & FAQs and Global) */
+[data-theme="dark"] .view-letter-modal-card {
+  background: #14151B !important;
+  border: 1px solid #2e3244 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .view-letter-header {
+  background: #14151B !important;
+  border-bottom-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .view-letter-body-content {
+  background: #14151B !important;
+}
+
+[data-theme="dark"] .view-letter-title {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .view-letter-company {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .view-letter-close-btn {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .view-letter-close-btn:hover {
+  background: #242735 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .view-letter-badge.accepted {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+  border: none !important;
+}
+
+[data-theme="dark"] .view-letter-badge.declined {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+  border: none !important;
+}
+
+[data-theme="dark"] .view-letter-badge.extended {
+  background: rgba(14, 165, 233, 0.18) !important;
+  color: #38bdf8 !important;
+  border: none !important;
+}
+
+[data-theme="dark"] .view-letter-body-box {
+  background: #181a24 !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .view-letter-body-box.view-letter-offer-box {
+  background: #181a24 !important;
+  border-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .view-letter-box-header {
+  border-bottom-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .view-letter-box-label {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .view-letter-box-label.offer-label {
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .view-letter-pre-text {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .view-letter-footer {
+  background: #14151B !important;
+  border-top-color: #2e3244 !important;
+}
+
+[data-theme="dark"] .view-letter-done-btn {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .view-letter-done-btn:hover {
+  background: #0369a1 !important;
 }

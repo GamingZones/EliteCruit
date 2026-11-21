@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { ChevronIcon, SideIcon } from "../../components/Icons";
 import { useEmployerCompanyLabel } from "../../hooks/useEmployerCompanyLabel";
 import { useUnreadNotificationsCount } from "../../hooks/useUnreadNotificationsCount";
@@ -91,6 +92,7 @@ export default function EmployerNoticesFaqs() {
   const [savingCard, setSavingCard] = useState<"acceptance" | "denial" | null>(null);
   const [acceptanceStatus, setAcceptanceStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [denialStatus, setDenialStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [previewModalType, setPreviewModalType] = useState<"acceptance" | "denial" | null>(null);
 
   // FAQ state
   const [pageMessage, setPageMessage] = useState("");
@@ -541,24 +543,11 @@ export default function EmployerNoticesFaqs() {
 
                     <textarea
                       className="template-textarea"
-                      rows={9}
+                      rows={12}
                       value={acceptanceTemplate}
                       onChange={(e) => setAcceptanceTemplate(e.target.value)}
                       placeholder="Write standard acceptance message..."
                     />
-
-                    <div className="template-preview-box">
-                      <span className="template-preview-label">
-                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
-                        Applicant Preview
-                      </span>
-                      <div className="template-preview-content">
-                        {renderPreview(acceptanceTemplate || defaultAcceptance)}
-                      </div>
-                    </div>
                   </div>
 
                   {acceptanceStatus && (
@@ -576,14 +565,28 @@ export default function EmployerNoticesFaqs() {
                     >
                       Restore System Defaults
                     </button>
-                    <button
-                      type="button"
-                      className="notices-save-btn"
-                      onClick={() => handleSaveCard("acceptance")}
-                      disabled={savingCard === "acceptance" || !acceptanceTemplate.trim()}
-                    >
-                      {savingCard === "acceptance" ? "Saving..." : "Save Notice Template"}
-                    </button>
+                    <div className="template-card-footer-right">
+                      <button
+                        type="button"
+                        className="notices-preview-btn"
+                        onClick={() => setPreviewModalType("acceptance")}
+                        title="Preview official letter as received by candidate"
+                      >
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        Preview Letter
+                      </button>
+                      <button
+                        type="button"
+                        className="notices-save-btn"
+                        onClick={() => handleSaveCard("acceptance")}
+                        disabled={savingCard === "acceptance" || !acceptanceTemplate.trim()}
+                      >
+                        {savingCard === "acceptance" ? "Saving..." : "Save Notice Template"}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -627,24 +630,11 @@ export default function EmployerNoticesFaqs() {
 
                     <textarea
                       className="template-textarea"
-                      rows={9}
+                      rows={12}
                       value={rejectionTemplate}
                       onChange={(e) => setRejectionTemplate(e.target.value)}
                       placeholder="Write standard denial message..."
                     />
-
-                    <div className="template-preview-box">
-                      <span className="template-preview-label">
-                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
-                        Applicant Preview
-                      </span>
-                      <div className="template-preview-content">
-                        {renderPreview(rejectionTemplate || defaultRejection)}
-                      </div>
-                    </div>
                   </div>
 
                   {denialStatus && (
@@ -662,14 +652,28 @@ export default function EmployerNoticesFaqs() {
                     >
                       Restore System Defaults
                     </button>
-                    <button
-                      type="button"
-                      className="notices-save-btn"
-                      onClick={() => handleSaveCard("denial")}
-                      disabled={savingCard === "denial" || !rejectionTemplate.trim()}
-                    >
-                      {savingCard === "denial" ? "Saving..." : "Save Notice Template"}
-                    </button>
+                    <div className="template-card-footer-right">
+                      <button
+                        type="button"
+                        className="notices-preview-btn"
+                        onClick={() => setPreviewModalType("denial")}
+                        title="Preview official notice as received by candidate"
+                      >
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        Preview Notice
+                      </button>
+                      <button
+                        type="button"
+                        className="notices-save-btn"
+                        onClick={() => handleSaveCard("denial")}
+                        disabled={savingCard === "denial" || !rejectionTemplate.trim()}
+                      >
+                        {savingCard === "denial" ? "Saving..." : "Save Notice Template"}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -806,6 +810,90 @@ export default function EmployerNoticesFaqs() {
           onCancel={() => setFaqToDelete(null)}
           onConfirm={handleConfirmDeleteFaq}
         />
+
+        {/* OFFICIAL CORRESPONDENCE PREVIEW MODAL */}
+        {previewModalType &&
+          createPortal(
+            <div
+              className="view-letter-backdrop"
+              onClick={() => setPreviewModalType(null)}
+              style={{ zIndex: 300000 }}
+            >
+              <div
+                className="view-letter-modal-card"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="view-letter-header">
+                  <div>
+                    <span className="view-letter-eyebrow">OFFICIAL CORRESPONDENCE PREVIEW</span>
+                    <h3 className="view-letter-title">Software Engineer</h3>
+                    <p className="view-letter-company">
+                      Candidate: Juan Dela Cruz • {companyLabel || "Your Company"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="view-letter-close-btn"
+                    onClick={() => setPreviewModalType(null)}
+                    title="Close preview"
+                    aria-label="Close"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="view-letter-body-content">
+                  <div className="view-letter-meta-row">
+                    <span
+                      className={`view-letter-badge ${
+                        previewModalType === "acceptance" ? "extended" : "declined"
+                      }`}
+                    >
+                      {previewModalType === "acceptance"
+                        ? "Formal Employment Offer"
+                        : "Application Denied"}
+                    </span>
+                  </div>
+
+                  <div
+                    className={`view-letter-body-box ${
+                      previewModalType === "acceptance" ? "view-letter-offer-box" : ""
+                    }`}
+                  >
+                    <div className="view-letter-box-header">
+                      <span
+                        className={`view-letter-box-label ${
+                          previewModalType === "acceptance" ? "offer-label" : ""
+                        }`}
+                      >
+                        {previewModalType === "acceptance"
+                          ? `EMPLOYMENT OFFER LETTER FROM ${(companyLabel || "EMPLOYER").toUpperCase()}`
+                          : `APPLICATION STATUS NOTICE FROM ${(companyLabel || "EMPLOYER").toUpperCase()}`}
+                      </span>
+                    </div>
+                    <pre className="view-letter-pre-text">
+                      {renderPreview(
+                        previewModalType === "acceptance"
+                          ? (acceptanceTemplate || defaultAcceptance)
+                          : (rejectionTemplate || defaultRejection)
+                      )}
+                    </pre>
+                  </div>
+                </div>
+
+                <div className="view-letter-footer">
+                  <button
+                    type="button"
+                    className="view-letter-done-btn"
+                    onClick={() => setPreviewModalType(null)}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )}
 
         {/* LOGOUT CONFIRMATION MODAL */}
         <ConfirmationModal
