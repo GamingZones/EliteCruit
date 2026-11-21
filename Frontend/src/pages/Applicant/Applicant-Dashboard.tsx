@@ -118,7 +118,7 @@ const navWorkspace: SideNavItem[] = [
   { label: "Overview", icon: "overview", sectionId: "section-overview" },
   { label: "Smart Matches", icon: "star", sectionId: "section-smart-matches" },
   { label: "My Applications", icon: "applications", sectionId: "section-applications" },
-  { label: "Job Invitations", icon: "notifications", sectionId: "section-invitations" },
+  { label: "Job Offers", icon: "notifications", sectionId: "section-invitations" },
 ];
 
 const navGeneral: SideNavItem[] = [
@@ -599,7 +599,7 @@ function getInitialApplicantName() {
 const WORKSPACE_TABS = [
   { id: "section-smart-matches", label: "Smart Matches" },
   { id: "section-applications", label: "My Applications" },
-  { id: "section-invitations", label: "Job Invitations" },
+  { id: "section-invitations", label: "Job Offers" },
 ] as const;
 
 export default function ApplicantDashboard() {
@@ -1548,7 +1548,7 @@ export default function ApplicantDashboard() {
                 <li className={activeSection === "section-invitations" ? "active" : ""}>
                   <a href="/applicant-dashboard#section-invitations" onClick={(event) => handleSectionClick(event, "section-invitations")}>
                     <span className="item-icon"><SideIcon name="notifications" /></span>
-                    <span>Job Invitations</span>
+                    <span>Job Offers</span>
                     {pendingInvitesCount > 0 && <span className="item-badge">{pendingInvitesCount}</span>}
                   </a>
                 </li>
@@ -1650,7 +1650,7 @@ export default function ApplicantDashboard() {
           </div>
         </header>
 
-        {/* 3-SECTION NAVIGATION TABS (Smart Matches, My Applications, Job Invitations) */}
+        {/* 3-SECTION NAVIGATION TABS (Smart Matches, My Applications, Job Offers) */}
         <div className="dash-nav-container">
           {/* Desktop Tab Row (Hidden on mobile screens <= 768px) */}
           <nav className="profile-section-nav dash-section-nav dash-desktop-tabs" aria-label="Workspace Sections">
@@ -2031,9 +2031,9 @@ export default function ApplicantDashboard() {
         <section className="matches-card section-anchor" id="section-invitations">
           <div className="matches-head inv-matches-head">
             <div>
-              <small className="matches-head-eyebrow">DIRECT INVITATIONS</small>
-              <h2>Job Invitations</h2>
-              <p>Positions where employers reviewed your profile and directly invited you.</p>
+              <small className="matches-head-eyebrow">DIRECT OFFERS</small>
+              <h2>Job Offers</h2>
+              <p>Positions where employers reviewed your profile and directly offered you.</p>
             </div>
             <div className="inv-filters-pill-group">
               {(["all", "pending", "accepted", "declined"] as const).map((key) => {

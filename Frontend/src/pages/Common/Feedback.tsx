@@ -46,7 +46,7 @@ const navWorkspace: SideNavItem[] = [
   { label: "Overview", icon: "overview", href: "/applicant-dashboard#section-overview" },
   { label: "Smart Matches", icon: "star", href: "/applicant-dashboard#section-smart-matches" },
   { label: "My Applications", icon: "applications", href: "/applicant-dashboard#section-applications" },
-  { label: "Job Invitations", icon: "notifications", href: "/applicant-dashboard#section-invitations" },
+  { label: "Job Offers", icon: "notifications", href: "/applicant-dashboard#section-invitations" },
 ];
 
 const navGeneral: SideNavItem[] = [
@@ -1584,7 +1584,7 @@ export default function Feedback() {
                 <ul className="appdash-menu-list">
                   <li><a href="/applicant-dashboard#section-smart-matches"><span className="item-icon"><SideIcon name="star" /></span><span>Smart Matches</span></a></li>
                   <li><a href="/applicant-dashboard#section-applications"><span className="item-icon"><SideIcon name="applications" /></span><span>My Applications</span></a></li>
-                  <li><a href="/applicant-dashboard#section-invitations"><span className="item-icon"><SideIcon name="notifications" /></span><span>Job Invitations</span>{pendingInvitesCount > 0 && <span className="item-badge">{pendingInvitesCount}</span>}</a></li>
+                  <li><a href="/applicant-dashboard#section-invitations"><span className="item-icon"><SideIcon name="notifications" /></span><span>Job Offers</span>{pendingInvitesCount > 0 && <span className="item-badge">{pendingInvitesCount}</span>}</a></li>
                 </ul>
               )}
             </li>

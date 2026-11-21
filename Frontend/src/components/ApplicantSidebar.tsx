@@ -57,7 +57,7 @@ export default function ApplicantSidebar({
   const workspaceNav: ApplicantNavItem[] = [
     { label: "Smart Matches", icon: "star", sectionId: "section-smart-matches" },
     { label: "My Applications", icon: "applications", sectionId: "section-applications" },
-    { label: "Job Invitations", icon: "notifications", sectionId: "section-invitations" },
+    { label: "Job Offers", icon: "notifications", sectionId: "section-invitations" },
   ];
 
   const secondaryNav: ApplicantNavItem[] = [
@@ -112,7 +112,7 @@ export default function ApplicantSidebar({
               </span>
               <span>Applicant Workspace</span>
               {pendingInvitesCount > 0 && (
-                <span className="item-badge" title={`${pendingInvitesCount} pending job invitation${pendingInvitesCount > 1 ? "s" : ""}`} style={{ marginLeft: "auto", marginRight: 8 }}>
+                <span className="item-badge" title={`${pendingInvitesCount} pending job offer${pendingInvitesCount > 1 ? "s" : ""}`} style={{ marginLeft: "auto", marginRight: 8 }}>
                   {pendingInvitesCount}
                 </span>
               )}

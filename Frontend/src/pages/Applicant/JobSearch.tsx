@@ -3680,7 +3680,7 @@ export default function JobSearch() {
               <ul className="appdash-menu-list">
                 <li><a href="/applicant-dashboard#section-smart-matches"><span className="item-icon"><SideIcon name="star" /></span><span>Smart Matches</span></a></li>
                 <li><a href="/applicant-dashboard#section-applications"><span className="item-icon"><SideIcon name="applications" /></span><span>My Applications</span></a></li>
-                <li><a href="/applicant-dashboard#section-invitations"><span className="item-icon"><SideIcon name="notifications" /></span><span>Job Invitations</span>{pendingInvitesCount > 0 && <span className="item-badge">{pendingInvitesCount}</span>}</a></li>
+                <li><a href="/applicant-dashboard#section-invitations"><span className="item-icon"><SideIcon name="notifications" /></span><span>Job Offers</span>{pendingInvitesCount > 0 && <span className="item-badge">{pendingInvitesCount}</span>}</a></li>
               </ul>
             )}
           </li>
