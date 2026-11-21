@@ -1099,6 +1099,14 @@ export default function JobDetailsModal({
                     : false;
                   const hasDecision = isAccepted || isDeclined;
                   const decisionType = isAccepted ? "accepted" : isDeclined ? "declined" : "extended";
+                  const isDirectOffer =
+                    special.origin === "direct_offer" ||
+                    matchingResponse?.origin === "direct_offer" ||
+                    m.message_text.includes("reviewed your profile") ||
+                    m.message_text.includes("qualifications on EliteCruit") ||
+                    m.message_text.includes("invite you to apply") ||
+                    Boolean(matchingResponseMsg?.message_text?.includes("Formal Invitation Response")) ||
+                    Boolean((job as any)?.invitation_status || (job as any)?.is_invitation);
 
                   return (
                     <article
@@ -1107,7 +1115,11 @@ export default function JobDetailsModal({
                     >
                       <div className="chat-special-header">
                         <div className="chat-special-badge-row">
-                          <span className={`chat-special-badge ${isAccepted ? "badge-accepted" : isDeclined ? "badge-declined" : "badge-formal-offer"}`}>
+                          <div className="chat-special-badges-group">
+                            <span className={`chat-origin-badge ${isDirectOffer ? "origin-direct" : "origin-application"}`}>
+                              {isDirectOffer ? "DIRECT EMPLOYER OFFER" : "CANDIDATE APPLICATION"}
+                            </span>
+                            <span className={`chat-special-badge ${isAccepted ? "badge-accepted" : isDeclined ? "badge-declined" : "badge-formal-offer"}`}>
                             {isAccepted ? (
                               <>
                                 <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1135,6 +1147,7 @@ export default function JobDetailsModal({
                               </>
                             )}
                           </span>
+                          </div>
                           <time className="chat-special-time">{timeStr}</time>
                         </div>
                         <h4 className="chat-special-title">{special.jobTitle || job?.title}</h4>

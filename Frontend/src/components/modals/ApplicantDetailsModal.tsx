@@ -2204,6 +2204,14 @@ export default function ApplicantDetailsModal({
                         : Boolean((candidate as any)?.response_decision === "decline" || (candidate as any)?.invitation_status === "declined");
                       const hasDecision = isAccepted || isDeclined;
                       const decisionType = isAccepted ? "accepted" : isDeclined ? "declined" : "extended";
+                      const isDirectOffer =
+                        special.origin === "direct_offer" ||
+                        matchingResponse?.origin === "direct_offer" ||
+                        msg.message_text.includes("reviewed your profile") ||
+                        msg.message_text.includes("qualifications on EliteCruit") ||
+                        msg.message_text.includes("invite you to apply") ||
+                        Boolean(matchingResponseMsg?.message_text?.includes("Formal Invitation Response")) ||
+                        Boolean((candidate as any)?.invitation_status);
 
                       return (
                         <article
@@ -2212,7 +2220,11 @@ export default function ApplicantDetailsModal({
                         >
                           <div className="chat-special-header">
                             <div className="chat-special-badge-row">
-                              <span className={`chat-special-badge ${isAccepted ? "badge-accepted" : isDeclined ? "badge-declined" : "badge-formal-offer"}`}>
+                              <div className="chat-special-badges-group">
+                                <span className={`chat-origin-badge ${isDirectOffer ? "origin-direct" : "origin-application"}`}>
+                                  {isDirectOffer ? "DIRECT EMPLOYER OFFER" : "CANDIDATE APPLICATION"}
+                                </span>
+                                <span className={`chat-special-badge ${isAccepted ? "badge-accepted" : isDeclined ? "badge-declined" : "badge-formal-offer"}`}>
                                 {isAccepted ? (
                                   <>
                                     <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -2240,6 +2252,7 @@ export default function ApplicantDetailsModal({
                                   </>
                                 )}
                               </span>
+                              </div>
                               <time className="chat-special-time">{timeStr}</time>
                             </div>
                             <h4 className="chat-special-title">{special.jobTitle}</h4>

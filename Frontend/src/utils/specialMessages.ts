@@ -19,6 +19,7 @@ export interface ParsedSpecialMessage {
   location?: string;
   notes?: string;
   reason?: string;
+  origin?: "direct_offer" | "application";
   cleanBody: string;
 }
 
@@ -63,10 +64,29 @@ export function parseSpecialMessage(text: string): ParsedSpecialMessage {
       cleanBody = cleanBody.replace(/^Company:[^\n]*\n+/i, "");
     }
 
+    let origin: "direct_offer" | "application" = "application";
+    if (
+      text.includes("Direct Outreach") ||
+      text.includes("Direct Employment Offer") ||
+      text.includes("Direct Offer") ||
+      text.includes("reviewed your profile") ||
+      text.includes("qualifications on EliteCruit") ||
+      text.includes("invite you to apply")
+    ) {
+      origin = "direct_offer";
+    } else if (
+      text.includes("application for the position of") ||
+      text.includes("application has been accepted") ||
+      text.includes("taking the time to apply")
+    ) {
+      origin = "application";
+    }
+
     return {
       type: "formal_offer",
       jobTitle: jobTitle || "Employment Position",
       companyName: companyName || "Employer",
+      origin,
       cleanBody: cleanBody.trim(),
     };
   }
@@ -81,6 +101,10 @@ export function parseSpecialMessage(text: string): ParsedSpecialMessage {
     text.includes("[Formal Response:")
   ) {
     const isAccepted = text.includes("ACCEPTED");
+    const isDirectOfferResponse =
+      text.startsWith("[Formal Invitation Response:") ||
+      text.includes("[Formal Invitation Response:") ||
+      text.toLowerCase().includes("invitation");
     let jobTitle = "";
 
     const posMatch = text.match(/Position:\s*(.*?)(?:\n|$)/i);
@@ -96,6 +120,7 @@ export function parseSpecialMessage(text: string): ParsedSpecialMessage {
       type: "offer_response",
       jobTitle: jobTitle || "Applied Position",
       isAccepted,
+      origin: isDirectOfferResponse ? "direct_offer" : "application",
       cleanBody:
         cleanBody ||
         (isAccepted

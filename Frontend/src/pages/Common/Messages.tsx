@@ -2456,11 +2456,23 @@ export default function Messages() {
 
                             const targetAppId = matchedJob?.application?.id || matchedJob?.application_id;
                             const targetJobId = matchedJob?.id;
+                            const isDirectOffer =
+                              special.origin === "direct_offer" ||
+                              matchingResponse?.origin === "direct_offer" ||
+                              msg.message_text.includes("reviewed your profile") ||
+                              msg.message_text.includes("qualifications on EliteCruit") ||
+                              msg.message_text.includes("invite you to apply") ||
+                              Boolean(matchingResponseMsg?.message_text?.includes("Formal Invitation Response")) ||
+                              Boolean(matchedJob?.invitation && (!matchedJob?.application || matchedJob?.application?.initiated_by === "employer"));
 
                             return (
                               <article className={`chat-bubble chat-special-card chat-offer-card ${isMe ? "outgoing" : "incoming"} ${isAccepted ? "offer-card-accepted" : isDeclined ? "offer-card-declined" : ""}`}>
                                 <div className="chat-special-header">
                                   <div className="chat-special-badge-row">
+                                    <div className="chat-special-badges-group">
+                                      <span className={`chat-origin-badge ${isDirectOffer ? "origin-direct" : "origin-application"}`}>
+                                        {isDirectOffer ? "DIRECT EMPLOYER OFFER" : "CANDIDATE APPLICATION"}
+                                      </span>
                                     <span className={`chat-special-badge ${isAccepted ? "badge-accepted" : isDeclined ? "badge-declined" : "badge-formal-offer"}`}>
                                       {isAccepted ? (
                                         <>
@@ -2489,6 +2501,7 @@ export default function Messages() {
                                         </>
                                       )}
                                     </span>
+                                    </div>
                                     <time className="chat-special-time">{msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}</time>
                                   </div>
                                   <h4 className="chat-special-title">{special.jobTitle}</h4>
