@@ -151,8 +151,8 @@ type DashboardSummary = {
 };
 
 const WORKSPACE_TABS = [
-  { id: "section-insights", label: "Recruitment Insights", num: 1 },
-  { id: "section-approved-interviews", label: "Approved Candidates", num: 2 },
+  { id: "section-insights", label: "Recruitment Insights" },
+  { id: "section-approved-interviews", label: "Approved Candidates" },
 ] as const;
 
 function initialsFromName(name: string | null | undefined) {
@@ -757,7 +757,6 @@ export default function EmployerDashboard() {
                   className={`section-nav-btn ${activeSection === tab.id ? "active" : ""}`}
                   onClick={() => handleSectionClick(tab.id)}
                 >
-                  <span className="nav-num">{tab.num}</span>
                   <span className="nav-label">{tab.label}</span>
                   {count > 0 && <span className="tab-count-pill">{count}</span>}
                 </button>
@@ -775,7 +774,6 @@ export default function EmployerDashboard() {
               aria-label="Toggle section menu"
             >
               <span className="dash-mobile-switcher-curr">
-                <span className="nav-num">{activeTabObj.num}</span>
                 <strong>{activeTabObj.label}</strong>
               </span>
               <ChevronIcon direction={isMobileNavOpen ? "up" : "down"} />
@@ -793,7 +791,6 @@ export default function EmployerDashboard() {
                       onClick={() => handleSectionClick(tab.id)}
                     >
                       <span className="dash-mobile-opt-title">
-                        <span className="nav-num">{tab.num}</span>
                         <span>{tab.label}</span>
                       </span>
                       {count > 0 && <span className="tab-count-pill">{count}</span>}

@@ -3189,7 +3189,6 @@ export default function EmployerApplicantManagement() {
             className={`section-nav-btn ${activeScreeningSection === "applicant-screening" ? "active" : ""}`}
             onClick={scrollToScreening}
           >
-            <span className="nav-num">1</span>
             <span>Applicant Screening</span>
           </button>
           <button
@@ -3197,7 +3196,6 @@ export default function EmployerApplicantManagement() {
             className={`section-nav-btn ${activeScreeningSection === "shortlisted-candidates" ? "active" : ""}`}
             onClick={scrollToShortlistBoard}
           >
-            <span className="nav-num">2</span>
             <span>Shortlisted Candidates</span>
           </button>
           <button
@@ -3205,7 +3203,6 @@ export default function EmployerApplicantManagement() {
             className={`section-nav-btn ${activeScreeningSection === "direct-invitations" ? "active" : ""}`}
             onClick={scrollToDirectInvitations}
           >
-            <span className="nav-num">3</span>
             <span>Recruitment List</span>
           </button>
         </nav>
