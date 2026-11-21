@@ -1114,8 +1114,7 @@
   gap: 6px;
 }
 
-.employer-name-rating-row,
-.jd-employer-name-row {
+.employer-name-rating-row {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -2313,6 +2312,14 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+}
+
+.jd-employer-logo-info > div:not(.jd-employer-logo) {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
 }
 
 .jd-header-right-actions {
@@ -2365,6 +2372,22 @@
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.jd-employer-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+[data-theme="dark"] .jd-employer-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
 }
 
 .jd-employer-name {

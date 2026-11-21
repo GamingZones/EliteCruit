@@ -268,6 +268,13 @@
   min-width: 0;
 }
 
+.jd-employer-logo-info > div:not(.jd-employer-logo) {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
 .jd-employer-logo {
   width: 42px;
   height: 42px;
@@ -296,6 +303,7 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  width: 100%;
 }
 
 .company-inline-rating-pill {
@@ -710,6 +718,7 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  width: 100%;
 }
 
 .company-inline-rating-pill {
