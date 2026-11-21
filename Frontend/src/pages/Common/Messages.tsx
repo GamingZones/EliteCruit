@@ -3054,35 +3054,38 @@ export default function Messages() {
                                 <div key={`side-recruited-${job.id}`} className="chat-info-job-item employer-recruited">
                                   <div className="chat-info-job-head">
                                     <span className="chat-info-job-title">{job.title}</span>
-                                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                      <span className={`chat-info-match-badge ${matchColor}`}>
-                                        {candMatchPct}% Match
-                                      </span>
-                                      <span className={`cjm-status-chip ${invStatus === "accepted" ? "accepted" : invStatus === "declined" ? "declined" : "invited"}`}>
-                                        {invStatus === "accepted" ? "Accepted" : invStatus === "declined" ? "Declined" : "Invited"}
-                                      </span>
-                                    </div>
+                                    <span className={`chat-info-match-badge ${matchColor}`}>
+                                      {candMatchPct}% Match
+                                    </span>
                                   </div>
 
                                   <div className="chat-info-tag-row">
+                                    <span className={`cjm-status-chip ${invStatus === "accepted" ? "accepted" : invStatus === "declined" ? "denied" : "invited"}`}>
+                                      {invStatus === "accepted" ? "Accepted" : invStatus === "declined" ? "Declined" : "Invited"}
+                                    </span>
                                     <span className="chat-info-setup-badge">{job.work_arrangement || "On-Site"}</span>
-                                    <span style={{ color: "#64748b", fontSize: "0.78rem" }}>{job.location || "Cavite"}</span>
-                                    <span style={{ color: "#475569", fontSize: "0.76rem", fontWeight: 600 }}>· {job.applicant_count || 0} applicants</span>
                                   </div>
 
                                   <div className="chat-info-job-meta">
-                                    {Boolean(job.hide_salary === 1 || job.hide_salary === "1" || job.hide_salary === true || job.hide_salary === "true" || job.hideSalary) && sessionRole !== "employer" ? (
-                                      <small style={{ color: "#0369a1", fontWeight: 700, display: "block" }}>
-                                        Salary Confidential
-                                      </small>
-                                    ) : (job.salary_min || job.salary_max) ? (
-                                      <small style={{ color: "#0369a1", fontWeight: 700, display: "block" }}>
-                                        PHP {Number(job.salary_min || 0).toLocaleString()}{job.salary_max ? ` - ${Number(job.salary_max).toLocaleString()}` : "+"} {Boolean(job.hide_salary === 1 || job.hide_salary === "1" || job.hide_salary === true || job.hide_salary === "true" || job.hideSalary) ? "(Confidential)" : ""}
-                                      </small>
-                                    ) : null}
-                                    <small style={{ color: "#64748b", display: "block" }}>
+                                    <small style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <polyline points="12 6 12 12 16 14" />
+                                      </svg>
                                       Recruited: {job.invitation?.created_at ? new Date(job.invitation.created_at).toLocaleDateString() : "Recent"}
                                     </small>
+                                    <small style={{ display: "flex", alignItems: "center", gap: "4px", color: "#64748b" }}>
+                                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" />
+                                        <circle cx="12" cy="10" r="2.5" />
+                                      </svg>
+                                      {job.location || "Cavite"}
+                                    </small>
+                                    {(job.salary_min || job.salary_max) && (
+                                      <small style={{ color: "#0369a1", fontWeight: 700, display: "block" }}>
+                                        PHP {Number(job.salary_min || 0).toLocaleString()}{job.salary_max ? ` - ${Number(job.salary_max).toLocaleString()}` : "+"}
+                                      </small>
+                                    )}
                                   </div>
 
                                   <div className="chat-info-job-actions">
@@ -3091,11 +3094,8 @@ export default function Messages() {
                                       className="chat-info-sm-btn view"
                                       onClick={() => handleOpenEmployerJobDetails(job)}
                                     >
-                                      View Post
+                                      View Details
                                     </button>
-                                    <span style={{ fontSize: "0.74rem", fontWeight: 700, color: "#0284c7" }}>
-                                      ✓ Recruited ({invStatus === "accepted" ? "Accepted" : invStatus === "declined" ? "Declined" : "Pending"})
-                                    </span>
                                   </div>
                                 </div>
                               );
@@ -3106,14 +3106,12 @@ export default function Messages() {
                               <div key={`side-recruited-${job.id}`} className="chat-info-job-item applicant-recruited">
                                 <div className="chat-info-job-head">
                                   <span className="chat-info-job-title">{job.title}</span>
-                                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                    <span className={`cjm-status-chip ${invStatus === "accepted" ? "accepted" : invStatus === "declined" ? "declined" : "invited"}`}>
-                                      {invStatus === "accepted" ? "Accepted" : invStatus === "declined" ? "Declined" : "Invited"}
-                                    </span>
-                                  </div>
                                 </div>
 
                                 <div className="chat-info-tag-row">
+                                  <span className={`cjm-status-chip ${invStatus === "accepted" ? "accepted" : invStatus === "declined" ? "denied" : "invited"}`}>
+                                    {invStatus === "accepted" ? "Accepted" : invStatus === "declined" ? "Declined" : "Invited"}
+                                  </span>
                                   <span className="chat-info-setup-badge">{job.work_arrangement || "Flexible"}</span>
                                   <span style={{ color: "#64748b", fontSize: "0.78rem" }}>{job.location || "Cavite"}</span>
                                 </div>
@@ -3236,30 +3234,29 @@ export default function Messages() {
                                 <div key={`side-other-${job.id}`} className="chat-info-job-item employer-other">
                                   <div className="chat-info-job-head">
                                     <span className="chat-info-job-title">{job.title}</span>
-                                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                      <span className={`chat-info-match-badge ${matchColor}`}>
-                                        {candMatchPct}% Match
-                                      </span>
-                                      <span className="cjm-status-chip open">Open</span>
-                                    </div>
+                                    <span className={`chat-info-match-badge ${matchColor}`}>
+                                      {candMatchPct}% Match
+                                    </span>
                                   </div>
 
                                   <div className="chat-info-tag-row">
+                                    <span className="cjm-status-chip open">Open</span>
                                     <span className="chat-info-setup-badge">{job.work_arrangement || "On-Site"}</span>
-                                    <span style={{ color: "#64748b", fontSize: "0.78rem" }}>{job.location || "Cavite"}</span>
-                                    <span style={{ color: "#475569", fontSize: "0.76rem", fontWeight: 600 }}>· {job.applicant_count || 0} applicants</span>
                                   </div>
 
                                   <div className="chat-info-job-meta">
-                                    {Boolean(job.hide_salary === 1 || job.hide_salary === "1" || job.hide_salary === true || job.hide_salary === "true" || job.hideSalary) && sessionRole !== "employer" ? (
+                                    <small style={{ display: "flex", alignItems: "center", gap: "4px", color: "#64748b" }}>
+                                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z" />
+                                        <circle cx="12" cy="10" r="2.5" />
+                                      </svg>
+                                      {job.location || "Cavite"}
+                                    </small>
+                                    {(job.salary_min || job.salary_max) && (
                                       <small style={{ color: "#0369a1", fontWeight: 700, display: "block" }}>
-                                        Salary Confidential
+                                        PHP {Number(job.salary_min || 0).toLocaleString()}{job.salary_max ? ` - ${Number(job.salary_max).toLocaleString()}` : "+"}
                                       </small>
-                                    ) : (job.salary_min || job.salary_max) ? (
-                                      <small style={{ color: "#0369a1", fontWeight: 700, display: "block" }}>
-                                        PHP {Number(job.salary_min || 0).toLocaleString()}{job.salary_max ? ` - ${Number(job.salary_max).toLocaleString()}` : "+"} {Boolean(job.hide_salary === 1 || job.hide_salary === "1" || job.hide_salary === true || job.hide_salary === "true" || job.hideSalary) ? "(Confidential)" : ""}
-                                      </small>
-                                    ) : null}
+                                    )}
                                   </div>
 
                                   <div className="chat-info-job-actions">
@@ -3268,7 +3265,7 @@ export default function Messages() {
                                       className="chat-info-sm-btn view"
                                       onClick={() => handleOpenEmployerJobDetails(job)}
                                     >
-                                      View Post
+                                      View Details
                                     </button>
 
                                     <button
@@ -3288,12 +3285,10 @@ export default function Messages() {
                               <div key={`side-other-${job.id}`} className="chat-info-job-item applicant-other">
                                 <div className="chat-info-job-head">
                                   <span className="chat-info-job-title">{job.title}</span>
-                                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                    <span className="cjm-status-chip open">Open</span>
-                                  </div>
                                 </div>
 
                                 <div className="chat-info-tag-row">
+                                  <span className="cjm-status-chip open">Open</span>
                                   <span className="chat-info-setup-badge">{job.work_arrangement || "Flexible"}</span>
                                   <span style={{ color: "#64748b", fontSize: "0.78rem" }}>{job.location || "Cavite"}</span>
                                 </div>
