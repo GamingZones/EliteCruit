@@ -101,6 +101,13 @@
   padding: 16px;
   box-shadow: 0 2px 8px rgba(18, 63, 100, 0.04);
   overflow: visible;
+  position: relative;
+  z-index: 1;
+}
+
+.job-card.has-open-menu,
+.job-card:has(.job-actions-menu) {
+  z-index: 1000 !important;
 }
 
 .job-card-main {
@@ -505,6 +512,10 @@
   width: 100%;
 }
 
+.job-actions-dropdown.active-dropdown {
+  z-index: 1001 !important;
+}
+
 .job-actions-btn {
   width: 100%;
   display: flex !important;
@@ -532,7 +543,7 @@
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   padding: 5px;
-  z-index: 100;
+  z-index: 1002 !important;
   display: flex;
   flex-direction: column;
   gap: 2px;

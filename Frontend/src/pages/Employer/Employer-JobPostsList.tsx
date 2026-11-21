@@ -836,7 +836,7 @@ export default function EmployerJobPostsList() {
               const certItems = parseTags(job.certifications);
 
               return (
-                <article className="job-card" key={job.id}>
+                <article className={`job-card ${openActionsJobId === job.id ? "has-open-menu" : ""}`} key={job.id}>
                   <div className="job-card-main">
                     <div className="job-card-left">
                       <div className="job-title-row">
@@ -892,7 +892,7 @@ export default function EmployerJobPostsList() {
                       <div className="job-actions">
                         <button type="button" onClick={() => handleOpenReview(job)}>Review</button>
                         <a className="job-action-link" href={`/employer-job-posts/create?edit=${job.id}`}>Edit</a>
-                        <div className="job-actions-dropdown">
+                        <div className={`job-actions-dropdown ${openActionsJobId === job.id ? "active-dropdown" : ""}`}>
                           <button
                             type="button"
                             className={`job-actions-btn ${openActionsJobId === job.id ? "active" : ""}`}

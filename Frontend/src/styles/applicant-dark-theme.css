@@ -4777,10 +4777,20 @@
   color: #ffffff !important;
 }
 
+[data-theme="dark"] .job-card.has-open-menu,
+[data-theme="dark"] .job-card:has(.job-actions-menu) {
+  z-index: 1000 !important;
+}
+
+[data-theme="dark"] .job-actions-dropdown.active-dropdown {
+  z-index: 1001 !important;
+}
+
 [data-theme="dark"] .job-actions-menu {
   background: #1c1e27 !important;
   border: 1px solid #2e3244 !important;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6) !important;
+  z-index: 1002 !important;
 }
 
 [data-theme="dark"] .actions-menu-item {
