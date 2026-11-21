@@ -2468,13 +2468,13 @@ export function calculateCandidateMatch(
     setup: job.work_arrangement || "On-Site",
     skillTags: (job.skillTags && job.skillTags.length > 0)
       ? parseCompetencyDisplayTags(job.skillTags, "skills")
-      : parseCompetencyDisplayTags(job.required_skills ?? job.skills, "skills"),
+      : parseCompetencyDisplayTags(job.required_skills || job.skills, "skills"),
     qualTags: (job.qualTags && job.qualTags.length > 0)
       ? parseCompetencyDisplayTags(job.qualTags, "qualifications")
-      : parseCompetencyDisplayTags(job.required_qualifications ?? job.qualifications, "qualifications"),
+      : parseCompetencyDisplayTags(job.required_qualifications || job.qualifications, "qualifications"),
     certTags: (job.certTags && job.certTags.length > 0)
       ? parseCompetencyDisplayTags(job.certTags, "certifications")
-      : parseCompetencyDisplayTags(job.required_certifications ?? job.certifications, "certifications"),
+      : parseCompetencyDisplayTags(job.required_certifications || job.certifications, "certifications"),
   };
 
   let candTargetRoles: string[] = [];

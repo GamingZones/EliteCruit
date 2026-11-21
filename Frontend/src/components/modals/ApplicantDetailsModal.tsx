@@ -2689,6 +2689,10 @@ export default function ApplicantDetailsModal({
               }
 
               return otherJobsList.map((otherJob) => {
+                const otherJobSkillTags = parseCompetencyDisplayTags(otherJob.required_skills || otherJob.skills, "skills");
+                const otherJobQualTags = parseCompetencyDisplayTags(otherJob.qualifications || otherJob.required_qualifications, "qualifications");
+                const otherJobCertTags = parseCompetencyDisplayTags(otherJob.certifications || otherJob.required_certifications, "certifications");
+
                 const percent = calculateCandidateMatch(
                   {
                     desired_job_title: candidate.desired_job_title || candidate.job_title || "",
@@ -2698,6 +2702,9 @@ export default function ApplicantDetailsModal({
                     qualifications: candidate.qualifications || "",
                     certifications: candidate.certifications || "",
                     city: candidate.city || candidate.address || "",
+                    skillTags: candSkills,
+                    qualTags: candQuals,
+                    certTags: candCerts,
                   },
                   {
                     title: otherJob.title || "",
@@ -2705,6 +2712,9 @@ export default function ApplicantDetailsModal({
                     required_skills: otherJob.required_skills || otherJob.skills || "",
                     required_qualifications: otherJob.qualifications || otherJob.required_qualifications || "",
                     required_certifications: otherJob.certifications || otherJob.required_certifications || "",
+                    skillTags: otherJobSkillTags,
+                    qualTags: otherJobQualTags,
+                    certTags: otherJobCertTags,
                     location: otherJob.location || "",
                     salary_min: Number(otherJob.salary_min) || 0,
                     salary_max: Number(otherJob.salary_max) || 0,
@@ -2783,10 +2793,17 @@ export default function ApplicantDetailsModal({
                         type="button"
                         className="details-btn jd-other-job-details-btn"
                         onClick={() => {
+                          const jobWithScore = {
+                            ...otherJob,
+                            matchScore: percent,
+                            skillTags: otherJobSkillTags,
+                            qualTags: otherJobQualTags,
+                            certTags: otherJobCertTags,
+                          };
                           if (onViewJobDetails) {
-                            onViewJobDetails(otherJob);
+                            onViewJobDetails(jobWithScore);
                           } else {
-                            setSelectedPreviewJob(otherJob);
+                            setSelectedPreviewJob(jobWithScore);
                           }
                         }}
                       >
@@ -2854,8 +2871,12 @@ export default function ApplicantDetailsModal({
         summary: selectedPreviewJob.summary || selectedPreviewJob.description,
         description: selectedPreviewJob.description || selectedPreviewJob.summary,
         required_skills: selectedPreviewJob.required_skills || selectedPreviewJob.skills,
-        qualifications: selectedPreviewJob.qualifications,
-        certifications: selectedPreviewJob.certifications,
+        qualifications: selectedPreviewJob.qualifications || selectedPreviewJob.required_qualifications,
+        certifications: selectedPreviewJob.certifications || selectedPreviewJob.required_certifications,
+        skillTags: selectedPreviewJob.skillTags,
+        qualTags: selectedPreviewJob.qualTags,
+        certTags: selectedPreviewJob.certTags,
+        matchScore: selectedPreviewJob.matchScore,
         applicantCount: selectedPreviewJob.applicantCount ?? selectedPreviewJob.applicant_count ?? 0,
         applicationLimit: selectedPreviewJob.applicationLimit ?? selectedPreviewJob.application_limit,
         closeDate: selectedPreviewJob.closeDate || selectedPreviewJob.close_date,
@@ -2865,9 +2886,9 @@ export default function ApplicantDetailsModal({
         desiredJobTitle: candidate?.desired_job_title || candidate?.job_title,
         workArrangement: candidate?.work_arrangement,
         expectedSalary: Number(candidate?.expected_salary) || 0,
-        skills: parseItemList(candidate?.skills),
-        qualifications: parseItemList(candidate?.qualifications),
-        certifications: parseItemList(candidate?.certifications),
+        skills: candSkills,
+        qualifications: candQuals,
+        certifications: candCerts,
         rawSkills: typeof candidate?.skills === "string" ? candidate?.skills : Array.isArray(candidate?.skills) ? candidate?.skills.join(", ") : undefined,
         rawCertifications: typeof candidate?.certifications === "string" ? candidate?.certifications : Array.isArray(candidate?.certifications) ? candidate?.certifications.join(", ") : undefined,
         city: candidate?.nearby_location || candidate?.city || candidate?.address,
@@ -2966,14 +2987,14 @@ export default function ApplicantDetailsModal({
         })()
       }
       hideEmployerHeader={true}
-      zIndex={45000}
+      zIndex={250000}
     />
       {/* ── FORMAL LETTER VIEWER MODAL ── */}
       {viewLetterModalTarget && (
         <div
           className="view-letter-backdrop"
           onClick={() => setViewLetterModalTarget(null)}
-          style={{ zIndex: 100000 }}
+          style={{ zIndex: 300000 }}
         >
           <div
             className="view-letter-pair-row"

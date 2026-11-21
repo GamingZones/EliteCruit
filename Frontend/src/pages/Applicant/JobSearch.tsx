@@ -5192,7 +5192,7 @@ export default function JobSearch() {
               setViewLetterModalTarget(null);
               setDecisionModalTarget(null);
             }}
-            style={{ zIndex: 100000 }}
+            style={{ zIndex: 300000 }}
           >
             <div
               className="view-letter-pair-row"

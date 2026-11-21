@@ -2453,7 +2453,7 @@
 .view-letter-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 100000;
+  z-index: 300000 !important;
   background: rgba(9, 21, 35, 0.65);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);

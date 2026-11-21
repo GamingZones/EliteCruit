@@ -2923,8 +2923,10 @@ export default function EmployerApplicantManagement() {
       work_arrangement: j.work_arrangement || j.workArrangement || "On-Site",
       required_skills: j.required_skills || j.skills,
       skills: j.skills || j.required_skills,
-      qualifications: j.qualifications,
-      certifications: j.certifications,
+      qualifications: j.qualifications || j.required_qualifications,
+      required_qualifications: j.required_qualifications || j.qualifications,
+      certifications: j.certifications || j.required_certifications,
+      required_certifications: j.required_certifications || j.certifications,
       salary_min: j.salary_min ?? j.salaryMin,
       salary_max: j.salary_max ?? j.salaryMax,
       description: j.description || j.summary,
@@ -5548,7 +5550,7 @@ export default function EmployerApplicantManagement() {
           <div
             className="view-letter-backdrop"
             onClick={() => setViewingResponseLetterApp(null)}
-            style={{ zIndex: 100000 }}
+            style={{ zIndex: 300000 }}
           >
             <div
               className="view-letter-pair-row"

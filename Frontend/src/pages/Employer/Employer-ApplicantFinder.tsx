@@ -5067,7 +5067,7 @@ export default function EmployerApplicantFinder() {
           <div
             className="view-letter-backdrop"
             onClick={() => setViewLetterModalTarget(null)}
-            style={{ zIndex: 100000 }}
+            style={{ zIndex: 300000 }}
           >
             <div
               className="view-letter-pair-row"
