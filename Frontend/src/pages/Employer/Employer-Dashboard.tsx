@@ -1330,7 +1330,7 @@ export default function EmployerDashboard() {
         );
         const hasResponse = Boolean(isAcc || isDec || viewOfferLetterModal.responseMessage);
 
-        const defaultOfferText = `[Formal Employment Offer: ${viewOfferLetterModal.jobTitle}]\nCompany: ${companyLabel || "Employer"}\n\nDear ${viewOfferLetterModal.candidateName},\n\nCongratulations! We are pleased to formally extend an offer of employment for the position of "${viewOfferLetterModal.jobTitle}".\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\n${companyLabel || "Employer"}`;
+        const defaultOfferText = `[Formal Employment Offer: ${viewOfferLetterModal.jobTitle}]\nCompany: ${companyLabel || "Employer"}\n\nDear ${viewOfferLetterModal.candidateName},\n\nCongratulations! Following our review of your qualifications and background, ${companyLabel || "Employer"} is pleased to formally extend an employment offer for the position of "${viewOfferLetterModal.jobTitle}".\n\nOur team was thoroughly impressed with your experience and profile. Please review the terms of this official offer and submit your formal response.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\n${companyLabel || "Employer"} Hiring Team`;
         const offerText = (viewOfferLetterModal.letterText && viewOfferLetterModal.letterText.trim()) || defaultOfferText;
 
         const responseText = viewOfferLetterModal.responseMessage || (isAcc

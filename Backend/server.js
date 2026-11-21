@@ -798,7 +798,7 @@ async function ensureJobPostColumns() {
 
     for (const inv of legacyInvites) {
       const origMsg = inv.custom_message ? inv.custom_message.trim() : "";
-      const upgradedMsg = `[Formal Employment Offer: ${inv.job_title}]\nCompany: ${inv.company_name}\n\n${origMsg || `Dear ${inv.applicant_name},\n\nWe have reviewed your profile and qualifications on EliteCruit and are pleased to formally extend an employment offer for the position of "${inv.job_title}" at ${inv.company_name}.\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\n${inv.company_name}`}`;
+      const upgradedMsg = `[Formal Employment Offer: ${inv.job_title}]\nOrigin: Direct Offer\nCompany: ${inv.company_name}\n\n${origMsg || `Dear ${inv.applicant_name},\n\nCongratulations! Following our review of your qualifications and background, ${inv.company_name} is pleased to formally extend an employment offer for the position of "${inv.job_title}".\n\nOur team was thoroughly impressed with your experience and profile. Please review the terms of this official offer and submit your formal response.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\n${inv.company_name} Hiring Team`}`;
 
       await run("UPDATE job_invitations SET custom_message = ? WHERE id = ?", [upgradedMsg, inv.id]);
       if (origMsg) {
@@ -5410,7 +5410,7 @@ app.put("/api/applications/:id/status", authenticateToken, requireApplicationDec
       let finalMsg = typeof message_text === "string" && message_text.trim() ? message_text.trim() : null;
       if (!finalMsg) {
         if (isApproved) {
-          finalMsg = `[Formal Employment Offer: ${jobTitle}]\nCompany: ${companyName}\n\nDear ${applicantName},\n\nCongratulations! We are pleased to inform you that your application for the position of "${jobTitle}" at ${companyName} has been accepted.\n\nOur hiring team will be reaching out to you shortly with next steps and onboarding details.\n\nThank you for choosing to grow your career with us!\n\nBest regards,\n${companyName}`;
+          finalMsg = `[Formal Employment Offer: ${jobTitle}]\nCompany: ${companyName}\n\nDear ${applicantName},\n\nCongratulations! Following our review of your qualifications and background, ${companyName} is pleased to formally extend an employment offer for the position of "${jobTitle}".\n\nOur team was thoroughly impressed with your experience and profile. Please review the terms of this official offer and submit your formal response.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\n${companyName} Hiring Team`;
         } else {
           finalMsg = `[Application Status Update: ${jobTitle}]\nCompany: ${companyName}\n\nDear ${applicantName},\n\nThank you for taking the time to apply for the position of "${jobTitle}" at ${companyName}.\n\nAfter careful evaluation of all applicants, we regret to inform you that we have decided to proceed with other candidates whose experience more closely matches our current requirements.\n\nWe appreciate your interest in our team and wish you the best in your career pursuits.\n\nSincerely,\n${companyName}`;
         }
@@ -5791,11 +5791,11 @@ app.post("/api/employers/:userId/invite-candidate", authenticateToken, requireUs
 
     let letterBody = typeof custom_message === "string" && custom_message.trim()
       ? custom_message.trim()
-      : `Dear ${applicantName},\n\nWe have reviewed your profile and qualifications on EliteCruit and are pleased to formally extend an employment offer for the position of "${job.title}" at ${companyName}.\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\n${companyName}`;
+      : `Dear ${applicantName},\n\nCongratulations! Following our review of your qualifications and background, ${companyName} is pleased to formally extend an employment offer for the position of "${job.title}".\n\nOur team was thoroughly impressed with your experience and profile. Please review the terms of this official offer and submit your formal response.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\n${companyName} Hiring Team`;
 
     const formalOfferMsg = letterBody.startsWith("[Formal Employment Offer")
       ? letterBody
-      : `[Formal Employment Offer: ${job.title}]\nCompany: ${companyName}\n\n${letterBody}`;
+      : `[Formal Employment Offer: ${job.title}]\nOrigin: Direct Offer\nCompany: ${companyName}\n\n${letterBody}`;
 
     const notifTitle = `Formal Job Offer: ${job.title}`;
     const notifBody = `${companyName} has extended a formal employment offer for "${job.title}". Review your offer letter to accept or decline.`;
@@ -6707,14 +6707,14 @@ app.delete("/api/employers/:userId/faqs/:faqId", authenticateToken, requireUserO
 
 const DEFAULT_ACCEPTANCE_TEMPLATE = `Dear {applicant_name},
 
-Congratulations! We are pleased to inform you that your application for the position of "{job_title}" at {company_name} has been accepted.
+Congratulations! Following our review of your qualifications and background, {company_name} is pleased to formally extend an employment offer for the position of "{job_title}".
 
-Our hiring team was thoroughly impressed with your profile, qualifications, and experience. We will be reaching out to you shortly with onboarding instructions and next steps.
+Our team was thoroughly impressed with your experience and profile. Please review the terms of this official offer and submit your formal response.
 
-Thank you for choosing to grow your career with {company_name}!
+We look forward to welcoming you to our team!
 
 Best regards,
-{company_name} Recruitment Team`;
+{company_name} Hiring Team`;
 
 const DEFAULT_REJECTION_TEMPLATE = `Dear {applicant_name},
 

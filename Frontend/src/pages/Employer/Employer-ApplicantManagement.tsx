@@ -809,11 +809,11 @@ function getAutomatedDecisionTemplate(
   if (action === "approved") {
     base = customTemplates?.acceptance_template || (
       `Dear {applicant_name},\n\n` +
-      `Congratulations! We are pleased to inform you that your application for the position of "{job_title}" at {company_name} has been accepted.\n\n` +
-      `Our hiring team was thoroughly impressed with your profile, qualifications, and experience. We will be reaching out to you shortly via messages with onboarding instructions and next steps.\n\n` +
-      `Thank you for choosing to grow your career with {company_name}!\n\n` +
+      `Congratulations! Following our review of your qualifications and background, {company_name} is pleased to formally extend an employment offer for the position of "{job_title}".\n\n` +
+      `Our team was thoroughly impressed with your experience and profile. Please review the terms of this official offer and submit your formal response.\n\n` +
+      `We look forward to welcoming you to our team!\n\n` +
       `Best regards,\n` +
-      `{company_name} Recruitment Team`
+      `{company_name} Hiring Team`
     );
   } else {
     base = customTemplates?.rejection_template || (
@@ -3033,8 +3033,9 @@ export default function EmployerApplicantManagement() {
     setSelectedJobDetails(job);
     setRecruitJobTarget(job);
     const candidateName = candidate.applicant_name || candidate.name || reviewModalApp?.applicant_name || "Candidate";
+    const comp = companyLabel || "our company";
     setRecruitCustomMsg(
-      `Dear ${candidateName},\n\nWe have reviewed your profile and qualifications on EliteCruit and are pleased to formally extend an employment offer for the position of "${job?.title || "our open position"}".\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!`
+      `Dear ${candidateName},\n\nCongratulations! Following our review of your qualifications and background, ${comp} is pleased to formally extend an employment offer for the position of "${job?.title || "our open position"}".\n\nOur team was thoroughly impressed with your experience and profile. Please review the terms of this official offer and submit your formal response.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\n${comp} Hiring Team`
     );
     setRecruitSuccessMsg(null);
     setIsRecruitModalOpen(true);
@@ -5092,8 +5093,9 @@ export default function EmployerApplicantManagement() {
                         if (chosenJob) {
                           setSelectedJobDetails(chosenJob);
                           setRecruitJobTarget(chosenJob);
+                          const comp = companyLabel || "our company";
                           setRecruitCustomMsg(
-                            `Dear ${reviewModalApp.applicant_name},\n\nWe have reviewed your profile and qualifications on EliteCruit and are pleased to formally extend an employment offer for the position of "${chosenJob.title || "our open position"}".\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!`
+                            `Dear ${reviewModalApp.applicant_name},\n\nCongratulations! Following our review of your qualifications and background, ${comp} is pleased to formally extend an employment offer for the position of "${chosenJob.title || "our open position"}".\n\nOur team was thoroughly impressed with your experience and profile. Please review the terms of this official offer and submit your formal response.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\n${comp} Hiring Team`
                           );
                         }
                       }}

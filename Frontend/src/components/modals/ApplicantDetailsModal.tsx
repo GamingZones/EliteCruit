@@ -391,8 +391,9 @@ export default function ApplicantDetailsModal({
       (candidate.first_name || candidate.last_name
         ? `${candidate.first_name || ""} ${candidate.last_name || ""}`.trim()
         : "Candidate");
+    const comp = job?.company_name || job?.companyName || "our company";
     setRecruitCustomMsg(
-      `Dear ${candName},\n\nWe have reviewed your profile and qualifications on EliteCruit and are pleased to formally extend an employment offer for the position of "${job?.title || "our open position"}".\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!`
+      `Dear ${candName},\n\nCongratulations! Following our review of your qualifications and background, ${comp} is pleased to formally extend an employment offer for the position of "${job?.title || "our open position"}".\n\nOur team was thoroughly impressed with your experience and profile. Please review the terms of this official offer and submit your formal response.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\n${comp} Hiring Team`
     );
     setRecruitSuccessMsg(null);
     setRecruitErrorMsg(null);

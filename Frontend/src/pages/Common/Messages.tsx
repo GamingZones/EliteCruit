@@ -409,6 +409,7 @@ interface ParsedSpecialMessage {
   location?: string;
   notes?: string;
   reason?: string;
+  origin?: "direct_offer" | "application";
   cleanBody: string;
 }
 
@@ -418,36 +419,68 @@ function parseSpecialMessage(text: string): ParsedSpecialMessage {
   // 1. Formal Employment Offer
   if (
     text.startsWith("[Formal Employment Offer") ||
+    text.startsWith("[Formal Job Offer") ||
+    text.includes("[Formal Employment Offer") ||
+    text.includes("[Formal Job Offer") ||
+    text.includes("Following our review of your qualifications and background") ||
     text.includes("Congratulations! We are pleased to inform you that your application for the position of") ||
-    (text.includes("Dear ") && text.includes("has been accepted") && text.includes("position of"))
+    (text.includes("Dear ") && text.includes("has been accepted") && text.includes("position of")) ||
+    (text.includes("Dear ") && text.includes("extend an employment offer") && text.includes("position of")) ||
+    (text.includes("reviewed your profile") && (text.includes("invite you to apply") || text.includes("extend an employment offer")))
   ) {
     let jobTitle = "";
     let companyName = "";
-    const offerMatch = text.match(/\[Formal Employment Offer:\s*(.*?)\]/i);
+    const offerMatch = text.match(/\[(?:Formal Employment Offer|Formal Job Offer):\s*(.*?)\]/i);
     if (offerMatch) jobTitle = offerMatch[1].trim();
 
     const companyMatch = text.match(/Company:\s*(.*?)\n/i);
     if (companyMatch) companyName = companyMatch[1].trim();
 
     if (!jobTitle) {
-      const posMatch = text.match(/position of ["'](.*?)["']/i);
-      if (posMatch) jobTitle = posMatch[1].trim();
+      const posMatch = text.match(/position of ["'](.*?)["']/i) || text.match(/open position:?\s*["']?(.*?)["']?\.?$/im);
+      if (posMatch) jobTitle = posMatch[1].trim().replace(/^["']|["']\.?$/g, "").trim();
     }
     if (!companyName) {
-      const atCompMatch = text.match(/at (.*?) has been accepted/i) || text.match(/Best regards,\s*\n\s*(.*?)$/m);
+      const atCompMatch =
+        text.match(/at (.*?) has been accepted/i) ||
+        text.match(/at (.*?)\./i) ||
+        text.match(/Best regards,\s*\n\s*(.*?)$/m) ||
+        text.match(/^(?:Hello!\s*)?(.*?)\s+has reviewed/im);
       if (atCompMatch) companyName = atCompMatch[1].trim();
     }
 
     let cleanBody = text;
     if (cleanBody.startsWith("[")) {
-      cleanBody = cleanBody.replace(/^\[Formal Employment Offer:[^\]]*\]\s*/i, "");
+      cleanBody = cleanBody.replace(/^\[(?:Formal Employment Offer|Formal Job Offer):[^\]]*\]\s*/i, "");
+      cleanBody = cleanBody.replace(/^Origin:[^\n]*\n+/i, "");
       cleanBody = cleanBody.replace(/^Company:[^\n]*\n+/i, "");
+      cleanBody = cleanBody.replace(/^Origin:[^\n]*\n+/i, "");
+    }
+
+    let origin: "direct_offer" | "application" = "application";
+    if (
+      text.includes("Origin: Direct Offer") ||
+      text.includes("Direct Outreach") ||
+      text.includes("Direct Employment Offer") ||
+      text.includes("Direct Offer") ||
+      text.includes("reviewed your profile") ||
+      text.includes("qualifications on EliteCruit") ||
+      text.includes("invite you to apply")
+    ) {
+      origin = "direct_offer";
+    } else if (
+      text.includes("application for the position of") ||
+      text.includes("application has been accepted") ||
+      text.includes("taking the time to apply")
+    ) {
+      origin = "application";
     }
 
     return {
       type: "formal_offer",
       jobTitle: jobTitle || "Employment Position",
       companyName: companyName || "Employer",
+      origin,
       cleanBody: cleanBody.trim(),
     };
   }
@@ -460,6 +493,11 @@ function parseSpecialMessage(text: string): ParsedSpecialMessage {
     text.includes("[Formal Invitation Response:")
   ) {
     const isAccepted = text.includes("ACCEPTED");
+    const isDirectOfferResponse =
+      text.startsWith("[Formal Invitation Response:") ||
+      text.includes("[Formal Invitation Response:") ||
+      text.includes("Direct Offer") ||
+      text.toLowerCase().includes("invitation");
     let jobTitle = "";
 
     const posMatch = text.match(/Position:\s*(.*?)(?:\n|$)/i);
@@ -475,6 +513,7 @@ function parseSpecialMessage(text: string): ParsedSpecialMessage {
       type: "offer_response",
       jobTitle: jobTitle || "Applied Position",
       isAccepted,
+      origin: isDirectOfferResponse ? "direct_offer" : "application",
       cleanBody: cleanBody || (isAccepted ? "Candidate has accepted the formal offer." : "Candidate has declined the formal offer."),
     };
   }
@@ -926,8 +965,9 @@ export default function Messages() {
   const handleOpenInviteModal = (job: any) => {
     setInviteCandidateJob(job);
     setInviteSuccessMsg("");
+    const comp = job?.company_name || companyJobsData?.company_name || selectedCompanyDetails?.business_name || "our company";
     setCustomInviteMsg(
-      `Dear ${targetCandidate.applicant_name},\n\nWe have reviewed your profile and qualifications on EliteCruit and are pleased to formally extend an employment offer for the position of "${job.title}".\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!`
+      `Dear ${targetCandidate.applicant_name},\n\nCongratulations! Following our review of your qualifications and background, ${comp} is pleased to formally extend an employment offer for the position of "${job.title}".\n\nOur team was thoroughly impressed with your experience and profile. Please review the terms of this official offer and submit your formal response.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\n${comp} Hiring Team`
     );
   };
 

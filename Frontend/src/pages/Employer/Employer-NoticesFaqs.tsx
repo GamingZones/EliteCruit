@@ -53,14 +53,14 @@ function EmployerIcon({ name }: { name: EmployerIconName }) {
 
 const SYSTEM_DEFAULT_ACCEPTANCE = `Dear {applicant_name},
 
-Congratulations! We are pleased to inform you that your application for the position of "{job_title}" at {company_name} has been accepted.
+Congratulations! Following our review of your qualifications and background, {company_name} is pleased to formally extend an employment offer for the position of "{job_title}".
 
-Our hiring team was thoroughly impressed with your profile, qualifications, and experience. We will be reaching out to you shortly with onboarding instructions and next steps.
+Our team was thoroughly impressed with your experience and profile. Please review the terms of this official offer and submit your formal response.
 
-Thank you for choosing to grow your career with {company_name}!
+We look forward to welcoming you to our team!
 
 Best regards,
-{company_name} Recruitment Team`;
+{company_name} Hiring Team`;
 
 const SYSTEM_DEFAULT_REJECTION = `Dear {applicant_name},
 

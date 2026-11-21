@@ -32,6 +32,7 @@ export function parseSpecialMessage(text: string): ParsedSpecialMessage {
     text.startsWith("[Formal Job Offer") ||
     text.includes("[Formal Employment Offer") ||
     text.includes("[Formal Job Offer") ||
+    text.includes("Following our review of your qualifications and background") ||
     text.includes("Congratulations! We are pleased to inform you that your application for the position of") ||
     (text.includes("Dear ") && text.includes("has been accepted") && text.includes("position of")) ||
     (text.includes("Dear ") && text.includes("extend an employment offer") && text.includes("position of")) ||
@@ -61,11 +62,14 @@ export function parseSpecialMessage(text: string): ParsedSpecialMessage {
     let cleanBody = text;
     if (cleanBody.startsWith("[")) {
       cleanBody = cleanBody.replace(/^\[(?:Formal Employment Offer|Formal Job Offer):[^\]]*\]\s*/i, "");
+      cleanBody = cleanBody.replace(/^Origin:[^\n]*\n+/i, "");
       cleanBody = cleanBody.replace(/^Company:[^\n]*\n+/i, "");
+      cleanBody = cleanBody.replace(/^Origin:[^\n]*\n+/i, "");
     }
 
     let origin: "direct_offer" | "application" = "application";
     if (
+      text.includes("Origin: Direct Offer") ||
       text.includes("Direct Outreach") ||
       text.includes("Direct Employment Offer") ||
       text.includes("Direct Offer") ||

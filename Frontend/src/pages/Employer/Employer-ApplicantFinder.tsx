@@ -3452,15 +3452,16 @@ export default function EmployerApplicantFinder() {
     }
     setJobCarouselIndex(targetIndex);
     const targetJob = (initialJobId && activeJobs.find((j) => j.id === initialJobId)) || activeJobs[targetIndex] || activeJobs[0];
+    const comp = employerProfile?.business_name || companyLabel || "our company";
     if (targetJob) {
       setSelectedJobId(targetJob.id);
       setCustomInviteMsg(
-        `Dear ${cand.applicant_name},\n\nWe have reviewed your profile and qualifications on EliteCruit and are pleased to formally extend an employment offer for the position of "${targetJob.title}".\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!`
+        `Dear ${cand.applicant_name},\n\nCongratulations! Following our review of your qualifications and background, ${comp} is pleased to formally extend an employment offer for the position of "${targetJob.title}".\n\nOur team was thoroughly impressed with your experience and profile. Please review the terms of this official offer and submit your formal response.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\n${comp} Hiring Team`
       );
     } else {
       setSelectedJobId("");
       setCustomInviteMsg(
-        `Dear ${cand.applicant_name},\n\nWe have reviewed your profile and qualifications on EliteCruit and are pleased to formally extend an employment offer.\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!`
+        `Dear ${cand.applicant_name},\n\nCongratulations! Following our review of your qualifications and background, ${comp} is pleased to formally extend an employment offer.\n\nOur team was thoroughly impressed with your experience and profile. Please review the terms of this official offer and submit your formal response.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\n${comp} Hiring Team`
       );
     }
   };
@@ -3471,8 +3472,9 @@ export default function EmployerApplicantFinder() {
     if (nextJob) {
       setSelectedJobId(nextJob.id);
       if (inviteCandidate) {
+        const comp = employerProfile?.business_name || companyLabel || "our company";
         setCustomInviteMsg(
-          `Dear ${inviteCandidate.applicant_name},\n\nWe have reviewed your profile and qualifications on EliteCruit and are pleased to formally extend an employment offer for the position of "${nextJob.title}".\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!`
+          `Dear ${inviteCandidate.applicant_name},\n\nCongratulations! Following our review of your qualifications and background, ${comp} is pleased to formally extend an employment offer for the position of "${nextJob.title}".\n\nOur team was thoroughly impressed with your experience and profile. Please review the terms of this official offer and submit your formal response.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\n${comp} Hiring Team`
         );
       }
     }
