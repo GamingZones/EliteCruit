@@ -237,13 +237,11 @@ function formatCurrencyInput(value: string | number | null | undefined) {
 
 function parseSalaryInteger(value: string | number | null | undefined): string {
   if (value === null || value === undefined) return "";
-  const raw = String(value).replace(/,/g, "").replace(/\D/g, "").slice(0, 7).trim();
-  if (!raw) return "";
-  const amount = Number(raw);
-  if (Number.isFinite(amount) && amount >= 0) {
-    return String(Math.min(9999999, Math.round(amount)));
-  }
-  return "";
+  const clean = String(value).replace(/,/g, "").trim();
+  if (!clean) return "";
+  const num = parseFloat(clean);
+  if (!Number.isFinite(num) || num < 0) return "";
+  return String(Math.min(9999999, Math.round(num)));
 }
 
 function computeNextArrangements(current: string[] = [], clickedArr: string): string[] {

@@ -1065,9 +1065,9 @@ export default function EmployerJobPosts() {
   }, [companyBranches, employerProfileData]);
 
   const formatSalary = (value: string) => {
-    const raw = value.replace(/,/g, "").trim();
+    const raw = String(value ?? "").replace(/,/g, "").trim();
     if (!raw) return "";
-    const amount = Number(raw);
+    const amount = parseFloat(raw);
     if (!Number.isFinite(amount) || amount < 0) return "";
     return amount.toLocaleString("en-US", {
       minimumFractionDigits: 2,
@@ -1076,32 +1076,39 @@ export default function EmployerJobPosts() {
   };
 
   const parseSalaryInteger = (value: string | null | undefined): string => {
-    if (!value) return "";
-    const raw = String(value).replace(/,/g, "").trim().replace(/\D/g, "").slice(0, 7);
-    const amount = Number(raw);
-    if (Number.isFinite(amount) && amount >= 0) {
-      return String(Math.min(9999999, Math.round(amount)));
+    if (value === null || value === undefined) return "";
+    const clean = String(value).replace(/,/g, "").trim();
+    if (!clean) return "";
+    const num = parseFloat(clean);
+    if (!Number.isFinite(num) || num < 0) return "";
+    if (Math.round(num) === num) {
+      return String(Math.min(9999999, Math.round(num)));
     }
-    return raw;
+    return String(Math.min(9999999, num));
   };
 
   const normalizeSalaryInput = (value: string) => {
-    const raw = value.replace(/,/g, "").trim().replace(/\D/g, "").slice(0, 7);
-    if (!raw) return "";
-    const amount = Number(raw);
-    if (Number.isFinite(amount) && amount >= 0) {
-      return String(Math.min(9999999, Math.round(amount)));
+    let cleaned = value.replace(/[^0-9.]/g, "");
+    if (!cleaned) return "";
+    const parts = cleaned.split(".");
+    if (parts.length > 2) {
+      cleaned = parts[0] + "." + parts.slice(1).join("");
     }
-    return "";
+    if (cleaned.includes(".")) {
+      const [intPart, decPart] = cleaned.split(".");
+      const cappedInt = intPart.slice(0, 7);
+      return `${cappedInt}.${decPart.slice(0, 2)}`;
+    }
+    return cleaned.slice(0, 7);
   };
 
   const toSalaryPayload = (value: string) => {
-    const raw = value.replace(/,/g, "").trim().replace(/\D/g, "").slice(0, 7);
-    const amount = Number(raw);
-    if (Number.isFinite(amount) && amount >= 0) {
-      return String(Math.min(9999999, Math.round(amount)));
-    }
-    return "";
+    if (value === null || value === undefined) return "";
+    const clean = String(value).replace(/,/g, "").trim();
+    if (!clean) return "";
+    const num = parseFloat(clean);
+    if (!Number.isFinite(num) || num < 0) return "";
+    return String(Math.min(9999999, Math.round(num)));
   };
 
   const mmddyyyyToDateInput = (value: string) => {
@@ -1745,7 +1752,7 @@ export default function EmployerJobPosts() {
                       <input
                         data-field="salary_min"
                         placeholder="Min Salary"
-                        maxLength={7}
+                        maxLength={15}
                         value={form.salary_min}
                         onChange={(event) => setField("salary_min", normalizeSalaryInput(event.target.value))}
                         onFocus={() => onFieldFocus("salary_min")}
@@ -1757,7 +1764,7 @@ export default function EmployerJobPosts() {
                       <input
                         data-field="salary_max"
                         placeholder="Max Salary"
-                        maxLength={7}
+                        maxLength={15}
                         value={form.salary_max}
                         onChange={(event) => setField("salary_max", normalizeSalaryInput(event.target.value))}
                         onFocus={() => onFieldFocus("salary_max")}
