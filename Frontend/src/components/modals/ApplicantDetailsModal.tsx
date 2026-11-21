@@ -2802,10 +2802,10 @@ export default function ApplicantDetailsModal({
                         <button
                           type="button"
                           className="jd-other-job-invite-btn"
-                          title="Invite candidate to apply for this job position"
+                          title="Offer this job opening to candidate"
                           onClick={() => onInviteCandidateToJob(candidate, otherJob)}
                         >
-                          Invite to Apply
+                          Offer Job
                         </button>
                       ) : null}
                     </div>
@@ -2860,27 +2860,97 @@ export default function ApplicantDetailsModal({
         city: candidate?.nearby_location || candidate?.city || candidate?.address,
       }}
       customFooterActions={
-        <button
-          type="button"
-          className="solid-btn jd-recruit-btn"
-          style={{
-            background: "#0284c7",
-            color: "#ffffff",
-            border: "none",
-            borderRadius: "8px",
-            padding: "10px 22px",
-            fontWeight: 700,
-            fontSize: "0.9rem",
-            cursor: "pointer",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "6px",
-            transition: "all 0.15s ease",
-          }}
-          onClick={() => handleOpenRecruitModal(selectedPreviewJob)}
-        >
-          Invite
-        </button>
+        (() => {
+          if (!selectedPreviewJob || !candidate) return null;
+          let previewConn: { type: "applied" | "invited"; status: string; label: string } | null = null;
+          if (candidate.job_status_map) {
+            previewConn =
+              candidate.job_status_map[selectedPreviewJob.id] ||
+              candidate.job_status_map[String(selectedPreviewJob.id)] ||
+              candidate.job_status_map[Number(selectedPreviewJob.id)] ||
+              null;
+          }
+          if (!previewConn && candidate.applied_jobs) {
+            let appList: Array<{ job_post_id: number; status: string }> = [];
+            if (Array.isArray(candidate.applied_jobs)) {
+              appList = candidate.applied_jobs;
+            } else if (typeof candidate.applied_jobs === "string") {
+              try {
+                appList = JSON.parse(candidate.applied_jobs);
+              } catch {}
+            }
+            const found = appList.find((aj) => Number(aj.job_post_id) === Number(selectedPreviewJob.id));
+            if (found) {
+              const st = (found.status || "").toLowerCase();
+              const isRecruited = st === "recruited" || st === "accepted";
+              previewConn = {
+                type: "applied",
+                status: st,
+                label: isRecruited ? "Recruited" : "Already Applied",
+              };
+            }
+          }
+          if (previewConn) {
+            return (
+              <button
+                type="button"
+                className="solid-btn jd-recruit-btn"
+                disabled={true}
+                style={{
+                  background: previewConn.label === "Recruited" ? "#059669" : previewConn.type === "invited" ? "#d97706" : "#2563eb",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "10px 22px",
+                  fontWeight: 700,
+                  fontSize: "0.9rem",
+                  cursor: "default",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  opacity: 0.9,
+                }}
+              >
+                {previewConn.label === "Recruited" && (
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                )}
+                {previewConn.label}
+              </button>
+            );
+          }
+          return (
+            <button
+              type="button"
+              className="solid-btn jd-recruit-btn"
+              style={{
+                background: "#0284c7",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: "8px",
+                padding: "10px 22px",
+                fontWeight: 700,
+                fontSize: "0.9rem",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                transition: "all 0.15s ease",
+              }}
+              onClick={() => {
+                if (onInviteCandidateToJob) {
+                  onInviteCandidateToJob(candidate, selectedPreviewJob);
+                  setSelectedPreviewJob(null);
+                } else {
+                  handleOpenRecruitModal(selectedPreviewJob);
+                }
+              }}
+            >
+              Offer Job
+            </button>
+          );
+        })()
       }
       hideEmployerHeader={true}
       zIndex={45000}
