@@ -1053,6 +1053,7 @@
 }
 
 .jd-other-job-invite-btn.status-interviewing,
+.jd-other-job-invite-btn.status-interviewed,
 .jd-other-job-invite-btn.status-shortlisted,
 .jd-other-job-invite-btn.status-applied {
   background: #f0f9ff !important;
@@ -1079,6 +1080,7 @@
 }
 
 [data-theme="dark"] .jd-other-job-invite-btn.status-interviewing,
+[data-theme="dark"] .jd-other-job-invite-btn.status-interviewed,
 [data-theme="dark"] .jd-other-job-invite-btn.status-shortlisted,
 [data-theme="dark"] .jd-other-job-invite-btn.status-applied {
   background: rgba(2, 132, 199, 0.16) !important;

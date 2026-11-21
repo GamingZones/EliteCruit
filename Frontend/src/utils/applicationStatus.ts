@@ -8,6 +8,7 @@ export type CanonicalApplicationStatus =
   | "under_review"
   | "shortlisted"
   | "interviewing"
+  | "interviewed"
   | "approved"
   | "recruited"
   | "declined"
@@ -32,6 +33,8 @@ export function formatApplicationStatusLabel(status: string | null | undefined):
       return "Recruited";
     case "approved":
       return "Approved";
+    case "interviewed":
+      return "Interviewed";
     case "interviewing":
     case "interview":
       return "Interviewing";
@@ -68,6 +71,8 @@ export function getApplicationStatusBadgeClass(status: string | null | undefined
       return "status-badge-chip chip-recruited status-chip recruited approved";
     case "approved":
       return "status-badge-chip chip-approved status-chip approved";
+    case "interviewed":
+      return "status-badge-chip chip-interviewed status-chip interviewed";
     case "interviewing":
     case "interview":
       return "status-badge-chip chip-interviewing status-chip interviewing";

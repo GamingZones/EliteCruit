@@ -1793,6 +1793,9 @@ export default function EmployerApplicantFinder() {
       if (s === "interviewing" || s === "interview") {
         return { label: "Interviewing", disabled: true, className: "status-interviewing" };
       }
+      if (s === "interviewed") {
+        return { label: "Interviewed", disabled: true, className: "status-interviewed" };
+      }
       if (s === "shortlisted" || s === "shortlist") {
         return { label: "Shortlisted", disabled: true, className: "status-shortlisted" };
       }

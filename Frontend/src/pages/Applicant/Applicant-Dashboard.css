@@ -1077,6 +1077,12 @@
   border: 1px solid #d8b4fe;
 }
 
+.status-badge-chip.chip-interviewed {
+  background: #ccfbf1;
+  color: #0f766e;
+  border: 1px solid #99f6e4;
+}
+
 .status-badge-chip.chip-approved {
   background: #ecfdf5;
   color: #047857;
@@ -3665,6 +3671,12 @@
   background: rgba(147, 51, 234, 0.18);
   color: #d8b4fe;
   border-color: rgba(168, 85, 247, 0.38);
+}
+
+[data-theme="dark"] .status-badge-chip.chip-interviewed {
+  background: rgba(20, 184, 166, 0.2);
+  color: #5eead4;
+  border-color: rgba(45, 212, 191, 0.4);
 }
 
 [data-theme="dark"] .status-badge-chip.chip-pending {

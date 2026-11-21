@@ -363,6 +363,12 @@
   border: 1px solid #d8b4fe !important;
 }
 
+.status-chip.interviewed {
+  color: #0f766e !important;
+  background: #ccfbf1 !important;
+  border: 1px solid #99f6e4 !important;
+}
+
 .status-chip.approved {
   color: #15803d !important;
   background: #dcfce7 !important;
@@ -477,6 +483,11 @@
   border-color: #0284c7;
   color: #ffffff;
 }
+.action-btn.schedule-btn-icon.active-interviewed {
+  background: #0d9488;
+  border-color: #0d9488;
+  color: #ffffff;
+}
 
 /* Letter button: Indigo hover */
 .action-btn.letter-btn-icon:hover {
@@ -504,6 +515,15 @@
   background: #0369a1;
   color: #ffffff;
 }
+.modal-status-word-btn.modal-schedule-btn.active-interviewed {
+  background: #0d9488;
+  color: #ffffff;
+  border: 1px solid #0f766e;
+}
+.modal-status-word-btn.modal-schedule-btn.active-interviewed:hover {
+  background: #0f766e;
+  color: #ffffff;
+}
 
 .modal-status-word-btn.modal-letter-btn {
   background: #eef2ff;
@@ -521,6 +541,12 @@
   border: 1px solid rgba(168, 85, 247, 0.4) !important;
 }
 
+[data-theme="dark"] .status-chip.interviewed {
+  color: #5eead4 !important;
+  background: rgba(20, 184, 166, 0.2) !important;
+  border: 1px solid rgba(45, 212, 191, 0.4) !important;
+}
+
 [data-theme="dark"] .action-btn.schedule-btn-icon:hover {
   background: #0284c7;
   border-color: #38bdf8;
@@ -529,6 +555,11 @@
 [data-theme="dark"] .action-btn.schedule-btn-icon.active-interviewing {
   background: #0284c7;
   border-color: #38bdf8;
+  color: #ffffff;
+}
+[data-theme="dark"] .action-btn.schedule-btn-icon.active-interviewed {
+  background: #0d9488;
+  border-color: #2dd4bf;
   color: #ffffff;
 }
 
@@ -554,6 +585,15 @@
 }
 [data-theme="dark"] .modal-status-word-btn.modal-schedule-btn.active-interviewing:hover {
   background: #0369a1;
+  color: #ffffff;
+}
+[data-theme="dark"] .modal-status-word-btn.modal-schedule-btn.active-interviewed {
+  background: #0d9488;
+  color: #ffffff;
+  border-color: #2dd4bf;
+}
+[data-theme="dark"] .modal-status-word-btn.modal-schedule-btn.active-interviewed:hover {
+  background: #0f766e;
   color: #ffffff;
 }
 

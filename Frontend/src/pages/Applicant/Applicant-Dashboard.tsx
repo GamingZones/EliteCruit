@@ -252,6 +252,7 @@ function statusChipBadgeClass(status: string, app?: any) {
   const s = (status || "").toLowerCase();
   if (s === "recruited" || s === "hired" || s === "accepted" || app?.response_decision === "accept" || app?.invitation_status === "accepted") return "chip-recruited";
   if (s === "approved") return "chip-approved";
+  if (s === "interviewed") return "chip-interviewed";
   if (s === "interviewing" || s === "interview") return "chip-interviewing";
   if (s === "shortlisted") return "chip-shortlisted";
   if (s === "denied" || s === "declined" || s === "rejected" || s === "withdrawn") return "chip-denied chip-declined";
@@ -262,6 +263,7 @@ function statusChipClass(status: string, app?: any) {
   const s = (status || "").toLowerCase();
   if (s === "recruited" || s === "hired" || s === "accepted" || app?.response_decision === "accept" || app?.invitation_status === "accepted") return "match-chip chip-green";
   if (s === "approved") return "match-chip chip-green";
+  if (s === "interviewed") return "match-chip chip-teal";
   if (s === "interviewing" || s === "interview") return "match-chip chip-amber";
   if (s === "shortlisted") return "match-chip chip-amber";
   if (s === "denied" || s === "declined" || s === "rejected" || s === "withdrawn") return "match-chip chip-amber";
@@ -272,6 +274,7 @@ function formatStatusLabel(status: string, app?: any) {
   const s = (status || "").toLowerCase();
   if (s === "recruited" || s === "hired" || s === "accepted" || app?.response_decision === "accept" || app?.invitation_status === "accepted") return "Recruited";
   if (s === "approved") return "Approved";
+  if (s === "interviewed") return "Interviewed";
   if (s === "interviewing" || s === "interview") return "Interviewing";
   if (s === "shortlisted") return "Shortlisted";
   if (s === "withdrawn") return "Withdrawn";
@@ -310,16 +313,16 @@ function getApplicationTimelineSteps(app: any) {
 
   // Check if candidate actually passed through shortlisted / interview stages
   const wasShortlisted = Boolean(app?.was_shortlisted) ||
-    ["shortlisted", "interviewing", "interview"].includes(String(app?.previous_status || "").toLowerCase()) ||
-    ["shortlisted", "interviewing", "interview"].includes(status);
+    ["shortlisted", "interviewing", "interview", "interviewed"].includes(String(app?.previous_status || "").toLowerCase()) ||
+    ["shortlisted", "interviewing", "interview", "interviewed"].includes(status);
 
   const hadInterview = Boolean(app?.had_interview) ||
-    ["interviewing", "interview"].includes(String(app?.previous_status || "").toLowerCase()) ||
-    ["interviewing", "interview"].includes(status) ||
+    ["interviewing", "interview", "interviewed"].includes(String(app?.previous_status || "").toLowerCase()) ||
+    ["interviewing", "interview", "interviewed"].includes(status) ||
     Boolean(interview) ||
     Boolean(app?.interview_date);
 
-  const isInterviewStage = ["interviewing", "interview"].includes(status) || Boolean(interview);
+  const isInterviewStage = ["interviewing", "interview", "interviewed"].includes(status) || Boolean(interview);
 
   // Compute a clean chronological fallback interview date if one isn't explicitly saved
   const fallbackInterviewDate = app?.interview_date
@@ -467,7 +470,7 @@ function ApplicationCardTimeline({
   let progressPct = 0;
   if (isFinalDecision || lastCompletedIndex === 3) {
     progressPct = 100;
-  } else if (status === "interviewing" || status === "interview" || activeIndex === 2) {
+  } else if (status === "interviewing" || status === "interview" || status === "interviewed" || activeIndex === 2) {
     progressPct = 66.67;
   } else if (status === "shortlisted" || (lastCompletedIndex === 1 && activeIndex === -1)) {
     progressPct = 33.33;

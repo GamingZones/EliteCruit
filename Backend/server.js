@@ -5173,9 +5173,40 @@ app.get("/api/employers/:userId/applications", authenticateToken, requireUserOrA
             WHERE si.employer_user_id = jp.employer_user_id
               AND si.applicant_user_id = a.applicant_user_id
               AND si.job_post_id = a.job_post_id
-            ORDER BY si.created_at DESC
+              AND si.status NOT IN ('cancelled', 'declined')
+            ORDER BY si.interview_date DESC, si.created_at DESC
             LIMIT 1
           ) AS latest_interview_status,
+          (
+            SELECT si.interview_date
+            FROM scheduled_interviews si
+            WHERE si.employer_user_id = jp.employer_user_id
+              AND si.applicant_user_id = a.applicant_user_id
+              AND si.job_post_id = a.job_post_id
+              AND si.status NOT IN ('cancelled', 'declined')
+            ORDER BY si.interview_date DESC, si.created_at DESC
+            LIMIT 1
+          ) AS latest_interview_date,
+          (
+            SELECT si.end_time
+            FROM scheduled_interviews si
+            WHERE si.employer_user_id = jp.employer_user_id
+              AND si.applicant_user_id = a.applicant_user_id
+              AND si.job_post_id = a.job_post_id
+              AND si.status NOT IN ('cancelled', 'declined')
+            ORDER BY si.interview_date DESC, si.created_at DESC
+            LIMIT 1
+          ) AS latest_interview_end_time,
+          (
+            SELECT si.start_time
+            FROM scheduled_interviews si
+            WHERE si.employer_user_id = jp.employer_user_id
+              AND si.applicant_user_id = a.applicant_user_id
+              AND si.job_post_id = a.job_post_id
+              AND si.status NOT IN ('cancelled', 'declined')
+            ORDER BY si.interview_date DESC, si.created_at DESC
+            LIMIT 1
+          ) AS latest_interview_start_time,
           (
             SELECT CASE
               WHEN COUNT(*) > 0 THEN ROUND(((SUM(cr.rating)::numeric + 12.0) / (COUNT(*) + 3.0)), 1)
@@ -5193,12 +5224,57 @@ app.get("/api/employers/:userId/applications", authenticateToken, requireUserOrA
       params
     );
 
+    const processedApplications = applications.map((app) => {
+      let effectiveStatus = app.status;
+      const s = String(app.status || "").toLowerCase();
+      if (s === "interviewing" || s === "interview") {
+        const isCompleted = String(app.latest_interview_status || "").toLowerCase() === "completed";
+        let isElapsed = false;
+        if (app.latest_interview_date) {
+          try {
+            const now = new Date();
+            let [y, m, d] = String(app.latest_interview_date).includes("-")
+              ? String(app.latest_interview_date).split("-").map(Number)
+              : [now.getFullYear(), now.getMonth() + 1, now.getDate()];
+            const timeStr = app.latest_interview_end_time || app.latest_interview_start_time || "23:59";
+            let h = 23, min = 59;
+            const m12 = String(timeStr).match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i);
+            if (m12) {
+              h = parseInt(m12[1], 10);
+              min = parseInt(m12[2], 10);
+              const p = (m12[3] || "").toUpperCase();
+              if (p === "PM" && h < 12) h += 12;
+              if (p === "AM" && h === 12) h = 0;
+            } else {
+              const m24 = String(timeStr).match(/^(\d{1,2}):(\d{2})/);
+              if (m24) {
+                h = parseInt(m24[1], 10);
+                min = parseInt(m24[2], 10);
+              }
+            }
+            isElapsed = now.getTime() > new Date(y, m - 1, d, h, min).getTime();
+          } catch {}
+        }
+        if (isCompleted || isElapsed) {
+          effectiveStatus = "interviewed";
+          run(
+            "UPDATE applications SET status = 'interviewed', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND lower(status) IN ('interviewing', 'interview')",
+            [app.id]
+          ).catch(() => {});
+        }
+      }
+      return {
+        ...app,
+        status: effectiveStatus,
+      };
+    });
+
     const statsRow = await get(
       `SELECT
           COUNT(*) AS total,
           SUM(CASE WHEN lower(a.status) IN ('submitted', 'pending') THEN 1 ELSE 0 END) AS pending,
           SUM(CASE WHEN lower(a.status) = 'shortlisted' AND lower(COALESCE(a.status, '')) NOT IN ('recruited', 'accepted') AND COALESCE(a.response_decision, '') != 'accept' THEN 1 ELSE 0 END) AS shortlisted,
-          SUM(CASE WHEN lower(a.status) IN ('interviewing', 'interview') THEN 1 ELSE 0 END) AS interviewing
+          SUM(CASE WHEN lower(a.status) IN ('interviewing', 'interview', 'interviewed') THEN 1 ELSE 0 END) AS interviewing
        FROM applications a
        INNER JOIN job_posts jp ON jp.id = a.job_post_id
        WHERE jp.employer_user_id = ?`,
@@ -5206,7 +5282,7 @@ app.get("/api/employers/:userId/applications", authenticateToken, requireUserOrA
     );
 
     res.json({
-      applications,
+      applications: processedApplications,
       stats: {
         total: Number(statsRow?.total || 0),
         pending: Number(statsRow?.pending || 0),
@@ -5226,7 +5302,7 @@ app.put("/api/applications/bulk-status", authenticateToken, async (req, res) => 
     return res.status(400).json({ message: "No application IDs provided." });
   }
 
-  const validStatuses = ["pending", "submitted", "reviewed", "shortlisted", "interviewing", "interview", "recruited", "approved", "accepted", "denied", "rejected", "withdrawn"];
+  const validStatuses = ["pending", "submitted", "reviewed", "shortlisted", "interviewing", "interview", "interviewed", "recruited", "approved", "accepted", "denied", "rejected", "withdrawn"];
   if (typeof status !== "string" || !validStatuses.includes(status.toLowerCase())) {
     return res.status(400).json({ message: "Invalid status value." });
   }
@@ -5285,7 +5361,7 @@ app.put("/api/applications/:id/status", authenticateToken, requireApplicationDec
     return res.status(400).json({ message: "Invalid application ID." });
   }
 
-  const validStatuses = ["pending", "submitted", "reviewed", "shortlisted", "interviewing", "interview", "recruited", "approved", "accepted", "denied", "rejected", "withdrawn"];
+  const validStatuses = ["pending", "submitted", "reviewed", "shortlisted", "interviewing", "interview", "interviewed", "recruited", "approved", "accepted", "denied", "rejected", "withdrawn"];
   if (typeof status !== "string" || !validStatuses.includes(status.toLowerCase())) {
     return res.status(400).json({ message: "Invalid status value." });
   }
@@ -7915,7 +7991,7 @@ app.post("/api/interviews", async (req, res) => {
                  was_shortlisted = TRUE, 
                  had_interview = TRUE, 
                  updated_at = CURRENT_TIMESTAMP 
-             WHERE applicant_user_id = ? AND job_post_id = ? AND lower(status) IN ('submitted', 'pending', 'shortlisted')`,
+             WHERE applicant_user_id = ? AND job_post_id = ? AND lower(status) IN ('submitted', 'pending', 'shortlisted', 'interviewed')`,
             [cid, jobPostId]
           ).catch(() => {});
         }
@@ -8195,6 +8271,28 @@ app.patch("/api/interviews/:id/status", async (req, res) => {
 
     if (targetStatus === "cancelled" || targetStatus === "declined") {
       await syncApplicationStatusAfterInterviewCancellation(existing, id);
+    } else if (targetStatus === "completed") {
+      let candIds = [];
+      try {
+        if (Array.isArray(existing.candidate_user_ids)) {
+          candIds = existing.candidate_user_ids.map(Number);
+        } else if (typeof existing.candidate_user_ids === "string") {
+          candIds = JSON.parse(existing.candidate_user_ids).map(Number);
+        }
+      } catch {}
+      if (existing.applicant_user_id && !candIds.includes(existing.applicant_user_id)) {
+        candIds.push(existing.applicant_user_id);
+      }
+      for (const cid of candIds) {
+        if (existing.job_post_id) {
+          await run(
+            `UPDATE applications 
+             SET status = 'interviewed', updated_at = CURRENT_TIMESTAMP 
+             WHERE applicant_user_id = ? AND job_post_id = ? AND lower(status) IN ('interviewing', 'interview')`,
+            [cid, existing.job_post_id]
+          ).catch(() => {});
+        }
+      }
     }
 
     // Notify the other party if valid registered user
