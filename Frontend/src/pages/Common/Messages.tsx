@@ -3418,7 +3418,7 @@ export default function Messages() {
                 }
                 disabled={isRespondingInvitation}
               >
-                Accept Invitation
+                Accept Offer
               </button>
             </div>
           ) : detailsJob && appliedJobIds.includes(detailsJob.id) ? (
@@ -3718,7 +3718,7 @@ export default function Messages() {
                     </div>
                   ) : employerViewingJob.invitation ? (
                     <span style={{ fontSize: "0.84rem", fontWeight: 700, color: "#0284c7", background: "#f0f9ff", padding: "6px 14px", borderRadius: "999px", border: "1px solid #bae6fd" }}>
-                      ✓ Invitation Sent ({String(employerViewingJob.invitation.status || "Invited").toUpperCase()})
+                      ✓ Job Offer sent ({String(employerViewingJob.invitation.status || "Offered").toUpperCase()})
                     </span>
                   ) : (
                     <button
@@ -4225,7 +4225,7 @@ export default function Messages() {
         <div className="cand-details-overlay" onClick={handleCloseInviteModal} style={{ zIndex: 26000 }}>
           <div className="cand-details-panel" style={{ maxWidth: "560px", width: "94%", boxSizing: "border-box" }} onClick={(e) => e.stopPropagation()}>
             <div className="cand-details-docs-header">
-              <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "#01294a" }}>Invite Candidate to Apply</h3>
+              <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "#01294a" }}>Offer Job to Applicant</h3>
               <button type="button" className="cand-details-docs-back" onClick={handleCloseInviteModal}>
                 ✕
               </button>
@@ -4320,7 +4320,7 @@ export default function Messages() {
                   Cancel
                 </button>
                 <button type="submit" className="modal-action-btn btn-submit" disabled={isSendingInvite || !customInviteMsg.trim()}>
-                  {isSendingInvite ? "Sending..." : "Send Invitation"}
+                  {isSendingInvite ? "Sending..." : "Send Offer"}
                 </button>
               </div>
             </form>

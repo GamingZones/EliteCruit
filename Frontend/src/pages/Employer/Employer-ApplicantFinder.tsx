@@ -1803,7 +1803,7 @@ export default function EmployerApplicantFinder() {
     }
 
     if (isInvited) {
-      return { label: "Already Invited", disabled: true, className: "status-invited" };
+      return { label: "Already Offered", disabled: true, className: "status-invited" };
     }
 
     return { label: "Offer Job", disabled: false, className: "" };
@@ -4804,7 +4804,7 @@ export default function EmployerApplicantFinder() {
           <div className="cand-details-overlay" style={{ zIndex: 270000 }} onClick={() => setInviteCandidate(null)}>
             <div className="cand-details-panel cand-invite-panel" style={{ maxWidth: "560px", width: "94%", boxSizing: "border-box" }} onClick={(e) => e.stopPropagation()}>
               <div className="cand-details-docs-header">
-                <h3>Offer Job to Candidate</h3>
+                <h3>Offer Job to Applicant</h3>
                 <button type="button" className="cand-details-docs-back" onClick={() => setInviteCandidate(null)}>
                   ✕
                 </button>
@@ -4927,7 +4927,7 @@ export default function EmployerApplicantFinder() {
                       opacity: isSendingInvite ? 0.7 : 1,
                     }}
                   >
-                    {isSendingInvite ? "Sending..." : "Offer Job"}
+                    {isSendingInvite ? "Sending..." : "Send Offer"}
                   </button>
                 </div>
               </form>
@@ -5025,7 +5025,7 @@ export default function EmployerApplicantFinder() {
         <ConfirmationModal
           isOpen={isConfirmRecruitOpen && !!inviteCandidate}
           type="info"
-          title="Confirm Recruitment Invitation"
+          title="Confirm Job Offer"
           message={
             <div>
               <p style={{ margin: "0 0 8px" }}>
@@ -5041,7 +5041,7 @@ export default function EmployerApplicantFinder() {
             </div>
           }
           cancelLabel="Review Details"
-          confirmLabel="Confirm & Send Invitation"
+          confirmLabel="Confirm & Send Offer"
           isConfirming={isSendingInvite}
           onCancel={() => setIsConfirmRecruitOpen(false)}
           onConfirm={handleConfirmSendInvite}

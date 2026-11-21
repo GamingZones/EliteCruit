@@ -1096,7 +1096,7 @@ export default function ApplicantDetailsModal({
             }}
           >
             <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#01294a", fontFamily: '"Inter", sans-serif' }}>
-              Invite Candidate to Apply
+              Offer Job to Applicant
             </h3>
             <button
               type="button"
@@ -1225,7 +1225,7 @@ export default function ApplicantDetailsModal({
                   opacity: isRecruitSending ? 0.7 : 1,
                 }}
               >
-                {isRecruitSending ? "Sending..." : "Send Invitation"}
+                {isRecruitSending ? "Sending..." : "Send Offer"}
               </button>
             </div>
           </form>

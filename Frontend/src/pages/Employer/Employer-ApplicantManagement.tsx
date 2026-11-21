@@ -2854,7 +2854,7 @@ export default function EmployerApplicantManagement() {
           const entry = {
             type: "invited" as const,
             status: st,
-            label: isRecruited ? "Recruited" : "Already Invited",
+            label: isRecruited ? "Recruited" : "Already Offered",
           };
           jobStatusMap[inv.job_post_id] = entry;
           jobStatusMap[String(inv.job_post_id)] = entry;
@@ -2943,7 +2943,7 @@ export default function EmployerApplicantManagement() {
       const invStatus = (reviewModalApp.status || "pending").toLowerCase();
       const isRecruited = invStatus === "recruited" || invStatus === "accepted" || reviewModalApp.response_decision === "accept";
       const isDeclined = invStatus === "declined" || invStatus === "denied" || reviewModalApp.response_decision === "decline";
-      const statusLabel = isRecruited ? "Recruited" : isDeclined ? "Declined" : "Invitation Pending";
+      const statusLabel = isRecruited ? "Recruited" : isDeclined ? "Declined" : "Offer Pending";
       const statusClass = isRecruited ? "recruited" : isDeclined ? "declined" : "pending";
 
       return (
@@ -4735,7 +4735,7 @@ export default function EmployerApplicantManagement() {
                                       <div>
                                         <h3 className="invitation-candidate-name" style={{ margin: 0, fontSize: "1.02rem" }}>{candidateName}</h3>
                                         <small style={{ color: "#64748b", marginTop: "3px", display: "inline-block" }}>
-                                          {inv.city || "Cavite"} • {status === "accepted" ? "Recruited" : "Invited"}: {formatDate(status === "accepted" ? (inv.responded_at || inv.created_at) : inv.created_at)}
+                                          {inv.city || "Cavite"} • {status === "accepted" ? "Recruited" : "Offered"}: {formatDate(status === "accepted" ? (inv.responded_at || inv.created_at) : inv.created_at)}
                                         </small>
                                       </div>
                                     </div>
@@ -4873,7 +4873,7 @@ export default function EmployerApplicantManagement() {
                 }}
               >
                 <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#01294a", fontFamily: '"Inter", sans-serif' }}>
-                  Invite Candidate to Apply
+                  Offer Job to Applicant
                 </h3>
                 <button
                   type="button"
@@ -5039,7 +5039,7 @@ export default function EmployerApplicantManagement() {
                       opacity: isRecruitSending ? 0.7 : 1,
                     }}
                   >
-                    {isRecruitSending ? "Sending..." : "Send Invitation"}
+                    {isRecruitSending ? "Sending..." : "Send Offer"}
                   </button>
                 </div>
               </form>
