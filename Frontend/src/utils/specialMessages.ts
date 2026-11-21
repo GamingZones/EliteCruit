@@ -28,30 +28,38 @@ export function parseSpecialMessage(text: string): ParsedSpecialMessage {
   // 1. Formal Employment Offer
   if (
     text.startsWith("[Formal Employment Offer") ||
+    text.startsWith("[Formal Job Offer") ||
+    text.includes("[Formal Employment Offer") ||
+    text.includes("[Formal Job Offer") ||
     text.includes("Congratulations! We are pleased to inform you that your application for the position of") ||
-    (text.includes("Dear ") && text.includes("has been accepted") && text.includes("position of"))
+    (text.includes("Dear ") && text.includes("has been accepted") && text.includes("position of")) ||
+    (text.includes("Dear ") && text.includes("extend an employment offer") && text.includes("position of")) ||
+    (text.includes("reviewed your profile") && (text.includes("invite you to apply") || text.includes("extend an employment offer")))
   ) {
     let jobTitle = "";
     let companyName = "";
-    const offerMatch = text.match(/\[Formal Employment Offer:\s*(.*?)\]/i);
+    const offerMatch = text.match(/\[(?:Formal Employment Offer|Formal Job Offer):\s*(.*?)\]/i);
     if (offerMatch) jobTitle = offerMatch[1].trim();
 
     const companyMatch = text.match(/Company:\s*(.*?)\n/i);
     if (companyMatch) companyName = companyMatch[1].trim();
 
     if (!jobTitle) {
-      const posMatch = text.match(/position of ["'](.*?)["']/i);
-      if (posMatch) jobTitle = posMatch[1].trim();
+      const posMatch = text.match(/position of ["'](.*?)["']/i) || text.match(/open position:?\s*["']?(.*?)["']?\.?$/im);
+      if (posMatch) jobTitle = posMatch[1].trim().replace(/^["']|["']\.?$/g, "").trim();
     }
     if (!companyName) {
       const atCompMatch =
-        text.match(/at (.*?) has been accepted/i) || text.match(/Best regards,\s*\n\s*(.*?)$/m);
+        text.match(/at (.*?) has been accepted/i) ||
+        text.match(/at (.*?)\./i) ||
+        text.match(/Best regards,\s*\n\s*(.*?)$/m) ||
+        text.match(/^(?:Hello!\s*)?(.*?)\s+has reviewed/im);
       if (atCompMatch) companyName = atCompMatch[1].trim();
     }
 
     let cleanBody = text;
     if (cleanBody.startsWith("[")) {
-      cleanBody = cleanBody.replace(/^\[Formal Employment Offer:[^\]]*\]\s*/i, "");
+      cleanBody = cleanBody.replace(/^\[(?:Formal Employment Offer|Formal Job Offer):[^\]]*\]\s*/i, "");
       cleanBody = cleanBody.replace(/^Company:[^\n]*\n+/i, "");
     }
 
@@ -67,8 +75,10 @@ export function parseSpecialMessage(text: string): ParsedSpecialMessage {
   if (
     text.startsWith("[Official Job Offer Response:") ||
     text.startsWith("[Formal Invitation Response:") ||
+    text.startsWith("[Formal Response:") ||
     text.includes("[Official Job Offer Response:") ||
-    text.includes("[Formal Invitation Response:")
+    text.includes("[Formal Invitation Response:") ||
+    text.includes("[Formal Response:")
   ) {
     const isAccepted = text.includes("ACCEPTED");
     let jobTitle = "";

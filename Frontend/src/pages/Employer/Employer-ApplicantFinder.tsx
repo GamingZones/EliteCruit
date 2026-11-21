@@ -3452,12 +3452,12 @@ export default function EmployerApplicantFinder() {
     if (targetJob) {
       setSelectedJobId(targetJob.id);
       setCustomInviteMsg(
-        `Hello ${cand.applicant_name}! We reviewed your profile and would like to invite you to apply for our open position: ${targetJob.title}.`
+        `Dear ${cand.applicant_name},\n\nWe have reviewed your profile and qualifications on EliteCruit and are pleased to formally extend an employment offer for the position of "${targetJob.title}".\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!`
       );
     } else {
       setSelectedJobId("");
       setCustomInviteMsg(
-        `Hello ${cand.applicant_name}! We reviewed your profile and would like to invite you to apply for our open position.`
+        `Dear ${cand.applicant_name},\n\nWe have reviewed your profile and qualifications on EliteCruit and are pleased to formally extend an employment offer.\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!`
       );
     }
   };
@@ -3469,7 +3469,7 @@ export default function EmployerApplicantFinder() {
       setSelectedJobId(nextJob.id);
       if (inviteCandidate) {
         setCustomInviteMsg(
-          `Hello ${inviteCandidate.applicant_name}! We reviewed your profile and would love to invite you to apply for our open position: ${nextJob.title}.`
+          `Dear ${inviteCandidate.applicant_name},\n\nWe have reviewed your profile and qualifications on EliteCruit and are pleased to formally extend an employment offer for the position of "${nextJob.title}".\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!`
         );
       }
     }
@@ -4864,14 +4864,14 @@ export default function EmployerApplicantFinder() {
                   );
                 })()}
 
-                {/* Invitation Message Field */}
+                {/* Formal Employment Offer Letter Field */}
                 <label style={{ display: "grid", gap: "6px", fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", fontFamily: '"Inter", sans-serif' }}>
-                  Invitation Message:
+                  Formal Employment Offer Letter:
                   <textarea
                     className="recruit-msg-textarea"
                     value={customInviteMsg}
                     onChange={(e) => setCustomInviteMsg(e.target.value)}
-                    rows={4}
+                    rows={5}
                     style={{
                       width: "100%",
                       padding: "10px 12px",
@@ -4927,7 +4927,7 @@ export default function EmployerApplicantFinder() {
                       opacity: isSendingInvite ? 0.7 : 1,
                     }}
                   >
-                    {isSendingInvite ? "Sending..." : "Send Offer"}
+                    {isSendingInvite ? "Sending..." : "Send Formal Offer"}
                   </button>
                 </div>
               </form>

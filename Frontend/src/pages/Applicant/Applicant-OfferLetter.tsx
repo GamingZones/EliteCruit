@@ -28,6 +28,8 @@ Sincerely,
 export interface OfferRecord {
   id: number | string;
   type: "application" | "invitation";
+  jobPostId?: number;
+  invitationId?: number;
   title: string;
   company: string;
   status: string;
@@ -123,11 +125,15 @@ export default function ApplicantOfferLetter() {
     const appId = params.get("applicationId");
     const invId = params.get("invitationId");
 
-    authFetch(`/api/applicants/${userId}/applications`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        const list = Array.isArray(d?.applications) ? d.applications : [];
-        const offeredApps = list.filter((a: any) => {
+    Promise.all([
+      authFetch(`/api/applicants/${userId}/applications`).then((r) => (r.ok ? r.json() : null)),
+      authFetch(`/api/applicants/${userId}/invitations`).then((r) => (r.ok ? r.json() : null)),
+    ])
+      .then(([appData, invData]) => {
+        const appList = Array.isArray(appData?.applications) ? appData.applications : [];
+        const invList = Array.isArray(invData?.invitations) ? invData.invitations : [];
+
+        const offeredApps = appList.filter((a: any) => {
           const st = String(a.status || "").toLowerCase();
           const hasOffer = Boolean(
             a.offer_letter ||
@@ -138,75 +144,76 @@ export default function ApplicantOfferLetter() {
           return hasOffer;
         });
 
-        if (offeredApps.length > 0) {
-          const mapped: OfferRecord[] = offeredApps.map((a: any) => {
-            const letter =
-              a.offer_letter ||
-              (a.decision_message_type === "formal_offer" ? a.decision_message : null) ||
-              a.response_letter ||
-              "Official offer letter details extended by employer.";
-            return {
-              id: a.id,
-              type: "application",
-              title: a.job_title || a.title || "Position",
-              company: a.company_name || "Employer",
-              status: a.response_letter ? "Responded" : "Pending response",
-              receivedDate: a.updated_at ? new Date(a.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Recent",
-              respondByDate: "Within 7 days",
-              startDate: a.start_date || "To be mutually agreed upon",
-              workSetup: a.work_arrangement || "Not specified",
-              salary: a.salary ? `PHP ${a.salary}` : (a.salary_min && a.salary_max ? `PHP ${Number(a.salary_min).toLocaleString()} - ${Number(a.salary_max).toLocaleString()}` : "Competitive compensation"),
-              letterContent: letter,
-            };
-          });
-          setOffers(mapped);
-          setSelectedOfferId(mapped[0].id);
-        } else {
-          setOffers([]);
-          setSelectedOfferId(null);
-        }
-
-        const found = offeredApps.find((a: any) => String(a.id) === String(appId));
-        if (found) {
-          setActiveOfferContext({
-            id: found.id,
+        const appOffers: OfferRecord[] = offeredApps.map((a: any) => {
+          const letter =
+            a.offer_letter ||
+            (a.decision_message_type === "formal_offer" ? a.decision_message : null) ||
+            a.response_letter ||
+            "Official offer letter details extended by employer.";
+          return {
+            id: a.id,
             type: "application",
-            jobTitle: found.job_title || found.title || "Job Position",
-            companyName: found.company_name || "Employer",
-            responseLetter: found.response_letter,
-            startDate: found.start_date,
-            status: found.status,
-          });
-          setSelectedOfferId(found.id);
-          setExpandedOfferId(found.id);
+            jobPostId: a.job_post_id,
+            title: a.job_title || a.title || "Position",
+            company: a.company_name || "Employer",
+            status: a.response_letter ? "Responded" : "Pending response",
+            receivedDate: a.updated_at ? new Date(a.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Recent",
+            respondByDate: "Within 7 days",
+            startDate: a.start_date || "To be mutually agreed upon",
+            workSetup: a.work_arrangement || "Not specified",
+            salary: a.salary ? `PHP ${a.salary}` : (a.salary_min && a.salary_max ? `PHP ${Number(a.salary_min).toLocaleString()} - ${Number(a.salary_max).toLocaleString()}` : "Competitive compensation"),
+            letterContent: letter,
+          };
+        });
+
+        const directOffers: OfferRecord[] = invList.map((i: any) => {
+          const invStatus = (i.status || "pending").toLowerCase();
+          const isResponded = Boolean(i.response_letter) || ["accepted", "declined"].includes(invStatus);
+          return {
+            id: `inv-${i.id}`,
+            invitationId: i.id,
+            type: "invitation",
+            jobPostId: i.job_post_id,
+            title: i.job_title || "Job Position",
+            company: i.business_name || "Employer",
+            status: isResponded ? (invStatus === "accepted" ? "Offer Accepted" : invStatus === "declined" ? "Offer Declined" : "Responded") : "Pending response",
+            receivedDate: i.created_at ? new Date(i.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Recent",
+            respondByDate: "Within 7 days",
+            startDate: i.start_date || "To be mutually agreed upon",
+            workSetup: i.work_arrangement || "Not specified",
+            salary: i.salary_min && i.salary_max ? `PHP ${Number(i.salary_min).toLocaleString()} - ${Number(i.salary_max).toLocaleString()}` : "Competitive compensation",
+            letterContent: i.custom_message || "Official offer letter details extended by employer.",
+          };
+        });
+
+        const allOffers = [...appOffers, ...directOffers];
+        setOffers(allOffers);
+
+        if (allOffers.length > 0) {
+          const targetOffer =
+            (appId && allOffers.find((o) => o.type === "application" && String(o.id) === String(appId))) ||
+            (invId && allOffers.find((o) => o.type === "invitation" && (String(o.invitationId) === String(invId) || String(o.id) === `inv-${invId}`))) ||
+            allOffers[0];
+
+          if (targetOffer) {
+            setSelectedOfferId(targetOffer.id);
+            setExpandedOfferId(targetOffer.id);
+            setActiveOfferContext({
+              id: Number(targetOffer.invitationId || targetOffer.id),
+              type: targetOffer.type,
+              jobTitle: targetOffer.title,
+              companyName: targetOffer.company,
+              responseLetter: undefined,
+              startDate: targetOffer.startDate,
+              status: targetOffer.status,
+            });
+          }
         } else {
+          setSelectedOfferId(null);
           setActiveOfferContext(null);
         }
       })
       .catch(() => {});
-
-    if (invId) {
-      authFetch(`/api/applicants/${userId}/invitations`)
-        .then((r) => (r.ok ? r.json() : null))
-        .then((d) => {
-          const list = Array.isArray(d?.invitations) ? d.invitations : [];
-          const found = list.find((i: any) => String(i.id) === String(invId));
-          if (found) {
-            setActiveOfferContext({
-              id: found.id,
-              type: "invitation",
-              jobTitle: found.job_title || "Job Position",
-              companyName: found.business_name || "Employer",
-              responseLetter: found.response_letter,
-              startDate: found.start_date,
-              status: found.status,
-            });
-            setSelectedOfferId(found.id);
-            setExpandedOfferId(found.id);
-          }
-        })
-        .catch(() => {});
-    }
   }, [userId, candidateName]);
 
   // Selected Offer
@@ -273,24 +280,46 @@ Document Timestamp: ${new Date().toLocaleString()}
     setActionFeedback(null);
 
     try {
-      if (userId && typeof currentOffer.id === "number") {
-        const endpoint = `/api/applicants/${userId}/applications/${currentOffer.id}/offer-response`;
-        const res = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("elitecruit-token") || ""}`,
-          },
-          body: JSON.stringify({
-            decision: selectedDecision,
-            letter_text: customMessage,
-            letter_type: "manual",
-            start_date: currentOffer.startDate,
-          }),
-        });
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.message || "Unable to submit offer response.");
+      if (userId && currentOffer) {
+        if (currentOffer.type === "invitation" && currentOffer.jobPostId) {
+          const res = await fetch("/api/job-invitations/respond-by-job", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("elitecruit-token") || ""}`,
+            },
+            body: JSON.stringify({
+              job_post_id: currentOffer.jobPostId,
+              applicant_user_id: userId,
+              action: selectedDecision,
+              letter_text: customMessage,
+              letter_type: "manual",
+              start_date: currentOffer.startDate,
+            }),
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.message || "Unable to submit offer response.");
+          }
+        } else if (typeof currentOffer.id === "number") {
+          const endpoint = `/api/applicants/${userId}/applications/${currentOffer.id}/offer-response`;
+          const res = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("elitecruit-token") || ""}`,
+            },
+            body: JSON.stringify({
+              decision: selectedDecision,
+              letter_text: customMessage,
+              letter_type: "manual",
+              start_date: currentOffer.startDate,
+            }),
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.message || "Unable to submit offer response.");
+          }
         }
       }
 

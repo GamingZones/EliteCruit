@@ -2116,7 +2116,7 @@ export default function ApplicantDashboard() {
 
                     <div className="job-card-middle">
                       <span className={`status-badge-chip ${status === "accepted" ? "chip-approved" : status === "declined" ? "chip-denied" : "chip-pending"}`}>
-                        {status === "accepted" ? "Accepted" : status === "declined" ? "Declined" : "Invitation Received"}
+                        {status === "accepted" ? "Accepted" : status === "declined" ? "Declined" : "Job Offer Received"}
                       </span>
                     </div>
 
@@ -2126,6 +2126,29 @@ export default function ApplicantDashboard() {
                       </button>
                       {status === "pending" ? (
                         <>
+                          <button
+                            type="button"
+                            className="inv-action-btn inv-offer-btn solid-btn"
+                            onClick={() => {
+                              openViewLetterModal({
+                                title: inv.job_title || "Job Position",
+                                company: inv.business_name || "Employer",
+                                offerLetter: inv.custom_message,
+                                decision: "extended",
+                                defaultTab: "offer",
+                                targetApp: {
+                                  id: inv.id,
+                                  isInvitation: true,
+                                  invitation_id: inv.id,
+                                  job_post_id: inv.job_post_id,
+                                  job_title: inv.job_title,
+                                  company_name: inv.business_name,
+                                },
+                              });
+                            }}
+                          >
+                            Offer Letter
+                          </button>
                           <button
                             type="button"
                             className="inv-action-btn inv-accept-btn"
@@ -2152,6 +2175,7 @@ export default function ApplicantDashboard() {
                               title: inv.job_title || "Job Position",
                               company: inv.business_name || "Employer",
                               letterText: (inv as any).response_letter || (status === "accepted" ? "Recruitment invitation accepted." : "Recruitment invitation declined."),
+                              offerLetter: inv.custom_message,
                               startDate: (inv as any).start_date,
                               respondedAt: (inv as any).responded_at,
                               decision: status === "accepted" ? "accepted" : "declined",

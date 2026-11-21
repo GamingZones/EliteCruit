@@ -392,7 +392,7 @@ export default function ApplicantDetailsModal({
         ? `${candidate.first_name || ""} ${candidate.last_name || ""}`.trim()
         : "Candidate");
     setRecruitCustomMsg(
-      `Hello ${candName}! We reviewed your profile and would like to invite you to apply for our open position: ${job?.title || "our open position"}.`
+      `Dear ${candName},\n\nWe have reviewed your profile and qualifications on EliteCruit and are pleased to formally extend an employment offer for the position of "${job?.title || "our open position"}".\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!`
     );
     setRecruitSuccessMsg(null);
     setRecruitErrorMsg(null);
@@ -1152,14 +1152,14 @@ export default function ApplicantDetailsModal({
               <span className="recruit-target-job-meta" style={{ fontSize: "0.8rem", color: "#475569" }}>{targetLoc} • {targetArrangement}</span>
             </div>
 
-            {/* Invitation Message Field */}
+            {/* Formal Employment Offer Letter Field */}
             <label style={{ display: "grid", gap: "6px", fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", fontFamily: '"Inter", sans-serif' }}>
-              Invitation Message:
+              Formal Employment Offer Letter:
               <textarea
                 className="recruit-msg-textarea"
                 value={recruitCustomMsg}
                 onChange={(e) => setRecruitCustomMsg(e.target.value)}
-                rows={4}
+                rows={5}
                 style={{
                   width: "100%",
                   padding: "10px 12px",
@@ -1225,7 +1225,7 @@ export default function ApplicantDetailsModal({
                   opacity: isRecruitSending ? 0.7 : 1,
                 }}
               >
-                {isRecruitSending ? "Sending..." : "Send Offer"}
+                {isRecruitSending ? "Sending..." : "Send Formal Offer"}
               </button>
             </div>
           </form>

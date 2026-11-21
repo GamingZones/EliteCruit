@@ -937,7 +937,7 @@ export default function Messages() {
     setInviteCandidateJob(job);
     setInviteSuccessMsg("");
     setCustomInviteMsg(
-      `Hello ${targetCandidate.applicant_name}! We reviewed your profile and would love to invite you to apply for our open position: ${job.title}.`
+      `Dear ${targetCandidate.applicant_name},\n\nWe have reviewed your profile and qualifications on EliteCruit and are pleased to formally extend an employment offer for the position of "${job.title}".\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!`
     );
   };
 
@@ -4300,7 +4300,7 @@ export default function Messages() {
 
               {/* Invitation Message Textarea */}
               <label style={{ display: "grid", gap: "4px", fontSize: "0.82rem", fontWeight: 700, color: "#1e293b" }}>
-                Invitation Message:
+                Formal Employment Offer Letter:
                 <textarea
                   value={customInviteMsg}
                   onChange={(e) => setCustomInviteMsg(e.target.value)}
@@ -4320,7 +4320,7 @@ export default function Messages() {
                   Cancel
                 </button>
                 <button type="submit" className="modal-action-btn btn-submit" disabled={isSendingInvite || !customInviteMsg.trim()}>
-                  {isSendingInvite ? "Sending..." : "Send Offer"}
+                  {isSendingInvite ? "Sending..." : "Send Formal Offer"}
                 </button>
               </div>
             </form>

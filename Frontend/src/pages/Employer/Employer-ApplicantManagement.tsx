@@ -2936,7 +2936,7 @@ export default function EmployerApplicantManagement() {
     setRecruitJobTarget(job);
     const candidateName = candidate.applicant_name || candidate.name || reviewModalApp?.applicant_name || "Candidate";
     setRecruitCustomMsg(
-      `Hello ${candidateName}! We reviewed your profile and would like to invite you to apply for our open position: ${job?.title || "our open position"}.`
+      `Dear ${candidateName},\n\nWe have reviewed your profile and qualifications on EliteCruit and are pleased to formally extend an employment offer for the position of "${job?.title || "our open position"}".\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!`
     );
     setRecruitSuccessMsg(null);
     setIsRecruitModalOpen(true);
@@ -4944,7 +4944,7 @@ export default function EmployerApplicantManagement() {
                           setSelectedJobDetails(chosenJob);
                           setRecruitJobTarget(chosenJob);
                           setRecruitCustomMsg(
-                            `Hello ${reviewModalApp.applicant_name}! We reviewed your profile and would like to invite you to apply for our open position: ${chosenJob.title || "our open position"}.`
+                            `Dear ${reviewModalApp.applicant_name},\n\nWe have reviewed your profile and qualifications on EliteCruit and are pleased to formally extend an employment offer for the position of "${chosenJob.title || "our open position"}".\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!`
                           );
                         }
                       }}
@@ -4979,14 +4979,14 @@ export default function EmployerApplicantManagement() {
                   <span style={{ fontSize: "0.78rem", color: "#475569" }}>{selectedJobDetails.location || "Cavite"} • {selectedJobDetails.work_arrangement || "On-Site"}</span>
                 </div>
 
-                {/* Invitation Message Field */}
+                {/* Formal Employment Offer Letter Field */}
                 <label style={{ display: "grid", gap: "6px", fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", fontFamily: '"Inter", sans-serif' }}>
-                  Invitation Message:
+                  Formal Employment Offer Letter:
                   <textarea
                     className="recruit-msg-textarea"
                     value={recruitCustomMsg}
                     onChange={(e) => setRecruitCustomMsg(e.target.value)}
-                    rows={4}
+                    rows={5}
                     style={{
                       width: "100%",
                       padding: "10px 12px",
@@ -5042,7 +5042,7 @@ export default function EmployerApplicantManagement() {
                       opacity: isRecruitSending ? 0.7 : 1,
                     }}
                   >
-                    {isRecruitSending ? "Sending..." : "Send Offer"}
+                    {isRecruitSending ? "Sending..." : "Send Formal Offer"}
                   </button>
                 </div>
               </form>

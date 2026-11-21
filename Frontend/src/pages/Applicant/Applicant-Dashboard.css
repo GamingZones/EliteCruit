@@ -1671,6 +1671,17 @@
   color: #0284c7;
 }
 
+.inv-action-btn.inv-offer-btn {
+  background: #01294a;
+  color: #ffffff;
+  border: 1.5px solid #01294a;
+}
+
+.inv-action-btn.inv-offer-btn:hover {
+  background: #023864;
+  border-color: #023864;
+}
+
 .inv-action-btn.inv-accept-btn {
   background: #027a48;
   color: #ffffff;
@@ -3182,6 +3193,18 @@
 }
 
 /* Direct Invitation Accept / Decline Buttons in Dark Mode */
+[data-theme="dark"] .job-actions .inv-action-btn.inv-offer-btn {
+  background: #0284c7 !important;
+  border: 1.5px solid #0284c7 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .job-actions .inv-action-btn.inv-offer-btn:hover {
+  background: #0369a1 !important;
+  border-color: #0369a1 !important;
+  color: #ffffff !important;
+}
+
 [data-theme="dark"] .job-actions .inv-action-btn.inv-accept-btn {
   background: #059669 !important;
   border: 1.5px solid #059669 !important;

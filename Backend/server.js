@@ -778,6 +778,41 @@ async function ensureJobPostColumns() {
         AND COALESCE(a.initiated_by, 'applicant') = 'applicant'
     )
   `).catch(() => {});
+
+  // Upgrade legacy invitation messages in job_invitations and messages to formal employment offer cards
+  try {
+    const legacyInvites = await all(`
+      SELECT ji.id, ji.job_post_id, ji.employer_user_id, ji.applicant_user_id, ji.custom_message,
+             jp.title AS job_title,
+             COALESCE(ep.business_name, eu.email, 'Employer') AS company_name,
+             COALESCE(NULLIF(TRIM(COALESCE(ap.first_name, '') || ' ' || COALESCE(ap.last_name, '')), ''), au.email, 'Candidate') AS applicant_name
+      FROM job_invitations ji
+      JOIN job_posts jp ON jp.id = ji.job_post_id
+      JOIN users eu ON eu.id = ji.employer_user_id
+      LEFT JOIN employer_profiles ep ON ep.user_id = ji.employer_user_id
+      JOIN users au ON au.id = ji.applicant_user_id
+      LEFT JOIN applicant_profiles ap ON ap.user_id = ji.applicant_user_id
+      WHERE ji.custom_message IS NOT NULL
+        AND ji.custom_message NOT LIKE '[Formal Employment Offer%'
+    `);
+
+    for (const inv of legacyInvites) {
+      const origMsg = inv.custom_message ? inv.custom_message.trim() : "";
+      const upgradedMsg = `[Formal Employment Offer: ${inv.job_title}]\nCompany: ${inv.company_name}\n\n${origMsg || `Dear ${inv.applicant_name},\n\nWe have reviewed your profile and qualifications on EliteCruit and are pleased to formally extend an employment offer for the position of "${inv.job_title}" at ${inv.company_name}.\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\n${inv.company_name}`}`;
+
+      await run("UPDATE job_invitations SET custom_message = ? WHERE id = ?", [upgradedMsg, inv.id]);
+      if (origMsg) {
+        await run(
+          `UPDATE messages
+           SET message_text = ?
+           WHERE sender_user_id = ? AND message_text = ?`,
+          [upgradedMsg, inv.employer_user_id, origMsg]
+        );
+      }
+    }
+  } catch (migErr) {
+    console.warn("Legacy invites migration note:", migErr.message);
+  }
 }
 
 function isValidPassword(password) {
@@ -5672,13 +5707,27 @@ app.post("/api/employers/:userId/invite-candidate", authenticateToken, requireUs
     const empUser = await get("SELECT email FROM users WHERE id = ?", [userId]);
     const companyName = empProfile?.business_name || empUser?.email || "An Employer";
 
-    const title = `Invitation to Apply: ${job.title}`;
-    const body = custom_message || `Hello! ${companyName} has reviewed your candidate profile and would like to invite you to apply for their open position: "${job.title}".`;
+    const appProfile = await get("SELECT first_name, last_name FROM applicant_profiles WHERE user_id = ?", [applicantId]);
+    const appUser = await get("SELECT email FROM users WHERE id = ?", [applicantId]);
+    const applicantName = (appProfile?.first_name || appProfile?.last_name)
+      ? `${appProfile.first_name || ""} ${appProfile.last_name || ""}`.trim()
+      : (appUser?.email || "Candidate");
+
+    let letterBody = typeof custom_message === "string" && custom_message.trim()
+      ? custom_message.trim()
+      : `Dear ${applicantName},\n\nWe have reviewed your profile and qualifications on EliteCruit and are pleased to formally extend an employment offer for the position of "${job.title}" at ${companyName}.\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!\n\nBest regards,\n${companyName}`;
+
+    const formalOfferMsg = letterBody.startsWith("[Formal Employment Offer")
+      ? letterBody
+      : `[Formal Employment Offer: ${job.title}]\nCompany: ${companyName}\n\n${letterBody}`;
+
+    const notifTitle = `Formal Job Offer: ${job.title}`;
+    const notifBody = `${companyName} has extended a formal employment offer for "${job.title}". Review your offer letter to accept or decline.`;
 
     await run(
       `INSERT INTO notifications (user_id, type, title, body, related_user_id, related_application_id)
-       VALUES (?, 'job_invitation', ?, ?, ?, ?)`,
-      [applicantId, title, body, userId, jobId]
+       VALUES (?, 'formal_offer', ?, ?, ?, ?)`,
+      [applicantId, notifTitle, formalOfferMsg, userId, jobId]
     );
 
     let thread = await get(
@@ -5693,7 +5742,7 @@ app.post("/api/employers/:userId/invite-candidate", authenticateToken, requireUs
     if (!threadId) {
       const createdThread = await run(
         `INSERT INTO message_threads (created_by_user_id, title) VALUES (?, ?)`,
-        [userId, `Job Invitation: ${job.title}`]
+        [userId, `Job Offer: ${job.title}`]
       );
       threadId = createdThread.lastID || (await get("SELECT id FROM message_threads WHERE created_by_user_id = ? ORDER BY id DESC LIMIT 1", [userId]))?.id;
       if (threadId) {
@@ -5705,7 +5754,7 @@ app.post("/api/employers/:userId/invite-candidate", authenticateToken, requireUs
     if (threadId) {
       await run(
         `INSERT INTO messages (thread_id, sender_user_id, message_text) VALUES (?, ?, ?)`,
-        [threadId, userId, body]
+        [threadId, userId, formalOfferMsg]
       );
       await run(
         `UPDATE message_threads SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
@@ -5720,17 +5769,17 @@ app.post("/api/employers/:userId/invite-candidate", authenticateToken, requireUs
     if (existingInv) {
       await run(
         "UPDATE job_invitations SET custom_message = ?, status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-        [body, existingInv.id]
+        [formalOfferMsg, existingInv.id]
       );
     } else {
       await run(
         `INSERT INTO job_invitations (employer_user_id, applicant_user_id, job_post_id, custom_message, status)
          VALUES (?, ?, ?, ?, 'pending')`,
-        [userId, applicantId, jobId, body]
+        [userId, applicantId, jobId, formalOfferMsg]
       );
     }
 
-    res.json({ success: true, message: `Invitation sent to candidate successfully for ${job.title}!` });
+    res.json({ success: true, message: `Employment offer sent to candidate successfully for ${job.title}!` });
   } catch (err) {
     console.error("Invite candidate error:", err);
     res.status(500).json({ message: "Unable to send invitation." });
@@ -6124,7 +6173,7 @@ app.post("/api/job-invitations/respond-by-job", authenticateToken, async (req, r
     ) : null;
 
     const msgContent = letter_text
-      ? `[Formal Response: ${action === "accept" ? "ACCEPTED" : "DECLINED"}]\nPosition: ${jobTitle}\n\n${letter_text}`
+      ? `[Formal Invitation Response: ${action === "accept" ? "ACCEPTED" : "DECLINED"}]\nPosition: ${jobTitle}\n\n${letter_text}`
       : action === "accept"
       ? `Hello! I have accepted your offer for "${jobTitle}". Looking forward to discussing this opportunity!`
       : `Thank you for considering me for "${jobTitle}". Unfortunately, I have to decline this offer at this time.`;
@@ -6970,7 +7019,7 @@ app.get("/api/messages/threads/:threadId/company-jobs", authenticateToken, requi
     );
 
     const invitations = await all(
-      `SELECT ji.id AS invitation_id, ji.job_post_id, ji.status, ji.custom_message, ji.created_at
+      `SELECT ji.id AS invitation_id, ji.job_post_id, ji.status, ji.custom_message, ji.response_letter, ji.responded_at, ji.start_date, ji.created_at
        FROM job_invitations ji
        WHERE ji.employer_user_id = ? AND ji.applicant_user_id = ?
        ORDER BY ji.created_at DESC`,
