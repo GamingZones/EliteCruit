@@ -368,31 +368,6 @@ export default function EmployerDashboard() {
     },
   ];
 
-  const handleSectionClick = (
-    sectionId: "section-insights" | "section-approved-interviews"
-  ) => {
-    setActiveSection(sectionId);
-    setIsMobileNavOpen(false);
-    if (typeof window !== "undefined") {
-      window.location.hash = sectionId;
-    }
-    loadDashboardData(true);
-  };
-
-  useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.replace("#", "");
-      if (hash === "section-approved-interviews") {
-        setActiveSection(hash);
-      } else if (hash === "section-insights" || hash === "section-postings") {
-        setActiveSection("section-insights");
-      }
-      loadDashboardData(true);
-    };
-    window.addEventListener("hashchange", handleHashChange);
-    return () => window.removeEventListener("hashchange", handleHashChange);
-  }, [loadDashboardData]);
-
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const loadDashboardData = useCallback(async (silent = false) => {
@@ -452,6 +427,31 @@ export default function EmployerDashboard() {
       }
     }
   }, []);
+
+  const handleSectionClick = (
+    sectionId: "section-insights" | "section-approved-interviews"
+  ) => {
+    setActiveSection(sectionId);
+    setIsMobileNavOpen(false);
+    if (typeof window !== "undefined") {
+      window.location.hash = sectionId;
+    }
+    loadDashboardData(true);
+  };
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace("#", "");
+      if (hash === "section-approved-interviews") {
+        setActiveSection(hash);
+      } else if (hash === "section-insights" || hash === "section-postings") {
+        setActiveSection("section-insights");
+      }
+      loadDashboardData(true);
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, [loadDashboardData]);
 
   useEffect(() => {
     loadDashboardData(false);
