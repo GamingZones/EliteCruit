@@ -2761,10 +2761,24 @@ export default function ApplicantDetailsModal({
                       </div>
                     </div>
 
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px", flexShrink: 0 }}>
+                    <div className="jd-other-job-action-col">
                       <div className={`jd-other-job-match-pill ${pillClass}`}>
                         {percent}% Match
                       </div>
+
+                      <button
+                        type="button"
+                        className="details-btn jd-other-job-details-btn"
+                        onClick={() => {
+                          if (onViewJobDetails) {
+                            onViewJobDetails(otherJob);
+                          } else {
+                            setSelectedPreviewJob(otherJob);
+                          }
+                        }}
+                      >
+                        Details
+                      </button>
 
                       {jobConn ? (
                         <span
@@ -2794,20 +2808,6 @@ export default function ApplicantDetailsModal({
                           Invite to Apply
                         </button>
                       ) : null}
-
-                      <button
-                        type="button"
-                        className="details-btn jd-other-job-details-btn"
-                        onClick={() => {
-                          if (onViewJobDetails) {
-                            onViewJobDetails(otherJob);
-                          } else {
-                            setSelectedPreviewJob(otherJob);
-                          }
-                        }}
-                      >
-                        Details
-                      </button>
                     </div>
                   </div>
                 );

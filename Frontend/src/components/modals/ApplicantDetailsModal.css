@@ -2095,6 +2095,42 @@
   transform: translateY(-1px);
 }
 
+.jd-other-job-action-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  width: 120px;
+}
+
+.jd-other-job-action-col .jd-other-job-match-pill,
+.jd-other-job-action-col .jd-other-job-details-btn,
+.jd-other-job-action-col .jd-other-job-invite-btn,
+.jd-other-job-action-col .jd-other-job-status-pill {
+  width: 120px !important;
+  min-width: 120px !important;
+  max-width: 120px !important;
+  height: 30px !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  padding: 0 6px !important;
+  border-radius: 999px !important;
+  font-family: "Inter", sans-serif !important;
+  font-weight: 800 !important;
+  font-size: 0.78rem !important;
+  white-space: nowrap !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+}
+
+.jd-other-job-action-col .jd-other-job-status-pill {
+  font-size: 0.74rem !important;
+}
+
 .jd-other-job-invite-btn {
   background: #00385e;
   color: #ffffff;

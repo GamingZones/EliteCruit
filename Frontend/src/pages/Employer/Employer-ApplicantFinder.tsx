@@ -1739,10 +1739,26 @@ export default function EmployerApplicantFinder() {
     return false;
   };
 
-  const getCandidateJobStatus = (cand: Candidate | null, jobId: number | undefined): { isInvited: boolean; applicationStatus: string | null } => {
-    if (!cand || !jobId) return { isInvited: false, applicationStatus: null };
+  const getCandidateJobStatus = (cand: Candidate | null, jobId: number | undefined): { isInvited: boolean; applicationStatus: string | null; isRecruited: boolean } => {
+    if (!cand || !jobId) return { isInvited: false, applicationStatus: null, isRecruited: false };
     const pairKey = `${cand.user_id}-${jobId}`;
-    const isInvited = invitedJobPairs.has(pairKey) || isCandidateInvitedToJob(cand, jobId);
+    let isInvited = invitedJobPairs.has(pairKey) || isCandidateInvitedToJob(cand, jobId);
+    let isRecruited = false;
+
+    let invitedList = cand.invited_jobs;
+    if (typeof invitedList === "string") {
+      try { invitedList = JSON.parse(invitedList); } catch {}
+    }
+    if (Array.isArray(invitedList)) {
+      const foundInv = invitedList.find((item: any) => Number(item.job_post_id) === Number(jobId));
+      if (foundInv) {
+        isInvited = true;
+        const invSt = String(foundInv.status || "").toLowerCase();
+        if (invSt === "accepted" || invSt === "recruited") {
+          isRecruited = true;
+        }
+      }
+    }
 
     let appliedList = cand.applied_jobs;
     if (typeof appliedList === "string") {
@@ -1753,14 +1769,21 @@ export default function EmployerApplicantFinder() {
       const found = appliedList.find((item: any) => Number(item.job_post_id) === Number(jobId));
       if (found && found.status) {
         appStatus = String(found.status).toLowerCase();
+        if (["recruited", "accepted", "approved"].includes(appStatus)) {
+          isRecruited = true;
+        }
       }
     }
 
-    return { isInvited, applicationStatus: appStatus };
+    return { isInvited, applicationStatus: appStatus, isRecruited };
   };
 
   const getJobButtonState = (cand: Candidate | null, jobId: number | undefined): { label: string; disabled: boolean; className: string } => {
-    const { isInvited, applicationStatus } = getCandidateJobStatus(cand, jobId);
+    const { isInvited, applicationStatus, isRecruited } = getCandidateJobStatus(cand, jobId);
+
+    if (isRecruited) {
+      return { label: "Recruited", disabled: true, className: "status-recruited" };
+    }
 
     if (applicationStatus) {
       const s = applicationStatus.toLowerCase();
@@ -1776,13 +1799,11 @@ export default function EmployerApplicantFinder() {
       if (s === "denied" || s === "rejected") {
         return { label: "Denied", disabled: true, className: "status-denied" };
       }
-      if (s === "applied" || s === "pending") {
-        return { label: "Applied", disabled: true, className: "status-applied" };
-      }
+      return { label: "Already Applied", disabled: true, className: "status-applied" };
     }
 
     if (isInvited) {
-      return { label: "Job Offered", disabled: true, className: "status-invited" };
+      return { label: "Already Invited", disabled: true, className: "status-invited" };
     }
 
     return { label: "Offer Job", disabled: false, className: "" };
@@ -4719,7 +4740,7 @@ export default function EmployerApplicantFinder() {
                         {(() => {
                           const jobBtn = getJobButtonState(inviteJobsCandidate, otherJob.id);
                           return (
-                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px", flexShrink: 0 }}>
+                            <div className="jd-other-job-action-col">
                               <span
                                 className={`jd-other-job-match-pill ${percent >= 75 ? "green" : percent >= 50 ? "yellow" : "red"}`}
                               >
@@ -4728,19 +4749,6 @@ export default function EmployerApplicantFinder() {
                               <button
                                 type="button"
                                 className="details-btn jd-other-job-details-btn"
-                                style={{
-                                  fontWeight: 800,
-                                  fontSize: "0.84rem",
-                                  padding: "6px 22px",
-                                  borderRadius: "999px",
-                                  border: "none",
-                                  whiteSpace: "nowrap",
-                                  cursor: "pointer",
-                                  boxShadow: "0 2px 8px rgba(2, 132, 199, 0.3)",
-                                  transition: "all 0.15s ease",
-                                  minWidth: "85px",
-                                  textAlign: "center",
-                                }}
                                 onClick={() => {
                                   setViewingJobDetails(otherJob);
                                   setIsMatchDrawerOpen(false);
@@ -4748,27 +4756,37 @@ export default function EmployerApplicantFinder() {
                               >
                                 Details
                               </button>
-                              <button
-                                type="button"
-                                className={`jd-other-job-invite-btn ${jobBtn.className}`}
-                                disabled={jobBtn.disabled}
-                                style={{
-                                  fontWeight: 800,
-                                  fontSize: "0.84rem",
-                                  padding: "6px 20px",
-                                  borderRadius: "999px",
-                                  whiteSpace: "nowrap",
-                                  minWidth: "96px",
-                                  textAlign: "center",
-                                }}
-                                onClick={() => {
-                                  if (!jobBtn.disabled && inviteJobsCandidate) {
-                                    openInviteModal(inviteJobsCandidate, otherJob.id);
-                                  }
-                                }}
-                              >
-                                {jobBtn.label}
-                              </button>
+                              {jobBtn.disabled ? (
+                                <span
+                                  className={`jd-other-job-status-pill ${
+                                    jobBtn.label === "Recruited"
+                                      ? "recruited"
+                                      : jobBtn.label.toLowerCase().includes("invited") || jobBtn.className.includes("invited")
+                                      ? "invited"
+                                      : "applied"
+                                  }`}
+                                  title={`Candidate status: ${jobBtn.label}`}
+                                >
+                                  {jobBtn.label === "Recruited" && (
+                                    <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                      <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                  )}
+                                  {jobBtn.label}
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="jd-other-job-invite-btn"
+                                  onClick={() => {
+                                    if (inviteJobsCandidate) {
+                                      openInviteModal(inviteJobsCandidate, otherJob.id);
+                                    }
+                                  }}
+                                >
+                                  {jobBtn.label}
+                                </button>
+                              )}
                             </div>
                           );
                         })()}
