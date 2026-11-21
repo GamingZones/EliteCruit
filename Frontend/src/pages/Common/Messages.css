@@ -993,6 +993,25 @@
   border: 1px solid #86efac;
 }
 
+.cjm-status-chip.recruited {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.cjm-status-chip.interviewed {
+  background: #ccfbf1;
+  color: #0f766e;
+  border: 1px solid #99f6e4;
+}
+
+.cjm-status-chip.interviewing,
+.cjm-status-chip.interview {
+  background: #f3e8ff;
+  color: #7e22ce;
+  border: 1px solid #d8b4fe;
+}
+
 .cjm-status-chip.shortlisted {
   background: #e0f2fe;
   color: #0369a1;
@@ -3178,5 +3197,54 @@
   background: rgba(239, 68, 68, 0.15) !important;
   color: #f87171 !important;
   border: none !important;
+}
+
+/* ── Dark Mode Candidate Jobs Sidebar Status Chips ── */
+[data-theme="dark"] .cjm-status-chip.interviewed {
+  background: rgba(20, 184, 166, 0.2) !important;
+  color: #5eead4 !important;
+  border: 1px solid rgba(20, 184, 166, 0.4) !important;
+}
+
+[data-theme="dark"] .cjm-status-chip.interviewing,
+[data-theme="dark"] .cjm-status-chip.interview {
+  background: rgba(147, 51, 234, 0.2) !important;
+  color: #c084fc !important;
+  border: 1px solid rgba(147, 51, 234, 0.4) !important;
+}
+
+[data-theme="dark"] .cjm-status-chip.recruited {
+  background: rgba(37, 99, 235, 0.2) !important;
+  color: #60a5fa !important;
+  border: 1px solid rgba(37, 99, 235, 0.4) !important;
+}
+
+[data-theme="dark"] .cjm-status-chip.approved {
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.4) !important;
+}
+
+[data-theme="dark"] .cjm-status-chip.shortlisted {
+  background: rgba(2, 132, 199, 0.2) !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(2, 132, 199, 0.4) !important;
+}
+
+[data-theme="dark"] .cjm-status-chip.under-review,
+[data-theme="dark"] .cjm-status-chip.under_review,
+[data-theme="dark"] .cjm-status-chip.submitted,
+[data-theme="dark"] .cjm-status-chip.reviewed {
+  background: rgba(100, 116, 139, 0.2) !important;
+  color: #94a3b8 !important;
+  border: 1px solid rgba(100, 116, 139, 0.35) !important;
+}
+
+[data-theme="dark"] .cjm-status-chip.denied,
+[data-theme="dark"] .cjm-status-chip.rejected,
+[data-theme="dark"] .cjm-status-chip.declined {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.4) !important;
 }
 

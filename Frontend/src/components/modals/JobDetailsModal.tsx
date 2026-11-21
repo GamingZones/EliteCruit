@@ -71,6 +71,8 @@ export type ApplicantMatchProfile = {
   qualifications?: string[];
   rawSkills?: string;
   rawCertifications?: string;
+  applicant_name?: string;
+  candidateName?: string;
 };
 
 export type JobDetailsModalProps = {
@@ -92,6 +94,7 @@ export type JobDetailsModalProps = {
   zIndex?: number;
   hideEmployerHeader?: boolean;
   initialOpenMessage?: boolean;
+  initialOpenBreakdown?: boolean;
   isApplicantView?: boolean;
   hideMatchScore?: boolean;
   hideBreakdownTab?: boolean;
@@ -358,6 +361,7 @@ export default function JobDetailsModal({
   zIndex,
   hideEmployerHeader = false,
   initialOpenMessage = false,
+  initialOpenBreakdown = false,
   isApplicantView = false,
   hideMatchScore = false,
   hideBreakdownTab = false,
@@ -540,6 +544,15 @@ export default function JobDetailsModal({
       }
     }
   }, [isOpen, initialOpenMessage, job?.employerUserId, job?.employer_user_id]);
+
+  useEffect(() => {
+    if (isOpen && initialOpenBreakdown && !isApplicantView) {
+      setIsBreakdownOpen(true);
+      setIsBreakdownClosing(false);
+      setIsMsgPanelClosing(false);
+      setIsMsgPanelOpen(false);
+    }
+  }, [isOpen, initialOpenBreakdown, isApplicantView]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -1533,7 +1546,13 @@ export default function JobDetailsModal({
           {/* Master 2-Column Unified Container */}
           <div className="jd-unified-compare-container">
             <div className="jd-master-col-header applicant-header">
-              <span>Your Profile</span>
+              <span>
+                {isApplicantView
+                  ? "Your Profile"
+                  : (applicantProfile as any)?.applicant_name
+                  ? `${(applicantProfile as any).applicant_name}'s Profile`
+                  : "Candidate Profile"}
+              </span>
             </div>
             <div className="jd-master-col-header employer-header">
               <span>Employer's Requirements</span>
@@ -1576,7 +1595,9 @@ export default function JobDetailsModal({
                     })}
                   </div>
                 ) : (
-                  <span className="jd-no-data-text">No skills in your profile</span>
+                  <span className="jd-no-data-text">
+                    {isApplicantView ? "No skills in your profile" : "No skills listed by candidate"}
+                  </span>
                 )}
               </div>
             </div>
@@ -1654,7 +1675,9 @@ export default function JobDetailsModal({
                     );
                   })
                 ) : (
-                  <span className="jd-no-data-text">No qualifications in your profile</span>
+                  <span className="jd-no-data-text">
+                    {isApplicantView ? "No qualifications in your profile" : "No qualifications listed by candidate"}
+                  </span>
                 )}
               </div>
             </div>
@@ -2068,31 +2091,44 @@ export default function JobDetailsModal({
               style={hideEmployerHeader ? { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px", flexWrap: "nowrap" } : undefined}
             >
               <h2 className="jd-title-h2" style={hideEmployerHeader ? { flex: 1, minWidth: 0, margin: 0 } : undefined}>{jobTitle}</h2>
-              {!hideMatchScore && hideEmployerHeader && matchScore !== undefined && (
-                isApplicantView ? (
-                  (() => {
-                    const rec = getApplicantRecommendation(matchScore);
-                    if (!rec) return null;
-                    return (
-                      <span
-                        className={`applicant-rec-badge ${rec.colorClass}`}
-                        title={rec.label}
+              {hideEmployerHeader && (
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
+                  {!hideMatchScore && matchScore !== undefined && (
+                    isApplicantView ? (
+                      (() => {
+                        const rec = getApplicantRecommendation(matchScore);
+                        if (!rec) return null;
+                        return (
+                          <span
+                            className={`applicant-rec-badge ${rec.colorClass}`}
+                            title={rec.label}
+                            style={{ flexShrink: 0, margin: 0 }}
+                          >
+                            {rec.label}
+                          </span>
+                        );
+                      })()
+                    ) : (
+                      <div
+                        className={`match-score-box ${getMatchColorClass(matchScore)}`}
+                        title="Match Score"
                         style={{ flexShrink: 0, margin: 0 }}
                       >
-                        {rec.label}
-                      </span>
-                    );
-                  })()
-                ) : (
-                  <div
-                    className={`match-score-box ${getMatchColorClass(matchScore)}`}
-                    title="Match Score"
-                    style={{ flexShrink: 0, margin: 0 }}
+                        <small>MATCH</small>
+                        <b>{matchScore}%</b>
+                      </div>
+                    )
+                  )}
+                  <button
+                    type="button"
+                    className="jd-side-close-btn"
+                    aria-label="Close"
+                    onClick={onClose}
+                    style={{ width: "30px", height: "30px", fontSize: "14px", display: "grid", placeItems: "center" }}
                   >
-                    <small>MATCH</small>
-                    <b>{matchScore}%</b>
-                  </div>
-                )
+                    ✕
+                  </button>
+                </div>
               )}
             </div>
             <div className="jd-chips-inline">

@@ -993,6 +993,40 @@
   cursor: default !important;
 }
 
+.solid-btn.applied-btn.status-interviewed {
+  background: #0f766e !important;
+  border: 1px solid #0f766e !important;
+  color: #ffffff !important;
+  cursor: default !important;
+}
+
+.solid-btn.applied-btn.status-interviewing,
+.solid-btn.applied-btn.status-interview {
+  background: #6d28d9 !important;
+  border: 1px solid #6d28d9 !important;
+  color: #ffffff !important;
+  cursor: default !important;
+}
+
+.solid-btn.applied-btn.status-shortlisted {
+  background: #0284c7 !important;
+  border: 1px solid #0284c7 !important;
+  color: #ffffff !important;
+  cursor: default !important;
+}
+
+.solid-btn.applied-btn.status-under_review,
+.solid-btn.applied-btn.status-under-review,
+.solid-btn.applied-btn.status-submitted,
+.solid-btn.applied-btn.status-reviewed {
+  background: #64748b !important;
+  border: 1px solid #64748b !important;
+  color: #ffffff !important;
+  cursor: default !important;
+}
+
+.solid-btn.applied-btn.status-declined,
+.solid-btn.applied-btn.status-rejected,
 .solid-btn.applied-btn.status-denied {
   background: #dc2626 !important;
   border: 1px solid #dc2626 !important;
@@ -1005,6 +1039,12 @@
   border: 1px solid #059669 !important;
   color: #ffffff !important;
   cursor: default !important;
+}
+
+.solid-btn.jd-recruit-btn {
+  background: #01294a !important;
+  border: 1px solid #01294a !important;
+  color: #ffffff !important;
 }
 
 /* ── Category Breakdown Pills & Popup Modal ── */
@@ -1872,6 +1912,39 @@
   border-color: #38bdf8 !important;
 }
 
+[data-theme="dark"] .status-chip.open {
+  background: rgba(16, 185, 129, 0.16) !important;
+  color: #34d399 !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+}
+
+[data-theme="dark"] .status-chip.closed {
+  background: rgba(100, 116, 139, 0.16) !important;
+  color: #94a3b8 !important;
+  border-color: rgba(100, 116, 139, 0.35) !important;
+}
+
+[data-theme="dark"] .status-chip.urgent {
+  background: rgba(239, 68, 68, 0.16) !important;
+  color: #f87171 !important;
+  border-color: rgba(239, 68, 68, 0.35) !important;
+}
+
+[data-theme="dark"] .setup-pill {
+  background: rgba(2, 132, 199, 0.16) !important;
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .exp-level-pill {
+  background: rgba(147, 51, 234, 0.16) !important;
+  color: #c084fc !important;
+}
+
+[data-theme="dark"] .salary-pill {
+  background: rgba(245, 158, 11, 0.16) !important;
+  color: #fbbf24 !important;
+}
+
 [data-theme="dark"] .solid-btn.closed-btn,
 [data-theme="dark"] .solid-btn.status-closed {
   background: #334155 !important;
@@ -1891,6 +1964,36 @@
   color: #ffffff !important;
 }
 
+[data-theme="dark"] .solid-btn.applied-btn.status-interviewed {
+  background: #0d9488 !important;
+  border-color: #0d9488 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .solid-btn.applied-btn.status-interviewing,
+[data-theme="dark"] .solid-btn.applied-btn.status-interview {
+  background: #7c3aed !important;
+  border-color: #7c3aed !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .solid-btn.applied-btn.status-shortlisted {
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .solid-btn.applied-btn.status-under_review,
+[data-theme="dark"] .solid-btn.applied-btn.status-under-review,
+[data-theme="dark"] .solid-btn.applied-btn.status-submitted,
+[data-theme="dark"] .solid-btn.applied-btn.status-reviewed {
+  background: #475569 !important;
+  border-color: #475569 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .solid-btn.applied-btn.status-declined,
+[data-theme="dark"] .solid-btn.applied-btn.status-rejected,
 [data-theme="dark"] .solid-btn.applied-btn.status-denied {
   background: #b91c1c !important;
   border-color: #b91c1c !important;
@@ -1900,6 +2003,12 @@
 [data-theme="dark"] .solid-btn.applied-btn.status-applied {
   background: #059669 !important;
   border-color: #059669 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .solid-btn.jd-recruit-btn {
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
   color: #ffffff !important;
 }
 
