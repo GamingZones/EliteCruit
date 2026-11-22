@@ -2145,17 +2145,6 @@ export default function JobDetailsModal({
               {experienceLevel && <span className="exp-level-pill">{experienceLevel}</span>}
               <span className="salary-pill">{formatSalary()}</span>
             </div>
-            {isSuspended && (
-              <div className="jd-suspended-alert">
-                <span className="jd-suspended-icon">⚠️</span>
-                <div className="jd-suspended-text">
-                  <strong>Notice: This Job Posting Has Been Suspended by Administration</strong>
-                  <p>
-                    This job vacancy is currently suspended and hidden from public search. If you wish to provide clarification, appeal, or request cancellation of this suspension, please contact administration via email at <a href="mailto:admin@elitecruit.com">admin@elitecruit.com</a>.
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="jd-section">

@@ -940,7 +940,7 @@ export default function EmployerJobPostsList() {
                     </div>
                     <div className="job-card-actions-col">
                       <div className="job-actions">
-                        <button type="button" onClick={() => (job.status === "suspended" ? setDetailsModalJob(job) : handleOpenReview(job))}>
+                        <button type="button" onClick={() => setDetailsModalJob(job)}>
                           Review
                         </button>
                         {job.status === "suspended" ? (
