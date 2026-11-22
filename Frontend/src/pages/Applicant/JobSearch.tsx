@@ -5358,7 +5358,7 @@ export default function JobSearch() {
                     {viewLetterModalTarget.respondedAt && (
                       <div className="view-letter-meta-row" style={{ marginBottom: "12px" }}>
                         <span className="view-letter-timestamp-tag">
-                          Submitted: {typeof formatDate === "function" ? formatDate(viewLetterModalTarget.respondedAt) : String(viewLetterModalTarget.respondedAt)}
+                          Submitted: {viewLetterModalTarget.respondedAt ? new Date(viewLetterModalTarget.respondedAt).toLocaleDateString() : ""}
                         </span>
                       </div>
                     )}
