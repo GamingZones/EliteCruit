@@ -1760,3 +1760,80 @@
   }
 }
 
+/* ── Suspended Position Styles ── */
+.aol-suspended-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.aol-suspended-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  margin: 14px 0 16px 0;
+  border-radius: 8px;
+  background: #fef3c7;
+  border: 1.5px solid #f59e0b;
+  color: #92400e;
+}
+
+.aol-suspended-banner-content {
+  flex: 1;
+}
+
+.aol-suspended-banner-content strong {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #b45309;
+  margin-bottom: 3px;
+}
+
+.aol-suspended-banner-content p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: #475569;
+}
+
+.aol-response-section.is-suspended-response {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.aol-response-section.is-suspended-response .aol-decision-radio-card {
+  cursor: not-allowed !important;
+}
+
+/* ── Dark Mode Isolated Overrides ── */
+[data-theme="dark"] .aol-suspended-chip {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
+[data-theme="dark"] .aol-suspended-banner {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.45);
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .aol-suspended-banner-content strong {
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .aol-suspended-banner-content p {
+  color: #cbd5e1;
+}
+
+

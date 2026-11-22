@@ -1094,6 +1094,18 @@ export default function JobDetailsModal({
                   ? new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
                   : "";
                 const special = parseSpecialMessage(m.message_text);
+                const isJobSuspended = (job as any)?.status === "suspended";
+                const sessionUserRole = (() => {
+                  try {
+                    const raw = localStorage.getItem("user") || localStorage.getItem("currentUser");
+                    if (raw) {
+                      const u = JSON.parse(raw);
+                      return u?.role || u?.user_metadata?.role || "applicant";
+                    }
+                  } catch {}
+                  return "applicant";
+                })();
+                const isEmployerRole = sessionUserRole === "employer";
 
                 if (special.type === "formal_offer") {
                   const matchingResponseMsg = panelMessages.find((other: any) => {
@@ -1125,8 +1137,42 @@ export default function JobDetailsModal({
                   return (
                     <article
                       key={m.id || idx}
-                      className={`chat-bubble chat-special-card chat-offer-card ${isOutgoing ? "outgoing" : "incoming"} ${isAccepted ? "offer-card-accepted" : isDeclined ? "offer-card-declined" : ""}`}
+                      className={`chat-bubble chat-special-card chat-offer-card ${isOutgoing ? "outgoing" : "incoming"} ${isAccepted ? "offer-card-accepted" : isDeclined ? "offer-card-declined" : ""} ${isJobSuspended ? "is-suspended-card" : ""}`}
                     >
+                      {isJobSuspended && (
+                        <div className="chat-card-suspended-overlay">
+                          <div className="chat-card-suspended-overlay-card">
+                            <div className="suspended-overlay-icon-badge">
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                                <line x1="12" y1="9" x2="12" y2="13" />
+                                <line x1="12" y1="17" x2="12.01" y2="17" />
+                              </svg>
+                            </div>
+                            <div className="suspended-overlay-content">
+                              <h4 className="suspended-overlay-title">
+                                {isEmployerRole ? "Job Posting Suspended by Administration" : "Position Temporarily Suspended"}
+                              </h4>
+                              <p className="suspended-overlay-text">
+                                {isEmployerRole
+                                  ? "This job posting has been suspended by platform administration and is hidden from public job listings. If you wish to provide clarification, appeal, or request cancellation of this suspension, please contact administration via email at admin@elitecruit.com."
+                                  : "This job vacancy has been suspended by platform administration. Active recruitment, interviews, and offer responses for this position are temporarily on hold."}
+                              </p>
+                            </div>
+                            {isEmployerRole && (
+                              <div className="suspended-overlay-actions">
+                                <a
+                                  href={`mailto:admin@elitecruit.com?subject=Suspension%20Inquiry%20-%20Job%20ID%20${job?.id}%20(${encodeURIComponent(special.jobTitle || job?.title || "")})`}
+                                  className="suspended-overlay-email-btn"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  Email Admin
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                       <div className="chat-special-header">
                         <div className="chat-special-badge-row">
                           <div className="chat-special-badges-group">
@@ -1282,8 +1328,42 @@ export default function JobDetailsModal({
                   return (
                     <article
                       key={m.id || idx}
-                      className={`chat-bubble chat-special-card chat-interview-card ${isOutgoing ? "outgoing" : "incoming"}`}
+                      className={`chat-bubble chat-special-card chat-interview-card ${isOutgoing ? "outgoing" : "incoming"} ${isJobSuspended ? "is-suspended-card" : ""}`}
                     >
+                      {isJobSuspended && (
+                        <div className="chat-card-suspended-overlay">
+                          <div className="chat-card-suspended-overlay-card">
+                            <div className="suspended-overlay-icon-badge">
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                                <line x1="12" y1="9" x2="12" y2="13" />
+                                <line x1="12" y1="17" x2="12.01" y2="17" />
+                              </svg>
+                            </div>
+                            <div className="suspended-overlay-content">
+                              <h4 className="suspended-overlay-title">
+                                {isEmployerRole ? "Job Posting Suspended by Administration" : "Position Temporarily Suspended"}
+                              </h4>
+                              <p className="suspended-overlay-text">
+                                {isEmployerRole
+                                  ? "This job posting has been suspended by platform administration and is hidden from public job listings. If you wish to provide clarification, appeal, or request cancellation of this suspension, please contact administration via email at admin@elitecruit.com."
+                                  : "This job vacancy has been suspended by platform administration. Active recruitment, interviews, and offer responses for this position are temporarily on hold."}
+                              </p>
+                            </div>
+                            {isEmployerRole && (
+                              <div className="suspended-overlay-actions">
+                                <a
+                                  href={`mailto:admin@elitecruit.com?subject=Suspension%20Inquiry%20-%20Job%20ID%20${job?.id}%20(${encodeURIComponent(special.jobTitle || job?.title || "")})`}
+                                  className="suspended-overlay-email-btn"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  Email Admin
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                       <div className="chat-special-header">
                         <div className="chat-special-badge-row">
                           <span className="chat-special-badge badge-interview-sched">
@@ -2333,6 +2413,18 @@ export default function JobDetailsModal({
       {/* ── FORMAL LETTER VIEWER MODAL (Contains 1st modal Offer Letter + either 2nd modal Decision Form or Candidate Response) ── */}
       {viewLetterModalTarget && (() => {
         const hasDecision = viewLetterModalTarget.decision === "accepted" || viewLetterModalTarget.decision === "declined";
+        const isLetterJobSuspended = (job as any)?.status === "suspended";
+        const sessionUserRole = (() => {
+          try {
+            const raw = localStorage.getItem("user") || localStorage.getItem("currentUser");
+            if (raw) {
+              const u = JSON.parse(raw);
+              return u?.role || u?.user_metadata?.role || "applicant";
+            }
+          } catch {}
+          return "applicant";
+        })();
+        const isEmployerRole = sessionUserRole === "employer";
         const offerText = viewLetterModalTarget.offerLetter || `Dear ${(applicantProfile as any)?.applicant_name || "Candidate"},\n\nCongratulations! On behalf of ${viewLetterModalTarget.company || "the company"}, we are thrilled to formally extend an offer of employment for the position of "${viewLetterModalTarget.title}".\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!`;
         const isAcc = viewLetterModalTarget.decision === "accepted";
         const responseText = viewLetterModalTarget.letterText || (isAcc
@@ -2375,6 +2467,35 @@ export default function JobDetailsModal({
                 </div>
 
                 <div className="view-letter-body-content">
+                  {isLetterJobSuspended && (
+                    <div className="view-letter-suspended-banner">
+                      <div className="suspended-overlay-icon-badge">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                          <line x1="12" y1="9" x2="12" y2="13" />
+                          <line x1="12" y1="17" x2="12.01" y2="17" />
+                        </svg>
+                      </div>
+                      <div className="view-letter-suspended-content">
+                        <strong>{isEmployerRole ? "Job Posting Suspended by Administration" : "Position Temporarily Suspended"}</strong>
+                        <p>
+                          {isEmployerRole
+                            ? "This job posting has been suspended by platform administration and is hidden from public job listings. If you wish to provide clarification or appeal, please email admin@elitecruit.com."
+                            : "This job vacancy has been suspended by platform administration. Offer responses and active recruitment for this position are temporarily on hold."}
+                        </p>
+                      </div>
+                      {isEmployerRole && (
+                        <a
+                          href={`mailto:admin@elitecruit.com?subject=Suspension%20Inquiry%20-%20Job%20${encodeURIComponent(viewLetterModalTarget.title)}`}
+                          className="view-letter-email-admin-btn"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Email Admin
+                        </a>
+                      )}
+                    </div>
+                  )}
+
                   <div className="view-letter-meta-row">
                     {viewLetterModalTarget.decision && (
                       <span className={`view-letter-badge ${viewLetterModalTarget.decision === "accepted" ? "accepted" : viewLetterModalTarget.decision === "declined" ? "declined" : "extended"}`}>
@@ -2405,7 +2526,7 @@ export default function JobDetailsModal({
                     Close
                   </button>
 
-                  {!hasDecision && !decisionModalTarget && (
+                  {!hasDecision && !decisionModalTarget && !isLetterJobSuspended && !isEmployerRole && (
                     <button
                       type="button"
                       className="solid-btn view-letter-respond-btn"

@@ -1899,15 +1899,35 @@ export default function Messages() {
     };
   }, [selectedThread?.id]);
 
+  const findJobForMessage = useCallback((jobTitle?: string, jobId?: number | string) => {
+    if (!companyJobsData) return null;
+    const allJobs = [
+      ...(companyJobsData.applied_jobs || []),
+      ...(companyJobsData.recruited_jobs || []),
+      ...(companyJobsData.other_jobs || []),
+    ];
+    if (jobId) {
+      const found = allJobs.find((j) => Number(j.id) === Number(jobId));
+      if (found) return found;
+    }
+    if (jobTitle) {
+      const clean = jobTitle.toLowerCase().trim();
+      return (
+        allJobs.find((j) => j.title && j.title.toLowerCase().trim() === clean) ||
+        allJobs.find((j) => j.title && (clean.includes(j.title.toLowerCase().trim()) || j.title.toLowerCase().trim().includes(clean))) ||
+        null
+      );
+    }
+    return null;
+  }, [companyJobsData]);
+
   useEffect(() => {
     if (selectedThread?.id) {
       setIsAppliedSectionOpen(true);
       setIsRecruitedSectionOpen(false);
       setIsOtherJobsSectionOpen(false);
       fetchThreadMessages(selectedThread.id);
-      if (isInfoSidebarOpen) {
-        fetchCompanyJobs(selectedThread.id);
-      }
+      fetchCompanyJobs(selectedThread.id);
       if (isEmployer && selectedThread.other_user_id) {
         fetch(`/api/applicants/${selectedThread.other_user_id}/profile`)
           .then((res) => res.json())
@@ -2453,7 +2473,7 @@ export default function Messages() {
                             });
                             const matchingResponse = matchingResponseMsg ? parseSpecialMessage(matchingResponseMsg.message_text) : null;
 
-                            const matchedJob = (companyJobsData?.applied_jobs || []).find((j: any) =>
+                            const matchedJob = findJobForMessage(special.jobTitle) || (companyJobsData?.applied_jobs || []).find((j: any) =>
                               special.jobTitle && j.title && (
                                 j.title.toLowerCase().trim() === special.jobTitle.toLowerCase().trim() ||
                                 special.jobTitle.toLowerCase().includes(j.title.toLowerCase().trim()) ||
@@ -2466,6 +2486,7 @@ export default function Messages() {
                                 j.title.toLowerCase().includes(special.jobTitle.toLowerCase().trim())
                               )
                             );
+                            const isJobSuspended = matchedJob?.status === "suspended";
 
                             const isAccepted = matchingResponse
                               ? matchingResponse.isAccepted
@@ -2496,7 +2517,71 @@ export default function Messages() {
                               Boolean(matchedJob?.invitation && (!matchedJob?.application || matchedJob?.application?.initiated_by === "employer"));
 
                             return (
-                              <article className={`chat-bubble chat-special-card chat-offer-card ${isMe ? "outgoing" : "incoming"} ${isAccepted ? "offer-card-accepted" : isDeclined ? "offer-card-declined" : ""}`}>
+                              <article className={`chat-bubble chat-special-card chat-offer-card ${isMe ? "outgoing" : "incoming"} ${isAccepted ? "offer-card-accepted" : isDeclined ? "offer-card-declined" : ""} ${isJobSuspended ? "is-suspended-card" : ""}`}>
+                                {isJobSuspended && (
+                                  <div className="chat-card-suspended-overlay">
+                                    <div className="chat-card-suspended-overlay-card">
+                                      <div className="suspended-overlay-icon-badge">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                                          <line x1="12" y1="9" x2="12" y2="13" />
+                                          <line x1="12" y1="17" x2="12.01" y2="17" />
+                                        </svg>
+                                      </div>
+                                      <div className="suspended-overlay-content">
+                                        <h4 className="suspended-overlay-title">
+                                          {isEmployer ? "Job Posting Suspended by Administration" : "Position Temporarily Suspended"}
+                                        </h4>
+                                        <p className="suspended-overlay-text">
+                                          {isEmployer
+                                            ? "This job posting has been suspended by platform administration and is hidden from public job listings. If you wish to provide clarification, appeal, or request cancellation of this suspension, please contact administration via email at admin@elitecruit.com."
+                                            : "This job vacancy has been suspended by platform administration. Active recruitment, interviews, and offer responses for this position are temporarily on hold."}
+                                        </p>
+                                      </div>
+                                      <div className="suspended-overlay-actions">
+                                        <button
+                                          type="button"
+                                          className="suspended-overlay-review-btn"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (matchedJob) {
+                                              setJobModalData({
+                                                id: matchedJob.id,
+                                                title: matchedJob.title,
+                                                company: matchedJob.company_name || selectedThread?.other_user_name || "Company",
+                                                location: matchedJob.location || "Cavite",
+                                                summary: matchedJob.description || "",
+                                                salary: formatJobSalary(matchedJob.salary_min, matchedJob.salary_max),
+                                                salaryMin: matchedJob.salary_min,
+                                                hideSalary: Boolean(matchedJob.hide_salary),
+                                                experience: matchedJob.experience_level || "Any Experience",
+                                                workArrangement: matchedJob.work_arrangement || "On-Site",
+                                                skills: parseTags(matchedJob.required_skills),
+                                                qualifications: parseTags(matchedJob.qualifications),
+                                                certifications: parseTags(matchedJob.certifications),
+                                                isUrgent: Boolean(matchedJob.is_urgent),
+                                                status: "suspended",
+                                                closeDate: matchedJob.close_date,
+                                              });
+                                              setIsJobModalOpen(true);
+                                            }
+                                          }}
+                                        >
+                                          {isEmployer ? "Review Details" : "Review Job Details"}
+                                        </button>
+                                        {isEmployer && (
+                                          <a
+                                            href={`mailto:admin@elitecruit.com?subject=Suspension%20Inquiry%20-%20Job%20ID%20${matchedJob?.id}%20(${encodeURIComponent(special.jobTitle || "")})`}
+                                            className="suspended-overlay-email-btn"
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            Email Admin
+                                          </a>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
                                 <div className="chat-special-header">
                                   <div className="chat-special-badge-row">
                                     <div className="chat-special-badges-group">
@@ -2648,8 +2733,76 @@ export default function Messages() {
                                 </div>
                               </article>
                             );
-                          })() : special.type === "interview_scheduled" ? (
-                            <article className={`chat-bubble chat-special-card chat-interview-card ${isMe ? "outgoing" : "incoming"}`}>
+                          })() : special.type === "interview_scheduled" ? (() => {
+                            const matchedJob = findJobForMessage(special.jobTitle);
+                            const isJobSuspended = matchedJob?.status === "suspended";
+
+                            return (
+                            <article className={`chat-bubble chat-special-card chat-interview-card ${isMe ? "outgoing" : "incoming"} ${isJobSuspended ? "is-suspended-card" : ""}`}>
+                              {isJobSuspended && (
+                                <div className="chat-card-suspended-overlay">
+                                  <div className="chat-card-suspended-overlay-card">
+                                    <div className="suspended-overlay-icon-badge">
+                                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                                        <line x1="12" y1="9" x2="12" y2="13" />
+                                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                                      </svg>
+                                    </div>
+                                    <div className="suspended-overlay-content">
+                                      <h4 className="suspended-overlay-title">
+                                        {isEmployer ? "Job Posting Suspended by Administration" : "Position Temporarily Suspended"}
+                                      </h4>
+                                      <p className="suspended-overlay-text">
+                                        {isEmployer
+                                          ? "This job posting has been suspended by platform administration and is hidden from public job listings. If you wish to provide clarification, appeal, or request cancellation of this suspension, please contact administration via email at admin@elitecruit.com."
+                                          : "This job vacancy has been suspended by platform administration. Active recruitment, interviews, and offer responses for this position are temporarily on hold."}
+                                      </p>
+                                    </div>
+                                    <div className="suspended-overlay-actions">
+                                      <button
+                                        type="button"
+                                        className="suspended-overlay-review-btn"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (matchedJob) {
+                                            setJobModalData({
+                                              id: matchedJob.id,
+                                              title: matchedJob.title,
+                                              company: matchedJob.company_name || selectedThread?.other_user_name || "Company",
+                                              location: matchedJob.location || "Cavite",
+                                              summary: matchedJob.description || "",
+                                              salary: formatJobSalary(matchedJob.salary_min, matchedJob.salary_max),
+                                              salaryMin: matchedJob.salary_min,
+                                              hideSalary: Boolean(matchedJob.hide_salary),
+                                              experience: matchedJob.experience_level || "Any Experience",
+                                              workArrangement: matchedJob.work_arrangement || "On-Site",
+                                              skills: parseTags(matchedJob.required_skills),
+                                              qualifications: parseTags(matchedJob.qualifications),
+                                              certifications: parseTags(matchedJob.certifications),
+                                              isUrgent: Boolean(matchedJob.is_urgent),
+                                              status: "suspended",
+                                              closeDate: matchedJob.close_date,
+                                            });
+                                            setIsJobModalOpen(true);
+                                          }
+                                        }}
+                                      >
+                                        {isEmployer ? "Review Details" : "Review Job Details"}
+                                      </button>
+                                      {isEmployer && (
+                                        <a
+                                          href={`mailto:admin@elitecruit.com?subject=Suspension%20Inquiry%20-%20Job%20ID%20${matchedJob?.id}%20(${encodeURIComponent(special.jobTitle || "")})`}
+                                          className="suspended-overlay-email-btn"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          Email Admin
+                                        </a>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                               <div className="chat-special-header">
                                 <div className="chat-special-badge-row">
                                   <span className="chat-special-badge badge-interview-sched">
@@ -2698,7 +2851,8 @@ export default function Messages() {
                                 </button>
                               </div>
                             </article>
-                          ) : special.type === "interview_cancelled" ? (
+                          );
+                        })() : special.type === "interview_cancelled" ? (
                             <article className={`chat-bubble chat-special-card chat-cancelled-card ${isMe ? "outgoing" : "incoming"}`}>
                               <div className="chat-special-header">
                                 <div className="chat-special-badge-row">
@@ -2949,7 +3103,43 @@ export default function Messages() {
                               const matchColor = getMatchColorClass(candMatchPct);
 
                               return (
-                                <div key={`side-applied-${job.id}`} className="chat-info-job-item employer-applied">
+                                <div key={`side-applied-${job.id}`} className={`chat-info-job-item employer-applied ${job.status === "suspended" ? "is-suspended-card" : ""}`}>
+                                  {job.status === "suspended" && (
+                                    <div className="chat-info-suspended-overlay">
+                                      <div className="chat-info-suspended-overlay-card">
+                                        <div className="suspended-overlay-icon-badge">
+                                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                                            <line x1="12" y1="9" x2="12" y2="13" />
+                                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                                          </svg>
+                                        </div>
+                                        <div className="suspended-overlay-content">
+                                          <h5 className="suspended-overlay-title">Job Posting Suspended by Administration</h5>
+                                          <p className="suspended-overlay-text">Suspended by administration. Appeal via email.</p>
+                                        </div>
+                                        <div className="suspended-overlay-actions">
+                                          <button
+                                            type="button"
+                                            className="suspended-overlay-review-btn"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleOpenEmployerJobDetails(job);
+                                            }}
+                                          >
+                                            Review Details
+                                          </button>
+                                          <a
+                                            href={`mailto:admin@elitecruit.com?subject=Suspension%20Inquiry%20-%20Job%20ID%20${job.id}%20(${encodeURIComponent(job.title || "")})`}
+                                            className="suspended-overlay-email-btn"
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            Email Admin
+                                          </a>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
                                   <div className="chat-info-job-head">
                                     <span className="chat-info-job-title">{job.title}</span>
                                     <span className={`chat-info-match-badge ${matchColor}`}>
@@ -2999,7 +3189,36 @@ export default function Messages() {
 
                             // Applicant View
                             return (
-                              <div key={`side-applied-${job.id}`} className="chat-info-job-item applicant-applied">
+                              <div key={`side-applied-${job.id}`} className={`chat-info-job-item applicant-applied ${job.status === "suspended" ? "is-suspended-card" : ""}`}>
+                                {job.status === "suspended" && (
+                                  <div className="chat-info-suspended-overlay">
+                                    <div className="chat-info-suspended-overlay-card">
+                                      <div className="suspended-overlay-icon-badge">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                                          <line x1="12" y1="9" x2="12" y2="13" />
+                                          <line x1="12" y1="17" x2="12.01" y2="17" />
+                                        </svg>
+                                      </div>
+                                      <div className="suspended-overlay-content">
+                                        <h5 className="suspended-overlay-title">Position Temporarily Suspended</h5>
+                                        <p className="suspended-overlay-text">This vacancy is suspended by administration. Recruitment is on hold.</p>
+                                      </div>
+                                      <div className="suspended-overlay-actions">
+                                        <button
+                                          type="button"
+                                          className="suspended-overlay-review-btn"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenJobDetailsForApplicant(job.id, null);
+                                          }}
+                                        >
+                                          Review Job Details
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
                                 <div className="chat-info-job-head">
                                   <span className="chat-info-job-title">{job.title}</span>
                                   <span className={`cjm-status-chip ${status === "reviewed" ? "under-review" : status === "declined" ? "denied" : status}`}>
@@ -3091,7 +3310,43 @@ export default function Messages() {
                               const matchColor = getMatchColorClass(candMatchPct);
 
                               return (
-                                <div key={`side-recruited-${job.id}`} className="chat-info-job-item employer-recruited">
+                                <div key={`side-recruited-${job.id}`} className={`chat-info-job-item employer-recruited ${job.status === "suspended" ? "is-suspended-card" : ""}`}>
+                                  {job.status === "suspended" && (
+                                    <div className="chat-info-suspended-overlay">
+                                      <div className="chat-info-suspended-overlay-card">
+                                        <div className="suspended-overlay-icon-badge">
+                                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                                            <line x1="12" y1="9" x2="12" y2="13" />
+                                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                                          </svg>
+                                        </div>
+                                        <div className="suspended-overlay-content">
+                                          <h5 className="suspended-overlay-title">Job Posting Suspended by Administration</h5>
+                                          <p className="suspended-overlay-text">Suspended by administration. Appeal via email.</p>
+                                        </div>
+                                        <div className="suspended-overlay-actions">
+                                          <button
+                                            type="button"
+                                            className="suspended-overlay-review-btn"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleOpenEmployerJobDetails(job);
+                                            }}
+                                          >
+                                            Review Details
+                                          </button>
+                                          <a
+                                            href={`mailto:admin@elitecruit.com?subject=Suspension%20Inquiry%20-%20Job%20ID%20${job.id}%20(${encodeURIComponent(job.title || "")})`}
+                                            className="suspended-overlay-email-btn"
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            Email Admin
+                                          </a>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
                                   <div className="chat-info-job-head">
                                     <span className="chat-info-job-title">{job.title}</span>
                                     <span className={`chat-info-match-badge ${matchColor}`}>
@@ -3143,7 +3398,36 @@ export default function Messages() {
 
                             // Applicant View
                             return (
-                              <div key={`side-recruited-${job.id}`} className="chat-info-job-item applicant-recruited">
+                              <div key={`side-recruited-${job.id}`} className={`chat-info-job-item applicant-recruited ${job.status === "suspended" ? "is-suspended-card" : ""}`}>
+                                {job.status === "suspended" && (
+                                  <div className="chat-info-suspended-overlay">
+                                    <div className="chat-info-suspended-overlay-card">
+                                      <div className="suspended-overlay-icon-badge">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                                          <line x1="12" y1="9" x2="12" y2="13" />
+                                          <line x1="12" y1="17" x2="12.01" y2="17" />
+                                        </svg>
+                                      </div>
+                                      <div className="suspended-overlay-content">
+                                        <h5 className="suspended-overlay-title">Position Temporarily Suspended</h5>
+                                        <p className="suspended-overlay-text">This vacancy is suspended by administration. Recruitment is on hold.</p>
+                                      </div>
+                                      <div className="suspended-overlay-actions">
+                                        <button
+                                          type="button"
+                                          className="suspended-overlay-review-btn"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenJobDetailsForApplicant(job.id, null);
+                                          }}
+                                        >
+                                          Review Job Details
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
                                 <div className="chat-info-job-head">
                                   <span className="chat-info-job-title">{job.title}</span>
                                 </div>
@@ -3729,6 +4013,8 @@ export default function Messages() {
       {/* ── FORMAL LETTER VIEWER MODAL (Contains 1st modal Offer Letter + either 2nd modal Decision Form or Candidate Response) ── */}
       {viewLetterModalTarget && (() => {
         const hasDecision = viewLetterModalTarget.decision === "accepted" || viewLetterModalTarget.decision === "declined";
+        const matchedJobForLetter = findJobForMessage(viewLetterModalTarget.title, viewLetterModalTarget.jobId);
+        const isLetterJobSuspended = matchedJobForLetter?.status === "suspended";
         const offerText = viewLetterModalTarget.offerLetter || `Dear ${applicantLabel || "Candidate"},\n\nCongratulations! On behalf of ${viewLetterModalTarget.company || "the company"}, we are thrilled to formally extend an offer of employment for the position of "${viewLetterModalTarget.title}".\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!`;
         const isAcc = viewLetterModalTarget.decision === "accepted";
         const responseText = viewLetterModalTarget.letterText || (isAcc
@@ -3770,6 +4056,37 @@ export default function Messages() {
                 </div>
 
                 <div className="view-letter-body-content">
+                  {isLetterJobSuspended && (
+                    <div className="view-letter-suspended-banner">
+                      <div className="suspended-overlay-icon-badge">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                          <line x1="12" y1="9" x2="12" y2="13" />
+                          <line x1="12" y1="17" x2="12.01" y2="17" />
+                        </svg>
+                      </div>
+                      <div className="view-letter-suspended-content">
+                        <strong>
+                          {isEmployer ? "Job Posting Suspended by Administration" : "Position Temporarily Suspended"}
+                        </strong>
+                        <p>
+                          {isEmployer
+                            ? "This job posting has been suspended by platform administration and is hidden from public job listings. If you wish to provide clarification or appeal, please email admin@elitecruit.com."
+                            : "This job vacancy has been suspended by platform administration. Offer responses and active recruitment for this position are temporarily on hold."}
+                        </p>
+                      </div>
+                      {isEmployer && (
+                        <a
+                          href={`mailto:admin@elitecruit.com?subject=Suspension%20Inquiry%20-%20Job%20${encodeURIComponent(viewLetterModalTarget.title)}`}
+                          className="view-letter-email-admin-btn"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Email Admin
+                        </a>
+                      )}
+                    </div>
+                  )}
+
                   <div className="view-letter-meta-row">
                     {viewLetterModalTarget.decision ? (
                       <span className={`view-letter-badge ${viewLetterModalTarget.decision === "accepted" ? "accepted" : viewLetterModalTarget.decision === "declined" ? "declined" : "extended"}`}>
@@ -3802,7 +4119,7 @@ export default function Messages() {
                     Close
                   </button>
 
-                  {!isEmployer && !hasDecision && !decisionModalTarget && (
+                  {!isEmployer && !hasDecision && !decisionModalTarget && !isLetterJobSuspended && (
                     <button
                       type="button"
                       className="solid-btn view-letter-respond-btn"

@@ -40,6 +40,7 @@ export interface OfferRecord {
   workSetup: string;
   salary: string;
   letterContent: string;
+  isJobSuspended?: boolean;
 }
 
 export default function ApplicantOfferLetter() {
@@ -152,6 +153,7 @@ export default function ApplicantOfferLetter() {
             (a.decision_message_type === "formal_offer" ? a.decision_message : null) ||
             a.response_letter ||
             "Official offer letter details extended by employer.";
+          const isJobSuspended = Boolean(a.is_job_suspended || a.job_status === "suspended");
           return {
             id: a.id,
             type: "application",
@@ -165,12 +167,14 @@ export default function ApplicantOfferLetter() {
             workSetup: a.work_arrangement || "Not specified",
             salary: a.salary ? `PHP ${a.salary}` : (a.salary_min && a.salary_max ? `PHP ${Number(a.salary_min).toLocaleString()} - ${Number(a.salary_max).toLocaleString()}` : "Competitive compensation"),
             letterContent: letter,
+            isJobSuspended,
           };
         });
 
         const directOffers: OfferRecord[] = invList.map((i: any) => {
           const invStatus = (i.status || "pending").toLowerCase();
           const isResponded = Boolean(i.response_letter) || ["accepted", "declined"].includes(invStatus);
+          const isJobSuspended = Boolean(i.is_job_suspended || i.job_status === "suspended");
           return {
             id: `inv-${i.id}`,
             invitationId: i.id,
@@ -185,6 +189,7 @@ export default function ApplicantOfferLetter() {
             workSetup: i.work_arrangement || "Not specified",
             salary: i.salary_min && i.salary_max ? `PHP ${Number(i.salary_min).toLocaleString()} - ${Number(i.salary_max).toLocaleString()}` : "Competitive compensation",
             letterContent: i.custom_message || "Official offer letter details extended by employer.",
+            isJobSuspended,
           };
         });
 
@@ -521,7 +526,12 @@ Document Timestamp: ${new Date().toLocaleString()}
                               }}
                             >
                               <div className="aol-offer-strip-head">
-                                <h4 className="aol-offer-strip-title">{offer.title}</h4>
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                                  <h4 className="aol-offer-strip-title">{offer.title}</h4>
+                                  {offer.isJobSuspended && (
+                                    <span className="aol-suspended-chip">Suspended</span>
+                                  )}
+                                </div>
                                 <div className="aol-offer-strip-head-right">
                                   <span className="aol-offer-badge pending">{offer.status}</span>
                                   <span
@@ -571,11 +581,34 @@ Document Timestamp: ${new Date().toLocaleString()}
                                 {/* Title & Badge Header */}
                                 <div className="aol-detail-head">
                                   <div>
-                                    <h2 className="aol-detail-title">{offer.title}</h2>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "4px" }}>
+                                      <h2 className="aol-detail-title">{offer.title}</h2>
+                                      {offer.isJobSuspended && (
+                                        <span className="aol-suspended-chip">Suspended</span>
+                                      )}
+                                    </div>
                                     <div className="aol-detail-company">{offer.company}</div>
                                   </div>
                                   <span className="aol-offer-badge pending">{offer.status}</span>
                                 </div>
+
+                                {offer.isJobSuspended && (
+                                  <div className="aol-suspended-banner">
+                                    <div className="suspended-overlay-icon-badge">
+                                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                                        <line x1="12" y1="9" x2="12" y2="13" />
+                                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                                      </svg>
+                                    </div>
+                                    <div className="aol-suspended-banner-content">
+                                      <strong>Position Temporarily Suspended</strong>
+                                      <p>
+                                        This job vacancy has been suspended by administration. Formal employment offers and response decisions for this position are temporarily on hold.
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
 
                                 {/* 3-Column Metrics Strip */}
                                 <div className="aol-metrics-strip">
@@ -654,23 +687,26 @@ Document Timestamp: ${new Date().toLocaleString()}
                                 </div>
 
                                 {/* Your Response Section */}
-                                <div className="aol-response-section">
+                                <div className={`aol-response-section ${offer.isJobSuspended ? "is-suspended-response" : ""}`}>
                                   <h3 className="aol-response-title">Your Response</h3>
                                   <p className="aol-response-subtitle">
-                                    Choose a decision, then review the message that will be sent to the employer.
+                                    {offer.isJobSuspended
+                                      ? "Decision responses are disabled because this job position has been suspended by administration."
+                                      : "Choose a decision, then review the message that will be sent to the employer."}
                                   </p>
 
                                   {/* Radio Cards */}
                                   <div className="aol-decision-cards-row">
                                     <label
                                       className={`aol-decision-radio-card accept ${selectedDecision === "accept" ? "active" : ""}`}
-                                      onClick={() => setSelectedDecision("accept")}
+                                      onClick={() => !offer.isJobSuspended && setSelectedDecision("accept")}
                                     >
                                       <input
                                         type="radio"
                                         name={`offer_decision_${offer.id}`}
                                         checked={selectedDecision === "accept"}
-                                        onChange={() => setSelectedDecision("accept")}
+                                        disabled={offer.isJobSuspended}
+                                        onChange={() => !offer.isJobSuspended && setSelectedDecision("accept")}
                                       />
                                       <div className="aol-radio-custom" />
                                       <div className="aol-radio-text">
@@ -681,13 +717,14 @@ Document Timestamp: ${new Date().toLocaleString()}
 
                                     <label
                                       className={`aol-decision-radio-card decline ${selectedDecision === "decline" ? "active" : ""}`}
-                                      onClick={() => setSelectedDecision("decline")}
+                                      onClick={() => !offer.isJobSuspended && setSelectedDecision("decline")}
                                     >
                                       <input
                                         type="radio"
                                         name={`offer_decision_${offer.id}`}
                                         checked={selectedDecision === "decline"}
-                                        onChange={() => setSelectedDecision("decline")}
+                                        disabled={offer.isJobSuspended}
+                                        onChange={() => !offer.isJobSuspended && setSelectedDecision("decline")}
                                       />
                                       <div className="aol-radio-custom" />
                                       <div className="aol-radio-text">
@@ -706,6 +743,7 @@ Document Timestamp: ${new Date().toLocaleString()}
                                       maxLength={500}
                                       placeholder="Add a short message to the employer (optional)..."
                                       value={customMessage}
+                                      disabled={offer.isJobSuspended}
                                       onChange={(e) => setCustomMessage(e.target.value)}
                                     />
                                     <div className="aol-char-count">{customMessage.length}/500</div>
@@ -728,7 +766,12 @@ Document Timestamp: ${new Date().toLocaleString()}
                                       Download Letter
                                     </button>
 
-                                    <button type="button" className="aol-action-btn outline" onClick={handleSaveDraft}>
+                                    <button
+                                      type="button"
+                                      className="aol-action-btn outline"
+                                      disabled={offer.isJobSuspended}
+                                      onClick={handleSaveDraft}
+                                    >
                                       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
                                         <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
                                         <polyline points="17 21 17 13 7 13 7 21" />
@@ -740,11 +783,16 @@ Document Timestamp: ${new Date().toLocaleString()}
                                     <button
                                       type="button"
                                       className="aol-action-btn primary"
-                                      disabled={!selectedDecision}
+                                      disabled={!selectedDecision || Boolean(offer.isJobSuspended)}
                                       onClick={() => setIsReviewModalOpen(true)}
                                     >
                                       <span>Review Decision</span>
                                       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                        <polyline points="9 18 15 12 9 6" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </div>
                                         <polyline points="9 18 15 12 9 6" />
                                       </svg>
                                     </button>

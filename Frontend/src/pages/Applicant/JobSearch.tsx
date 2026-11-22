@@ -2794,12 +2794,32 @@ export default function JobSearch() {
         Boolean(matchingResponseMsg?.message_text?.includes("Formal Invitation Response"));
       const jobTitle = special.jobTitle || defaultJobTitle || "Job Position";
       const company = special.companyName || defaultCompany || "Employer";
+      const isJobSuspended = (detailsJob as any)?.status === "suspended";
 
       return (
         <article
           key={msg.id}
-          className={`chat-bubble chat-special-card chat-offer-card ${isMe ? "outgoing" : "incoming"} ${isAccepted ? "offer-card-accepted" : isDeclined ? "offer-card-declined" : ""}`}
+          className={`chat-bubble chat-special-card chat-offer-card ${isMe ? "outgoing" : "incoming"} ${isAccepted ? "offer-card-accepted" : isDeclined ? "offer-card-declined" : ""} ${isJobSuspended ? "is-suspended-card" : ""}`}
         >
+          {isJobSuspended && (
+            <div className="chat-card-suspended-overlay">
+              <div className="chat-card-suspended-overlay-card">
+                <div className="suspended-overlay-icon-badge">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                </div>
+                <div className="suspended-overlay-content">
+                  <h4 className="suspended-overlay-title">Position Temporarily Suspended</h4>
+                  <p className="suspended-overlay-text">
+                    This job vacancy has been suspended by platform administration. Active recruitment, interviews, and offer responses for this position are temporarily on hold.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="chat-special-header">
             <div className="chat-special-badge-row">
               <div className="chat-special-badges-group">
@@ -2874,7 +2894,7 @@ export default function JobSearch() {
             </button>
 
             {!hasDecision ? (
-              !isMe ? (
+              !isMe && !isJobSuspended ? (
                 <button
                   type="button"
                   className="chat-action-btn chat-btn-respond"
@@ -5179,6 +5199,7 @@ export default function JobSearch() {
       {/* ── FORMAL LETTER VIEWER MODAL (Contains 1st modal Offer Letter + either 2nd modal Decision Form or Candidate Response) ── */}
       {viewLetterModalTarget && (() => {
         const hasDecision = viewLetterModalTarget.decision === "accepted" || viewLetterModalTarget.decision === "declined";
+        const isLetterJobSuspended = (detailsJob as any)?.status === "suspended";
         const offerText = viewLetterModalTarget.offerLetter || `Dear ${applicantLabel || "Candidate"},\n\nCongratulations! On behalf of ${viewLetterModalTarget.company || "the company"}, we are thrilled to formally extend an offer of employment for the position of "${viewLetterModalTarget.title}".\n\nPlease review this official offer letter and submit your formal response.\n\nWe look forward to welcoming you to our team!`;
         const isAcc = viewLetterModalTarget.decision === "accepted";
         const responseText = viewLetterModalTarget.letterText || (isAcc
@@ -5221,6 +5242,24 @@ export default function JobSearch() {
                 </div>
 
                 <div className="view-letter-body-content">
+                  {isLetterJobSuspended && (
+                    <div className="view-letter-suspended-banner">
+                      <div className="suspended-overlay-icon-badge">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                          <line x1="12" y1="9" x2="12" y2="13" />
+                          <line x1="12" y1="17" x2="12.01" y2="17" />
+                        </svg>
+                      </div>
+                      <div className="view-letter-suspended-content">
+                        <strong>Position Temporarily Suspended</strong>
+                        <p>
+                          This job vacancy has been suspended by platform administration. Offer responses and active recruitment for this position are temporarily on hold.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="view-letter-meta-row">
                     {viewLetterModalTarget.decision && (
                       <span className={`view-letter-badge ${viewLetterModalTarget.decision === "accepted" ? "accepted" : viewLetterModalTarget.decision === "declined" ? "declined" : "extended"}`}>
@@ -5251,7 +5290,7 @@ export default function JobSearch() {
                     Close
                   </button>
 
-                  {!hasDecision && !decisionModalTarget && (
+                  {!hasDecision && !decisionModalTarget && !isLetterJobSuspended && (
                     <button
                       type="button"
                       className="solid-btn view-letter-respond-btn"

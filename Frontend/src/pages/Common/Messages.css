@@ -3252,3 +3252,264 @@
   border: 1px solid rgba(239, 68, 68, 0.4) !important;
 }
 
+/* ── Suspended Job Frosted Layered Overlay ── */
+.chat-special-card.is-suspended-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.chat-special-card.is-suspended-card > *:not(.chat-card-suspended-overlay) {
+  filter: grayscale(40%) blur(0.5px);
+  opacity: 0.35;
+  pointer-events: none;
+  user-select: none;
+}
+
+.chat-card-suspended-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.chat-card-suspended-overlay-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 440px;
+  background: #ffffff;
+  border: 1.5px solid #d97706;
+  border-radius: 10px;
+  padding: 12px 14px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+}
+
+.suspended-overlay-icon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #fef3c7;
+  color: #d97706;
+  flex-shrink: 0;
+}
+
+.suspended-overlay-content {
+  flex: 1;
+}
+
+.suspended-overlay-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #b45309;
+  margin: 0 0 3px 0;
+}
+
+.suspended-overlay-text {
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: #475569;
+  margin: 0;
+}
+
+.suspended-overlay-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.suspended-overlay-review-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 6px;
+  background: #0284c7;
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.suspended-overlay-review-btn:hover {
+  background: #0369a1;
+}
+
+.suspended-overlay-email-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 6px;
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.suspended-overlay-email-btn:hover {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+/* Sidebar Job Item Suspended Overlay */
+.chat-info-job-item.is-suspended-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.chat-info-job-item.is-suspended-card > *:not(.chat-info-suspended-overlay) {
+  filter: grayscale(40%) blur(0.5px);
+  opacity: 0.35;
+  pointer-events: none;
+  user-select: none;
+}
+
+.chat-info-suspended-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.chat-info-suspended-overlay-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  background: #ffffff;
+  border: 1.5px solid #d97706;
+  border-radius: 8px;
+  padding: 8px 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.chat-info-suspended-overlay-card .suspended-overlay-title {
+  font-size: 0.8rem;
+}
+
+.chat-info-suspended-overlay-card .suspended-overlay-text {
+  font-size: 0.72rem;
+}
+
+/* View Letter Suspended Banner */
+.view-letter-suspended-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  border-radius: 8px;
+  background: #fef3c7;
+  border: 1.5px solid #f59e0b;
+  color: #92400e;
+}
+
+.view-letter-suspended-content {
+  flex: 1;
+}
+
+.view-letter-suspended-content strong {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #b45309;
+}
+
+.view-letter-suspended-content p {
+  margin: 3px 0 0 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: #475569;
+}
+
+.view-letter-email-admin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 6px;
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+/* ── Dark Mode Isolated Overrides for Suspended Overlays ── */
+[data-theme="dark"] .chat-card-suspended-overlay-card,
+[data-theme="dark"] .chat-info-suspended-overlay-card {
+  background: rgba(15, 23, 42, 0.94);
+  border-color: #d97706;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .suspended-overlay-icon-badge {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .suspended-overlay-title {
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .suspended-overlay-text {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .suspended-overlay-email-btn {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+[data-theme="dark"] .suspended-overlay-email-btn:hover {
+  background: rgba(239, 68, 68, 0.3);
+  color: #ffffff;
+}
+
+[data-theme="dark"] .view-letter-suspended-banner {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.5);
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .view-letter-suspended-content strong {
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .view-letter-suspended-content p {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .view-letter-email-admin-btn {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+

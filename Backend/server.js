@@ -6005,7 +6005,15 @@ app.get("/api/employers/:userId/direct-invitations", optionalAuthenticateToken, 
        ORDER BY ji.created_at DESC`,
       [userId]
     );
-    res.json({ invitations });
+    const derivedInvitations = invitations.map((inv) => {
+      const derived = deriveJobPostStatus(inv.close_date, inv.job_status);
+      return {
+        ...inv,
+        job_status: derived,
+        is_job_suspended: Boolean(derived === "suspended"),
+      };
+    });
+    res.json({ invitations: derivedInvitations });
   } catch (err) {
     console.error("Get direct invitations error:", err);
     res.status(500).json({ message: "Unable to load direct invitations." });
@@ -6041,7 +6049,15 @@ app.get("/api/applicants/:userId/invitations", optionalAuthenticateToken, async 
        ORDER BY ji.created_at DESC`,
       [userId]
     );
-    res.json({ invitations });
+    const derivedInvitations = invitations.map((inv) => {
+      const derived = deriveJobPostStatus(inv.close_date, inv.job_status);
+      return {
+        ...inv,
+        job_status: derived,
+        is_job_suspended: Boolean(derived === "suspended"),
+      };
+    });
+    res.json({ invitations: derivedInvitations });
   } catch (err) {
     console.error("Get applicant invitations error:", err);
     res.status(500).json({ message: "Unable to load invitations." });
@@ -7244,6 +7260,7 @@ app.get("/api/messages/threads/:threadId/company-jobs", authenticateToken, requi
 
       const jobItem = {
         ...job,
+        status: deriveJobPostStatus(job.close_date, job.status),
         application: app || null,
         invitation: inv || null,
         is_applied: Boolean(app),
