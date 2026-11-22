@@ -7,6 +7,7 @@ import { usePendingApplicationsCount } from "../../hooks/usePendingApplicationsC
 import EmployerChatbotDrawer, { EmployerFAQItem as FAQItem } from "../../components/EmployerChatbotDrawer";
 import CalendarDrawer from "../../components/CalendarDrawer";
 import ConfirmationModal from "../../components/ConfirmationModal";
+import JobDetailsModal from "../../components/modals/JobDetailsModal";
 import { cleanBranchLocation, parseLocations } from "../../utils/filters";
 import "../Applicant/Applicant-Dashboard.css";
 import "./Employer-JobPostsList.css";
@@ -350,6 +351,7 @@ export default function EmployerJobPostsList() {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [reopenCloseDate, setReopenCloseDate] = useState("");
   const [reviewingJob, setReviewingJob] = useState<JobPost | null>(null);
+  const [detailsModalJob, setDetailsModalJob] = useState<JobPost | null>(null);
   const [isListingPreviewOpen, setIsListingPreviewOpen] = useState(false);
 
   // Check URL query param for review ID on initial load
@@ -868,7 +870,7 @@ export default function EmployerJobPostsList() {
                           <button
                             type="button"
                             className="suspended-overlay-review-btn"
-                            onClick={() => handleOpenReview(job)}
+                            onClick={() => setDetailsModalJob(job)}
                           >
                             Review Details
                           </button>
@@ -938,7 +940,9 @@ export default function EmployerJobPostsList() {
                     </div>
                     <div className="job-card-actions-col">
                       <div className="job-actions">
-                        <button type="button" onClick={() => handleOpenReview(job)}>Review</button>
+                        <button type="button" onClick={() => (job.status === "suspended" ? setDetailsModalJob(job) : handleOpenReview(job))}>
+                          Review
+                        </button>
                         {job.status === "suspended" ? (
                           <button
                             type="button"
@@ -1091,6 +1095,37 @@ export default function EmployerJobPostsList() {
           </div>
         )}
           </>
+        )}
+
+        {/* STANDARDIZED JOB DETAILS MODAL */}
+        {detailsModalJob && (
+          <JobDetailsModal
+            isOpen={Boolean(detailsModalJob)}
+            isApplicantView={false}
+            hideEmployerHeader={true}
+            onClose={() => setDetailsModalJob(null)}
+            job={{
+              id: detailsModalJob.id,
+              title: detailsModalJob.title,
+              company: companyLabel || "Company",
+              employerUserId: userId || undefined,
+              location: detailsModalJob.location || "Cavite",
+              status: detailsModalJob.status,
+              urgent: Boolean(Number(detailsModalJob.is_urgent || 0)),
+              setup: detailsModalJob.work_arrangement || "On-Site",
+              work_arrangement: detailsModalJob.work_arrangement,
+              salary_min: detailsModalJob.salary_min,
+              salary_max: detailsModalJob.salary_max,
+              experience_level: detailsModalJob.experience_level,
+              summary: detailsModalJob.description,
+              description: detailsModalJob.description,
+              qualifications: detailsModalJob.qualifications,
+              certifications: detailsModalJob.certifications,
+              required_skills: detailsModalJob.required_skills,
+              close_date: detailsModalJob.close_date,
+              applicant_count: detailsModalJob.applicant_count,
+            }}
+          />
         )}
 
         {/* PREVIEW PUBLIC LISTING MODAL */}
