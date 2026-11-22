@@ -2521,23 +2521,23 @@ export default function Messages() {
                                 {isJobSuspended && (
                                   <div className="chat-card-suspended-overlay">
                                     <div className="chat-card-suspended-overlay-card">
-                                      <div className="suspended-overlay-icon-badge">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-                                          <line x1="12" y1="9" x2="12" y2="13" />
-                                          <line x1="12" y1="17" x2="12.01" y2="17" />
-                                        </svg>
-                                      </div>
-                                      <div className="suspended-overlay-content">
+                                      <div className="suspended-overlay-header-row">
+                                        <div className="suspended-overlay-icon-badge">
+                                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                                            <line x1="12" y1="9" x2="12" y2="13" />
+                                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                                          </svg>
+                                        </div>
                                         <h4 className="suspended-overlay-title">
                                           {isEmployer ? "Job Posting Suspended by Administration" : "Position Temporarily Suspended"}
                                         </h4>
-                                        <p className="suspended-overlay-text">
-                                          {isEmployer
-                                            ? "This job posting has been suspended by platform administration and is hidden from public job listings. If you wish to provide clarification, appeal, or request cancellation of this suspension, please contact administration via email at admin@elitecruit.com."
-                                            : "This job vacancy has been suspended by platform administration. Active recruitment, interviews, and offer responses for this position are temporarily on hold."}
-                                        </p>
                                       </div>
+                                      <p className="suspended-overlay-text">
+                                        {isEmployer
+                                          ? "This job posting has been suspended by platform administration and is hidden from public job listings. If you wish to provide clarification, appeal, or request cancellation of this suspension, please contact administration via email at admin@elitecruit.com."
+                                          : "This job vacancy has been suspended by platform administration. Active recruitment, interviews, and offer responses for this position are temporarily on hold."}
+                                      </p>
                                       <div className="suspended-overlay-actions">
                                         <button
                                           type="button"
@@ -2742,23 +2742,23 @@ export default function Messages() {
                               {isJobSuspended && (
                                 <div className="chat-card-suspended-overlay">
                                   <div className="chat-card-suspended-overlay-card">
-                                    <div className="suspended-overlay-icon-badge">
-                                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-                                        <line x1="12" y1="9" x2="12" y2="13" />
-                                        <line x1="12" y1="17" x2="12.01" y2="17" />
-                                      </svg>
-                                    </div>
-                                    <div className="suspended-overlay-content">
+                                    <div className="suspended-overlay-header-row">
+                                      <div className="suspended-overlay-icon-badge">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                                          <line x1="12" y1="9" x2="12" y2="13" />
+                                          <line x1="12" y1="17" x2="12.01" y2="17" />
+                                        </svg>
+                                      </div>
                                       <h4 className="suspended-overlay-title">
                                         {isEmployer ? "Job Posting Suspended by Administration" : "Position Temporarily Suspended"}
                                       </h4>
-                                      <p className="suspended-overlay-text">
-                                        {isEmployer
-                                          ? "This job posting has been suspended by platform administration and is hidden from public job listings. If you wish to provide clarification, appeal, or request cancellation of this suspension, please contact administration via email at admin@elitecruit.com."
-                                          : "This job vacancy has been suspended by platform administration. Active recruitment, interviews, and offer responses for this position are temporarily on hold."}
-                                      </p>
                                     </div>
+                                    <p className="suspended-overlay-text">
+                                      {isEmployer
+                                        ? "This job posting has been suspended by platform administration and is hidden from public job listings. If you wish to provide clarification, appeal, or request cancellation of this suspension, please contact administration via email at admin@elitecruit.com."
+                                        : "This job vacancy has been suspended by platform administration. Active recruitment, interviews, and offer responses for this position are temporarily on hold."}
+                                    </p>
                                     <div className="suspended-overlay-actions">
                                       <button
                                         type="button"
