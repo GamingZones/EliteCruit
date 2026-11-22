@@ -2544,26 +2544,16 @@ export default function Messages() {
                                           className="suspended-overlay-review-btn"
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            if (matchedJob) {
-                                              setJobModalData({
-                                                id: matchedJob.id,
-                                                title: matchedJob.title,
-                                                company: matchedJob.company_name || selectedThread?.other_user_name || "Company",
-                                                location: matchedJob.location || "Cavite",
-                                                summary: matchedJob.description || "",
-                                                salary: formatJobSalary(matchedJob.salary_min, matchedJob.salary_max),
-                                                salaryMin: matchedJob.salary_min,
-                                                hideSalary: Boolean(matchedJob.hide_salary),
-                                                experience: matchedJob.experience_level || "Any Experience",
-                                                workArrangement: matchedJob.work_arrangement || "On-Site",
-                                                skills: parseTags(matchedJob.required_skills),
-                                                qualifications: parseTags(matchedJob.qualifications),
-                                                certifications: parseTags(matchedJob.certifications),
-                                                isUrgent: Boolean(matchedJob.is_urgent),
-                                                status: "suspended",
-                                                closeDate: matchedJob.close_date,
-                                              });
-                                              setIsJobModalOpen(true);
+                                            if (isEmployer) {
+                                              if (matchedJob) {
+                                                handleOpenEmployerJobDetails(matchedJob);
+                                              }
+                                            } else {
+                                              if (matchedJob?.id) {
+                                                handleOpenJobDetailsForApplicant(matchedJob.id, null);
+                                              } else {
+                                                handleOpenJobDetailsForApplicant(selectedThread || undefined, null);
+                                              }
                                             }
                                           }}
                                         >
@@ -2765,26 +2755,16 @@ export default function Messages() {
                                         className="suspended-overlay-review-btn"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          if (matchedJob) {
-                                            setJobModalData({
-                                              id: matchedJob.id,
-                                              title: matchedJob.title,
-                                              company: matchedJob.company_name || selectedThread?.other_user_name || "Company",
-                                              location: matchedJob.location || "Cavite",
-                                              summary: matchedJob.description || "",
-                                              salary: formatJobSalary(matchedJob.salary_min, matchedJob.salary_max),
-                                              salaryMin: matchedJob.salary_min,
-                                              hideSalary: Boolean(matchedJob.hide_salary),
-                                              experience: matchedJob.experience_level || "Any Experience",
-                                              workArrangement: matchedJob.work_arrangement || "On-Site",
-                                              skills: parseTags(matchedJob.required_skills),
-                                              qualifications: parseTags(matchedJob.qualifications),
-                                              certifications: parseTags(matchedJob.certifications),
-                                              isUrgent: Boolean(matchedJob.is_urgent),
-                                              status: "suspended",
-                                              closeDate: matchedJob.close_date,
-                                            });
-                                            setIsJobModalOpen(true);
+                                          if (isEmployer) {
+                                            if (matchedJob) {
+                                              handleOpenEmployerJobDetails(matchedJob);
+                                            }
+                                          } else {
+                                            if (matchedJob?.id) {
+                                              handleOpenJobDetailsForApplicant(matchedJob.id, null);
+                                            } else {
+                                              handleOpenJobDetailsForApplicant(selectedThread || undefined, null);
+                                            }
                                           }
                                         }}
                                       >

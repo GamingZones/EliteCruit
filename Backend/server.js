@@ -5254,6 +5254,8 @@ app.get("/api/employers/:userId/applications", authenticateToken, requireUserOrA
           jp.location AS job_location,
           jp.salary_min AS job_salary_min,
           jp.salary_max AS job_salary_max,
+          jp.status AS job_status,
+          jp.close_date AS job_close_date,
           au.email AS email,
           ap.province,
           ap.city,
@@ -5387,6 +5389,7 @@ app.get("/api/employers/:userId/applications", authenticateToken, requireUserOrA
       return {
         ...app,
         status: effectiveStatus,
+        job_status: deriveJobPostStatus(app.job_close_date, app.job_status),
       };
     });
 

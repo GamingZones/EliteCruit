@@ -1627,11 +1627,14 @@ export default function EmployerApplicantManagement() {
       setIsRefreshing(true);
     }
     setError("");
+    const token = localStorage.getItem("elitecruit-token") || localStorage.getItem("token");
+    const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
     try {
       const [res, invRes, jobsRes] = await Promise.all([
-        fetch(`/api/employers/${userId}/applications`),
-        fetch(`/api/employers/${userId}/direct-invitations`),
-        fetch(`/api/employers/${userId}/job-posts`).then((r) => (r.ok ? r : fetch("/api/job-posts"))),
+        fetch(`/api/employers/${userId}/applications`, { headers: authHeaders }),
+        fetch(`/api/employers/${userId}/direct-invitations`, { headers: authHeaders }),
+        fetch(`/api/employers/${userId}/job-posts`, { headers: authHeaders }).then((r) => (r.ok ? r : fetch("/api/job-posts"))),
       ]);
 
       if (jobsRes && jobsRes.ok) {
@@ -1963,7 +1966,7 @@ export default function EmployerApplicantManagement() {
             workArrangement: app.job_work_arrangement || undefined,
             salaryMin: app.job_salary_min,
             salaryMax: app.job_salary_max,
-            status: (app as any).job_status || allJobsMap[Number(key)]?.status || "open",
+            status: allJobsMap[Number(key)]?.status || (app as any).job_status || "open",
           });
         }
       }
