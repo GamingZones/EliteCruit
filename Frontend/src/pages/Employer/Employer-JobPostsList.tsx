@@ -847,7 +847,42 @@ export default function EmployerJobPostsList() {
               const certItems = parseTags(job.certifications);
 
               return (
-                <article className={`job-card ${openActionsJobId === job.id ? "has-open-menu" : ""}`} key={job.id}>
+                <article className={`job-card ${job.status === "suspended" ? "is-suspended-card" : ""} ${openActionsJobId === job.id ? "has-open-menu" : ""}`} key={job.id}>
+                  {job.status === "suspended" && (
+                    <div className="job-card-suspended-overlay">
+                      <div className="job-card-suspended-overlay-card">
+                        <div className="suspended-overlay-icon-badge">
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                            <line x1="12" y1="9" x2="12" y2="13" />
+                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                          </svg>
+                        </div>
+                        <div className="suspended-overlay-content">
+                          <h4 className="suspended-overlay-title">Job Posting Suspended by Administration</h4>
+                          <p className="suspended-overlay-text">
+                            This job posting has been suspended by platform administration and is hidden from public job listings. If you wish to provide clarification, appeal, or request cancellation of this suspension, please contact administration via email at <a href={`mailto:admin@elitecruit.com?subject=Suspension%20Inquiry%20-%20Job%20ID%20${job.id}%20(${encodeURIComponent(job.title)})`}>admin@elitecruit.com</a>.
+                          </p>
+                        </div>
+                        <div className="suspended-overlay-actions">
+                          <button
+                            type="button"
+                            className="suspended-overlay-review-btn"
+                            onClick={() => handleOpenReview(job)}
+                          >
+                            Review Details
+                          </button>
+                          <a
+                            href={`mailto:admin@elitecruit.com?subject=Suspension%20Inquiry%20-%20Job%20ID%20${job.id}%20(${encodeURIComponent(job.title)})`}
+                            className="suspended-overlay-email-btn"
+                          >
+                            Email Admin
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="job-card-main">
                     <div className="job-card-left">
                       <div className="job-title-row">
@@ -860,17 +895,6 @@ export default function EmployerJobPostsList() {
                       <div className="job-card-submeta">
                         <RenderLocationMeta location={job.location} />
                       </div>
-                      {job.status === "suspended" && (
-                        <div className="employer-job-suspended-alert">
-                          <div className="suspended-alert-icon">⚠️</div>
-                          <div className="suspended-alert-content">
-                            <strong>Job Posting Suspended by Administration</strong>
-                            <p>
-                              This job posting has been suspended by platform administration and is hidden from public job listings. If you wish to provide clarification, appeal, or request cancellation of this suspension, please contact administration via email at <a href="mailto:admin@elitecruit.com">admin@elitecruit.com</a>.
-                            </p>
-                          </div>
-                        </div>
-                      )}
                       <p>{toPreviewText(job.description, "No description provided.")}</p>
                       <div className="job-chip-row">
                         <span className="job-chip work">{job.work_arrangement || "Flexible"}</span>
