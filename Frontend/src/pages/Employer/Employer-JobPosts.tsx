@@ -920,6 +920,7 @@ export default function EmployerJobPosts() {
   const pendingApplicantsCount = usePendingApplicationsCount();
   const [profileMessage, setProfileMessage] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isJobSuspended, setIsJobSuspended] = useState(false);
 
   const createJobPostFaqs: FAQItem[] = [
     {
@@ -1243,6 +1244,9 @@ export default function EmployerJobPosts() {
           const data = await response.json();
           if (!response.ok) throw new Error(data?.message || "Unable to load job post.");
           const job = data?.jobPost || {};
+          if (job.status === "suspended") {
+            setIsJobSuspended(true);
+          }
           const parsedSkills = parseItemsWithExp(job.required_skills, "1 year");
           const parsedQuals = parseItemsWithExp(job.qualifications, "");
           const parsedCerts = parseItemsWithExp(job.certifications, "");
@@ -1593,10 +1597,22 @@ export default function EmployerJobPosts() {
             <p>Fill in the details to create a job posting. Standardized roles, competencies, and experience requirements help applicants match accurately.</p>
           </div>
           <div className="jobpost-hero-actions">
-            <button type="button" className="publish-btn" onClick={publishJob} disabled={isPublishing}>{isPublishing ? (isEditMode ? "Updating..." : "Publishing...") : (isEditMode ? "Update Job" : "Publish Job")}</button>
+            <button type="button" className="publish-btn" onClick={publishJob} disabled={isPublishing || isJobSuspended}>{isPublishing ? (isEditMode ? "Updating..." : "Publishing...") : (isEditMode ? "Update Job" : "Publish Job")}</button>
             <a className="cancel-btn" href="/employer-job-posts">Cancel</a>
           </div>
         </section>
+
+        {isJobSuspended && (
+          <div className="employer-job-suspended-alert" style={{ margin: "16px 32px 0 32px" }}>
+            <div className="suspended-alert-icon">⚠️</div>
+            <div className="suspended-alert-content">
+              <strong>Notice: This Job Posting Has Been Suspended by Administration</strong>
+              <p>
+                This job posting is currently suspended by platform administration and cannot be edited. If you wish to provide clarification, appeal, or request cancellation of this suspension, please contact administration via email at <a href="mailto:admin@elitecruit.com">admin@elitecruit.com</a>.
+              </p>
+            </div>
+          </div>
+        )}
 
         <section className="posting-complete-card">
           <div className="complete-head"><h2>Posting Completeness</h2><span className={`complete-percent ${completionChecks.colorBand}`}>{completionChecks.percent}% Complete</span></div>

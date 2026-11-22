@@ -594,10 +594,21 @@ export default function EmployerJobPostsList() {
               <div className="review-job-summary-head">
                 <div className="review-job-title-row">
                   <h2 className="review-job-heading">{reviewingJob.title}</h2>
-                  <span className={`review-status-pill ${reviewingJob.status === "open" ? "open" : "closed"}`}>
-                    ● {reviewingJob.status === "open" ? "Open" : "Closed"}
+                  <span className={`review-status-pill ${reviewingJob.status === "suspended" ? "suspended" : reviewingJob.status === "open" ? "open" : "closed"}`}>
+                    ● {reviewingJob.status === "suspended" ? "Suspended" : reviewingJob.status === "open" ? "Open" : "Closed"}
                   </span>
                 </div>
+                {reviewingJob.status === "suspended" && (
+                  <div className="employer-job-suspended-alert modal-alert">
+                    <div className="suspended-alert-icon">⚠️</div>
+                    <div className="suspended-alert-content">
+                      <strong>Job Posting Suspended by Administration</strong>
+                      <p>
+                        This job posting has been suspended by platform administration and is hidden from public job listings. If you wish to provide clarification, appeal, or request cancellation of this suspension, please contact administration via email at <a href="mailto:admin@elitecruit.com">admin@elitecruit.com</a>.
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <div className="review-job-company-row">
                   <span className="review-company-name">{companyLabel || "Company"}</span>
                   <span className="review-date-meta">
@@ -840,13 +851,26 @@ export default function EmployerJobPostsList() {
                   <div className="job-card-main">
                     <div className="job-card-left">
                       <div className="job-title-row">
-                        <span className={`status-chip ${job.status === "open" ? "open" : "closed"}`}>{job.status === "open" ? "Open" : "Closed"}</span>
+                        <span className={`status-chip ${job.status === "suspended" ? "suspended" : job.status === "open" ? "open" : "closed"}`}>
+                          {job.status === "suspended" ? "Suspended" : job.status === "open" ? "Open" : "Closed"}
+                        </span>
                         {Boolean(Number(job.is_urgent || 0)) && <span className="status-chip urgent">Urgent</span>}
                         <h3 className="job-card-title" title={job.title}>{job.title}</h3>
                       </div>
                       <div className="job-card-submeta">
                         <RenderLocationMeta location={job.location} />
                       </div>
+                      {job.status === "suspended" && (
+                        <div className="employer-job-suspended-alert">
+                          <div className="suspended-alert-icon">⚠️</div>
+                          <div className="suspended-alert-content">
+                            <strong>Job Posting Suspended by Administration</strong>
+                            <p>
+                              This job posting has been suspended by platform administration and is hidden from public job listings. If you wish to provide clarification, appeal, or request cancellation of this suspension, please contact administration via email at <a href="mailto:admin@elitecruit.com">admin@elitecruit.com</a>.
+                            </p>
+                          </div>
+                        </div>
+                      )}
                       <p>{toPreviewText(job.description, "No description provided.")}</p>
                       <div className="job-chip-row">
                         <span className="job-chip work">{job.work_arrangement || "Flexible"}</span>
@@ -891,7 +915,18 @@ export default function EmployerJobPostsList() {
                     <div className="job-card-actions-col">
                       <div className="job-actions">
                         <button type="button" onClick={() => handleOpenReview(job)}>Review</button>
-                        <a className="job-action-link" href={`/employer-job-posts/create?edit=${job.id}`}>Edit</a>
+                        {job.status === "suspended" ? (
+                          <button
+                            type="button"
+                            className="job-action-disabled-btn"
+                            title="Suspended job postings cannot be edited. Please email admin@elitecruit.com"
+                            onClick={() => alert("This job posting has been suspended by administration and cannot be edited. Please email admin@elitecruit.com to appeal or request cancellation of the suspension.")}
+                          >
+                            Edit
+                          </button>
+                        ) : (
+                          <a className="job-action-link" href={`/employer-job-posts/create?edit=${job.id}`}>Edit</a>
+                        )}
                         <div className={`job-actions-dropdown ${openActionsJobId === job.id ? "active-dropdown" : ""}`}>
                           <button
                             type="button"
@@ -906,7 +941,12 @@ export default function EmployerJobPostsList() {
 
                           {openActionsJobId === job.id && (
                             <div className="job-actions-menu" onClick={(e) => e.stopPropagation()}>
-                              {job.status === "open" ? (
+                              {job.status === "suspended" ? (
+                                <div className="actions-menu-item suspended-item" title="Contact admin@elitecruit.com to lift suspension">
+                                  <span className="actions-menu-icon">⚠️</span>
+                                  <span>Suspended by Admin</span>
+                                </div>
+                              ) : job.status === "open" ? (
                                 <button
                                   type="button"
                                   className="actions-menu-item close-item"

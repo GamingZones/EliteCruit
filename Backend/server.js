@@ -865,6 +865,9 @@ function parseCloseDate(value) {
 }
 
 function deriveJobPostStatus(closeDate, dbStatus) {
+  if (typeof dbStatus === "string" && dbStatus.toLowerCase().trim() === "suspended") {
+    return "suspended";
+  }
   if (typeof dbStatus === "string" && dbStatus.toLowerCase().trim() === "closed") {
     return "closed";
   }
@@ -2557,6 +2560,107 @@ app.post("/api/admin/users/:userId/reset-password", authenticateToken, requireAd
   } catch (err) {
     console.error("Error resetting user password:", err);
     res.status(500).json({ message: "Failed to reset password." });
+  }
+});
+
+app.get("/api/admin/job-posts", authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const hasApplications = await tableExists("applications");
+    const hasRatings = await tableExists("company_ratings");
+
+    const rows = await all(
+      `SELECT jp.*,
+              COALESCE(ep.business_name, u.email, 'Employer') AS company_name,
+              u.email AS employer_email,
+              ep.contact_number,
+              COALESCE(NULLIF(TRIM(jp.location), ''), ep.company_address, ep.city, 'Cavite') AS location,
+              COALESCE(NULLIF(TRIM(ep.company_address), ''), ep.city, 'Cavite') AS company_address,
+              ep.city AS company_city,
+              ep.company_logo_path,
+              ep.company_cover_path,
+              ${hasApplications ? "(SELECT COUNT(*) FROM applications a WHERE a.job_post_id = jp.id)" : "0"} AS applicant_count,
+              ${hasRatings ? "(SELECT CASE WHEN COUNT(*) > 0 THEN ROUND(((SUM(cr.rating)::numeric + 12.0) / (COUNT(*) + 3.0)), 1) ELSE NULL END FROM company_ratings cr WHERE cr.employer_user_id = jp.employer_user_id)" : "NULL"} AS rating
+       FROM job_posts jp
+       INNER JOIN users u ON u.id = jp.employer_user_id
+       LEFT JOIN employer_profiles ep ON ep.user_id = jp.employer_user_id
+       ORDER BY jp.created_at DESC`
+    );
+
+    const jobPosts = rows.map((r) => {
+      const derivedStatus = deriveJobPostStatus(r.close_date, r.status);
+      return {
+        ...r,
+        status: derivedStatus,
+        raw_db_status: r.status,
+        applicant_count: Number(r.applicant_count || 0),
+        rating: r.rating ? Number(r.rating).toFixed(1) : null,
+      };
+    });
+
+    res.json({ jobPosts });
+  } catch (err) {
+    console.error("Error loading admin job posts:", err);
+    res.status(500).json({ message: "Failed to load job posts." });
+  }
+});
+
+app.patch("/api/admin/job-posts/:id/status", authenticateToken, requireAdmin, async (req, res) => {
+  const jobPostId = Number(req.params.id);
+  const { status, close_date } = req.body ?? {};
+  if (!Number.isInteger(jobPostId) || jobPostId < 1) {
+    return res.status(400).json({ message: "Invalid job post ID." });
+  }
+
+  const targetStatus = String(status || "").toLowerCase().trim();
+  if (!["open", "closed", "suspended"].includes(targetStatus)) {
+    return res.status(400).json({ message: "Status must be 'open', 'closed', or 'suspended'." });
+  }
+
+  try {
+    const job = await get("SELECT * FROM job_posts WHERE id = ?", [jobPostId]);
+    if (!job) {
+      return res.status(404).json({ message: "Job post not found." });
+    }
+
+    let updateSql = "UPDATE job_posts SET status = ?, updated_at = CURRENT_TIMESTAMP";
+    const params = [targetStatus];
+
+    if (targetStatus === "open" && close_date) {
+      const parsed = parseCloseDate(close_date);
+      if (parsed) {
+        updateSql += ", close_date = ?";
+        params.push(parsed);
+      }
+    }
+
+    updateSql += " WHERE id = ?";
+    params.push(jobPostId);
+
+    await run(updateSql, params);
+
+    const updatedJob = await get(
+      `SELECT jp.*,
+              COALESCE(ep.business_name, u.email, 'Employer') AS company_name,
+              u.email AS employer_email
+       FROM job_posts jp
+       INNER JOIN users u ON u.id = jp.employer_user_id
+       LEFT JOIN employer_profiles ep ON ep.user_id = jp.employer_user_id
+       WHERE jp.id = ?`,
+      [jobPostId]
+    );
+
+    const derivedStatus = deriveJobPostStatus(updatedJob.close_date, updatedJob.status);
+
+    res.json({
+      message: `Job post has been ${targetStatus === "suspended" ? "suspended" : targetStatus === "open" ? "re-activated" : "closed"}.`,
+      jobPost: {
+        ...updatedJob,
+        status: derivedStatus,
+      },
+    });
+  } catch (err) {
+    console.error("Error updating admin job post status:", err);
+    res.status(500).json({ message: "Failed to update job post status." });
   }
 });
 
@@ -4712,7 +4816,9 @@ app.get("/api/applicants/:userId/applications", authenticateToken, requireUserOr
     );
 
     const applications = rows.map((row) => {
-      const isJobClosed = row.job_status === "closed" || (row.close_date && new Date(row.close_date).getTime() < Date.now());
+      const derivedJobStatus = deriveJobPostStatus(row.close_date, row.job_status);
+      const isJobSuspended = derivedJobStatus === "suspended";
+      const isJobClosed = derivedJobStatus === "closed";
       let effectiveStatus = (isJobClosed && ["pending", "submitted", "under_review"].includes(String(row.status || "").toLowerCase()))
         ? "closed"
         : row.status;
@@ -4735,6 +4841,9 @@ app.get("/api/applicants/:userId/applications", authenticateToken, requireUserOr
 
       return {
         ...row,
+        job_status: derivedJobStatus,
+        job_post_status: derivedJobStatus,
+        is_job_suspended: isJobSuspended,
         was_shortlisted: wasShortlisted,
         had_interview: hasInterview,
         status: effectiveStatus,
@@ -4929,6 +5038,12 @@ app.put("/api/employers/:userId/job-posts/:jobPostId", authenticateToken, requir
   }
 
   try {
+    const existingJob = await get("SELECT status FROM job_posts WHERE id = ? AND employer_user_id = ?", [jobPostId, userId]);
+    if (!existingJob) return res.status(404).json({ message: "Job post not found." });
+    if (existingJob.status === "suspended" && req.user.role !== "admin") {
+      return res.status(403).json({ message: "This job post has been suspended by administration and cannot be edited. Please contact admin@elitecruit.com to request lifting the suspension." });
+    }
+
     const updated = await run(
       `UPDATE job_posts
        SET title = ?, location = ?, status = ?, is_urgent = ?, hide_salary = ?, work_arrangement = ?, experience_level = ?, application_limit = ?, close_date = ?,
@@ -4976,6 +5091,12 @@ app.patch("/api/employers/:userId/job-posts/:jobPostId/status", authenticateToke
   }
 
   try {
+    const existingJob = await get("SELECT status FROM job_posts WHERE id = ? AND employer_user_id = ?", [jobPostId, userId]);
+    if (!existingJob) return res.status(404).json({ message: "Job post not found." });
+    if (existingJob.status === "suspended" && req.user.role !== "admin") {
+      return res.status(403).json({ message: "This job post has been suspended by administration. Please email admin@elitecruit.com to appeal or request cancellation of this suspension." });
+    }
+
     let updateSql = `UPDATE job_posts SET status = ?, updated_at = CURRENT_TIMESTAMP`;
     const params = [targetStatus];
 

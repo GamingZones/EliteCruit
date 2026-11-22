@@ -1881,10 +1881,20 @@ export default function ApplicantDashboard() {
               </div>
             </article>
           ) : (
-            activeFrontApplications.map((app: any) => (
-              <article key={app.id || app.job_post_id} className="job-card">
+            activeFrontApplications.map((app: any) => {
+              const isSuspended = Boolean(
+                app.is_job_suspended ||
+                app.job_status === "suspended" ||
+                app.job_post_status === "suspended"
+              );
+
+              return (
+              <article key={app.id || app.job_post_id} className={`job-card ${isSuspended ? "job-post-suspended-card" : ""}`}>
                 <div className="job-card-left">
-                  <h3>{app.job_title || app.title || "Applied Role"}</h3>
+                  <div className="app-card-title-row">
+                    <h3>{app.job_title || app.title || "Applied Role"}</h3>
+                    {isSuspended && <span className="app-suspended-badge">Job Suspended</span>}
+                  </div>
                   <p className="app-company-loc-line">
                     {app.company_name ? (
                       <span className="company-meta-with-rating">
@@ -1901,6 +1911,15 @@ export default function ApplicantDashboard() {
                   <p className="app-submitted-date">
                     <span>Submitted on: {formatDate(app.submitted_at)}</span>
                   </p>
+                  {isSuspended && (
+                    <div className="applicant-app-suspended-notice">
+                      <span className="app-suspended-icon">⚠️</span>
+                      <div className="app-suspended-content">
+                        <strong>Job Posting Suspended by Administration</strong>
+                        <p>This job vacancy has been suspended by platform administration. Hiring activities and application reviews for this role are currently on hold.</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="job-card-middle">
                   <ApplicationCardTimeline
@@ -2032,7 +2051,8 @@ export default function ApplicantDashboard() {
                   <button type="button" className="ghost-btn message-app-btn" onClick={() => handleReviewApplication(app, true)}>Message</button>
                 </div>
               </article>
-            ))
+            );
+          })
           )}
         </section>
         )}
@@ -2522,6 +2542,9 @@ export default function ApplicantDashboard() {
                   <span className={`status-badge-chip ${statusChipBadgeClass(timelineModalApp.status, timelineModalApp)}`}>
                     {formatStatusLabel(timelineModalApp.status, timelineModalApp)}
                   </span>
+                  {Boolean(timelineModalApp.is_job_suspended || timelineModalApp.job_status === "suspended" || timelineModalApp.job_post_status === "suspended") && (
+                    <span className="app-suspended-badge">Job Suspended</span>
+                  )}
                 </div>
               </div>
               <button
@@ -2533,6 +2556,16 @@ export default function ApplicantDashboard() {
                 ✕
               </button>
             </div>
+
+            {Boolean(timelineModalApp.is_job_suspended || timelineModalApp.job_status === "suspended" || timelineModalApp.job_post_status === "suspended") && (
+              <div className="applicant-app-suspended-notice modal-notice">
+                <span className="app-suspended-icon">⚠️</span>
+                <div className="app-suspended-content">
+                  <strong>Job Posting Suspended by Administration</strong>
+                  <p>This job vacancy has been suspended by platform administration. Hiring activities and application reviews for this role are currently on hold.</p>
+                </div>
+              </div>
+            )}
 
             <div className="timeline-stepper">
               {getApplicationTimelineSteps(timelineModalApp).map((step, idx, arr) => (

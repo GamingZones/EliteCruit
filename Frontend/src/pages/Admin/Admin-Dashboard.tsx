@@ -221,11 +221,11 @@ export default function AdminDashboard() {
               <span className="admin-stat-desc">Hiring organizations</span>
             </div>
 
-            <div className="admin-stat-card">
+            <a href="/admin-jobs" className="admin-stat-card" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }} title="Manage Job Postings">
               <span className="admin-stat-label">Active Job Openings</span>
               <strong className="admin-stat-value">{isLoading ? "..." : stats.totalJobs}</strong>
-              <span className="admin-stat-desc">Published job postings</span>
-            </div>
+              <span className="admin-stat-desc">Click to manage job postings ↗</span>
+            </a>
           </div>
 
           {/* Visual Analytics Overview Grid */}

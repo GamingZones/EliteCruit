@@ -18,6 +18,7 @@ import EmployerNoticesFaqs from "./pages/Employer/Employer-NoticesFaqs";
 import EmployerApplicantFinder from "./pages/Employer/Employer-ApplicantFinder";
 import Feedback from "./pages/Common/Feedback";
 import AdminDashboard from "./pages/Admin/Admin-Dashboard";
+import AdminJobManagement from "./pages/Admin/Admin-JobManagement";
 import AdminApplicantManagement from "./pages/Admin/Admin-ApplicantManagement";
 import AdminEmployerManagement from "./pages/Admin/Admin-EmployerManagement";
 import AdminApplicantAnalytics from "./pages/Admin/Admin-ApplicantAnalytics";
@@ -208,6 +209,9 @@ export default function App() {
   // Admin routes
   if (path === "/admin-dashboard" || path === "/admin/dashboard" || path === "/admin") {
     return <ProtectedRoute element={<AdminDashboard />} allowedRoles={["admin"]} />;
+  }
+  if (path === "/admin-jobs" || path === "/admin/jobs" || path === "/admin-job-management") {
+    return <ProtectedRoute element={<AdminJobManagement />} allowedRoles={["admin"]} />;
   }
   if (path === "/admin-applicants" || path === "/admin/applicants") {
     return <ProtectedRoute element={<AdminApplicantManagement />} allowedRoles={["admin"]} />;

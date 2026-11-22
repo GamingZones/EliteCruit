@@ -857,8 +857,9 @@ export default function JobDetailsModal({
   const locationStr = job?.location || job?.company_address || "Cavite";
   const appCount = job?.applicantCount ?? job?.applicant_count ?? 0;
   const closeDate = job?.closeDate || job?.close_date || "-";
-  const isClosed = job ? isJobClosedOrExpired(closeDate, job.status, (job as any).applicationLimit || (job as any).application_limit, appCount) : false;
-  const isOpenStatus = !isClosed;
+  const isSuspended = String(job?.status || "").toLowerCase() === "suspended";
+  const isClosed = !isSuspended && (job ? isJobClosedOrExpired(closeDate, job.status, (job as any).applicationLimit || (job as any).application_limit, appCount) : false);
+  const isOpenStatus = !isSuspended && !isClosed;
   const isUrgent = Boolean(job?.urgent || job?.is_urgent);
   const workSetup = job?.setup || job?.work_arrangement || "On-Site";
   const experienceLevel = job?.experienceLevel || job?.experience_level || "";
@@ -2132,14 +2133,29 @@ export default function JobDetailsModal({
               )}
             </div>
             <div className="jd-chips-inline">
-              <span className={`status-chip ${isOpenStatus ? "open" : "closed"}`}>
-                {isOpenStatus ? "Open" : "Closed"}
-              </span>
+              {isSuspended ? (
+                <span className="status-chip suspended">Suspended</span>
+              ) : (
+                <span className={`status-chip ${isOpenStatus ? "open" : "closed"}`}>
+                  {isOpenStatus ? "Open" : "Closed"}
+                </span>
+              )}
               {isUrgent && <span className="status-chip urgent">Urgent</span>}
               <span className="setup-pill">{workSetup}</span>
               {experienceLevel && <span className="exp-level-pill">{experienceLevel}</span>}
               <span className="salary-pill">{formatSalary()}</span>
             </div>
+            {isSuspended && (
+              <div className="jd-suspended-alert">
+                <span className="jd-suspended-icon">⚠️</span>
+                <div className="jd-suspended-text">
+                  <strong>Notice: This Job Posting Has Been Suspended by Administration</strong>
+                  <p>
+                    This job vacancy is currently suspended and hidden from public search. If you wish to provide clarification, appeal, or request cancellation of this suspension, please contact administration via email at <a href="mailto:admin@elitecruit.com">admin@elitecruit.com</a>.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="jd-section">

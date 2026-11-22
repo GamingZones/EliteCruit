@@ -44,9 +44,10 @@ export default function AdminSidebar({
 
   const navItems = [
     { label: "Overview", icon: "dashboard" as AdminNavIcon, href: "/admin-dashboard" },
+    { label: "Job Postings", icon: "jobs" as AdminNavIcon, href: "/admin-jobs" },
     { label: "Applicant Management", icon: "users" as AdminNavIcon, href: "/admin-applicants" },
     { label: "Applicant Analytics", icon: "audit" as AdminNavIcon, href: "/admin-applicant-analytics" },
-    { label: "Employer Management", icon: "jobs" as AdminNavIcon, href: "/admin-employers" },
+    { label: "Employer Management", icon: "profile" as AdminNavIcon, href: "/admin-employers" },
     { label: "Employer Analytics", icon: "settings" as AdminNavIcon, href: "/admin-employer-analytics" },
     { label: "Settings", icon: "settings" as AdminNavIcon, href: "/settings" },
   ];
