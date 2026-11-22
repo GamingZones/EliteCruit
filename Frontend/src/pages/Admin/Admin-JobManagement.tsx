@@ -301,8 +301,6 @@ export default function AdminJobManagement() {
                   <tr>
                     <th className="col-title">Job Title</th>
                     <th className="col-company">Company</th>
-                    <th className="col-location">Location & Setup</th>
-                    <th className="col-salary">Salary Range</th>
                     <th className="col-applicants">Applicants</th>
                     <th className="col-date">Posted Date</th>
                     <th className="col-status">Status</th>
@@ -312,13 +310,13 @@ export default function AdminJobManagement() {
                 <tbody>
                   {isLoading ? (
                     <tr>
-                      <td colSpan={8} className="admin-empty-cell">
+                      <td colSpan={6} className="admin-empty-cell">
                         Loading job postings...
                       </td>
                     </tr>
                   ) : filteredJobs.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="admin-empty-cell">
+                      <td colSpan={6} className="admin-empty-cell">
                         No job postings found matching your search criteria.
                       </td>
                     </tr>
@@ -349,21 +347,6 @@ export default function AdminJobManagement() {
                               <strong className="company-name-text">{job.company_name}</strong>
                               <span className="company-email-text">{job.employer_email}</span>
                             </div>
-                          </td>
-
-                          {/* Location & Setup */}
-                          <td className="col-location">
-                            <div className="loc-setup-cell">
-                              <span className="setup-badge">{job.work_arrangement || "Flexible"}</span>
-                              <span className="loc-text">{job.location || "Cavite"}</span>
-                            </div>
-                          </td>
-
-                          {/* Salary */}
-                          <td className="col-salary">
-                            <span className="salary-text">
-                              {formatSalary(job.salary_min, job.salary_max, job.hide_salary)}
-                            </span>
                           </td>
 
                           {/* Applicants */}
