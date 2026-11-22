@@ -5275,3 +5275,226 @@
   color: #fbbf24 !important;
   border: 1px solid rgba(245, 158, 11, 0.3) !important;
 }
+
+/* ==========================================================================
+   LAYERED SUSPENDED JOB POST OVERLAY (Employer Applicant Pools - Rule 1 & Rule 9)
+   ========================================================================== */
+.job-accordion-card.is-suspended-card {
+  position: relative;
+  overflow: hidden;
+  border-color: #fca5a5;
+  min-height: 84px;
+}
+
+.job-accordion-card.is-suspended-card .job-accordion-header {
+  filter: grayscale(40%) blur(0.5px);
+  opacity: 0.35;
+  pointer-events: none;
+  user-select: none;
+}
+
+.job-accordion-suspended-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border-radius: 10px;
+  box-sizing: border-box;
+  animation: suspendedFadeIn 0.2s ease-out;
+}
+
+@keyframes suspendedFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.job-accordion-suspended-overlay-card {
+  background: #ffffff;
+  border: 1.5px solid #fde68a;
+  border-left: 5px solid #d97706;
+  border-radius: 10px;
+  padding: 8px 16px;
+  width: 100%;
+  box-shadow: 0 8px 20px -4px rgba(217, 119, 6, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-sizing: border-box;
+}
+
+.job-accordion-suspended-overlay .suspended-overlay-icon-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fef3c7;
+  color: #b45309;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.job-accordion-suspended-overlay .suspended-overlay-content {
+  flex: 1;
+  text-align: left;
+  min-width: 0;
+}
+
+.job-accordion-suspended-overlay .suspended-overlay-title {
+  margin: 0 0 3px 0;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #92400e;
+  line-height: 1.25;
+}
+
+.job-accordion-suspended-overlay .suspended-overlay-text {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #78350f;
+  line-height: 1.35;
+}
+
+.job-accordion-suspended-overlay .suspended-overlay-text a {
+  color: #b45309;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.job-accordion-suspended-overlay .suspended-overlay-text a:hover {
+  color: #78350f;
+}
+
+.job-accordion-suspended-overlay .suspended-overlay-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.job-accordion-suspended-overlay .suspended-overlay-review-btn {
+  background: #00385e;
+  color: #ffffff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.job-accordion-suspended-overlay .suspended-overlay-review-btn:hover {
+  background: #002640;
+}
+
+.job-accordion-suspended-overlay .suspended-overlay-email-btn {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+  text-align: center;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.job-accordion-suspended-overlay .suspended-overlay-email-btn:hover {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+/* Dark Mode Theme Isolation (Rule 9) */
+[data-theme="dark"] .job-accordion-card.is-suspended-card {
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
+[data-theme="dark"] .job-accordion-card.is-suspended-card .job-accordion-header {
+  filter: grayscale(40%) blur(0.5px);
+  opacity: 0.35;
+}
+
+[data-theme="dark"] .job-accordion-suspended-overlay {
+  background: rgba(11, 23, 39, 0.88);
+}
+
+[data-theme="dark"] .job-accordion-suspended-overlay-card {
+  background: #1e293b;
+  border-color: rgba(245, 158, 11, 0.4);
+  border-left-color: #f59e0b;
+  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .job-accordion-suspended-overlay .suspended-overlay-icon-badge {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .job-accordion-suspended-overlay .suspended-overlay-title {
+  color: #fde68a;
+}
+
+[data-theme="dark"] .job-accordion-suspended-overlay .suspended-overlay-text {
+  color: #fef3c7;
+}
+
+[data-theme="dark"] .job-accordion-suspended-overlay .suspended-overlay-text a {
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .job-accordion-suspended-overlay .suspended-overlay-text a:hover {
+  color: #fef08a;
+}
+
+[data-theme="dark"] .job-accordion-suspended-overlay .suspended-overlay-review-btn {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .job-accordion-suspended-overlay .suspended-overlay-review-btn:hover {
+  background: #0369a1;
+}
+
+[data-theme="dark"] .job-accordion-suspended-overlay .suspended-overlay-email-btn {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+[data-theme="dark"] .job-accordion-suspended-overlay .suspended-overlay-email-btn:hover {
+  background: rgba(239, 68, 68, 0.32);
+  color: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .job-accordion-suspended-overlay-card {
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+    padding: 10px;
+  }
+  .job-accordion-suspended-overlay .suspended-overlay-content {
+    text-align: center;
+  }
+  .job-accordion-suspended-overlay .suspended-overlay-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+}

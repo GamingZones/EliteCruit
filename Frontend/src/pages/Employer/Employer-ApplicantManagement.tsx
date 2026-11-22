@@ -8,6 +8,7 @@ import { useUnreadMessagesCount } from "../../hooks/useUnreadMessagesCount";
 import EmployerChatbotDrawer, { EmployerFAQItem as FAQItem } from "../../components/EmployerChatbotDrawer";
 import CalendarDrawer from "../../components/CalendarDrawer";
 import ConfirmationModal from "../../components/ConfirmationModal";
+import JobDetailsModal from "../../components/modals/JobDetailsModal";
 import {
   ALL_UNIFIED_SKILLS,
   ALL_UNIFIED_QUALIFICATIONS,
@@ -1176,6 +1177,7 @@ export default function EmployerApplicantManagement() {
   const [stagedDecisions, setStagedDecisions] = useState<Record<number, "approved" | "denied">>({});
   const [reviewModalApp, setReviewModalApp] = useState<Application | null>(null);
   const [reviewModalProfile, setReviewModalProfile] = useState<any>(null);
+  const [detailsModalJob, setDetailsModalJob] = useState<any>(null);
   const [modalInitialSideTab, setModalInitialSideTab] = useState<"breakdown" | "messages" | null>(null);
   const [candDetailTab, setCandDetailTab] = useState<"personal" | "preferences" | "competencies" | "experience">("personal");
   const [isDocsDrawerOpen, setIsDocsDrawerOpen] = useState(false);
@@ -1945,6 +1947,7 @@ export default function EmployerApplicantManagement() {
         workArrangement?: string;
         salaryMin?: number;
         salaryMax?: number;
+        status?: string;
       }
     >();
 
@@ -1960,6 +1963,7 @@ export default function EmployerApplicantManagement() {
             workArrangement: app.job_work_arrangement || undefined,
             salaryMin: app.job_salary_min,
             salaryMax: app.job_salary_max,
+            status: (app as any).job_status || allJobsMap[Number(key)]?.status || "open",
           });
         }
       }
@@ -1977,6 +1981,7 @@ export default function EmployerApplicantManagement() {
           workArrangement: j.work_arrangement || existing?.workArrangement || undefined,
           salaryMin: j.salary_min ?? existing?.salaryMin,
           salaryMax: j.salary_max ?? existing?.salaryMax,
+          status: j.status || existing?.status || "open",
         });
       }
     });
@@ -1988,6 +1993,7 @@ export default function EmployerApplicantManagement() {
       workArrangement?: string;
       salaryMin?: number;
       salaryMax?: number;
+      status?: string;
       applicants: Application[];
       totalApplicants: number;
     }[] = [];
@@ -2024,6 +2030,7 @@ export default function EmployerApplicantManagement() {
       ) {
         groups.push({
           ...jobInfo,
+          status: jobInfo.status || "open",
           applicants: jobApplicants,
           totalApplicants: totalForJob,
         });
@@ -2081,6 +2088,7 @@ export default function EmployerApplicantManagement() {
         workArrangement?: string;
         salaryMin?: number;
         salaryMax?: number;
+        status?: string;
       }
     >();
 
@@ -2096,6 +2104,7 @@ export default function EmployerApplicantManagement() {
             workArrangement: inv.work_arrangement || undefined,
             salaryMin: inv.salary_min,
             salaryMax: inv.salary_max,
+            status: allJobsMap[Number(key)]?.status || "open",
           });
         }
       }
@@ -2113,6 +2122,7 @@ export default function EmployerApplicantManagement() {
           workArrangement: j.work_arrangement || existing?.workArrangement || undefined,
           salaryMin: j.salary_min ?? existing?.salaryMin,
           salaryMax: j.salary_max ?? existing?.salaryMax,
+          status: j.status || existing?.status || "open",
         });
       }
     });
@@ -2124,6 +2134,7 @@ export default function EmployerApplicantManagement() {
       workArrangement?: string;
       salaryMin?: number;
       salaryMax?: number;
+      status?: string;
       invitations: DirectInvitation[];
       totalInvitations: number;
     }[] = [];
@@ -2147,6 +2158,7 @@ export default function EmployerApplicantManagement() {
 
       groups.push({
         ...jobInfo,
+        status: jobInfo.status || "open",
         invitations: jobInvs,
         totalInvitations: totalForJob,
       });
@@ -3611,15 +3623,65 @@ export default function EmployerApplicantManagement() {
 
                 const locations = parseJobLocationsList(jobGroup.location);
                 const salaryText = formatJobSalary(jobGroup.salaryMin, jobGroup.salaryMax);
+                const isSuspended = jobGroup.status === "suspended";
 
                 return (
                   <div
                     key={jobGroup.id}
-                    className={`job-accordion-card ${isExpanded ? "is-expanded" : ""}`}
+                    className={`job-accordion-card ${isExpanded ? "is-expanded" : ""} ${isSuspended ? "is-suspended-card" : ""}`}
                   >
+                    {isSuspended && (
+                      <div className="job-accordion-suspended-overlay">
+                        <div className="job-accordion-suspended-overlay-card">
+                          <div className="suspended-overlay-icon-badge">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                              <line x1="12" y1="9" x2="12" y2="13" />
+                              <line x1="12" y1="17" x2="12.01" y2="17" />
+                            </svg>
+                          </div>
+                          <div className="suspended-overlay-content">
+                            <h4 className="suspended-overlay-title">Job Posting Suspended by Administration</h4>
+                            <p className="suspended-overlay-text">
+                              This job posting has been suspended by platform administration and is hidden from public job listings. If you wish to provide clarification, appeal, or request cancellation of this suspension, please contact administration via email at <a href={`mailto:admin@elitecruit.com?subject=Suspension%20Inquiry%20-%20Job%20ID%20${jobGroup.id}%20(${encodeURIComponent(jobGroup.title)})`} onClick={(e) => e.stopPropagation()}>admin@elitecruit.com</a>.
+                            </p>
+                          </div>
+                          <div className="suspended-overlay-actions">
+                            <button
+                              type="button"
+                              className="suspended-overlay-review-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const jobData = allJobsMap[Number(jobGroup.id)] || {
+                                  id: jobGroup.id,
+                                  title: jobGroup.title,
+                                  location: jobGroup.location,
+                                  work_arrangement: jobGroup.workArrangement,
+                                  salary_min: jobGroup.salaryMin,
+                                  salary_max: jobGroup.salaryMax,
+                                  status: "suspended",
+                                };
+                                setDetailsModalJob(jobData);
+                              }}
+                            >
+                              Review Details
+                            </button>
+                            <a
+                              href={`mailto:admin@elitecruit.com?subject=Suspension%20Inquiry%20-%20Job%20ID%20${jobGroup.id}%20(${encodeURIComponent(jobGroup.title)})`}
+                              className="suspended-overlay-email-btn"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              Email Admin
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     <div
                       className="job-accordion-header"
-                      onClick={() => toggleJobAccordion(jobGroup.id)}
+                      onClick={() => {
+                        if (!isSuspended) toggleJobAccordion(jobGroup.id);
+                      }}
                     >
                       <div className="job-accordion-header-left">
                         <span className="accordion-chevron-icon" aria-hidden="true">
@@ -4653,15 +4715,65 @@ export default function EmployerApplicantManagement() {
                   const pendingCount = jobGroup.invitations.filter((inv) => (inv.status || "pending").toLowerCase() === "pending").length;
                   const locations = parseJobLocationsList(jobGroup.location);
                   const salaryText = formatJobSalary(jobGroup.salaryMin, jobGroup.salaryMax);
+                  const isSuspended = jobGroup.status === "suspended";
 
                   return (
                     <div
                       key={jobGroup.id}
-                      className={`job-accordion-card ${isExpanded ? "is-expanded" : ""}`}
+                      className={`job-accordion-card ${isExpanded ? "is-expanded" : ""} ${isSuspended ? "is-suspended-card" : ""}`}
                     >
+                      {isSuspended && (
+                        <div className="job-accordion-suspended-overlay">
+                          <div className="job-accordion-suspended-overlay-card">
+                            <div className="suspended-overlay-icon-badge">
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                                <line x1="12" y1="9" x2="12" y2="13" />
+                                <line x1="12" y1="17" x2="12.01" y2="17" />
+                              </svg>
+                            </div>
+                            <div className="suspended-overlay-content">
+                              <h4 className="suspended-overlay-title">Job Posting Suspended by Administration</h4>
+                              <p className="suspended-overlay-text">
+                                This job posting has been suspended by platform administration and is hidden from public job listings. If you wish to provide clarification, appeal, or request cancellation of this suspension, please contact administration via email at <a href={`mailto:admin@elitecruit.com?subject=Suspension%20Inquiry%20-%20Job%20ID%20${jobGroup.id}%20(${encodeURIComponent(jobGroup.title)})`} onClick={(e) => e.stopPropagation()}>admin@elitecruit.com</a>.
+                              </p>
+                            </div>
+                            <div className="suspended-overlay-actions">
+                              <button
+                                type="button"
+                                className="suspended-overlay-review-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const jobData = allJobsMap[Number(jobGroup.id)] || {
+                                    id: jobGroup.id,
+                                    title: jobGroup.title,
+                                    location: jobGroup.location,
+                                    work_arrangement: jobGroup.workArrangement,
+                                    salary_min: jobGroup.salaryMin,
+                                    salary_max: jobGroup.salaryMax,
+                                    status: "suspended",
+                                  };
+                                  setDetailsModalJob(jobData);
+                                }}
+                              >
+                                Review Details
+                              </button>
+                              <a
+                                href={`mailto:admin@elitecruit.com?subject=Suspension%20Inquiry%20-%20Job%20ID%20${jobGroup.id}%20(${encodeURIComponent(jobGroup.title)})`}
+                                className="suspended-overlay-email-btn"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                Email Admin
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       <div
                         className="job-accordion-header"
-                        onClick={() => toggleInvitationJobAccordion(jobGroup.id)}
+                        onClick={() => {
+                          if (!isSuspended) toggleInvitationJobAccordion(jobGroup.id);
+                        }}
                       >
                         <div className="job-accordion-header-left">
                           <span className="accordion-chevron-icon" aria-hidden="true">
@@ -6007,6 +6119,37 @@ export default function EmployerApplicantManagement() {
           document.body
         )}
       </main>
+
+      {/* STANDARDIZED JOB DETAILS MODAL */}
+      {detailsModalJob && (
+        <JobDetailsModal
+          isOpen={Boolean(detailsModalJob)}
+          isApplicantView={false}
+          hideEmployerHeader={true}
+          onClose={() => setDetailsModalJob(null)}
+          job={{
+            id: detailsModalJob.id,
+            title: detailsModalJob.title,
+            company: companyLabel || "Company",
+            employerUserId: currentEmployerUserId || undefined,
+            location: detailsModalJob.location || "Cavite",
+            status: detailsModalJob.status,
+            urgent: Boolean(Number(detailsModalJob.is_urgent || 0)),
+            setup: detailsModalJob.work_arrangement || "On-Site",
+            work_arrangement: detailsModalJob.work_arrangement,
+            salary_min: detailsModalJob.salary_min,
+            salary_max: detailsModalJob.salary_max,
+            experience_level: detailsModalJob.experience_level,
+            summary: detailsModalJob.description,
+            description: detailsModalJob.description,
+            qualifications: detailsModalJob.qualifications,
+            certifications: detailsModalJob.certifications,
+            required_skills: detailsModalJob.required_skills,
+            close_date: detailsModalJob.close_date,
+            applicant_count: detailsModalJob.applicant_count,
+          }}
+        />
+      )}
 
       <ConfirmationModal
         isOpen={isLogoutModalOpen}

@@ -7,6 +7,7 @@ import EmployerChatbotDrawer, { EmployerFAQItem as FAQItem } from "../../compone
 import CalendarDrawer from "../../components/CalendarDrawer";
 import ConfirmationModal from "../../components/ConfirmationModal";
 import ApplicantDetailsModal, { type CandidateModalData } from "../../components/modals/ApplicantDetailsModal";
+import JobDetailsModal from "../../components/modals/JobDetailsModal";
 import { authFetch } from "../../utils/auth";
 import {
   parseLocations,
@@ -321,6 +322,7 @@ export default function EmployerDashboard() {
 
   // Modals state
   const [detailsModalCandidate, setDetailsModalCandidate] = useState<CandidateModalData | null>(null);
+  const [detailsModalJob, setDetailsModalJob] = useState<any>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [viewOfferLetterModal, setViewOfferLetterModal] = useState<{
     candidateName: string;
@@ -961,39 +963,77 @@ export default function EmployerDashboard() {
                         };
                     const maxCount = Math.max(sortedJobPosts[0]?.applicant_count || 1, 4);
                     const fillPct = Math.min(100, Math.max(12, Math.round((count / maxCount) * 100)));
+                    const isSuspended = job.status === "suspended";
 
                     return (
-                      <div className="top-job-item" key={job.id}>
-                        <div className="top-job-header">
-                          <div className="top-job-title-col">
-                            <span className="top-job-rank">#{idx + 1}</span>
-                            <div>
-                              <strong className="top-job-name" title={job.title}>{job.title}</strong>
-                              <div className="job-post-location">
-                                <RenderLocationMeta location={job.location} />
+                      <div className={`top-job-item ${isSuspended ? "is-suspended-card" : ""}`} key={job.id}>
+                        {isSuspended && (
+                          <div className="dashboard-job-suspended-overlay">
+                            <div className="dashboard-job-suspended-overlay-card">
+                              <div className="suspended-overlay-icon-badge">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                                  <line x1="12" y1="9" x2="12" y2="13" />
+                                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                                </svg>
+                              </div>
+                              <div className="suspended-overlay-content">
+                                <h4 className="suspended-overlay-title">Job Posting Suspended by Administration</h4>
+                                <p className="suspended-overlay-text">
+                                  This job posting has been suspended by platform administration and is hidden from public job listings. If you wish to appeal or request cancellation, please contact <a href={`mailto:admin@elitecruit.com?subject=Suspension%20Inquiry%20-%20Job%20ID%20${job.id}%20(${encodeURIComponent(job.title)})`}>admin@elitecruit.com</a>.
+                                </p>
+                              </div>
+                              <div className="suspended-overlay-actions">
+                                <button
+                                  type="button"
+                                  className="suspended-overlay-review-btn"
+                                  onClick={() => setDetailsModalJob(job)}
+                                >
+                                  Review Details
+                                </button>
+                                <a
+                                  href={`mailto:admin@elitecruit.com?subject=Suspension%20Inquiry%20-%20Job%20ID%20${job.id}%20(${encodeURIComponent(job.title)})`}
+                                  className="suspended-overlay-email-btn"
+                                >
+                                  Email Admin
+                                </a>
                               </div>
                             </div>
                           </div>
-                          <span className={`inflow-badge ${badgeClass}`} title={badgeInfo.tooltip}>
-                            {badgeInfo.icon}
-                            <span>{badgeInfo.label}</span>
-                          </span>
-                        </div>
+                        )}
 
-                        <div className="top-job-velocity-row">
-                          <div className="velocity-bar-track">
-                            <div className={`velocity-bar-fill ${badgeClass}`} style={{ width: `${fillPct}%` }} />
+                        <div className="top-job-inner">
+                          <div className="top-job-header">
+                            <div className="top-job-title-col">
+                              <span className="top-job-rank">#{idx + 1}</span>
+                              <div>
+                                <strong className="top-job-name" title={job.title}>{job.title}</strong>
+                                <div className="job-post-location">
+                                  <RenderLocationMeta location={job.location} />
+                                </div>
+                              </div>
+                            </div>
+                            <span className={`inflow-badge ${badgeClass}`} title={badgeInfo.tooltip}>
+                              {badgeInfo.icon}
+                              <span>{badgeInfo.label}</span>
+                            </span>
                           </div>
-                          <span className="velocity-count-text">
-                            <strong>{count}</strong> {count === 1 ? "applicant" : "applicants"}
-                          </span>
-                        </div>
 
-                        <div className="top-job-footer">
-                          <span className="status-green">{job.status || "open"}</span>
-                          <a href={`/employer-applicant-management?jobId=${job.id}`} className="view-applicants-btn">
-                            View Candidates →
-                          </a>
+                          <div className="top-job-velocity-row">
+                            <div className="velocity-bar-track">
+                              <div className={`velocity-bar-fill ${badgeClass}`} style={{ width: `${fillPct}%` }} />
+                            </div>
+                            <span className="velocity-count-text">
+                              <strong>{count}</strong> {count === 1 ? "applicant" : "applicants"}
+                            </span>
+                          </div>
+
+                          <div className="top-job-footer">
+                            <span className={isSuspended ? "status-suspended" : "status-green"}>{job.status || "open"}</span>
+                            <a href={`/employer-applicant-management?jobId=${job.id}`} className="view-applicants-btn">
+                              View Candidates →
+                            </a>
+                          </div>
                         </div>
                       </div>
                     );
@@ -1448,6 +1488,37 @@ export default function EmployerDashboard() {
           </div>
         );
       })()}
+
+      {/* STANDARDIZED JOB DETAILS MODAL */}
+      {detailsModalJob && (
+        <JobDetailsModal
+          isOpen={Boolean(detailsModalJob)}
+          isApplicantView={false}
+          hideEmployerHeader={true}
+          onClose={() => setDetailsModalJob(null)}
+          job={{
+            id: detailsModalJob.id,
+            title: detailsModalJob.title,
+            company: companyLabel || "Company",
+            employerUserId: detailsModalJob.employer_user_id || undefined,
+            location: detailsModalJob.location || "Cavite",
+            status: detailsModalJob.status,
+            urgent: Boolean(Number(detailsModalJob.is_urgent || 0)),
+            setup: detailsModalJob.work_arrangement || "On-Site",
+            work_arrangement: detailsModalJob.work_arrangement,
+            salary_min: detailsModalJob.salary_min,
+            salary_max: detailsModalJob.salary_max,
+            experience_level: detailsModalJob.experience_level,
+            summary: detailsModalJob.description,
+            description: detailsModalJob.description,
+            qualifications: detailsModalJob.qualifications,
+            certifications: detailsModalJob.certifications,
+            required_skills: detailsModalJob.required_skills,
+            close_date: detailsModalJob.close_date,
+            applicant_count: detailsModalJob.applicant_count,
+          }}
+        />
+      )}
 
       {/* DOUBLE VERIFICATION: LOGOUT CONFIRMATION MODAL */}
       <ConfirmationModal

@@ -6628,6 +6628,7 @@ app.get("/api/employers/:userId/dashboard-summary", authenticateToken, requireUs
     const hasApplications = await tableExists("applications");
 
     let activeJobPosts = [];
+    let openJobCount = 0;
     if (hasApplications) {
       const rows = await all(
         `SELECT jp.*, COALESCE(NULLIF(TRIM(jp.location), ''), ep.company_address, ep.city, 'Cavite') AS location, COUNT(a.id) AS applicant_count
@@ -6639,9 +6640,9 @@ app.get("/api/employers/:userId/dashboard-summary", authenticateToken, requireUs
          ORDER BY jp.created_at DESC`,
         [userId]
       );
-      activeJobPosts = rows
-        .map((row) => ({ ...row, status: deriveJobPostStatus(row.close_date, row.status) }))
-        .filter((row) => row.status === "open");
+      const mappedRows = rows.map((row) => ({ ...row, status: deriveJobPostStatus(row.close_date, row.status) }));
+      activeJobPosts = mappedRows.filter((row) => row.status === "open" || row.status === "suspended");
+      openJobCount = mappedRows.filter((row) => row.status === "open").length;
     } else {
       const rows = await all(
         `SELECT jp.*, COALESCE(NULLIF(TRIM(jp.location), ''), ep.company_address, ep.city, 'Cavite') AS location
@@ -6651,9 +6652,9 @@ app.get("/api/employers/:userId/dashboard-summary", authenticateToken, requireUs
          ORDER BY jp.created_at DESC`,
         [userId]
       );
-      activeJobPosts = rows
-        .map((row) => ({ ...row, applicant_count: 0, status: deriveJobPostStatus(row.close_date, row.status) }))
-        .filter((row) => row.status === "open");
+      const mappedRows = rows.map((row) => ({ ...row, applicant_count: 0, status: deriveJobPostStatus(row.close_date, row.status) }));
+      activeJobPosts = mappedRows.filter((row) => row.status === "open" || row.status === "suspended");
+      openJobCount = mappedRows.filter((row) => row.status === "open").length;
     }
 
     let recentApplications = [];
@@ -6713,7 +6714,7 @@ app.get("/api/employers/:userId/dashboard-summary", authenticateToken, requireUs
 
       res.json({
         stats: {
-          activeJobs: activeJobPosts.length,
+          activeJobs: openJobCount,
           applications: totalApplications,
           shortlisted: shortlistedCount,
           toReview: toReviewCount,
@@ -6734,7 +6735,7 @@ app.get("/api/employers/:userId/dashboard-summary", authenticateToken, requireUs
 
     res.json({
       stats: {
-        activeJobs: activeJobPosts.length,
+        activeJobs: openJobCount,
         applications: totalApplications,
         shortlisted: 0,
         toReview: 0,
