@@ -2228,82 +2228,53 @@ export default function ApplicantDetailsModal({
                       return (
                         <article
                           key={msg.id}
-                          className={`chat-bubble chat-special-card chat-offer-card ${isMe ? "outgoing" : "incoming"} ${isAccepted ? "offer-card-accepted" : isDeclined ? "offer-card-declined" : ""} ${isJobSuspended ? "is-suspended-card" : ""}`}
+                          className={`chat-bubble chat-special-card chat-offer-card ${isMe ? "outgoing" : "incoming"} ${isJobSuspended ? "is-suspended-card" : isAccepted ? "offer-card-accepted" : isDeclined ? "offer-card-declined" : ""}`}
                         >
-                          {isJobSuspended && (
-                            <div className="chat-card-suspended-overlay">
-                              <div className="chat-card-suspended-overlay-card">
-                                <div className="suspended-overlay-header-row">
-                                  <div className="suspended-overlay-icon-badge">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-                                      <line x1="12" y1="9" x2="12" y2="13" />
-                                      <line x1="12" y1="17" x2="12.01" y2="17" />
-                                    </svg>
-                                  </div>
-                                  <h4 className="suspended-overlay-title">Job Posting Suspended by Administration</h4>
-                                </div>
-                                <p className="suspended-overlay-text">
-                                  This job posting has been suspended by platform administration and is hidden from public job listings. If you wish to provide clarification, appeal, or request cancellation of this suspension, please contact administration via email at admin@elitecruit.com.
-                                </p>
-                                <div className="suspended-overlay-actions">
-                                  {onViewJobDetails && matchedJob && (
-                                    <button
-                                      type="button"
-                                      className="suspended-overlay-review-btn"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onViewJobDetails(matchedJob);
-                                      }}
-                                    >
-                                      Review Details
-                                    </button>
-                                  )}
-                                  <a
-                                    href={`mailto:admin@elitecruit.com?subject=Suspension%20Inquiry%20-%20Job%20ID%20${matchedJob?.id || ""}%20(${encodeURIComponent(special.jobTitle || "")})`}
-                                    className="suspended-overlay-email-btn"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    Email Admin
-                                  </a>
-                                </div>
-                              </div>
-                            </div>
-                          )}
                           <div className="chat-special-header">
                             <div className="chat-special-badge-row">
                               <div className="chat-special-badges-group">
                                 <span className={`chat-origin-badge ${isDirectOffer ? "origin-direct" : "origin-application"}`}>
                                   {isDirectOffer ? "DIRECT EMPLOYER OFFER" : "CANDIDATE APPLICATION"}
                                 </span>
-                                <span className={`chat-special-badge ${isAccepted ? "badge-accepted" : isDeclined ? "badge-declined" : "badge-formal-offer"}`}>
-                                {isAccepted ? (
-                                  <>
-                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                      <polyline points="20 6 9 17 4 12" />
-                                    </svg>
-                                    <span>Offer Accepted</span>
-                                  </>
-                                ) : isDeclined ? (
-                                  <>
-                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                      <line x1="18" y1="6" x2="6" y2="18" />
-                                      <line x1="6" y1="6" x2="18" y2="18" />
-                                    </svg>
-                                    <span>Offer Declined</span>
-                                  </>
-                                ) : (
-                                  <>
+                                {isJobSuspended ? (
+                                  <span className="chat-special-badge badge-suspended">
                                     <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                      <polyline points="14 2 14 8 20 8" />
-                                      <line x1="16" y1="13" x2="8" y2="13" />
-                                      <line x1="16" y1="17" x2="8" y2="17" />
+                                      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                                      <line x1="12" y1="9" x2="12" y2="13" />
+                                      <line x1="12" y1="17" x2="12.01" y2="17" />
                                     </svg>
-                                    <span>Formal Employment Offer</span>
-                                  </>
+                                    <span>Position Suspended</span>
+                                  </span>
+                                ) : (
+                                  <span className={`chat-special-badge ${isAccepted ? "badge-accepted" : isDeclined ? "badge-declined" : "badge-formal-offer"}`}>
+                                    {isAccepted ? (
+                                      <>
+                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                          <polyline points="20 6 9 17 4 12" />
+                                        </svg>
+                                        <span>Offer Accepted</span>
+                                      </>
+                                    ) : isDeclined ? (
+                                      <>
+                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                          <line x1="18" y1="6" x2="6" y2="18" />
+                                          <line x1="6" y1="6" x2="18" y2="18" />
+                                        </svg>
+                                        <span>Offer Declined</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                          <polyline points="14 2 14 8 20 8" />
+                                          <line x1="16" y1="13" x2="8" y2="13" />
+                                          <line x1="16" y1="17" x2="8" y2="17" />
+                                        </svg>
+                                        <span>Formal Employment Offer</span>
+                                      </>
+                                    )}
+                                  </span>
                                 )}
-                              </span>
                               </div>
                               <time className="chat-special-time">{timeStr}</time>
                             </div>
@@ -2311,18 +2282,71 @@ export default function ApplicantDetailsModal({
                             <div className="chat-special-subtitle">{special.companyName || employerCompanyName}</div>
                           </div>
 
-                          <div className="chat-special-notice">
-                            <p>
-                              {isAccepted
-                                ? "Candidate has officially accepted this employment offer. Click below to review the offer and signed response letter."
-                                : isDeclined
-                                ? "Candidate has formally declined this employment offer. Click below to view the response details."
-                                : "An official employment offer has been extended for this position. Click below to review the full offer letter, compensation, and benefits."}
-                            </p>
-                          </div>
+                          {isJobSuspended ? (
+                            <div className="chat-suspended-notice-box">
+                              <div className="chat-suspended-notice-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                                  <line x1="12" y1="9" x2="12" y2="13" />
+                                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                                </svg>
+                              </div>
+                              <div className="chat-suspended-notice-content">
+                                <h5 className="chat-suspended-notice-title">Job Posting Suspended by Administration</h5>
+                                <p className="chat-suspended-notice-text">
+                                  This job posting has been suspended by platform administration and is hidden from public job listings. If you wish to provide clarification, appeal, or request cancellation of this suspension, please contact administration via email at admin@elitecruit.com.
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="chat-special-notice">
+                              <p>
+                                {isAccepted
+                                  ? "Candidate has officially accepted this employment offer. Click below to review the offer and signed response letter."
+                                  : isDeclined
+                                  ? "Candidate has formally declined this employment offer. Click below to view the response details."
+                                  : "An official employment offer has been extended for this position. Click below to review the full offer letter, compensation, and benefits."}
+                              </p>
+                            </div>
+                          )}
 
-                          <div className="chat-special-actions">
-                            <button
+                          {isJobSuspended ? (
+                            <div className="chat-special-actions chat-suspended-actions">
+                              <button
+                                type="button"
+                                className="chat-action-btn chat-btn-view"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (onViewJobDetails && matchedJob) {
+                                    onViewJobDetails(matchedJob);
+                                  } else if (matchedJob) {
+                                    setSelectedPreviewJob(matchedJob);
+                                  } else if (candidate?.job_id) {
+                                    setSelectedPreviewJob({ id: candidate.job_id, title: special.jobTitle });
+                                  }
+                                }}
+                              >
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z" />
+                                  <circle cx="12" cy="12" r="3" />
+                                </svg>
+                                <span>Review Details</span>
+                              </button>
+                              <a
+                                href={`mailto:admin@elitecruit.com?subject=Suspension%20Inquiry%20-%20Job%20ID%20${matchedJob?.id || candidate?.job_id || ""}%20(${encodeURIComponent(special.jobTitle || "")})`}
+                                className="chat-action-btn chat-btn-email-admin"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                                  <polyline points="22,6 12,13 2,6" />
+                                </svg>
+                                <span>Email Admin</span>
+                              </a>
+                            </div>
+                          ) : (
+                            <div className="chat-special-actions">
+                              <button
                               type="button"
                               className="chat-action-btn chat-btn-view"
                               onClick={() => openViewLetterModal({
@@ -2384,7 +2408,8 @@ export default function ApplicantDetailsModal({
                               </button>
                             )}
                           </div>
-                        </article>
+                        )}
+                      </article>
                       );
                     }
 
@@ -2409,57 +2434,28 @@ export default function ApplicantDetailsModal({
                           key={msg.id}
                           className={`chat-bubble chat-special-card chat-interview-card ${isMe ? "outgoing" : "incoming"} ${isJobSuspended ? "is-suspended-card" : ""}`}
                         >
-                          {isJobSuspended && (
-                            <div className="chat-card-suspended-overlay">
-                              <div className="chat-card-suspended-overlay-card">
-                                <div className="suspended-overlay-header-row">
-                                  <div className="suspended-overlay-icon-badge">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-                                      <line x1="12" y1="9" x2="12" y2="13" />
-                                      <line x1="12" y1="17" x2="12.01" y2="17" />
-                                    </svg>
-                                  </div>
-                                  <h4 className="suspended-overlay-title">Job Posting Suspended by Administration</h4>
-                                </div>
-                                <p className="suspended-overlay-text">
-                                  This job posting has been suspended by platform administration and is hidden from public job listings. If you wish to provide clarification, appeal, or request cancellation of this suspension, please contact administration via email at admin@elitecruit.com.
-                                </p>
-                                <div className="suspended-overlay-actions">
-                                  {onViewJobDetails && matchedJob && (
-                                    <button
-                                      type="button"
-                                      className="suspended-overlay-review-btn"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onViewJobDetails(matchedJob);
-                                      }}
-                                    >
-                                      Review Details
-                                    </button>
-                                  )}
-                                  <a
-                                    href={`mailto:admin@elitecruit.com?subject=Suspension%20Inquiry%20-%20Job%20ID%20${matchedJob?.id || ""}%20(${encodeURIComponent(special.jobTitle || "")})`}
-                                    className="suspended-overlay-email-btn"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    Email Admin
-                                  </a>
-                                </div>
-                              </div>
-                            </div>
-                          )}
                           <div className="chat-special-header">
                             <div className="chat-special-badge-row">
-                              <span className="chat-special-badge badge-interview-sched">
-                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                                  <line x1="16" y1="2" x2="16" y2="6" />
-                                  <line x1="8" y1="2" x2="8" y2="6" />
-                                  <line x1="3" y1="10" x2="21" y2="10" />
-                                </svg>
-                                <span>Interview Scheduled</span>
-                              </span>
+                              {isJobSuspended ? (
+                                <span className="chat-special-badge badge-suspended">
+                                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                                    <line x1="12" y1="9" x2="12" y2="13" />
+                                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                                  </svg>
+                                  <span>Interview Suspended</span>
+                                </span>
+                              ) : (
+                                <span className="chat-special-badge badge-interview-sched">
+                                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                    <line x1="16" y1="2" x2="16" y2="6" />
+                                    <line x1="8" y1="2" x2="8" y2="6" />
+                                    <line x1="3" y1="10" x2="21" y2="10" />
+                                  </svg>
+                                  <span>Interview Scheduled</span>
+                                </span>
+                              )}
                               <time className="chat-special-time">{timeStr}</time>
                             </div>
                             <h4 className="chat-special-title">{special.jobTitle}</h4>
@@ -2481,21 +2477,75 @@ export default function ApplicantDetailsModal({
                             )}
                           </div>
 
-                          <div className="chat-special-actions">
-                            <button
-                              type="button"
-                              className="chat-action-btn chat-btn-open-cal"
-                              onClick={() => window.dispatchEvent(new CustomEvent("elitecruit-open-calendar", { detail: { tab: "all", date: special.date } }))}
-                            >
-                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                                <line x1="16" y1="2" x2="16" y2="6" />
-                                <line x1="8" y1="2" x2="8" y2="6" />
-                                <line x1="3" y1="10" x2="21" y2="10" />
-                              </svg>
-                              <span>Open Meeting Calendar</span>
-                            </button>
-                          </div>
+                          {isJobSuspended ? (
+                            <>
+                              <div className="chat-suspended-notice-box">
+                                <div className="chat-suspended-notice-icon">
+                                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                                    <line x1="12" y1="9" x2="12" y2="13" />
+                                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                                  </svg>
+                                </div>
+                                <div className="chat-suspended-notice-content">
+                                  <h5 className="chat-suspended-notice-title">Job Posting Suspended by Administration</h5>
+                                  <p className="chat-suspended-notice-text">
+                                    This job posting has been suspended by platform administration and is hidden from public job listings. If you wish to provide clarification, appeal, or request cancellation of this suspension, please contact administration via email at admin@elitecruit.com.
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="chat-special-actions chat-suspended-actions">
+                                <button
+                                  type="button"
+                                  className="chat-action-btn chat-btn-view"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onViewJobDetails && matchedJob) {
+                                      onViewJobDetails(matchedJob);
+                                    } else if (matchedJob) {
+                                      setSelectedPreviewJob(matchedJob);
+                                    } else if (candidate?.job_id) {
+                                      setSelectedPreviewJob({ id: candidate.job_id, title: special.jobTitle });
+                                    }
+                                  }}
+                                >
+                                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z" />
+                                    <circle cx="12" cy="12" r="3" />
+                                  </svg>
+                                  <span>Review Details</span>
+                                </button>
+                                <a
+                                  href={`mailto:admin@elitecruit.com?subject=Suspension%20Inquiry%20-%20Job%20ID%20${matchedJob?.id || candidate?.job_id || ""}%20(${encodeURIComponent(special.jobTitle || "")})`}
+                                  className="chat-action-btn chat-btn-email-admin"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                                    <polyline points="22,6 12,13 2,6" />
+                                  </svg>
+                                  <span>Email Admin</span>
+                                </a>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="chat-special-actions">
+                              <button
+                                type="button"
+                                className="chat-action-btn chat-btn-open-cal"
+                                onClick={() => window.dispatchEvent(new CustomEvent("elitecruit-open-calendar", { detail: { tab: "all", date: special.date } }))}
+                              >
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                  <line x1="16" y1="2" x2="16" y2="6" />
+                                  <line x1="8" y1="2" x2="8" y2="6" />
+                                  <line x1="3" y1="10" x2="21" y2="10" />
+                                </svg>
+                                <span>Open Meeting Calendar</span>
+                              </button>
+                            </div>
+                          )}
                         </article>
                       );
                     }
